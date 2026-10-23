@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Referral Economy: Downline Tree Reconciliation & Inherited Sub-Referrals (`v1.5.695`)**:
+  - **🌳 Automatic Referral Tree Reconciliation on Adoption ([`supabase/add_referral_marketplace_rpcs.sql`](supabase/add_referral_marketplace_rpcs.sql), [`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Upgraded `adopt_referrals` to automatically trigger `public.reconcile_referral_trees_internal()` immediately upon player adoption.
+    - Cascades the 4-tier network: when a buyer adopts an unreferred player who already invited their own friends, the adopted player becomes the buyer's Level 1 (L1), their referrals cascade as the buyer's Level 2 (L2), and so on down to Level 4 (L4).
+    - Automatically updates `referrals_l1`, `referrals_l2`, `referrals_l3`, `referrals_l4`, and `referrals_count` across the entire database.
+  - **📱 Live Multi-Tier Downline Refresh & Inherited Sub-Referral Alerts ([`src/js/features/referral-shop.js`](src/js/features/referral-shop.js))**:
+    - The checkout completion flow in both PGT and POL now extracts authoritative 4-tier counts (`referrals_l1..l4`) returned by the server.
+    - Calculates inherited sub-referrals and highlights them in the post-purchase celebration banner (e.g., `🎉 Adoption Complete! 3 active players (+5 inherited sub-referrals!) added to your downline network!`).
+    - Automatically calls `loadMyDownlineNetwork()` to instantaneously refresh the user's downline directory, ledger, and weekly activity census.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.695"` and refreshed asset cache-busters.
+
 - **Referral Economy: 3x Pricing Reduction, POL & PGT Crypto Checkout & Tier/VIP Discounts (`v1.5.694`)**:
   - **💰 ~3x Price Reduction on Referral Adoption ([`src/js/features/referral-shop.js`](src/js/features/referral-shop.js))**:
     - Re-calibrated unreferred player adoption tier pricing to approximately 1/3 of initial preview estimates:

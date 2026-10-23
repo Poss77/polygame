@@ -584,8 +584,14 @@ export async function executeReferralAdoption() {
       triggerToast(`Deducting ${disc.finalPricePGT.toLocaleString()} PGT & assigning referrals...`, "info");
 
       const client = getActiveSupabase();
+      const prevTotal = appState.state.referralsCount || 0;
       let adoptedCount = totalCount;
       let newBalance = pgtBalance - disc.finalPricePGT;
+      let updatedL1 = (appState.state.referralsL1 || 0) + adoptedCount;
+      let updatedL2 = appState.state.referralsL2 || 0;
+      let updatedL3 = appState.state.referralsL3 || 0;
+      let updatedL4 = appState.state.referralsL4 || 0;
+      let updatedTotal = (appState.state.referralsCount || 0) + adoptedCount;
 
       if (client) {
         try {
@@ -604,6 +610,11 @@ export async function executeReferralAdoption() {
           if (data && data.success) {
             adoptedCount = data.adopted_count || totalCount;
             if (data.new_balance !== undefined) newBalance = data.new_balance;
+            if (data.referrals_l1 !== undefined) updatedL1 = data.referrals_l1;
+            if (data.referrals_l2 !== undefined) updatedL2 = data.referrals_l2;
+            if (data.referrals_l3 !== undefined) updatedL3 = data.referrals_l3;
+            if (data.referrals_l4 !== undefined) updatedL4 = data.referrals_l4;
+            if (data.referrals_count !== undefined) updatedTotal = data.referrals_count;
           } else if (error) {
             console.warn('[ReferralShop] RPC fallback mode active:', error.message);
           }
@@ -612,11 +623,14 @@ export async function executeReferralAdoption() {
         }
       }
 
-      // Update client state
+      // Update client state with complete 4-tier network downline
       appState.update({
         balancePgt: newBalance,
-        referralsL1: (appState.state.referralsL1 || 0) + adoptedCount,
-        referralsCount: (appState.state.referralsCount || 0) + adoptedCount
+        referralsL1: updatedL1,
+        referralsL2: updatedL2,
+        referralsL3: updatedL3,
+        referralsL4: updatedL4,
+        referralsCount: updatedTotal
       });
 
       if (typeof appState.addActivity === 'function') {
@@ -630,7 +644,13 @@ export async function executeReferralAdoption() {
         window.confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
       }
 
-      triggerToast(`🎉 Adoption Complete! ${adoptedCount} active players added to your Level 1 Downline!`, "success");
+      const inheritedSubRefs = Math.max(0, (updatedTotal - prevTotal) - adoptedCount);
+      const subRefMsg = inheritedSubRefs > 0 ? ` (+${inheritedSubRefs} inherited sub-referrals!)` : '';
+      triggerToast(`🎉 Adoption Complete! ${adoptedCount} active player${adoptedCount > 1 ? 's' : ''}${subRefMsg} added to your downline network!`, "success");
+      
+      if (typeof window.loadMyDownlineNetwork === 'function') {
+        window.loadMyDownlineNetwork();
+      }
       fetchUnreferredCensus(true);
 
     } else {
@@ -658,7 +678,13 @@ export async function executeReferralAdoption() {
       await tx.wait();
 
       const client = getActiveSupabase();
+      const prevTotal = appState.state.referralsCount || 0;
       let adoptedCount = totalCount;
+      let updatedL1 = (appState.state.referralsL1 || 0) + adoptedCount;
+      let updatedL2 = appState.state.referralsL2 || 0;
+      let updatedL3 = appState.state.referralsL3 || 0;
+      let updatedL4 = appState.state.referralsL4 || 0;
+      let updatedTotal = (appState.state.referralsCount || 0) + adoptedCount;
 
       if (client) {
         try {
@@ -677,6 +703,11 @@ export async function executeReferralAdoption() {
 
           if (data && data.success) {
             adoptedCount = data.adopted_count || totalCount;
+            if (data.referrals_l1 !== undefined) updatedL1 = data.referrals_l1;
+            if (data.referrals_l2 !== undefined) updatedL2 = data.referrals_l2;
+            if (data.referrals_l3 !== undefined) updatedL3 = data.referrals_l3;
+            if (data.referrals_l4 !== undefined) updatedL4 = data.referrals_l4;
+            if (data.referrals_count !== undefined) updatedTotal = data.referrals_count;
           }
         } catch (rpcErr) {
           console.warn('[ReferralShop] POL RPC notice:', rpcErr);
@@ -684,8 +715,11 @@ export async function executeReferralAdoption() {
       }
 
       appState.update({
-        referralsL1: (appState.state.referralsL1 || 0) + adoptedCount,
-        referralsCount: (appState.state.referralsCount || 0) + adoptedCount
+        referralsL1: updatedL1,
+        referralsL2: updatedL2,
+        referralsL3: updatedL3,
+        referralsL4: updatedL4,
+        referralsCount: updatedTotal
       });
 
       if (typeof appState.addActivity === 'function') {
@@ -699,7 +733,13 @@ export async function executeReferralAdoption() {
         window.confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
       }
 
-      triggerToast(`🎉 POL Payment Confirmed! ${adoptedCount} active players added to your Level 1 Downline!`, "success");
+      const inheritedSubRefs = Math.max(0, (updatedTotal - prevTotal) - adoptedCount);
+      const subRefMsg = inheritedSubRefs > 0 ? ` (+${inheritedSubRefs} inherited sub-referrals!)` : '';
+      triggerToast(`🎉 POL Payment Confirmed! ${adoptedCount} active player${adoptedCount > 1 ? 's' : ''}${subRefMsg} added to your downline network!`, "success");
+      
+      if (typeof window.loadMyDownlineNetwork === 'function') {
+        window.loadMyDownlineNetwork();
+      }
       fetchUnreferredCensus(true);
     }
   } catch (err) {
