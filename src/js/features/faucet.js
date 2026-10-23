@@ -1250,6 +1250,9 @@ export function launchFromFaucetModal(target) {
     if (typeof window.switchGameModeView === 'function') window.switchGameModeView('mines');
   } else if (target === 'standings') {
     if (typeof window.switchTab === 'function') window.switchTab('profile');
+  } else if (target === 'nft') {
+    if (typeof window.switchTab === 'function') window.switchTab('nft');
+    if (typeof window.switchNftView === 'function') window.switchNftView('market');
   }
 }
 

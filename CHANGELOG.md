@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+-* *Faucet Claim Success Modal: NFT Boost Promotion (`v1.5.691`)*:
+  - **G🊪 Replaced Sunday Reset with NFT Boost Card ([`index.html`](index.html), [`src/js/features/faucet.js`](src/js/features/faucet.js))**:
+    - Removed the old Sunday Reset option from the post-claim faucet modal (`#modal-faucet-success`).
+    - Added an interactive **Utility NFTs (Boost Claims)** card highlighting how players can equip Faucet Boost NFTs and stack bonuses to earn up to **2,500 PGT** per claim.
+    - Updated `launchFromFaucetModal('nft')` to automatically route players to the Utility NFT Market (`switchNftView('market')`).
+  - **🚘 Outdated Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`k((index.html))j**:
+    - Incremented `APP_VERSION = "1.5.691"` and refreshed script cache-busters.
+
 - **Faucet & Staking Economy: Progressive 1-Year PGT Staker Bonus (`v1.5.690`)**:
   - **🐋 Progressive 5%-Step 1Y Staker Bonus (`500k` to `2.5M` PGT = `+10%` to `+30%`) ([`index.html`](index.html), [`src/js/core/state.js`](src/js/core/state.js), [`src/js/features/faucet.js`](src/js/features/faucet.js), [`src/js/features/profile.js`](src/js/features/profile.js))**:
     - Upgraded the Faucet Staker Multiplier card to a progressive 1-Year (`tier = 'year'`) PGT Staker Bonus with a live progress bar (`#faucet-pgt-progress-fill`), staked 1Y counter (`#faucet-pgt-progress-count`), and next-tier milestone indicator (`#faucet-pgt-progress-next`).
