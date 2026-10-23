@@ -645,14 +645,14 @@ export function getVipEstimatedClaimPol() {
   }
 
   const stakedPgt = typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0;
-  const isPgtWhale = stakedPgt >= 1000000;
+  const pgtStakerMult = typeof stateObj.getStakedPgtMultiplier === 'function' ? stateObj.getStakedPgtMultiplier() : 1.0;
   const pid = (stateObj.state.playerId || '').toLowerCase();
   const linked = (stateObj.state.linkedWalletAddress || '').toLowerCase();
   const isMasterAdmin = (linked === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d' || pid === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d');
   const isPgtBalWhale = isMasterAdmin || ((stateObj.state.balancePgt || 0) + stakedPgt) >= 1000000 || (stateObj.state.onchainBalancePgt || 0) >= 1000000;
 
   if (lpMult > 1.0) totalEst *= lpMult;
-  if (isPgtWhale) totalEst *= 1.25;
+  if (pgtStakerMult > 1.0) totalEst *= pgtStakerMult;
   if (isPgtBalWhale) totalEst *= 1.10;
   if (multis.isApexUnlocked) totalEst *= 1.5;
 
@@ -879,7 +879,7 @@ export function renderVipFaucetUI() {
   }
 
   const stakedPgt = typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0;
-  const isPgtWhale = stakedPgt >= 1000000;
+  const pgtStakerMult = typeof stateObj.getStakedPgtMultiplier === 'function' ? stateObj.getStakedPgtMultiplier() : 1.0;
   const pid = (stateObj.state.playerId || '').toLowerCase();
   const linked = (stateObj.state.linkedWalletAddress || '').toLowerCase();
   const isMasterAdmin = (linked === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d' || pid === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d');
@@ -897,8 +897,14 @@ export function renderVipFaucetUI() {
   }
   const elPgt = document.getElementById('vip-faucet-multiplier-pgt');
   if (elPgt) {
-    elPgt.innerText = isPgtWhale ? '+25%' : '+0%';
-    elPgt.style.color = isPgtWhale ? 'var(--color-success)' : 'var(--text-muted)';
+    if (pgtStakerMult > 1.0) {
+      const pctBoost = Math.round((pgtStakerMult - 1.0) * 100);
+      elPgt.innerText = `+${pctBoost}% (${Number(pgtStakerMult.toFixed(2))}x)`;
+      elPgt.style.color = (pgtStakerMult >= 1.30) ? '#ffd700' : (pgtStakerMult >= 1.20 ? '#38bdf8' : 'var(--color-success)');
+    } else {
+      elPgt.innerText = '+0% (1.1x–1.3x)';
+      elPgt.style.color = 'var(--text-muted)';
+    }
   }
   const elPgtOnchain = document.getElementById('vip-faucet-multiplier-pgt-onchain');
   if (elPgtOnchain) {

@@ -5,6 +5,22 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Faucet & Staking Economy: Progressive 1-Year PGT Staker Bonus (`v1.5.690`)**:
+  - **🐋 Progressive 5%-Step 1Y Staker Bonus (`500k` to `2.5M` PGT = `+10%` to `+30%`) ([`index.html`](index.html), [`src/js/core/state.js`](src/js/core/state.js), [`src/js/features/faucet.js`](src/js/features/faucet.js), [`src/js/features/profile.js`](src/js/features/profile.js))**:
+    - Upgraded the Faucet Staker Multiplier card to a progressive 1-Year (`tier = 'year'`) PGT Staker Bonus with a live progress bar (`#faucet-pgt-progress-fill`), staked 1Y counter (`#faucet-pgt-progress-count`), and next-tier milestone indicator (`#faucet-pgt-progress-next`).
+    - Only active 1-Year PGT vault positions (`pool = 'pgt'`, `tier = 'year'`) count toward the progressive multiplier in 5% steps per 500,000 PGT:
+      - `< 500,000 PGT (1Y)`: `+0% (1.00x)`
+      - `500,000 – 999,999 PGT (1Y)`: `+10% (1.10x)`
+      - `1,000,000 – 1,499,999 PGT (1Y)`: `+15% (1.15x)`
+      - `1,500,000 – 1,999,999 PGT (1Y)`: `+20% (1.20x)`
+      - `2,000,000 – 2,499,999 PGT (1Y)`: `+25% (1.25x)`
+      - `>= 2,500,000 PGT (1Y)`: `+30% (1.30x)`
+  - **🛡️ Server-Authoritative Faucet & Staking RPCs ([`supabase/rpcs/04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`supabase/rpcs/07_vault_staking.sql`](supabase/rpcs/07_vault_staking.sql), [`supabase/upgrade_progressive_1y_staker_faucet_bonus.sql`](supabase/upgrade_progressive_1y_staker_faucet_bonus.sql))**:
+    - Updated `claim_faucet` and `claim_vip_faucet` Step 11 to compute `v_staked_pgt_1y` authoritatively from `public.user_stakes` (`tier = 'year'`) and apply the 5%-step multiplier (`1.10x` to `1.30x`), while preserving `v_staked_pgt_total` for the separate 1M PGT Holder Bonus (+10%).
+    - Updated `get_user_stakes` to match active stakes across both `player_id` and `linked_wallet_address`.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.690"` and refreshed asset cache-busters.
+
 - **PolySpace: Authoritative Starship NFT Rarity Multiplier Fix (v1.5.689)**:
   - **Authoritative Server-Side DNA Rarity Decoding ([supabase/rpcs/06_polyspace_fleet.sql](supabase/rpcs/06_polyspace_fleet.sql), [supabase/fix_polyspace_starship_multiplier.sql](supabase/fix_polyspace_starship_multiplier.sql))**:
     - Created immutable public.get_starship_rarity(p_dna bigint) procedure that deterministically calculates starship rarity (Rare 1.10x, Epic 1.20x, Legendary 1.30x, Mythic 1.50x) directly from on-chain 6-digit DNA.

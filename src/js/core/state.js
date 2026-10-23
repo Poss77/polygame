@@ -605,6 +605,29 @@ export class PolyState {
     return total;
   }
 
+  getStakedPgt1YearTotal() {
+    if (!Array.isArray(this.state.stakes)) return 0;
+    let sum1Y = 0;
+    this.state.stakes.forEach(s => {
+      const pool = String(s.pool || 'pgt').toLowerCase();
+      const tier = String(s.tier || '').toLowerCase();
+      if (pool === 'pgt' && tier === 'year' && s.active !== false) {
+        sum1Y += parseFloat(s.amount || 0);
+      }
+    });
+    return sum1Y;
+  }
+
+  getStakedPgtMultiplier() {
+    const staked1Y = this.getStakedPgt1YearTotal();
+    if (staked1Y >= 2500000) return 1.30;
+    if (staked1Y >= 2000000) return 1.25;
+    if (staked1Y >= 1500000) return 1.20;
+    if (staked1Y >= 1000000) return 1.15;
+    if (staked1Y >= 500000) return 1.10;
+    return 1.0;
+  }
+
   isVipActive() {
     const expectedAdmin = "0x10b9993990c9ef8a212c9557cb02ad94da9a654d";
     const primary = (this.state.walletAddress || '').toLowerCase();
@@ -1214,13 +1237,57 @@ export class PolyState {
       }
     }
 
-    const isPgtWhale = this.getStakedPgtTotal() >= 1000000;
+    const staked1Y = this.getStakedPgt1YearTotal();
+    const pgtStakerMult = this.getStakedPgtMultiplier();
     const isPgtOnchainWhale = (this.state.onchainBalancePgt || 0) >= 1000000;
 
     const elPgt = document.getElementById('faucet-multiplier-pgt');
     if (elPgt) {
-      elPgt.innerText = isPgtWhale ? '+25%' : '+0%';
-      elPgt.style.color = isPgtWhale ? 'var(--color-success)' : 'var(--text-muted)';
+      if (pgtStakerMult > 1.0) {
+        const pctBoost = Math.round((pgtStakerMult - 1.0) * 100);
+        elPgt.innerText = `+${pctBoost}% (${Number(pgtStakerMult.toFixed(2))}x)`;
+        elPgt.style.color = (pgtStakerMult >= 1.30) ? '#ffd700' : (pgtStakerMult >= 1.20 ? '#38bdf8' : 'var(--color-success)');
+      } else {
+        elPgt.innerText = '+0% (1.1x–1.3x)';
+        elPgt.style.color = 'var(--text-muted)';
+      }
+    }
+
+    // Faucet 1Y PGT Staker Progress Bar & Milestone Subtext (5% steps per 500k from 500k to 2.5M)
+    const pgtFill = document.getElementById('faucet-pgt-progress-fill');
+    const pgtCountEl = document.getElementById('faucet-pgt-progress-count');
+    const pgtNextEl = document.getElementById('faucet-pgt-progress-next');
+
+    if (pgtFill && pgtCountEl && pgtNextEl) {
+      const pct = Math.min(100, Math.max(0, (staked1Y / 2500000) * 100));
+      pgtFill.style.width = `${pct}%`;
+      const fmt1Y = Math.floor(staked1Y).toLocaleString();
+
+      if (staked1Y < 500000) {
+        pgtFill.style.background = 'linear-gradient(90deg, #00f2fe, #38bdf8)';
+        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
+        pgtNextEl.innerText = 'Next: +10% (1.1x at 500k)';
+      } else if (staked1Y < 1000000) {
+        pgtFill.style.background = 'linear-gradient(90deg, #38bdf8, #60a5fa)';
+        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
+        pgtNextEl.innerText = 'Next: +15% (1.15x at 1M)';
+      } else if (staked1Y < 1500000) {
+        pgtFill.style.background = 'linear-gradient(90deg, #60a5fa, #818cf8)';
+        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
+        pgtNextEl.innerText = 'Next: +20% (1.2x at 1.5M)';
+      } else if (staked1Y < 2000000) {
+        pgtFill.style.background = 'linear-gradient(90deg, #818cf8, #c084fc)';
+        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
+        pgtNextEl.innerText = 'Next: +25% (1.25x at 2M)';
+      } else if (staked1Y < 2500000) {
+        pgtFill.style.background = 'linear-gradient(90deg, #c084fc, #f59e0b)';
+        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
+        pgtNextEl.innerText = 'Next: +30% (1.3x at 2.5M)';
+      } else {
+        pgtFill.style.background = 'linear-gradient(90deg, #ffd700, #f59e0b)';
+        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
+        pgtNextEl.innerText = '🏆 Max Tier Unlocked: +30% (1.3x)';
+      }
     }
 
     const elPgtOnchain = document.getElementById('faucet-multiplier-pgt-onchain');
@@ -1245,9 +1312,9 @@ export class PolyState {
       totalEst *= lpMult;
       totalEstPol *= lpMult;
     }
-    if (isPgtWhale) {
-      totalEst *= 1.25;
-      totalEstPol *= 1.25;
+    if (pgtStakerMult > 1.0) {
+      totalEst *= pgtStakerMult;
+      totalEstPol *= pgtStakerMult;
     }
     if (isPgtOnchainWhale) {
       totalEst *= 1.10;

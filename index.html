@@ -349,7 +349,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.688">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.690">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -1152,11 +1152,23 @@
                 </div>
               </div>
 
-              <div class="multiplier-item">
-                <span class="multiplier-name">
-                  🐋 1M PGT Staker
-                </span>
-                <span class="multiplier-value" id="faucet-multiplier-pgt">+0%</span>
+              <div class="multiplier-item has-progress" id="faucet-multiplier-pgt-row" title="Stake PGT in the 1-Year Vault: 500k = +10% (1.1x), 1M = +15% (1.15x), 1.5M = +20% (1.2x), 2M = +25% (1.25x), 2.5M = +30% (1.3x)">
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                  <span class="multiplier-name">
+                    🐋 1Y PGT Staker Bonus
+                    <a href="javascript:void(0)" onclick="if(window.switchTab) window.switchTab('staking');" style="color: var(--color-primary); text-decoration: none; font-size: 0.72rem; margin-left: 0.35rem; font-weight: 700;" title="Open Staking Vault">↗ Stake 1Y</a>
+                  </span>
+                  <span class="multiplier-value" id="faucet-multiplier-pgt" style="color: var(--text-muted);">+0% <span style="font-size: 0.8em; opacity: 0.75;">(1.1x–1.3x)</span></span>
+                </div>
+                <div class="faucet-pgt-progress-wrap" style="width: 100%; margin-top: 0.35rem;">
+                  <div class="faucet-pgt-progress-track" style="width: 100%; height: 6px; background: rgba(255, 255, 255, 0.08); border-radius: 4px; overflow: hidden; position: relative;">
+                    <div id="faucet-pgt-progress-fill" style="height: 100%; width: 0%; background: linear-gradient(90deg, #00f2fe, #38bdf8); border-radius: 4px; transition: width 0.4s ease;"></div>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.3rem; font-size: 0.7rem; color: var(--text-dim);">
+                    <span id="faucet-pgt-progress-count">0 / 2.5M 1Y Staked</span>
+                    <span id="faucet-pgt-progress-next">Next: +10% (1.1x at 500k)</span>
+                  </div>
+                </div>
               </div>
 
               <div class="multiplier-item">
@@ -4743,17 +4755,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.688"></script>
+  <script src="game.js?v=1.5.690"></script>
   <script src="invaders.js?v=1.5.574"></script>
   <script src="drift.js?v=1.5.574"></script>
   <script src="stacker.js?v=1.5.574"></script>
-  <script src="space.js?v=1.5.688"></script>
+  <script src="space.js?v=1.5.690"></script>
   <script type="module" src="skeet.js?v=1.5.574"></script>
   <script type="module" src="defense.js?v=1.5.574"></script>
   <script type="module" src="runner.js?v=1.5.574"></script>
   <script type="module" src="q2048.js?v=1.5.574"></script>
   <script src="tetris.js?v=1.5.574"></script>
-  <script type="module" src="src/js/app.js?v=1.5.688"></script>
+  <script type="module" src="src/js/app.js?v=1.5.690"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">
