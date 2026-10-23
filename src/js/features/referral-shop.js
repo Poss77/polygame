@@ -514,34 +514,26 @@ export function openReferralCheckoutModal() {
 window.openReferralCheckoutModal = openReferralCheckoutModal;
 
 /**
- * Select payment method in the checkout modal ('pol' or 'pgt')
+ * Select payment method in the checkout modal (strictly 'pol')
  */
-export function selectPaymentMethod(method) {
-  if (method !== 'pol' && method !== 'pgt') method = 'pol';
-  selectedPaymentMethod = method;
+export function selectPaymentMethod(method = 'pol') {
+  selectedPaymentMethod = 'pol';
 
   const cardPol = document.getElementById('pay-method-pol');
-  const cardPgt = document.getElementById('pay-method-pgt');
-  if (cardPol) cardPol.classList.toggle('selected', method === 'pol');
-  if (cardPgt) cardPgt.classList.toggle('selected', method === 'pgt');
+  if (cardPol) cardPol.classList.add('selected');
 
   const btnConfirm = document.getElementById('btn-confirm-ref-purchase');
   if (btnConfirm) {
     let subtotal = 0;
     REFERRAL_TIERS.forEach(t => { subtotal += (cartQuantities[t.level] || 0) * t.fictivePriceUSD; });
     const disc = calculateDiscounts(subtotal);
-
-    if (method === 'pol') {
-      btnConfirm.innerHTML = `🟣 Pay <strong>${disc.finalPricePOL.toFixed(2)} POL</strong> (Web3)`;
-    } else {
-      btnConfirm.innerHTML = `⚡ Pay <strong>${disc.finalPricePGT.toLocaleString()} PGT</strong> (Balance)`;
-    }
+    btnConfirm.innerHTML = `🟣 Pay <strong>${disc.finalPricePOL.toFixed(2)} POL</strong> (Web3)`;
   }
 }
 window.selectPaymentMethod = selectPaymentMethod;
 
 /**
- * Execute payment in POL or PGT and adopt the selected referrals
+ * Execute on-chain POL payment and adopt the selected referrals
  */
 export async function executeReferralAdoption() {
   const totalCount = Object.values(cartQuantities).reduce((a, b) => a + b, 0);
@@ -565,190 +557,104 @@ export async function executeReferralAdoption() {
   const btnConfirm = document.getElementById('btn-confirm-ref-purchase');
   if (btnConfirm) {
     btnConfirm.disabled = true;
-    btnConfirm.innerText = "Processing Payment...";
+    btnConfirm.innerText = "Processing POL Payment...";
   }
 
   try {
-    if (selectedPaymentMethod === 'pgt') {
-      // --- PGT TOKEN PAYMENT (In-App Balance) ---
-      const pgtBalance = appState?.state?.balancePgt || 0;
-      if (pgtBalance < disc.finalPricePGT) {
-        triggerToast(`Insufficient PGT balance! Requires ${disc.finalPricePGT.toLocaleString()} PGT (You have ${pgtBalance.toLocaleString()} PGT)`, "error");
-        if (btnConfirm) {
-          btnConfirm.disabled = false;
-          selectPaymentMethod('pgt');
-        }
-        return;
+    // --- POL ON-CHAIN PAYMENT (Polygon Web3) ---
+    if (!window.ethereum) {
+      triggerToast("Please connect MetaMask or a Web3 wallet on Polygon!", "error");
+      if (btnConfirm) {
+        btnConfirm.disabled = false;
+        selectPaymentMethod('pol');
       }
-
-      triggerToast(`Deducting ${disc.finalPricePGT.toLocaleString()} PGT & assigning referrals...`, "info");
-
-      const client = getActiveSupabase();
-      const prevTotal = appState.state.referralsCount || 0;
-      let adoptedCount = totalCount;
-      let newBalance = pgtBalance - disc.finalPricePGT;
-      let updatedL1 = (appState.state.referralsL1 || 0) + adoptedCount;
-      let updatedL2 = appState.state.referralsL2 || 0;
-      let updatedL3 = appState.state.referralsL3 || 0;
-      let updatedL4 = appState.state.referralsL4 || 0;
-      let updatedTotal = (appState.state.referralsCount || 0) + adoptedCount;
-
-      if (client) {
-        try {
-          const { data, error } = await client.rpc('adopt_referrals', {
-            p_buyer_id: buyerId,
-            p_l5: cartQuantities[5] || 0,
-            p_l4: cartQuantities[4] || 0,
-            p_l3: cartQuantities[3] || 0,
-            p_l2: cartQuantities[2] || 0,
-            p_l1: cartQuantities[1] || 0,
-            p_l0: cartQuantities[0] || 0,
-            p_payment_method: 'PGT',
-            p_pgt_cost: disc.finalPricePGT
-          });
-
-          if (data && data.success) {
-            adoptedCount = data.adopted_count || totalCount;
-            if (data.new_balance !== undefined) newBalance = data.new_balance;
-            if (data.referrals_l1 !== undefined) updatedL1 = data.referrals_l1;
-            if (data.referrals_l2 !== undefined) updatedL2 = data.referrals_l2;
-            if (data.referrals_l3 !== undefined) updatedL3 = data.referrals_l3;
-            if (data.referrals_l4 !== undefined) updatedL4 = data.referrals_l4;
-            if (data.referrals_count !== undefined) updatedTotal = data.referrals_count;
-          } else if (error) {
-            console.warn('[ReferralShop] RPC fallback mode active:', error.message);
-          }
-        } catch (rpcErr) {
-          console.warn('[ReferralShop] RPC error notice:', rpcErr);
-        }
-      }
-
-      // Update client state with complete 4-tier network downline
-      appState.update({
-        balancePgt: newBalance,
-        referralsL1: updatedL1,
-        referralsL2: updatedL2,
-        referralsL3: updatedL3,
-        referralsL4: updatedL4,
-        referralsCount: updatedTotal
-      });
-
-      if (typeof appState.addActivity === 'function') {
-        appState.addActivity('You', `adopted ${adoptedCount} referrals from marketplace`, `-${disc.finalPricePGT.toLocaleString()} PGT`);
-      }
-
-      closeModal('buy-referrals-checkout');
-      clearReferralShopCart();
-
-      if (typeof window.confetti === 'function') {
-        window.confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-      }
-
-      const inheritedSubRefs = Math.max(0, (updatedTotal - prevTotal) - adoptedCount);
-      const subRefMsg = inheritedSubRefs > 0 ? ` (+${inheritedSubRefs} inherited sub-referrals!)` : '';
-      triggerToast(`🎉 Adoption Complete! ${adoptedCount} active player${adoptedCount > 1 ? 's' : ''}${subRefMsg} added to your downline network!`, "success");
-      
-      if (typeof window.loadMyDownlineNetwork === 'function') {
-        window.loadMyDownlineNetwork();
-      }
-      fetchUnreferredCensus(true);
-
-    } else {
-      // --- POL ON-CHAIN PAYMENT (Polygon Web3) ---
-      if (!window.ethereum) {
-        triggerToast("Please connect MetaMask or a Web3 wallet on Polygon!", "error");
-        if (btnConfirm) {
-          btnConfirm.disabled = false;
-          selectPaymentMethod('pol');
-        }
-        return;
-      }
-
-      triggerToast(`Confirming ${disc.finalPricePOL.toFixed(2)} POL payment in wallet...`, "info");
-      const provider = new window.ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-
-      const receiver = ADMIN_WALLET_ADDRESS || "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
-      const tx = await signer.sendTransaction({
-        to: receiver,
-        value: window.ethers.parseEther(disc.finalPricePOL.toFixed(4))
-      });
-
-      triggerToast("POL payment submitted to Polygon! Awaiting on-chain confirmation...", "info");
-      await tx.wait();
-
-      const client = getActiveSupabase();
-      const prevTotal = appState.state.referralsCount || 0;
-      let adoptedCount = totalCount;
-      let updatedL1 = (appState.state.referralsL1 || 0) + adoptedCount;
-      let updatedL2 = appState.state.referralsL2 || 0;
-      let updatedL3 = appState.state.referralsL3 || 0;
-      let updatedL4 = appState.state.referralsL4 || 0;
-      let updatedTotal = (appState.state.referralsCount || 0) + adoptedCount;
-
-      if (client) {
-        try {
-          const { data, error } = await client.rpc('adopt_referrals', {
-            p_buyer_id: buyerId,
-            p_l5: cartQuantities[5] || 0,
-            p_l4: cartQuantities[4] || 0,
-            p_l3: cartQuantities[3] || 0,
-            p_l2: cartQuantities[2] || 0,
-            p_l1: cartQuantities[1] || 0,
-            p_l0: cartQuantities[0] || 0,
-            p_payment_method: 'POL',
-            p_pgt_cost: 0,
-            p_tx_hash: tx.hash
-          });
-
-          if (data && data.success) {
-            adoptedCount = data.adopted_count || totalCount;
-            if (data.referrals_l1 !== undefined) updatedL1 = data.referrals_l1;
-            if (data.referrals_l2 !== undefined) updatedL2 = data.referrals_l2;
-            if (data.referrals_l3 !== undefined) updatedL3 = data.referrals_l3;
-            if (data.referrals_l4 !== undefined) updatedL4 = data.referrals_l4;
-            if (data.referrals_count !== undefined) updatedTotal = data.referrals_count;
-          }
-        } catch (rpcErr) {
-          console.warn('[ReferralShop] POL RPC notice:', rpcErr);
-        }
-      }
-
-      appState.update({
-        referralsL1: updatedL1,
-        referralsL2: updatedL2,
-        referralsL3: updatedL3,
-        referralsL4: updatedL4,
-        referralsCount: updatedTotal
-      });
-
-      if (typeof appState.addActivity === 'function') {
-        appState.addActivity('You', `adopted ${adoptedCount} referrals with on-chain POL`, `-${disc.finalPricePOL.toFixed(2)} POL`);
-      }
-
-      closeModal('buy-referrals-checkout');
-      clearReferralShopCart();
-
-      if (typeof window.confetti === 'function') {
-        window.confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-      }
-
-      const inheritedSubRefs = Math.max(0, (updatedTotal - prevTotal) - adoptedCount);
-      const subRefMsg = inheritedSubRefs > 0 ? ` (+${inheritedSubRefs} inherited sub-referrals!)` : '';
-      triggerToast(`🎉 POL Payment Confirmed! ${adoptedCount} active player${adoptedCount > 1 ? 's' : ''}${subRefMsg} added to your downline network!`, "success");
-      
-      if (typeof window.loadMyDownlineNetwork === 'function') {
-        window.loadMyDownlineNetwork();
-      }
-      fetchUnreferredCensus(true);
+      return;
     }
+
+    triggerToast(`Confirming ${disc.finalPricePOL.toFixed(2)} POL payment in wallet...`, "info");
+    const provider = new window.ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+
+    const receiver = ADMIN_WALLET_ADDRESS || "0x10B9993990c9EF8a212c9557cB02aD94da9a654d";
+    const tx = await signer.sendTransaction({
+      to: receiver,
+      value: window.ethers.parseEther(disc.finalPricePOL.toFixed(4))
+    });
+
+    triggerToast("POL payment submitted to Polygon! Awaiting on-chain confirmation...", "info");
+    await tx.wait();
+
+    const client = getActiveSupabase();
+    const prevTotal = appState.state.referralsCount || 0;
+    let adoptedCount = totalCount;
+    let updatedL1 = (appState.state.referralsL1 || 0) + adoptedCount;
+    let updatedL2 = appState.state.referralsL2 || 0;
+    let updatedL3 = appState.state.referralsL3 || 0;
+    let updatedL4 = appState.state.referralsL4 || 0;
+    let updatedTotal = (appState.state.referralsCount || 0) + adoptedCount;
+
+    if (client) {
+      try {
+        const { data, error } = await client.rpc('adopt_referrals', {
+          p_buyer_id: buyerId,
+          p_l5: cartQuantities[5] || 0,
+          p_l4: cartQuantities[4] || 0,
+          p_l3: cartQuantities[3] || 0,
+          p_l2: cartQuantities[2] || 0,
+          p_l1: cartQuantities[1] || 0,
+          p_l0: cartQuantities[0] || 0,
+          p_payment_method: 'POL',
+          p_pgt_cost: 0,
+          p_tx_hash: tx.hash
+        });
+
+        if (data && data.success) {
+          adoptedCount = data.adopted_count || totalCount;
+          if (data.referrals_l1 !== undefined) updatedL1 = data.referrals_l1;
+          if (data.referrals_l2 !== undefined) updatedL2 = data.referrals_l2;
+          if (data.referrals_l3 !== undefined) updatedL3 = data.referrals_l3;
+          if (data.referrals_l4 !== undefined) updatedL4 = data.referrals_l4;
+          if (data.referrals_count !== undefined) updatedTotal = data.referrals_count;
+        }
+      } catch (rpcErr) {
+        console.warn('[ReferralShop] POL RPC notice:', rpcErr);
+      }
+    }
+
+    appState.update({
+      referralsL1: updatedL1,
+      referralsL2: updatedL2,
+      referralsL3: updatedL3,
+      referralsL4: updatedL4,
+      referralsCount: updatedTotal
+    });
+
+    if (typeof appState.addActivity === 'function') {
+      appState.addActivity('You', `adopted ${adoptedCount} referrals with on-chain POL`, `-${disc.finalPricePOL.toFixed(2)} POL`);
+    }
+
+    closeModal('buy-referrals-checkout');
+    clearReferralShopCart();
+
+    if (typeof window.confetti === 'function') {
+      window.confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+    }
+
+    const inheritedSubRefs = Math.max(0, (updatedTotal - prevTotal) - adoptedCount);
+    const subRefMsg = inheritedSubRefs > 0 ? ` (+${inheritedSubRefs} inherited sub-referrals!)` : '';
+    triggerToast(`🎉 POL Payment Confirmed! ${adoptedCount} active player${adoptedCount > 1 ? 's' : ''}${subRefMsg} added to your downline network!`, "success");
+    
+    if (typeof window.loadMyDownlineNetwork === 'function') {
+      window.loadMyDownlineNetwork();
+    }
+    fetchUnreferredCensus(true);
   } catch (err) {
     console.error("[ReferralShop] Adoption error:", err);
     triggerToast("Payment cancelled or failed: " + (err.reason || err.message || err), "error");
   } finally {
     if (btnConfirm) {
       btnConfirm.disabled = false;
-      selectPaymentMethod(selectedPaymentMethod);
+      selectPaymentMethod('pol');
     }
   }
 }

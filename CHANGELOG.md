@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Referral Economy: Exclusively On-Chain POL Payment (PGT Disabled) (`v1.5.696`)**:
+  - **🟣 Strictly On-Chain Polygon POL Checkout ([`index.html`](index.html), [`src/js/features/referral-shop.js`](src/js/features/referral-shop.js), [`supabase/add_referral_marketplace_rpcs.sql`](supabase/add_referral_marketplace_rpcs.sql))**:
+    - Removed the in-app PGT balance payment option from the Referral Marketplace checkout modal and order summary.
+    - Referral adoption is now exclusively funded via on-chain Polygon POL Web3 transfers to the treasury wallet (`ADMIN_WALLET_ADDRESS`), preventing players from purchasing referral trees using faucet/mined PGT tokens.
+    - Updated server-side RPC `adopt_referrals` to reject any non-POL payment attempts with a clear notice.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.696"` and refreshed asset cache-busters.
+
 - **Referral Economy: Downline Tree Reconciliation & Inherited Sub-Referrals (`v1.5.695`)**:
   - **🌳 Automatic Referral Tree Reconciliation on Adoption ([`supabase/add_referral_marketplace_rpcs.sql`](supabase/add_referral_marketplace_rpcs.sql), [`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
     - Upgraded `adopt_referrals` to automatically trigger `public.reconcile_referral_trees_internal()` immediately upon player adoption.

@@ -372,7 +372,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.695">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.696">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -3089,7 +3089,7 @@
           <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 0.65rem 0.9rem; font-size: 0.78rem; color: #94a3b8; display: flex; flex-direction: column; gap: 0.35rem;">
             <div style="display: flex; align-items: center; gap: 0.45rem;">
               <span>🔒</span>
-              <span><strong>Private Hidden Feature:</strong> Adopt active unreferred players to expand your Level 1 downline network. Payments accepted in <strong>🟣 Polygon POL</strong> and <strong>⚡ PGT Tokens</strong>.</span>
+              <span><strong>Private Hidden Feature:</strong> Adopt active unreferred players to expand your Level 1 downline network. Payments accepted on-chain in <strong>🟣 Polygon POL</strong>.</span>
             </div>
             <div style="background: rgba(0, 255, 136, 0.06); border: 1px dashed rgba(0, 255, 136, 0.25); border-radius: 6px; padding: 0.35rem 0.65rem; color: #00ff88; font-weight: 700; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
               <span>🎁 Tier Discounts:</span>
@@ -3173,8 +3173,6 @@
                     <div id="shop-summary-total-price" style="font-size: 1.35rem; font-weight: 800; color: var(--color-primary);">$0.00 USD</div>
                     <div style="font-size: 0.72rem; color: var(--text-dim); display: flex; gap: 0.4rem; justify-content: flex-end;">
                       <span id="shop-summary-price-pol" style="color: #c084fc; font-weight: 700;">≈ 0.00 POL</span>
-                      <span>•</span>
-                      <span id="shop-summary-price-pgt" style="color: var(--color-accent); font-weight: 700;">≈ 0 PGT</span>
                     </div>
                   </div>
                 </div>
@@ -4932,17 +4930,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.695"></script>
+  <script src="game.js?v=1.5.696"></script>
   <script src="invaders.js?v=1.5.574"></script>
   <script src="drift.js?v=1.5.574"></script>
   <script src="stacker.js?v=1.5.574"></script>
-  <script src="space.js?v=1.5.695"></script>
+  <script src="space.js?v=1.5.696"></script>
   <script type="module" src="skeet.js?v=1.5.574"></script>
   <script type="module" src="defense.js?v=1.5.574"></script>
   <script type="module" src="runner.js?v=1.5.574"></script>
   <script type="module" src="q2048.js?v=1.5.574"></script>
   <script src="tetris.js?v=1.5.574"></script>
-  <script type="module" src="src/js/app.js?v=1.5.695"></script>
+  <script type="module" src="src/js/app.js?v=1.5.696"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">
@@ -5275,11 +5273,11 @@
         </div>
       </div>
 
-      <!-- Payment Method Selection (POL & PGT) -->
+      <!-- Payment Method Selection (Polygon POL On-Chain) -->
       <span style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; display: block; margin-bottom: 0.4rem;">
-        Select Payment Method
+        Payment Method
       </span>
-      <div class="ref-payment-methods-grid">
+      <div class="ref-payment-methods-grid" style="grid-template-columns: 1fr;">
         <div class="ref-payment-card selected" id="pay-method-pol" onclick="window.selectPaymentMethod('pol')">
           <div style="font-size: 1.4rem;">🟣</div>
           <div style="flex: 1;">
@@ -5287,17 +5285,7 @@
               <strong style="color: #fff; font-size: 0.85rem;">Polygon POL</strong>
               <span id="modal-ref-cost-pol" style="color: #c084fc; font-weight: 800; font-size: 0.85rem;">0.00 POL</span>
             </div>
-            <span style="font-size: 0.7rem; color: var(--text-dim);">Direct Web3 Wallet Transfer</span>
-          </div>
-        </div>
-        <div class="ref-payment-card" id="pay-method-pgt" onclick="window.selectPaymentMethod('pgt')">
-          <div style="font-size: 1.4rem;">⚡</div>
-          <div style="flex: 1;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <strong style="color: #fff; font-size: 0.85rem;">PGT Token</strong>
-              <span id="modal-ref-cost-pgt" style="color: var(--color-accent); font-weight: 800; font-size: 0.85rem;">0 PGT</span>
-            </div>
-            <span style="font-size: 0.7rem; color: var(--text-dim);">Instant In-App Balance</span>
+            <span style="font-size: 0.7rem; color: var(--text-dim);">Direct Web3 On-Chain Transfer (Treasury)</span>
           </div>
         </div>
       </div>
