@@ -42,10 +42,11 @@
     // Early Fallback Router so navigation works instantly before ES modules load
     if (typeof window.switchTab !== 'function') {
       window.switchTab = function(tabId) {
-        var validTabs = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'profile', 'holders', 'links', 'admin'];
+        var validTabs = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'buy-referrals', 'referral-shop', 'profile', 'holders', 'links', 'admin'];
         var clean = (typeof tabId === 'string' ? tabId.replace(/^#/, '').toLowerCase().trim() : '');
         if (clean === 'vault') clean = 'staking';
         if (clean === 'arcade') clean = 'games';
+        if (clean === 'referral-shop') clean = 'buy-referrals';
         if (!clean || clean.indexOf('=') !== -1 || clean.indexOf('&') !== -1 || validTabs.indexOf(clean) === -1) {
           clean = 'dashboard';
         }
@@ -64,7 +65,7 @@
         var panel = document.getElementById('view-' + tabId) || document.getElementById('view-dashboard');
         if (panel) panel.classList.add('active');
         var title = document.getElementById('view-title');
-        if (title && link) title.innerText = link.innerText.trim();
+        if (title) title.innerText = link ? link.innerText.trim() : (tabId === 'buy-referrals' ? 'Referral Marketplace (Preview)' : 'Dashboard');
       };
     }
 
@@ -77,6 +78,28 @@
         return true;
       }
     }, true);
+
+    // Suppress browser extension message channel / port disconnect errors (MetaMask, Phantom, Coinbase, etc.)
+    window.addEventListener('unhandledrejection', function(event) {
+      var reason = event.reason;
+      var reasonStr = (typeof reason === 'object' && reason !== null)
+        ? (reason.message || reason.details || reason.stack || JSON.stringify(reason) || '')
+        : String(reason || '');
+      var lowerMsg = reasonStr.toLowerCase();
+      if (
+        lowerMsg.includes('message channel closed') ||
+        lowerMsg.includes('listener indicated an asynchronous response') ||
+        lowerMsg.includes('message port closed') ||
+        lowerMsg.includes('could not establish connection') ||
+        lowerMsg.includes('user rejected') ||
+        lowerMsg.includes('user denied') ||
+        lowerMsg.includes('chrome-extension://') ||
+        lowerMsg.includes('moz-extension://')
+      ) {
+        if (event.preventDefault) event.preventDefault();
+        return;
+      }
+    });
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js?v=2').then(function(reg) {
         reg.unregister();
@@ -349,7 +372,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.692">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.693">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -4890,17 +4913,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.692"></script>
+  <script src="game.js?v=1.5.693"></script>
   <script src="invaders.js?v=1.5.574"></script>
   <script src="drift.js?v=1.5.574"></script>
   <script src="stacker.js?v=1.5.574"></script>
-  <script src="space.js?v=1.5.692"></script>
+  <script src="space.js?v=1.5.693"></script>
   <script type="module" src="skeet.js?v=1.5.574"></script>
   <script type="module" src="defense.js?v=1.5.574"></script>
   <script type="module" src="runner.js?v=1.5.574"></script>
   <script type="module" src="q2048.js?v=1.5.574"></script>
   <script src="tetris.js?v=1.5.574"></script>
-  <script type="module" src="src/js/app.js?v=1.5.692"></script>
+  <script type="module" src="src/js/app.js?v=1.5.693"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

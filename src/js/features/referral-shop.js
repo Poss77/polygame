@@ -3,7 +3,7 @@
  * Allows players to inspect unreferred players by weekly activity tier and calculate adoption costs.
  */
 
-import { supabase } from '../core/config.js';
+import { supabase, SUPABASE_URL, SUPABASE_KEY } from '../core/config.js';
 import { triggerToast, openModal, closeModal } from '../core/ui.js';
 import { appState } from '../core/state.js';
 
@@ -96,6 +96,24 @@ let isFetchingCensus = false;
 let selectedPaymentMethod = 'pol'; // 'pol', 'pgt', 'card', 'usdt'
 
 /**
+ * Safely resolves the active Supabase client instance
+ */
+function getActiveSupabase() {
+  if (supabase && typeof supabase.from === 'function') return supabase;
+  if (typeof window !== 'undefined') {
+    if (window.supabaseClient && typeof window.supabaseClient.from === 'function') return window.supabaseClient;
+    if (window.supabase && typeof window.supabase.from === 'function') return window.supabase;
+    if (window.supabase && typeof window.supabase.createClient === 'function') {
+      try {
+        window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        return window.supabaseClient;
+      } catch (e) {}
+    }
+  }
+  return null;
+}
+
+/**
  * Fetch unreferred player counts grouped by weekly activity tier
  */
 export async function fetchUnreferredCensus(forceRefresh = false) {
@@ -109,7 +127,14 @@ export async function fetchUnreferredCensus(forceRefresh = false) {
   }
 
   try {
-    const { data, error } = await supabase
+    const client = getActiveSupabase();
+    if (!client) {
+      console.warn('[ReferralShop] Supabase client not ready yet, retrying...');
+      setTimeout(() => fetchUnreferredCensus(forceRefresh), 400);
+      return;
+    }
+
+    const { data, error } = await client
       .from('users')
       .select('weekly_active_tier, last_weekly_active_tier, is_banned')
       .or('referred_by_l1.is.null,referred_by_l1.eq.');

@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Router & Extension Error Suppression Fix (`v1.5.693`)**:
+  - **🛡️ Early Fallback Router & Unhandled Rejection Sentinel ([`index.html`](index.html), [`src/js/features/referral-shop.js`](src/js/features/referral-shop.js))**:
+    - Synchronized `validTabs` in the early inline `<head>` fallback router to recognize `'buy-referrals'` and `'referral-shop'`, preventing direct hash visits from accidentally defaulting back to dashboard before ES modules load.
+    - Moved the `unhandledrejection` sentinel to document `<head>` to immediately intercept and suppress browser extension message channel / port disconnect errors (`chrome.runtime.sendMessage` disconnects on `/#buy-referrals:1` from MetaMask, Phantom, Coinbase, etc.).
+    - Added resilient multi-layer `getActiveSupabase()` resolution in `referral-shop.js` to ensure queries safely await client initialization without unhandled promises.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.693"` and refreshed asset cache-busters.
+
 - **Referral Economy: Referral Adoption Marketplace Preview (`v1.5.692`)**:
   - **🛒 Hidden Referral Adoption Marketplace (`#buy-referrals`, [`src/js/features/referral-shop.js`](src/js/features/referral-shop.js), [`index.html`](index.html), [`src/css/features/referrals.css`](src/css/features/referrals.css))**:
     - Built a dedicated private-preview page allowing players to browse unreferred players across all 6 weekly activity levels:
