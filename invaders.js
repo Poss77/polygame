@@ -215,6 +215,9 @@ class CyberInvaders {
     this.nftRarity = (nftBoosts.isEquipped && nftBoosts.rarity)
       ? nftBoosts.rarity
       : (this.nftDna && window.PolyHangar && typeof window.PolyHangar.getStarshipRarity === 'function' ? window.PolyHangar.getStarshipRarity(this.nftDna) : null);
+    this.nftShipScale = (this.nftShip && this.nftDna && window.PolyHangar && typeof window.PolyHangar.getNormalizedShipScale === 'function')
+      ? window.PolyHangar.getNormalizedShipScale(this.nftDna, 18, 36)
+      : (this.nftDna ? 0.24 : 0.40);
 
     // Hook combined standard NFT & VIP multiplier boost (No extra starship multiplier boost in Invaders)
     const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier: 0};
@@ -1485,8 +1488,11 @@ class CyberInvaders {
       if (this.nftShip && this.nftDna && window.PolyHangar && typeof window.PolyHangar.renderProceduralShip === 'function') {
         const pcx = this.player.x + this.player.w / 2;
         const pcy = this.player.y + this.player.h / 2;
+        const shipScale = this.nftShipScale || ((window.PolyHangar.getNormalizedShipScale)
+          ? window.PolyHangar.getNormalizedShipScale(this.nftDna, 18, 36)
+          : 0.24);
         // Ship nose points upward (-Math.PI / 2), thrusters fire downward
-        window.PolyHangar.renderProceduralShip(this.ctx, pcx, pcy, this.nftDna, 0.40, -Math.PI / 2, this.gameTime, true);
+        window.PolyHangar.renderProceduralShip(this.ctx, pcx, pcy, this.nftDna, shipScale, -Math.PI / 2, this.gameTime, true);
       } else {
         this.ctx.shadowColor = '#00ffff';
         this.ctx.shadowBlur = 20;

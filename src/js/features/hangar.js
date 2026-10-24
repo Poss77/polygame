@@ -248,6 +248,37 @@ export function decodeDNA(dna) {
 }
 
 /**
+ * Calculates a dynamic, fair in-game rendering scale based on a Starship's DNA dimensions.
+ * Normalizes visual wingspan and fuselage length so wide-wing ships (e.g. Broad Delta Wings, span 85)
+ * and compact ships (e.g. Annular Ring, span 60) both conform cleanly to the standardized 14px radius (28px diameter)
+ * collision boundary without visual clipping or hitbox distortion.
+ *
+ * @param {string|number} dna - 6-digit Starship DNA
+ * @param {number} targetHalfSpan - Target visual half-wingspan (default 18.5px, wingspan 37px)
+ * @param {number} targetLength - Target visual total fuselage length (default 38px)
+ * @returns {number} Normalized canvas render scale
+ */
+export function getNormalizedShipScale(dna, targetHalfSpan = 18.5, targetLength = 38) {
+  try {
+    if (!dna) return 0.25;
+    const t = decodeDNA(dna);
+    const span = (t.wings && typeof t.wings.span === 'number') ? t.wings.span : 70;
+    const nose = (t.chassis && typeof t.chassis.noseLen === 'number') ? t.chassis.noseLen : 55;
+    const aft = (t.chassis && typeof t.chassis.aftLen === 'number') ? t.chassis.aftLen : 30;
+    const totalLen = nose + aft;
+
+    const scaleBySpan = targetHalfSpan / span;
+    const scaleByLen = targetLength / totalLen;
+
+    // Constrain so both wingspan and fuselage fit cleanly inside the visual envelope
+    const rawScale = Math.min(scaleBySpan, scaleByLen);
+    return Math.max(0.18, Math.min(0.34, parseFloat(rawScale.toFixed(3))));
+  } catch (err) {
+    return 0.25;
+  }
+}
+
+/**
  * Pure Vector Procedural Ship Canvas Renderer (Zero External Assets)
  */
 export function renderProceduralShip(ctx, x, y, dna, scale = 1.0, tilt = 0, animTime = 0, isGame = false) {
@@ -1654,6 +1685,7 @@ export async function syncContractBaseURI() {
 window.PolyHangar = {
   isPossOrAdmin,
   decodeDNA,
+  getNormalizedShipScale,
   getStarshipRarity,
   STARSHIP_RARITY,
   renderProceduralShip,

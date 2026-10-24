@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade Fair Play & Visual Hitbox Normalization for NFT Starships (`v1.5.703`)**:
+  - **🚀 Dynamic DNA Bounding-Box Normalization ([`src/js/features/hangar.js`](src/js/features/hangar.js), [`game.js`](game.js), [`invaders.js`](invaders.js))**:
+    - Created `getNormalizedShipScale(dna, targetHalfSpan, targetLength)` engine in `hangar.js` that calculates proportional in-game rendering scale based on each starship's procedural DNA traits (`wings.span` and `chassis.length`).
+    - Eliminates the static `0.48` scale that previously caused long-wing starships (e.g. Broad Delta Wings, span 85) to appear 2.5x larger than the standardized 14px radius (28px diameter) collision hitbox.
+    - Standardizes all equipped NFT Starships to a ~36px visual footprint across Astro-Dodge and Cyber Invaders, ensuring wingtips align with collision boundaries and dodging remains completely intuitive and fair without phantom asteroid pass-throughs.
+    - Added subtle rarity-colored atmospheric underglow aura (radius 16px) around the starship core in Astro-Dodge to visually signal the exact player collision center.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.703"` and refreshed asset cache-busters.
+
 - **Faucet Post-Claim Modal: High-Visibility 2,500 PGT Boost Callout (`v1.5.702`)**:
   - **⚡ Prominent Top Boost Badge ([`index.html`](index.html))**:
     - Added a glowing highlight pill directly below the claim celebration header (`+56.10 PGT Claimed!`): *"⚡ Boost to earn up to 2,500 PGT per claim! ↗"*, linking directly to the Faucet Boost NFT marketplace.

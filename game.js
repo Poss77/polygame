@@ -473,6 +473,9 @@ class NeonAstroDodge {
     this.nftMissileCooldown = validShip ? nftBoosts.missileCooldown : 1900;
     this.nftTierEarnMultiplier = validShip ? (nftBoosts.tierEarnMultiplier || 1.0) : 1.0;
     this.isTier3PlusShip = validShip ? !!nftBoosts.isTier3Plus : false;
+    this.nftShipScale = (validShip && this.nftDna && window.PolyHangar && typeof window.PolyHangar.getNormalizedShipScale === 'function')
+      ? window.PolyHangar.getNormalizedShipScale(this.nftDna, 18.5, 38)
+      : (this.nftDna ? 0.25 : 0.48);
 
     // Initialize Neon Ship
     this.player = {
@@ -2846,8 +2849,24 @@ class NeonAstroDodge {
       }
 
       if (this.nftShip && this.nftDna && window.PolyHangar && typeof window.PolyHangar.renderProceduralShip === 'function') {
+        // Dynamic DNA-normalized scale: wide wings tuck in cleanly to match the 14px collision radius!
+        const shipScale = this.nftShipScale || ((window.PolyHangar.getNormalizedShipScale)
+          ? window.PolyHangar.getNormalizedShipScale(this.nftDna, 18.5, 38)
+          : 0.24);
+
+        // Subtle Rarity-Colored Atmospheric Underglow Halo matching the 14px core collision radius
+        const flameColor = this.nftRarity?.flame || '#00f0ff';
+        const auraPulse = 0.16 + Math.sin(this.gameTime * 0.15) * 0.05;
+        this.ctx.save();
+        this.ctx.fillStyle = flameColor;
+        this.ctx.globalAlpha = auraPulse;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 16, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.restore();
+
         // Render 100% Procedural Generative NFT Starship (Poss / Admin Alpha Flagship)
-        window.PolyHangar.renderProceduralShip(this.ctx, 0, 0, this.nftDna, 0.48, 0, this.gameTime, true);
+        window.PolyHangar.renderProceduralShip(this.ctx, 0, 0, this.nftDna, shipScale, 0, this.gameTime, true);
       } else {
         // --- A. Dynamic Neon Atmospheric Underglow Aura (Clean alpha fill, Zero Gradient Overhead) ---
         const auraPulse = 0.16 + Math.sin(this.gameTime * 0.15) * 0.05;
