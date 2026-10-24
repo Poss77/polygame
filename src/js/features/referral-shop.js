@@ -157,7 +157,7 @@ window.calculateDiscounts = calculateDiscounts;
  * Fetch unreferred player counts grouped by weekly activity tier
  */
 export async function fetchUnreferredCensus(forceRefresh = false) {
-  if (isFetchingCensus) return;
+  if (isFetchingCensus && !forceRefresh) return;
   isFetchingCensus = true;
 
   const btnRefresh = document.getElementById('btn-refresh-referral-shop');
@@ -174,28 +174,49 @@ export async function fetchUnreferredCensus(forceRefresh = false) {
       return;
     }
 
-    const { data, error } = await client
-      .from('users')
-      .select('weekly_active_tier, last_weekly_active_tier, is_banned')
-      .or('referred_by_l1.is.null,referred_by_l1.eq.');
+    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, 0: 0 };
+    let fetchedViaRpc = false;
 
-    if (error) {
-      console.warn('[ReferralShop] Census query notice:', error);
+    // 1. Fast server-side aggregation RPC
+    try {
+      const { data: rpcCounts, error: rpcErr } = await client.rpc('get_unreferred_census');
+      if (!rpcErr && rpcCounts && typeof rpcCounts === 'object') {
+        counts[0] = parseInt(rpcCounts['0'] || 0, 10);
+        counts[1] = parseInt(rpcCounts['1'] || 0, 10);
+        counts[2] = parseInt(rpcCounts['2'] || 0, 10);
+        counts[3] = parseInt(rpcCounts['3'] || 0, 10);
+        counts[4] = parseInt(rpcCounts['4'] || 0, 10);
+        counts[5] = parseInt(rpcCounts['5'] || 0, 10);
+        fetchedViaRpc = true;
+      }
+    } catch (e) {
+      // Fallback to table scan
     }
 
-    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, 0: 0 };
-    if (Array.isArray(data)) {
-      data.forEach(row => {
-        if (row.is_banned) return;
-        let lvl = row.last_weekly_active_tier;
-        if (lvl === null || lvl === undefined) {
-          lvl = row.weekly_active_tier || 0;
-        }
-        lvl = parseInt(lvl, 10);
-        if (isNaN(lvl) || lvl < 0) lvl = 0;
-        if (lvl > 5) lvl = 5;
-        counts[lvl] = (counts[lvl] || 0) + 1;
-      });
+    // 2. Fallback to direct table scan if RPC unavailable
+    if (!fetchedViaRpc) {
+      const { data, error } = await client
+        .from('users')
+        .select('weekly_active_tier, last_weekly_active_tier, is_banned')
+        .or('referred_by_l1.is.null,referred_by_l1.eq.');
+
+      if (error) {
+        console.warn('[ReferralShop] Census query notice:', error);
+      }
+
+      if (Array.isArray(data)) {
+        data.forEach(row => {
+          if (row.is_banned) return;
+          let lvl = row.last_weekly_active_tier;
+          if (lvl === null || lvl === undefined) {
+            lvl = row.weekly_active_tier || 0;
+          }
+          lvl = parseInt(lvl, 10);
+          if (isNaN(lvl) || lvl < 0) lvl = 0;
+          if (lvl > 5) lvl = 5;
+          counts[lvl] = (counts[lvl] || 0) + 1;
+        });
+      }
     }
 
     availableCensus = counts;
@@ -595,57 +616,44 @@ export async function executeReferralAdoption() {
 
     if (client) {
       try {
-        let resultData = null;
+        // Direct RPC guarded by anti-replay and anti-loop validation in PostgreSQL
+        const { data, error } = await client.rpc('adopt_referrals', {
+          p_buyer_id: buyerId,
+          p_l5: cartQuantities[5] || 0,
+          p_l4: cartQuantities[4] || 0,
+          p_l3: cartQuantities[3] || 0,
+          p_l2: cartQuantities[2] || 0,
+          p_l1: cartQuantities[1] || 0,
+          p_l0: cartQuantities[0] || 0,
+          p_payment_method: 'POL',
+          p_pgt_cost: 0,
+          p_tx_hash: tx.hash
+        });
 
-        // 1. Try secure Edge Function verification first
-        try {
-          const edgeRes = await client.functions.invoke('adopt-referrals', {
-            body: {
-              txHash: tx.hash,
-              playerId: buyerId,
-              quantities: cartQuantities
-            }
-          });
-          if (edgeRes?.data && edgeRes.data.success) {
-            resultData = edgeRes.data;
-          }
-        } catch (edgeErr) {
-          console.warn('[ReferralShop] Edge function invoke notice, falling back to direct RPC:', edgeErr);
-        }
-
-        // 2. Direct RPC fallback (guarded by anti-replay and anti-loop validation in PostgreSQL)
-        if (!resultData) {
-          const { data, error } = await client.rpc('adopt_referrals', {
-            p_buyer_id: buyerId,
-            p_l5: cartQuantities[5] || 0,
-            p_l4: cartQuantities[4] || 0,
-            p_l3: cartQuantities[3] || 0,
-            p_l2: cartQuantities[2] || 0,
-            p_l1: cartQuantities[1] || 0,
-            p_l0: cartQuantities[0] || 0,
-            p_payment_method: 'POL',
-            p_pgt_cost: 0,
-            p_tx_hash: tx.hash
-          });
-          if (data && data.success) {
-            resultData = data;
-          } else if (error) {
-            console.warn('[ReferralShop] POL RPC notice:', error.message);
-          }
-        }
-
-        if (resultData && resultData.success) {
-          adoptedCount = resultData.adopted_count || totalCount;
-          if (resultData.referrals_l1 !== undefined) updatedL1 = resultData.referrals_l1;
-          if (resultData.referrals_l2 !== undefined) updatedL2 = resultData.referrals_l2;
-          if (resultData.referrals_l3 !== undefined) updatedL3 = resultData.referrals_l3;
-          if (resultData.referrals_l4 !== undefined) updatedL4 = resultData.referrals_l4;
-          if (resultData.referrals_count !== undefined) updatedTotal = resultData.referrals_count;
+        if (data && data.success) {
+          adoptedCount = data.adopted_count || totalCount;
+          if (data.referrals_l1 !== undefined) updatedL1 = data.referrals_l1;
+          if (data.referrals_l2 !== undefined) updatedL2 = data.referrals_l2;
+          if (data.referrals_l3 !== undefined) updatedL3 = data.referrals_l3;
+          if (data.referrals_l4 !== undefined) updatedL4 = data.referrals_l4;
+          if (data.referrals_count !== undefined) updatedTotal = data.referrals_count;
+        } else if (error) {
+          console.warn('[ReferralShop] POL RPC notice:', error.message);
+        } else if (data && !data.success) {
+          console.warn('[ReferralShop] RPC returned non-success:', data.error);
         }
       } catch (rpcErr) {
         console.warn('[ReferralShop] Verification error notice:', rpcErr);
       }
     }
+
+    // Instantly decrement local inventory census to update pool cards in real time
+    Object.keys(cartQuantities).forEach(lvlStr => {
+      const lvl = parseInt(lvlStr, 10);
+      if (availableCensus[lvl] !== undefined) {
+        availableCensus[lvl] = Math.max(0, availableCensus[lvl] - (cartQuantities[lvl] || 0));
+      }
+    });
 
     appState.update({
       referralsL1: updatedL1,
@@ -661,6 +669,8 @@ export async function executeReferralAdoption() {
 
     closeModal('buy-referrals-checkout');
     clearReferralShopCart();
+    renderReferralShopTiers();
+    updateShopHeroStats();
 
     if (typeof window.confetti === 'function') {
       window.confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });

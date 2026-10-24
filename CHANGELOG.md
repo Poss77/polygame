@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Referral Marketplace: Direct RPC Adoption & Live Pool Census Decrement (`v1.5.698`)**:
+  - **🧹 Direct RPC Execution & Elimination of Undeployed Edge CORS Errors ([`src/js/features/referral-shop.js`](src/js/features/referral-shop.js))**:
+    - Streamlined the Web3 POL adoption pipeline to directly execute the verified `adopt_referrals` Supabase RPC with zero redundant calls to undeployed Edge Function endpoints.
+    - Completely eliminates the preflight CORS / `ERR_FAILED` red errors previously logged in the browser console.
+  - **⚡ Fast Census Aggregation & Instant Real-Time Pool Decrement ([`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`supabase/add_referral_marketplace_rpcs.sql`](supabase/add_referral_marketplace_rpcs.sql), [`src/js/features/referral-shop.js`](src/js/features/referral-shop.js))**:
+    - Created lightweight `get_unreferred_census()` database function that performs server-side SQL aggregation of available unreferred players across all 6 activity tiers, replacing slow whole-table scans.
+    - Added instant client-side decrement of tier pool counters immediately upon successful adoption, ensuring tier badges (e.g. "75 In Pool" -> "73 In Pool") update visually without delay.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.698"` and refreshed asset cache-busters.
+
 - **Referral Marketplace Anti-Cheat & Security Hardening (`v1.5.697`)**:
   - **🛡️ Blockchain-Verified Edge Function & Anti-Replay Shield ([`supabase/functions/adopt-referrals/index.ts`](supabase/functions/adopt-referrals/index.ts), [`supabase/add_referral_marketplace_rpcs.sql`](supabase/add_referral_marketplace_rpcs.sql))**:
     - **Polygon Mainnet JSON-RPC Verification**: Created serverless Edge Function `adopt-referrals` that directly inspects transaction status on Polygon blockchain (`receipt.status == 1`), destination address (`tx.to == ADMIN_WALLET_ADDRESS`), sender address (`tx.from == buyer.linked_wallet_address`), and exact POL amount before calling the database.
