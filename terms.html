@@ -4,9 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Polygon Gaming • Terms of Service</title>
+  <link rel="canonical" href="https://polygongaming.io/terms.html">
+  <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #090a10;
@@ -15,10 +17,15 @@
       --accent-purple: #8a2be2;
       --accent-cyan: #00f0ff;
       --accent-green: #00ff88;
+      --accent-amber: #ffaa00;
       --accent-red: #ff3366;
       --text: #f0f2ff;
       --text-muted: #8b92b3;
       --text-dim: #5c6280;
+    }
+
+    html {
+      scroll-behavior: smooth;
     }
 
     * {
@@ -38,18 +45,19 @@
       justify-content: flex-start;
       padding: 40px 20px;
       background-image: 
-        radial-gradient(circle at 15% 20%, rgba(138, 43, 226, 0.15) 0%, transparent 45%),
-        radial-gradient(circle at 85% 80%, rgba(0, 240, 255, 0.12) 0%, transparent 45%);
+        radial-gradient(circle at 15% 15%, rgba(138, 43, 226, 0.16) 0%, transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(0, 240, 255, 0.14) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(0, 255, 136, 0.04) 0%, transparent 60%);
     }
 
     .container {
       width: 100%;
-      max-width: 800px;
+      max-width: 880px;
       background: var(--card);
       border: 1px solid var(--card-border);
       border-radius: 24px;
-      padding: 40px 36px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 40px rgba(138, 43, 226, 0.1);
+      padding: 44px 40px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 50px rgba(138, 43, 226, 0.12);
       position: relative;
       overflow: hidden;
     }
@@ -69,7 +77,7 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 24px;
-      padding-bottom: 16px;
+      padding-bottom: 18px;
       border-bottom: 1px solid var(--card-border);
       gap: 12px;
       flex-wrap: wrap;
@@ -78,6 +86,7 @@
     .nav-tabs {
       display: flex;
       gap: 8px;
+      flex-wrap: wrap;
     }
 
     .nav-tab {
@@ -91,6 +100,9 @@
       cursor: pointer;
       border: 1px solid transparent;
       transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .nav-tab:hover {
@@ -99,13 +111,13 @@
     }
 
     .nav-tab.active {
-      background: rgba(138, 43, 226, 0.15);
-      border-color: rgba(138, 43, 226, 0.4);
-      color: var(--text);
+      background: rgba(138, 43, 226, 0.18);
+      border-color: rgba(138, 43, 226, 0.45);
+      color: #fff;
     }
 
     .back-btn {
-      padding: 8px 14px;
+      padding: 8px 16px;
       border-radius: 10px;
       background: transparent;
       border: 1px solid var(--card-border);
@@ -121,26 +133,33 @@
     }
 
     .back-btn:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text);
+      background: rgba(0, 240, 255, 0.08);
+      border-color: rgba(0, 240, 255, 0.3);
+      color: var(--accent-cyan);
     }
 
     .doc-meta {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       font-size: 12px;
       font-family: 'JetBrains Mono', monospace;
       color: var(--accent-cyan);
       background: rgba(0, 240, 255, 0.08);
-      padding: 4px 10px;
+      padding: 5px 12px;
       border-radius: 6px;
       margin-bottom: 16px;
+      border: 1px solid rgba(0, 240, 255, 0.2);
     }
 
     h1 {
-      font-size: 28px;
+      font-size: 32px;
       font-weight: 800;
       letter-spacing: -0.5px;
       margin-bottom: 6px;
+      background: linear-gradient(135deg, #fff 40%, var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .subtitle {
@@ -150,160 +169,368 @@
       margin-bottom: 24px;
     }
 
+    /* Table of contents */
+    .toc-container {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 18px 22px;
+      margin-bottom: 30px;
+    }
+
+    .toc-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 8px 16px;
+    }
+
+    .toc-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toc-link:hover {
+      color: var(--accent-cyan);
+    }
+
     .doc-content {
-      line-height: 1.68;
-      font-size: 14px;
+      line-height: 1.72;
+      font-size: 14.5px;
       color: #cbd5e1;
     }
 
     .doc-content h2 {
-      font-size: 19px;
+      font-size: 20px;
       font-weight: 700;
       color: var(--text);
-      margin: 28px 0 10px 0;
+      margin: 36px 0 12px 0;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .doc-content h2:first-of-type {
       margin-top: 10px;
+      border-top: none;
+      padding-top: 0;
+    }
+
+    .doc-content h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin: 18px 0 8px 0;
     }
 
     .doc-content p {
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       color: #94a3b8;
     }
 
-    .doc-content ul {
+    .doc-content ul, .doc-content ol {
       margin: 8px 0 16px 22px;
       color: #94a3b8;
     }
 
     .doc-content li {
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     .doc-content strong {
       color: var(--text);
     }
 
-    .highlight-box {
-      background: rgba(138, 43, 226, 0.08);
-      border-left: 3px solid var(--accent-purple);
-      padding: 14px 18px;
-      border-radius: 0 10px 10px 0;
+    .doc-content code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      background: rgba(0, 240, 255, 0.08);
+      color: var(--accent-cyan);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 240, 255, 0.15);
+    }
+
+    /* Callouts */
+    .callout {
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin: 20px 0;
+      font-size: 13.5px;
+      line-height: 1.55;
+    }
+
+    .callout-info {
+      background: rgba(0, 240, 255, 0.06);
+      border-left: 4px solid var(--accent-cyan);
+      color: #e2e8f0;
+    }
+
+    .callout-warning {
+      background: rgba(255, 170, 0, 0.08);
+      border-left: 4px solid var(--accent-amber);
+      color: #ffeedb;
+    }
+
+    .callout-danger {
+      background: rgba(255, 51, 102, 0.08);
+      border-left: 4px solid var(--accent-red);
+      color: #ffe4e9;
+    }
+
+    .callout-success {
+      background: rgba(0, 255, 136, 0.06);
+      border-left: 4px solid var(--accent-green);
+      color: #e6fff2;
+    }
+
+    /* Data table */
+    .legal-table {
+      width: 100%;
+      border-collapse: collapse;
       margin: 18px 0;
       font-size: 13.5px;
-      color: #e2e8f0;
-      line-height: 1.5;
+    }
+
+    .legal-table th, .legal-table td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .legal-table th {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .legal-table td {
+      color: #94a3b8;
     }
 
     .legal-footer {
-      margin-top: 36px;
-      padding-top: 20px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
       text-align: center;
       font-size: 13px;
       color: var(--text-dim);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .legal-footer-links {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     .legal-footer a {
       color: var(--text-muted);
       text-decoration: none;
       transition: color 0.2s ease;
-      margin: 0 8px;
     }
 
     .legal-footer a:hover {
       color: var(--accent-cyan);
       text-decoration: underline;
     }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 30px 20px;
+      }
+      h1 {
+        font-size: 26px;
+      }
+      .toc-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <div class="legal-nav">
-      <div class="nav-tabs">
+    <header class="legal-nav">
+      <nav class="nav-tabs">
         <a href="terms.html" class="nav-tab active">📜 Terms of Service</a>
         <a href="privacy.html" class="nav-tab">🔒 Privacy Policy</a>
-        <a href="verify.html" class="nav-tab">🦊 Connect Wallet</a>
-      </div>
+        <a href="verify.html" class="nav-tab">🦊 Wallet Portal</a>
+      </nav>
       <a href="https://polygongaming.io" class="back-btn">
         <span>← Return to Polygongaming.io</span>
       </a>
+    </header>
+
+    <div class="doc-meta">
+      <span>🌐 JURISDICTION: POLYGON MAINNET (CHAIN ID 137)</span>
+      <span>•</span>
+      <span>LAST UPDATED: OCTOBER 2026 • v1.5</span>
     </div>
 
-    <div class="doc-meta">LAST UPDATED: OCTOBER 2026 • VERSION 1.2</div>
     <h1>Terms of Service</h1>
-    <p class="subtitle">Polygon Gaming & PolyBot Community Platform</p>
+    <p class="subtitle">Polygon Gaming Web Platform (polygongaming.io / polygame.fun) & PolyBot Discord Ecosystem</p>
+
+    <!-- Table of Contents -->
+    <div class="toc-container">
+      <div class="toc-title">📑 Quick Navigation</div>
+      <div class="toc-grid">
+        <a href="#acceptance" class="toc-link">1. Acceptance of Terms</a>
+        <a href="#eligibility" class="toc-link">2. Eligibility & Age Restriction</a>
+        <a href="#services" class="toc-link">3. Ecosystem & Platform Services</a>
+        <a href="#non-custodial" class="toc-link">4. Non-Custodial Architecture</a>
+        <a href="#fair-play" class="toc-link">5. Anti-Cheat & Fair Play Policy</a>
+        <a href="#tokenomics" class="toc-link">6. Virtual Assets & Disclaimer</a>
+        <a href="#blockchain" class="toc-link">7. Blockchain & Gas Transactions</a>
+        <a href="#ip" class="toc-link">8. Intellectual Property</a>
+        <a href="#liability" class="toc-link">9. Limitation of Liability</a>
+        <a href="#termination" class="toc-link">10. Inactivity & Termination</a>
+        <a href="#modifications" class="toc-link">11. Modifications to Terms</a>
+        <a href="#contact" class="toc-link">12. Contact & Community Support</a>
+      </div>
+    </div>
 
     <div class="doc-content">
-      <div class="highlight-box">
-        <strong>Summary:</strong> By interacting with PolyBot in Discord or using polygongaming.io services, you agree to these Terms. PolyBot facilitates community gaming, faucets, and Web3 interactions. PolyBot is not a bank, investment vehicle, or financial advisor.
+      <div class="callout callout-info">
+        <strong>Executive Summary:</strong> By accessing <strong>https://polygongaming.io</strong>, <strong>https://polygame.fun</strong>, engaging with our decentralized smart contracts on Polygon, or interacting with <strong>PolyBot</strong> in Discord, you agree to these Terms. Polygon Gaming provides decentralized gaming, skill arcades, loyalty faucets, utility NFTs, and community social tools. Polygon Gaming is <strong>not a bank, custodian, securities exchange, or financial advisor</strong>.
       </div>
 
-      <h2>1. Acceptance of Terms</h2>
-      <p>By using, installing, or interacting with PolyBot (the "Bot"), accessing the polygongaming.io website, or executing slash commands (such as <code>/faucet</code>, <code>/tip</code>, <code>/link</code>, <code>/tournament</code>, or <code>/withdraw</code>), you acknowledge that you have read, understood, and agreed to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you must discontinue using the Bot immediately.</p>
+      <h2 id="acceptance">1. Acceptance of Terms</h2>
+      <p>These Terms of Service ("Terms") constitute a legally binding agreement between you ("User", "Player", or "You") and Polygon Gaming ("Polygon Gaming", "PolyGame", "We", "Us", or "Our"). By accessing our websites, playing web arcade games, executing on-chain transactions via Polygon Mainnet (Chain ID 137), staking tokens in our vaults, purchasing utility NFTs or referral packages, or interacting with PolyBot via Discord slash commands (such as <code>/faucet</code>, <code>/tip</code>, <code>/link</code>, or <code>/tournament</code>), you acknowledge that you have read, understood, and agreed to be bound by these Terms.</p>
+      <p>If you do not agree to all terms and conditions set forth herein, you must immediately discontinue using our websites, smart contracts, and Discord bot.</p>
 
-      <h2>2. Description of Service</h2>
-      <p>PolyBot is a Web3 social community and utility bot developed for Polygon Gaming. It provides features including but not limited to:</p>
+      <h2 id="eligibility">2. Eligibility & Age Requirement</h2>
+      <p>To use Polygon Gaming and associated services, you represent and warrant that:</p>
       <ul>
-        <li>Free community faucet drops with loyalty streak rewards.</li>
-        <li>Peer-to-peer social tipping and airdrops within Discord servers.</li>
-        <li>Cryptographic wallet binding via Sign-In with Ethereum (SIWE / EIP-191).</li>
-        <li>Real-time tournament tracking and leaderboards connected to polygongaming.io arcade games.</li>
-        <li>Blockchain deposit and withdrawal bridging on Polygon Mainnet (Chain ID 137).</li>
+        <li>You are at least <strong>18 years of age</strong> (or the legal age of majority in your jurisdiction, whichever is higher).</li>
+        <li>You possess the legal capacity to enter into a binding agreement.</li>
+        <li>You are not a resident or citizen of any jurisdiction where participating in Web3 token ecosystems, cryptocurrency faucets, or digital gaming is prohibited by local laws or sanctions (including OFAC sanctioned regions).</li>
+        <li>You are solely responsible for ensuring your use of Polygon Gaming complies with all applicable laws, tax regulations, and reporting requirements in your jurisdiction.</li>
       </ul>
 
-      <h2>3. Non-Custodial Principles & Blockchain Escrow</h2>
-      <p>PolyBot operates an off-chain ledger synchronized with a public, verifiable hot wallet on Polygon Mainnet. You retain sole responsibility and control over your external Web3 wallet (e.g., MetaMask, Rabby, Coinbase Wallet).</p>
+      <h2 id="services">3. Ecosystem & Platform Services</h2>
+      <p>Polygon Gaming operates a modular Web3 arcade and community platform consisting of:</p>
       <ul>
-        <li><strong>Zero Key Custody:</strong> PolyBot will <strong>NEVER</strong> ask for your private keys, seed phrases, or wallet passwords.</li>
-        <li><strong>Immutable Binding:</strong> Once a wallet is cryptographically signed and bound via <code>/link</code>, deposits sent from that address are automatically recognized and credited to your vault.</li>
-        <li><strong>Withdrawals:</strong> Withdrawals transfer tokens directly from PolyBot's hot wallet to your bound Polygon address, subject to minimum thresholds and network gas fees.</li>
+        <li><strong>Skill-Based Web Arcade:</strong> Casual and competitive games including <em>Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Skeet, Space Runner, Quantum 2048, Cyber Tetris</em>, and <em>PolySpace Fleet Mining</em>. High scores and tournament ranks are validated server-side to guarantee fair leaderboard standings.</li>
+        <li><strong>Provably Fair Games of Chance:</strong> Wagering and casual chance modules (such as <em>Roshambo, Lucky Spinner, Neon Plinko, Cyber-Crash</em>, and <em>Cyber Mines</em>) powered strictly by server-side cryptographic procedures (PostgreSQL <code>SECURITY DEFINER</code> RPCs) to eliminate client manipulation.</li>
+        <li><strong>24-Hour Community Faucet:</strong> Courtesy token distributions designed to encourage platform onboarding and gameplay. Faucet claims are rate-limited with cooldown timers, loyalty streaks, and anti-sybil captcha verification.</li>
+        <li><strong>Vault Staking:</strong> Voluntary locking of PGT and POL tokens to earn dynamic APY yields, multipliers, and reward distributions.</li>
+        <li><strong>Utility NFTs & Starships:</strong> Official ERC-721 and ERC-1155 digital collectibles deployed on Polygon Mainnet:
+          <ul>
+            <li>Core Utility NFTs: <code>0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8</code></li>
+            <li>In-Game Relics: <code>0xdc7B10e6b765c28A276Cc3E95836217BdF7Da69e</code></li>
+            <li>PolySpace Starships: <code>0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99</code></li>
+          </ul>
+        </li>
+        <li><strong>4-Tier Referral Program & Marketplace:</strong> Multi-tier commission distribution (Level 1 through Level 4) rewarding players who introduce active users to the platform, as well as an on-chain POL referral adoption marketplace.</li>
+        <li><strong>PolyBot Discord Integration:</strong> Social tipping, community faucets, live tournament tracking, and cryptographic wallet binding via Discord.</li>
       </ul>
 
-      <h2>4. Community Faucet & Rewards Policy</h2>
-      <p>Community faucets, airdrops, and rain pools are courtesy rewards distributed to foster community participation and gameplay:</p>
+      <h2 id="non-custodial">4. Non-Custodial Architecture & Account Security</h2>
+      <div class="callout callout-success">
+        <strong>Zero-Custody Principle:</strong> Polygon Gaming operates on a strictly non-custodial model. We <strong>NEVER</strong> hold, request, or have access to your external wallet private keys, recovery seed phrases, or wallet passwords.
+      </div>
+      <p>You maintain exclusive custody and control over your external Web3 wallet (e.g., MetaMask, Rabby, Coinbase Wallet, WalletConnect). You are solely responsible for safeguarding your credentials, hardware devices, and transaction signers.</p>
       <ul>
-        <li>Faucets operate with a cooldown (default 8 hours) and require Discord account age verification to prevent spam.</li>
-        <li>Tokens distributed through PolyBot (such as PGT and POL) are utility and community tokens designed for gameplay and peer tipping. They do not constitute securities, shares, or interest-bearing financial instruments.</li>
-        <li>Server administrators may configure server-specific faucet reserves, cooldowns, and airdrops at their discretion.</li>
+        <li><strong>Synthetic Identities:</strong> Player accounts on polygongaming.io use a synthetic identifier (<code>player_id</code>) that binds to your Google OAuth session or your verified Polygon address (<code>linked_wallet_address</code>).</li>
+        <li><strong>Cryptographic Binding:</strong> Linking an external wallet to your profile or PolyBot requires an EIP-191 / Sign-In with Ethereum (SIWE) cryptographic signature verification. No gas is spent and no private keys are exposed during signature challenges.</li>
+        <li><strong>Transactions Are Final:</strong> Any transfer sent from your wallet or approved via a smart contract interaction is irreversible on the Polygon blockchain. Polygon Gaming cannot recover funds sent to erroneous addresses or stolen through compromised personal devices.</li>
       </ul>
 
-      <h2>5. Skill Tournaments & Arcade Competitions</h2>
-      <p>Tournament outcomes are determined strictly by verified player skill and highest scores achieved on polygongaming.io within the official tournament window. Tampering with game memory, automated score-injecting scripts, or exploiting client glitches will result in immediate disqualification and forfeiture of tournament prizes.</p>
-
-      <h2>6. Prohibited Activities</h2>
-      <p>You agree not to engage in any of the following activities:</p>
+      <h2 id="fair-play">5. Anti-Cheat, Fair Play & Sybil Defense Policy</h2>
+      <div class="callout callout-danger">
+        <strong>Strict 1 Account Per Person Policy:</strong> Multi-accounting, sybil attacks, automated farming scripts, cheat engines, or memory injection will result in an immediate, permanent ban and forfeiture of platform balances.
+      </div>
+      <p>To preserve game balance and economic fairness for genuine players, we enforce zero-tolerance anti-cheat policies:</p>
       <ul>
-        <li>Using automated scripts, self-bots, or multiple Discord accounts (sybil attacks) to farm community faucets or manipulate tipping pools.</li>
-        <li>Attempting to reverse-engineer, exploit, or cause denial-of-service to the Bot's API endpoints or database.</li>
-        <li>Using PolyBot for money laundering, terror financing, or any activity that violates applicable local or international laws.</li>
-        <li>Misrepresenting your identity or attempting to bind a wallet address that you do not own.</li>
+        <li><strong>Prohibited Exploits:</strong> You agree not to use bots, macros, autohotkey scripts, speedhacks, modified web clients, memory sniffers, or automated network replay tools to manipulate games or farm faucet rewards.</li>
+        <li><strong>Balance Integrity:</strong> All token balances, payouts, and multiplier calculations are guarded server-side by PostgreSQL tripwires (<code>prevent_direct_balance_mutation</code>). Any unauthorized direct modification attempt triggers an automatic security freeze.</li>
+        <li><strong>Anti-Sybil Farming:</strong> Running automated networks of disposable accounts, cycling IP addresses through proxies, or forging referral chains to extract unearned faucet/marketplace rewards is strictly prohibited.</li>
+        <li><strong>Penalties:</strong> Accounts detected violating these terms will be marked as banned (<code>is_banned = true</code>), disqualified from active tournaments, and blacklisted from current and future reward distributions.</li>
       </ul>
 
-      <h2>7. Limitation of Liability & "As-Is" Disclaimer</h2>
-      <p>PolyBot and all associated services are provided on an <strong>"AS IS"</strong> and <strong>"AS AVAILABLE"</strong> basis without warranties of any kind. To the maximum extent permitted by applicable law, Polygon Gaming and the bot operators shall not be liable for:</p>
+      <h2 id="tokenomics">6. Virtual Assets, Tokenomics & Financial Disclaimer</h2>
+      <div class="callout callout-warning">
+        <strong>NOT AN INVESTMENT / NO EXPECTATION OF PROFIT:</strong> PolyGame Tokens (PGT), in-game balances, relics, starships, and NFTs are utility and gameplay items. They do <strong>NOT</strong> constitute securities, shares, bonds, investment contracts, or financial products.
+      </div>
+      <p>Please review the following virtual asset terms carefully:</p>
       <ul>
-        <li>Loss of funds resulting from user error (e.g., typing an incorrect wallet address or losing wallet private keys).</li>
-        <li>Polygon network congestion, RPC node downtimes, smart contract failures, or blockchain reorganizations.</li>
-        <li>Discord API outages or service interruptions beyond our direct control.</li>
+        <li><strong>PolyGame Token (PGT):</strong> PGT is an ERC-20 utility token deployed on Polygon Mainnet (Contract: <code>0x701100D19b1a93672cfe7291EA455b4220631209</code>) with a fixed maximum supply of 1,000,000,000 tokens. PGT is intended for arcade gameplay, tournament staking, and fleet expeditions.</li>
+        <li><strong>No Dividends or Financial Promises:</strong> Polygon Gaming makes no promises, guarantees, or representations regarding future monetary value, price stability, liquidity, or exchange rates of PGT, POL, or in-game NFTs.</li>
+        <li><strong>Volatile Digital Assets:</strong> Cryptocurrencies and Web3 tokens are subject to extreme market volatility. You acknowledge that you assume all financial risk associated with acquiring, holding, staking, or transacting in digital assets.</li>
+        <li><strong>No Financial Advice:</strong> Nothing contained on polygongaming.io, in community channels, whitepapers, or in Discord bot messages constitutes financial, investment, legal, or tax advice.</li>
       </ul>
 
-      <h2>8. Modifications to Terms</h2>
-      <p>We reserve the right to modify or update these Terms at any time. Changes will be posted to this page with an updated "Last Updated" timestamp. Continued use of the Bot following any changes constitutes acceptance of the modified Terms.</p>
+      <h2 id="blockchain">7. Blockchain Transactions & Gas Fees</h2>
+      <p>When you interact with the Polygon blockchain through our platform:</p>
+      <ul>
+        <li><strong>Network Gas Fees:</strong> All on-chain actions (deposits, withdrawals, NFT minting, referral marketplace purchases) require network gas fees paid in POL to Polygon network validators. Gas fees are independent of Polygon Gaming and are entirely non-refundable.</li>
+        <li><strong>RPC Downtimes & Reorgs:</strong> Polygon Gaming is not liable for transaction delays, failed transactions, slippage, or blockchain reorganizations caused by third-party RPC nodes or network congestion.</li>
+      </ul>
 
-      <h2>9. Contact & Support</h2>
-      <p>For questions, support, or dispute resolutions regarding PolyBot or Polygon Gaming, please visit the official Discord server or contact us via <a href="https://polygongaming.io" target="_blank" style="color: var(--accent-cyan);">polygongaming.io</a>.</p>
+      <h2 id="ip">8. Intellectual Property Rights</h2>
+      <p>All software code, visual artwork, character designs, logos, trademarks, animations, audio effects, and UI layouts featured across polygongaming.io, polygame.fun, and PolyBot are the exclusive property of Polygon Gaming or its licensors. You may not copy, reverse-engineer, decompile, redistribute, or create derivative works from platform assets without prior written consent.</p>
+
+      <h2 id="liability">9. Limitation of Liability & "As-Is" Disclaimer</h2>
+      <p>POLYGON GAMING, ITS SMART CONTRACTS, WEBSITES, AND DISCORD BOT ARE PROVIDED ON AN <strong>"AS IS"</strong> AND <strong>"AS AVAILABLE"</strong> BASIS WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED.</p>
+      <p>To the fullest extent permitted by applicable law, Polygon Gaming and its operators disclaim all liability for:</p>
+      <ul>
+        <li>Loss of tokens, NFTs, or profits resulting from user error, lost private keys, phishing attacks, or compromised user hardware.</li>
+        <li>Any technical malfunction, smart contract bug, exploit, or downtime affecting third-party services including MetaMask, WalletConnect, Supabase, Cloudflare, Discord, or the Polygon PoS network.</li>
+        <li>Unauthorized access to or alteration of your transmissions or account data.</li>
+      </ul>
+
+      <h2 id="termination">10. Account Inactivity & Termination</h2>
+      <p>We reserve the right to suspend, restrict, or terminate any account or access to the platform at our sole discretion, without prior notice, if you breach these Terms or engage in fraudulent activities. Unlinked guest profiles with zero activity for 12 consecutive months may be archived to maintain database hygiene.</p>
+
+      <h2 id="modifications">11. Modifications to Terms</h2>
+      <p>Polygon Gaming reserves the right to amend, update, or replace these Terms at any time. Changes will take effect immediately upon being posted with an updated "Last Updated" timestamp. Your continued use of the platform following any modifications constitutes acceptance of the revised Terms.</p>
+
+      <h2 id="contact">12. Contact & Community Support</h2>
+      <p>For questions, support, or inquiries regarding these Terms, please reach out to the team through our official community channels:</p>
+      <ul>
+        <li>Official Website: <a href="https://polygongaming.io" target="_blank" style="color: var(--accent-cyan);">polygongaming.io</a></li>
+        <li>Discord Community: <a href="https://discord.gg/bdeK7Kv8Y2" target="_blank" style="color: #5865F2;">discord.gg/bdeK7Kv8Y2</a></li>
+        <li>Privacy Policy: <a href="privacy.html" style="color: var(--accent-cyan);">privacy.html</a></li>
+      </ul>
     </div>
 
-    <div class="legal-footer">
-      <a href="privacy.html">Privacy Policy</a>
-      &bull;
-      <a href="verify.html">Connect Wallet</a>
-      &bull;
-      <a href="https://polygongaming.io">Polygon Gaming</a>
-    </div>
+    <footer class="legal-footer">
+      <div class="legal-footer-links">
+        <a href="terms.html">Terms of Service</a>
+        <span>•</span>
+        <a href="privacy.html">Privacy Policy</a>
+        <span>•</span>
+        <a href="verify.html">Wallet Portal</a>
+        <span>•</span>
+        <a href="https://polygongaming.io/#tokenomics">PGT Tokenomics</a>
+        <span>•</span>
+        <a href="https://discord.gg/bdeK7Kv8Y2" target="_blank">Discord Support</a>
+      </div>
+      <div>© 2026 Polygon Gaming • All Rights Reserved.</div>
+    </footer>
   </div>
 
 </body>

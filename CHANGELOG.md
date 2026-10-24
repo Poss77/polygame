@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Legal & Platform Compliance: Enterprise Terms of Service & Privacy Policy Overhaul (`v1.5.699`)**:
+  - **📜 Comprehensive Terms of Service ([`terms.html`](terms.html))**:
+    - Re-architected `terms.html` to comprehensively cover the entire **Polygon Gaming** ecosystem (including web platform `polygongaming.io`, skill arcades, provably fair chance games, 24h faucet, staking vaults, utility NFTs, starships, relics, 4-tier referral marketplace, and the official Discord bot `PolyBot`).
+    - Added 12 legally robust sections with quick-jump navigation: Eligibility & 18+ Age Restriction, Platform Architecture, Strict Non-Custodial Principles, Zero-Tolerance Anti-Cheat & Sybil Defense (1 account per person rule), Virtual Asset & Financial Disclaimers (PGT is a utility token, not an investment/security), Blockchain Gas & Finality, Limitation of Liability ("As-Is"), and Dispute Resolution.
+  - **🔒 Transparent Privacy Policy & GDPR/CCPA Compliance ([`privacy.html`](privacy.html))**:
+    - Expanded `privacy.html` with data minimization principles: clearly categorizes collected data (public EVM wallet address, transaction hashes, arcade session scores, synthetic `player_id`, optional Google OAuth recovery, and Discord snowflake IDs).
+    - Structured "What We NEVER Collect" clause: zero private keys, zero seed phrases, zero credit cards, zero real names, and zero third-party advertising tracking.
+    - Added user data rights (Right of Access, Rectification, and Erasure / "Right to be Forgotten"), technical security invariant documentation (Zero-Anon-Writes, Row-Level Security, Ed25519 webhook signatures), and children's privacy protection (strict 18+ policy).
+  - **📱 In-App Legal Modals & Direct Links ([`src/js/core/ui.js`](src/js/core/ui.js), [`index.html`](index.html))**:
+    - Upgraded `openInfoModal('privacy')` and `openInfoModal('terms')` in `ui.js` with structured executive summaries and prominent action buttons linking to the full 12-section documents.
+    - Updated homepage footer and information sections in `index.html` with direct outbound links to `terms.html` and `privacy.html`.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.699"` and refreshed asset cache-busters.
+
 - **Referral Marketplace: Direct RPC Adoption & Live Pool Census Decrement (`v1.5.698`)**:
   - **🧹 Direct RPC Execution & Elimination of Undeployed Edge CORS Errors ([`src/js/features/referral-shop.js`](src/js/features/referral-shop.js))**:
     - Streamlined the Web3 POL adoption pipeline to directly execute the verified `adopt_referrals` Supabase RPC with zero redundant calls to undeployed Edge Function endpoints.

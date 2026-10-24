@@ -4,9 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Polygon Gaming • Privacy Policy</title>
+  <link rel="canonical" href="https://polygongaming.io/privacy.html">
+  <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #090a10;
@@ -15,10 +17,15 @@
       --accent-purple: #8a2be2;
       --accent-cyan: #00f0ff;
       --accent-green: #00ff88;
+      --accent-amber: #ffaa00;
       --accent-red: #ff3366;
       --text: #f0f2ff;
       --text-muted: #8b92b3;
       --text-dim: #5c6280;
+    }
+
+    html {
+      scroll-behavior: smooth;
     }
 
     * {
@@ -38,18 +45,19 @@
       justify-content: flex-start;
       padding: 40px 20px;
       background-image: 
-        radial-gradient(circle at 15% 20%, rgba(138, 43, 226, 0.15) 0%, transparent 45%),
-        radial-gradient(circle at 85% 80%, rgba(0, 240, 255, 0.12) 0%, transparent 45%);
+        radial-gradient(circle at 15% 15%, rgba(138, 43, 226, 0.16) 0%, transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(0, 240, 255, 0.14) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(0, 255, 136, 0.04) 0%, transparent 60%);
     }
 
     .container {
       width: 100%;
-      max-width: 800px;
+      max-width: 880px;
       background: var(--card);
       border: 1px solid var(--card-border);
       border-radius: 24px;
-      padding: 40px 36px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 40px rgba(138, 43, 226, 0.1);
+      padding: 44px 40px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), 0 0 50px rgba(138, 43, 226, 0.12);
       position: relative;
       overflow: hidden;
     }
@@ -69,7 +77,7 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 24px;
-      padding-bottom: 16px;
+      padding-bottom: 18px;
       border-bottom: 1px solid var(--card-border);
       gap: 12px;
       flex-wrap: wrap;
@@ -78,6 +86,7 @@
     .nav-tabs {
       display: flex;
       gap: 8px;
+      flex-wrap: wrap;
     }
 
     .nav-tab {
@@ -91,6 +100,9 @@
       cursor: pointer;
       border: 1px solid transparent;
       transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .nav-tab:hover {
@@ -99,13 +111,13 @@
     }
 
     .nav-tab.active {
-      background: rgba(138, 43, 226, 0.15);
-      border-color: rgba(138, 43, 226, 0.4);
-      color: var(--text);
+      background: rgba(138, 43, 226, 0.18);
+      border-color: rgba(138, 43, 226, 0.45);
+      color: #fff;
     }
 
     .back-btn {
-      padding: 8px 14px;
+      padding: 8px 16px;
       border-radius: 10px;
       background: transparent;
       border: 1px solid var(--card-border);
@@ -121,26 +133,33 @@
     }
 
     .back-btn:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text);
+      background: rgba(0, 240, 255, 0.08);
+      border-color: rgba(0, 240, 255, 0.3);
+      color: var(--accent-cyan);
     }
 
     .doc-meta {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
       font-size: 12px;
       font-family: 'JetBrains Mono', monospace;
       color: var(--accent-cyan);
       background: rgba(0, 240, 255, 0.08);
-      padding: 4px 10px;
+      padding: 5px 12px;
       border-radius: 6px;
       margin-bottom: 16px;
+      border: 1px solid rgba(0, 240, 255, 0.2);
     }
 
     h1 {
-      font-size: 28px;
+      font-size: 32px;
       font-weight: 800;
       letter-spacing: -0.5px;
       margin-bottom: 6px;
+      background: linear-gradient(135deg, #fff 40%, var(--accent-cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .subtitle {
@@ -150,158 +169,440 @@
       margin-bottom: 24px;
     }
 
+    /* Table of contents */
+    .toc-container {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 18px 22px;
+      margin-bottom: 30px;
+    }
+
+    .toc-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toc-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 8px 16px;
+    }
+
+    .toc-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      transition: color 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toc-link:hover {
+      color: var(--accent-cyan);
+    }
+
     .doc-content {
-      line-height: 1.68;
-      font-size: 14px;
+      line-height: 1.72;
+      font-size: 14.5px;
       color: #cbd5e1;
     }
 
     .doc-content h2 {
-      font-size: 19px;
+      font-size: 20px;
       font-weight: 700;
       color: var(--text);
-      margin: 28px 0 10px 0;
+      margin: 36px 0 12px 0;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .doc-content h2:first-of-type {
       margin-top: 10px;
+      border-top: none;
+      padding-top: 0;
+    }
+
+    .doc-content h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin: 18px 0 8px 0;
     }
 
     .doc-content p {
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       color: #94a3b8;
     }
 
-    .doc-content ul {
+    .doc-content ul, .doc-content ol {
       margin: 8px 0 16px 22px;
       color: #94a3b8;
     }
 
     .doc-content li {
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     .doc-content strong {
       color: var(--text);
     }
 
-    .highlight-box {
-      background: rgba(138, 43, 226, 0.08);
-      border-left: 3px solid var(--accent-purple);
-      padding: 14px 18px;
-      border-radius: 0 10px 10px 0;
-      margin: 18px 0;
+    .doc-content code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12.5px;
+      background: rgba(0, 240, 255, 0.08);
+      color: var(--accent-cyan);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(0, 240, 255, 0.15);
+    }
+
+    /* Callouts */
+    .callout {
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin: 20px 0;
       font-size: 13.5px;
+      line-height: 1.55;
+    }
+
+    .callout-info {
+      background: rgba(0, 240, 255, 0.06);
+      border-left: 4px solid var(--accent-cyan);
       color: #e2e8f0;
-      line-height: 1.5;
+    }
+
+    .callout-warning {
+      background: rgba(255, 170, 0, 0.08);
+      border-left: 4px solid var(--accent-amber);
+      color: #ffeedb;
+    }
+
+    .callout-danger {
+      background: rgba(255, 51, 102, 0.08);
+      border-left: 4px solid var(--accent-red);
+      color: #ffe4e9;
+    }
+
+    .callout-success {
+      background: rgba(0, 255, 136, 0.06);
+      border-left: 4px solid var(--accent-green);
+      color: #e6fff2;
+    }
+
+    /* Comparison Table */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 20px 0;
+    }
+
+    .legal-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .legal-table th, .legal-table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .legal-table th {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .legal-table tr:hover {
+      background: rgba(255, 255, 255, 0.02);
     }
 
     .legal-footer {
-      margin-top: 36px;
-      padding-top: 20px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
       text-align: center;
       font-size: 13px;
       color: var(--text-dim);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .legal-footer-links {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     .legal-footer a {
       color: var(--text-muted);
       text-decoration: none;
       transition: color 0.2s ease;
-      margin: 0 8px;
     }
 
     .legal-footer a:hover {
       color: var(--accent-cyan);
       text-decoration: underline;
     }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 30px 20px;
+      }
+      h1 {
+        font-size: 26px;
+      }
+      .toc-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <div class="legal-nav">
-      <div class="nav-tabs">
+    <header class="legal-nav">
+      <nav class="nav-tabs">
         <a href="terms.html" class="nav-tab">📜 Terms of Service</a>
         <a href="privacy.html" class="nav-tab active">🔒 Privacy Policy</a>
-        <a href="verify.html" class="nav-tab">🦊 Connect Wallet</a>
-      </div>
+        <a href="verify.html" class="nav-tab">🦊 Wallet Portal</a>
+      </nav>
       <a href="https://polygongaming.io" class="back-btn">
         <span>← Return to Polygongaming.io</span>
       </a>
+    </header>
+
+    <div class="doc-meta">
+      <span>🛡️ PRIVACY BY DESIGN • ZERO DATA MONETIZATION</span>
+      <span>•</span>
+      <span>LAST UPDATED: OCTOBER 2026 • v1.5</span>
     </div>
 
-    <div class="doc-meta">LAST UPDATED: OCTOBER 2026 • COMPLIANT WITH DISCORD DEVELOPER TERMS</div>
     <h1>Privacy Policy</h1>
-    <p class="subtitle">Data Protection & Transparency Commitment for PolyBot</p>
+    <p class="subtitle">Polygon Gaming Web Platform (polygongaming.io / polygame.fun) & PolyBot Discord Ecosystem</p>
+
+    <!-- Table of Contents -->
+    <div class="toc-container">
+      <div class="toc-title">📑 Quick Navigation</div>
+      <div class="toc-grid">
+        <a href="#commitment" class="toc-link">1. Privacy Commitment</a>
+        <a href="#collected" class="toc-link">2. Information We Collect</a>
+        <a href="#not-collected" class="toc-link">3. What We NEVER Collect</a>
+        <a href="#comparison" class="toc-link">4. Data Transparency Summary</a>
+        <a href="#usage" class="toc-link">5. How We Use Information</a>
+        <a href="#storage" class="toc-link">6. LocalStorage & Cookies</a>
+        <a href="#sharing" class="toc-link">7. Third Parties & Blockchain</a>
+        <a href="#security" class="toc-link">8. Security & Infrastructure</a>
+        <a href="#rights" class="toc-link">9. Your Privacy Rights (GDPR/CCPA)</a>
+        <a href="#children" class="toc-link">10. Children's Privacy</a>
+        <a href="#retention" class="toc-link">11. Data Retention & Erasure</a>
+        <a href="#contact" class="toc-link">12. Contact & Data Officer</a>
+      </div>
+    </div>
 
     <div class="doc-content">
-      <div class="highlight-box">
-        <strong>Privacy Commitment:</strong> PolyBot collects only the minimal data required to process your commands, manage your balance vault, and track arcade tournament scores. We never sell your data, we never collect private keys, and we do not track external browsing activity.
+      <div class="callout callout-success">
+        <strong id="commitment">Core Privacy Guarantee:</strong> Polygon Gaming is built on the fundamental principle of <strong>data minimization</strong>. We only collect the minimal technical and gameplay information required to run arcade mechanics, verify on-chain actions, and facilitate Discord community features. We <strong>never sell or monetize your data</strong>, we <strong>never collect private keys or passwords</strong>, and we employ <strong>zero third-party advertising tracking</strong>.
       </div>
 
-      <h2>1. Information We Collect</h2>
-      <p>When you interact with PolyBot in Discord or use the wallet connection portal, we collect the following minimal data points:</p>
+      <h2 id="collected">1. Information We Collect</h2>
+      <p>When you visit <strong>https://polygongaming.io</strong>, play web arcade games, connect an EVM wallet, or interact with <strong>PolyBot</strong> on Discord, we collect only the following information:</p>
+
+      <h3>A. Web3 Blockchain Data (Public Ledger)</h3>
       <ul>
-        <li><strong>Discord Identifiers:</strong> Your Discord User Snowflake ID and Username. This is required to identify your account, calculate faucet streaks, and attribute your in-bot balance.</li>
-        <li><strong>Public Wallet Address:</strong> When you voluntarily verify your wallet via <code>/link</code>, we store your public Polygon EVM address (e.g., <code>0x1234...</code>).</li>
-        <li><strong>Transaction & Audit Logs:</strong> Cryptographic records of balance deposits, withdrawals, tips, tournament winnings, and faucet claims to ensure ledger integrity and auditability.</li>
-        <li><strong>Arcade Scores:</strong> High scores, game sessions, and timestamps generated on polygongaming.io associated with your linked wallet or player ID.</li>
-        <li><strong>Guild Identifiers:</strong> Discord Server (Guild) IDs and channel IDs where commands are invoked, used solely to route command responses and apply server-specific faucet configurations.</li>
+        <li><strong>Public Wallet Address:</strong> When you connect MetaMask, Rabby, or WalletConnect, we store your public Ethereum/Polygon address (<code>linked_wallet_address</code>, e.g., <code>0x1234...</code>).</li>
+        <li><strong>On-Chain Transaction Hashes:</strong> When you deposit, withdraw, adopt referrals, or purchase utility NFTs, the public transaction hash (<code>tx_hash</code>) is logged to verify payment completion and prevent replay attacks.</li>
+        <li><strong>Smart Contract Ownership:</strong> Public balances of PGT (ERC-20), Starships, and Relics (ERC-721/1155) queryable directly from the Polygon PoS blockchain.</li>
       </ul>
 
-      <h2>2. What We NEVER Collect</h2>
-      <p>In accordance with industry Web3 security standards, PolyBot does <strong>NOT</strong> collect or store:</p>
+      <h3>B. Gameplay & Platform Progression</h3>
       <ul>
-        <li>Private keys, seed phrases, or wallet passwords.</li>
-        <li>Real names, physical addresses, or phone numbers.</li>
-        <li>Payment card numbers or banking credentials.</li>
-        <li>Direct messages or server messages unrelated to PolyBot slash commands or button interactions.</li>
+        <li><strong>Synthetic Player Identifier:</strong> A randomly generated synthetic ID (<code>player_id</code>, e.g., <code>0xpgt...</code> or <code>0xg...</code>) used to link game progress without exposing personal data.</li>
+        <li><strong>Arcade Scores & Game Statistics:</strong> Game session scores, all-time high scores, survival times, and leaderboard achievements across arcade games.</li>
+        <li><strong>Downline & Referral Links:</strong> Anonymous hierarchical linkages (<code>referred_by_l1..l4</code>) required to calculate multi-tier referral commissions and loyalty bonuses.</li>
+        <li><strong>Staking & Faucet Records:</strong> Timestamps of faucet claims, loyalty streaks, and active vault staking allocations.</li>
       </ul>
 
-      <h2>3. How We Use Your Information</h2>
-      <p>The information we collect is used strictly for operational purposes:</p>
+      <h3>C. Authentication Credentials (Optional)</h3>
       <ul>
-        <li>To maintain and update your social vault balances (PGT, POL, and supported tokens).</li>
-        <li>To verify wallet ownership using Sign-In with Ethereum (EIP-191 cryptographic signatures).</li>
-        <li>To score and distribute tournament prizes to top leaderboard finishers.</li>
-        <li>To prevent automated sybil abuse, spam, and botting on community faucets.</li>
+        <li><strong>Google OAuth:</strong> If you choose passwordless Google login, Supabase Auth stores your Google Account ID, verified email address, and avatar URL strictly for account recovery and profile synchronization.</li>
+        <li><strong>Sign-In with Ethereum (SIWE):</strong> If you authenticate via Web3, an EIP-191 cryptographic digital signature challenge verifies wallet ownership without passwords.</li>
+        <li><strong>Guest Mode:</strong> If you play as a guest, zero personal data is sent to our servers; game state is stored entirely in your local browser storage.</li>
       </ul>
 
-      <h2>4. Data Sharing & Third Parties</h2>
-      <p>We respect your privacy and enforce strict data sharing rules:</p>
+      <h3>D. Community Discord Identifiers (PolyBot)</h3>
       <ul>
-        <li><strong>No Sale of Data:</strong> We will never sell, rent, monetize, or lease your personal information to third-party advertisers or data brokers.</li>
-        <li><strong>Public Blockchains:</strong> When you perform an on-chain withdrawal, the transaction hash, destination wallet, and token amount are permanently and publicly broadcast to the Polygon blockchain by nature of distributed ledger technology.</li>
-        <li><strong>Infrastructure Providers:</strong> Data is hosted securely on enterprise cloud infrastructure (Supabase PostgreSQL with Row Level Security enabled).</li>
+        <li><strong>Discord Snowflake ID & Username:</strong> Needed to identify your account, attribute in-bot PGT balances, track faucet streaks, and deliver tournament prizes.</li>
+        <li><strong>Guild & Channel IDs:</strong> Ephemeral server and channel identifiers where slash commands are executed, used solely to route responses.</li>
       </ul>
 
-      <h2>5. Data Security & Storage</h2>
-      <p>We employ robust security defenses to protect your information:</p>
+      <h3>E. Technical & Anti-Abuse Telemetry</h3>
       <ul>
-        <li>All Discord webhook interactions are cryptographically verified via Ed25519 digital signatures.</li>
-        <li>Database tables are protected by strict PostgreSQL Row Level Security (RLS) policies and least-privilege execution roles.</li>
-        <li>Wallet linkages require an active cryptographic nonce challenge to prevent replay attacks.</li>
+        <li><strong>Browser Environment:</strong> Browser type, user agent string, and screen dimensions to ensure proper canvas rendering.</li>
+        <li><strong>Security Logs:</strong> Ephemeral IP addresses and rate-limit counters processed in memory strictly by Cloudflare and Supabase to mitigate DDoS attacks, sybil bots, and automated cheat engines.</li>
       </ul>
 
-      <h2>6. Data Retention & Right to be Forgotten</h2>
-      <p>We retain your profile data for as long as your account actively utilizes PolyBot. If you wish to unlink your wallet or delete your off-chain Discord profile data, you may request deletion at any time by contacting our community administration in Discord. Upon verification, your off-chain profile and linked wallet mapping will be purged from our active database.</p>
+      <h2 id="not-collected">2. What We NEVER Collect</h2>
+      <div class="callout callout-danger">
+        <strong>Absolute Non-Custodial Boundaries:</strong> In compliance with Web3 standards and global privacy guidelines, Polygon Gaming and PolyBot do <strong>NOT</strong> collect, request, or store:
+      </div>
+      <ul>
+        <li><strong>Private Keys or Seed Phrases:</strong> We will never ask for your private key, recovery seed words, or external wallet password.</li>
+        <li><strong>Credit Card or Bank Numbers:</strong> All platform payments are handled directly via Web3 on-chain Polygon transfers or decentralized exchanges. We do not process or store credit card numbers.</li>
+        <li><strong>Real-World Identities:</strong> We do not collect government-issued IDs, physical home addresses, passport numbers, or telephone numbers.</li>
+        <li><strong>Private Chat Messages:</strong> PolyBot does not read, log, or monitor private direct messages (DMs) or general server chat history outside of slash command invocations.</li>
+      </ul>
 
-      <h2>7. Changes to this Privacy Policy</h2>
-      <p>We may update this Privacy Policy periodically to reflect new bot features or regulatory guidelines. We encourage users to check this page periodically. Continued use of PolyBot constitutes acknowledgment of the updated policy.</p>
+      <h2 id="comparison">3. Data Transparency Summary</h2>
+      <div class="table-wrapper">
+        <table class="legal-table">
+          <thead>
+            <tr>
+              <th>Data Category</th>
+              <th>Collected?</th>
+              <th>Purpose / Scope</th>
+              <th>Storage Location</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Public Wallet (EVM)</strong></td>
+              <td><span style="color: var(--accent-green);">YES</span></td>
+              <td>Wallet authentication, deposit/withdrawal routing, NFT verification</td>
+              <td>Encrypted Supabase DB & Blockchain</td>
+            </tr>
+            <tr>
+              <td><strong>Private Keys / Seeds</strong></td>
+              <td><span style="color: var(--accent-red); font-weight: 700;">NEVER</span></td>
+              <td>Strictly non-custodial; keys never leave your device</td>
+              <td>Nowhere</td>
+            </tr>
+            <tr>
+              <td><strong>Game Scores & Highscores</strong></td>
+              <td><span style="color: var(--accent-green);">YES</span></td>
+              <td>Tournament leaderboards, anti-cheat validation, prize payouts</td>
+              <td>Supabase PostgreSQL</td>
+            </tr>
+            <tr>
+              <td><strong>Google Email / Avatar</strong></td>
+              <td><span style="color: var(--accent-cyan);">OPTIONAL</span></td>
+              <td>Passwordless social login and account recovery</td>
+              <td>Supabase Auth Vault</td>
+            </tr>
+            <tr>
+              <td><strong>Credit Cards / Bank Details</strong></td>
+              <td><span style="color: var(--accent-red); font-weight: 700;">NEVER</span></td>
+              <td>Transactions are purely on-chain cryptocurrency (POL/PGT)</td>
+              <td>Nowhere</td>
+            </tr>
+            <tr>
+              <td><strong>Discord Snowflake ID</strong></td>
+              <td><span style="color: var(--accent-cyan);">OPTIONAL</span></td>
+              <td>PolyBot tips, Discord community faucet, tournament prizes</td>
+              <td>Supabase PostgreSQL</td>
+            </tr>
+            <tr>
+              <td><strong>Third-Party Ad Trackers</strong></td>
+              <td><span style="color: var(--accent-red); font-weight: 700;">NEVER</span></td>
+              <td>Zero marketing pixels, zero tracking cookies, zero data sales</td>
+              <td>Nowhere</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-      <h2>8. Contact Us</h2>
-      <p>If you have any questions or concerns regarding this Privacy Policy or your data, please contact the development team through our official community Discord or visit <a href="https://polygongaming.io" target="_blank" style="color: var(--accent-cyan);">polygongaming.io</a>.</p>
+      <h2 id="usage">4. How We Use Collected Information</h2>
+      <p>We process the minimal data collected strictly for the following purposes:</p>
+      <ul>
+        <li><strong>Core Gameplay Delivery:</strong> Maintaining arcade game states, provably fair dice/coin/card RNG generation, and space fleet mining calculations.</li>
+        <li><strong>On-Chain Ledger Audits:</strong> Validating that deposits, withdrawals, and NFT purchases originate from legitimate Polygon transactions before crediting in-game perks.</li>
+        <li><strong>Fair Play & Anti-Cheat Enforcement:</strong> Preventing sybil attacks, multi-accounting on 24h faucets, and automated memory injection in arcade leaderboards.</li>
+        <li><strong>Referral Program Accounting:</strong> Cascading multi-tier commission distributions to upstream referrers in real time upon verified downline activity.</li>
+      </ul>
+
+      <h2 id="storage">5. LocalStorage & Cookies</h2>
+      <p>Polygon Gaming uses modern HTML5 <code>localStorage</code> rather than intrusive tracking cookies:</p>
+      <ul>
+        <li><strong>Functional Local Storage:</strong> Stores your audio volume preferences, visual theme toggles, virtual view routing (<code>#arcade</code>, <code>#vault</code>, <code>#space</code>), and guest player session tokens.</li>
+        <li><strong>Zero Cross-Site Tracking:</strong> We do not employ third-party advertising trackers, Google AdSense cookies, Facebook pixels, or fingerprinting scripts.</li>
+        <li><strong>Clearing Storage:</strong> You can clear your game preferences and guest state at any time by wiping your browser's site data or cache.</li>
+      </ul>
+
+      <h2 id="sharing">6. Data Sharing & Public Blockchain Transparency</h2>
+      <div class="callout callout-warning">
+        <strong>Blockchain Immutability Notice:</strong> The Polygon blockchain is a globally distributed public ledger. Transactions executed on Polygon (such as deposits, withdrawals, and smart contract mints) are cryptographically signed, irreversible, and publicly viewable on explorers like PolygonScan.
+      </div>
+      <p>We do not share your private account data with external commercial entities. Data is only accessible to:</p>
+      <ul>
+        <li><strong>Cloud Infrastructure Partners:</strong> Cloud hosting, serverless functions, and encrypted database infrastructure provided by Supabase Inc. (US-East datacenter) with strict Row Level Security (RLS) policies.</li>
+        <li><strong>Discord Inc.:</strong> When you interact with PolyBot, command payloads are transmitted via Discord's developer gateway subject to Discord's Developer Terms.</li>
+        <li><strong>Legal Compliance:</strong> We may disclose data only if required by valid court order, subpoena, or applicable law.</li>
+      </ul>
+
+      <h2 id="security">7. Data Security & Technical Invariants</h2>
+      <p>We enforce enterprise-grade security invariants across our frontend and database architecture:</p>
+      <ul>
+        <li><strong>Zero-Anon-Writes Architecture:</strong> Anonymous web visitors and client applications have zero direct <code>INSERT</code> or <code>UPDATE</code> write permissions on database tables. All state changes are processed via cryptographically isolated <code>SECURITY DEFINER</code> stored procedures.</li>
+        <li><strong>Anti-Replay Protections:</strong> Polygon transaction hashes are guarded by database-level unique constraints (<code>idx_nft_sales_tx_hash</code>) and single-use cryptographic challenges.</li>
+        <li><strong>Ed25519 Webhook Signatures:</strong> All incoming Discord interactions are verified cryptographically using Discord's public key before execution.</li>
+      </ul>
+
+      <h2 id="rights">8. Your Privacy Rights (GDPR & CCPA Compliance)</h2>
+      <p>Regardless of your geographic location, Polygon Gaming grants all users full control over their off-chain data:</p>
+      <ul>
+        <li><strong>Right to Access:</strong> You may view all off-chain statistics, wallet linkages, and referral trees directly from your in-game profile panel.</li>
+        <li><strong>Right to Rectification:</strong> You may update your profile username or unlink your Web3 wallet address at any time.</li>
+        <li><strong>Right to Erasure ("Right to be Forgotten"):</strong> You may request complete deletion of your off-chain profile, Google Auth mapping, and Discord metadata by contacting community administration in Discord. Upon verification, your profile record will be permanently purged from our active database. <em>(Note: On-chain blockchain transactions cannot be deleted due to the cryptographic nature of distributed ledgers).</em></li>
+      </ul>
+
+      <h2 id="children">9. Children's Privacy</h2>
+      <p>Polygon Gaming and PolyBot are strictly intended for individuals who are <strong>18 years of age or older</strong>. We do not knowingly solicit or collect personal information from children under 18. If we discover that an account belongs to a minor, we will take immediate steps to terminate the account and purge associated off-chain records.</p>
+
+      <h2 id="retention">10. Data Retention & Archival</h2>
+      <p>We retain active player account records for as long as your profile utilizes Polygon Gaming services. If a guest profile remains completely inactive for more than 12 consecutive months, off-chain temporary session data may be purged to ensure optimal database hygiene.</p>
+
+      <h2 id="contact">11. Contact & Data Protection Officer</h2>
+      <p>If you have any questions, feedback, or data erasure requests concerning this Privacy Policy, please reach out to our team:</p>
+      <ul>
+        <li>Official Website: <a href="https://polygongaming.io" target="_blank" style="color: var(--accent-cyan);">polygongaming.io</a></li>
+        <li>Official Discord: <a href="https://discord.gg/bdeK7Kv8Y2" target="_blank" style="color: #5865F2;">discord.gg/bdeK7Kv8Y2</a></li>
+        <li>Terms of Service: <a href="terms.html" style="color: var(--accent-cyan);">terms.html</a></li>
+      </ul>
     </div>
 
-    <div class="legal-footer">
-      <a href="terms.html">Terms of Service</a>
-      &bull;
-      <a href="verify.html">Connect Wallet</a>
-      &bull;
-      <a href="https://polygongaming.io">Polygon Gaming</a>
-    </div>
+    <footer class="legal-footer">
+      <div class="legal-footer-links">
+        <a href="terms.html">Terms of Service</a>
+        <span>•</span>
+        <a href="privacy.html">Privacy Policy</a>
+        <span>•</span>
+        <a href="verify.html">Wallet Portal</a>
+        <span>•</span>
+        <a href="https://polygongaming.io/#tokenomics">PGT Tokenomics</a>
+        <span>•</span>
+        <a href="https://discord.gg/bdeK7Kv8Y2" target="_blank">Discord Support</a>
+      </div>
+      <div>© 2026 Polygon Gaming • All Rights Reserved.</div>
+    </footer>
   </div>
 
 </body>

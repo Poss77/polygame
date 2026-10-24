@@ -269,28 +269,48 @@ export function openInfoModal(type) {
   if (!title || !body) return;
   
   if (type === 'privacy') {
-    title.innerText = 'Privacy Policy';
+    title.innerText = '🛡️ Privacy Policy & Data Protection';
     body.innerHTML = `
-      <h4 style="color: var(--color-primary); margin-bottom: 0.5rem;">Data Collection</h4>
-      <p style="margin-bottom: 1rem;">We only store your wallet address and minimal on-site progression data (highscores, referrals, balances) required for PolyGame mechanics to function.</p>
-      <h4 style="color: var(--color-primary); margin-bottom: 0.5rem;">Web3 Privacy</h4>
-      <p style="margin-bottom: 1rem;">Because we use Web3 authentication, no passwords, emails, or personal identification data are collected or required to play.</p>
+      <div style="background: rgba(0, 255, 136, 0.08); border-left: 3px solid var(--color-success); padding: 0.75rem 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1rem; font-size: 0.85rem; color: #e6fff2;">
+        <strong>Zero Data Monetization Guarantee:</strong> Polygon Gaming is built on Web3 data minimization. We never sell your data, we never collect private keys, and we do not use third-party advertising cookies.
+      </div>
+
+      <h4 style="color: var(--color-primary); margin-bottom: 0.35rem; font-size: 0.95rem;">1. What We Collect</h4>
+      <p style="margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--text-muted);">Public Web3 wallet address (<code>0x...</code>), on-chain transaction hashes, game session scores, tournament ranks, and multi-tier referral connections. (Optional: Google email/avatar for social recovery).</p>
+
+      <h4 style="color: var(--color-danger); margin-bottom: 0.35rem; font-size: 0.95rem;">2. What We NEVER Collect</h4>
+      <p style="margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--text-muted);">Private keys, seed phrases, wallet passwords, credit card numbers, or physical personal identifiers. External wallets are strictly non-custodial.</p>
+
+      <h4 style="color: var(--color-accent); margin-bottom: 0.35rem; font-size: 0.95rem;">3. GDPR & CCPA Rights</h4>
+      <p style="margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-muted);">You retain full right of access, rectification, and erasure ("Right to be Forgotten") for all off-chain profile data. Inactive guest profiles are purged after 12 months.</p>
+
+      <div style="margin-top: 1.25rem; text-align: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem;">
+        <a href="privacy.html" target="_blank" class="btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; padding: 0.55rem 1.25rem; font-size: 0.85rem; border-radius: 8px; font-weight: 700;">
+          🔒 Open Complete Privacy Policy (Full Document) ↗
+        </a>
+      </div>
     `;
   } else if (type === 'terms') {
-    title.innerText = 'Terms & Conditions';
+    title.innerText = '📜 Terms of Service & Fair Play';
     body.innerHTML = `
-      <h4 style="color: var(--color-accent); margin-bottom: 0.5rem;">Fair Play Policy</h4>
-      <p style="margin-bottom: 1rem; color: white; font-weight: 700;">Strictly 1 Account Per Person.</p>
-      <p style="margin-bottom: 1rem;">We monitor all faucet claims, referral trees, and game metrics. If we detect IP farming, sybil attacks, or multiple accounts attempting to farm PGT or exploit referrals, your IP and associated wallet addresses will be permanently banned.</p>
-      
-      <h4 style="color: var(--color-accent); margin-bottom: 0.5rem;">Account & Game Rules</h4>
-      <ul style="margin-left: 1.25rem; margin-bottom: 1rem; list-style-type: disc;">
-        <li style="margin-bottom: 0.5rem;">Accounts can be deleted after 12 months of inactivity.</li>
-        <li style="margin-bottom: 0.5rem;">Mini-game payouts can be changed at any time without notice.</li>
-      </ul>
+      <div style="background: rgba(0, 240, 255, 0.08); border-left: 3px solid var(--color-accent); padding: 0.75rem 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1rem; font-size: 0.85rem; color: #e2e8f0;">
+        <strong>Summary:</strong> By interacting with polygongaming.io, our smart contracts on Polygon, or PolyBot in Discord, you agree to these Terms. Polygon Gaming is a Web3 entertainment arcade, not an investment platform.
+      </div>
 
-      <h4 style="color: var(--color-accent); margin-bottom: 0.5rem;">Risk Acknowledgment</h4>
-      <p>PolyGame is a Web3 Arcade. By interacting with the smart contracts and PolyGame tokens, you acknowledge the experimental nature of Web3 technology.</p>
+      <h4 style="color: var(--color-danger); margin-bottom: 0.35rem; font-size: 0.95rem;">1. Strictly 1 Account Per Person (Anti-Cheat)</h4>
+      <p style="margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--text-muted);">Zero tolerance for multi-accounting, automated farming bots, sybil networks, cheat engines, or memory tampering. Violations trigger automatic database tripwires, immediate account bans, and forfeiture of unclaimed rewards.</p>
+
+      <h4 style="color: var(--color-warning); margin-bottom: 0.35rem; font-size: 0.95rem;">2. Virtual Assets & Financial Disclaimer</h4>
+      <p style="margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--text-muted);">PGT tokens, relics, starships, and NFTs are strictly gameplay utilities and do NOT represent securities, equity, or investments. No expectation of financial profit.</p>
+
+      <h4 style="color: var(--color-success); margin-bottom: 0.35rem; font-size: 0.95rem;">3. Non-Custodial Architecture</h4>
+      <p style="margin-bottom: 1rem; font-size: 0.85rem; color: var(--text-muted);">You retain exclusive custody of your external Web3 wallet and keys. On-chain Polygon transactions and gas fees are final and irreversible.</p>
+
+      <div style="margin-top: 1.25rem; text-align: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1rem;">
+        <a href="terms.html" target="_blank" class="btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; padding: 0.55rem 1.25rem; font-size: 0.85rem; border-radius: 8px; font-weight: 700;">
+          📜 Open Complete Terms of Service (12 Sections) ↗
+        </a>
+      </div>
     `;
   } else if (type === 'tokenomics') {
     title.innerText = 'Tokenomics & Distribution';
