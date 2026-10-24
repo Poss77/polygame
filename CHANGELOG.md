@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade Polish: In-Game Starship Size Increased by +30% (`v1.5.704`)**:
+  - **🚀 Proportional +30% Starship Upscaling ([`src/js/features/hangar.js`](src/js/features/hangar.js), [`game.js`](game.js), [`invaders.js`](invaders.js))**:
+    - Increased the normalized in-game visual envelope for all procedural Starships by +30% (`targetHalfSpan = 24.0px`, `targetLength = 49.5px`, scale range `0.23` - `0.44`).
+    - Striking the perfect visual balance: starships are prominent, clear, and striking on canvas while remaining aligned with core collision dodging physics.
+    - Expanded the rarity-colored core atmospheric underglow aura to a 19px radius in Astro-Dodge.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.704"` and refreshed asset cache-busters.
+
 - **Arcade Fair Play & Visual Hitbox Normalization for NFT Starships (`v1.5.703`)**:
   - **🚀 Dynamic DNA Bounding-Box Normalization ([`src/js/features/hangar.js`](src/js/features/hangar.js), [`game.js`](game.js), [`invaders.js`](invaders.js))**:
     - Created `getNormalizedShipScale(dna, targetHalfSpan, targetLength)` engine in `hangar.js` that calculates proportional in-game rendering scale based on each starship's procedural DNA traits (`wings.span` and `chassis.length`).
