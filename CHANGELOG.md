@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Legal Navigation Polish: Removed Unrelated Wallet Portal Link (`v1.5.701`)**:
+  - **🧹 Legal Navigation Cleanup ([`terms.html`](terms.html), [`privacy.html`](privacy.html))**:
+    - Removed the unrelated Discord bot wallet portal link (`verify.html`) from both the top navigation header and the footer across the website Terms of Service and Privacy Policy.
+    - Cleaned legal navigation to focus purely between `📜 Terms of Service`, `🔒 Privacy Policy`, and the `← Return to Polygongaming.io` portal.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.701"` and refreshed asset cache-busters.
+
 - **Legal Scope Refinement: Website-Dedicated Terms & Privacy (`v1.5.700`)**:
   - **🌐 Dedicated Website Scope & Domain Cleanup ([`terms.html`](terms.html), [`privacy.html`](privacy.html))**:
     - Removed obsolete domain reference (`polygame.fun`) from all legal documents, establishing `https://polygongaming.io` as the sole official web platform authority.
