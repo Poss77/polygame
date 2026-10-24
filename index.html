@@ -372,7 +372,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.701">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.702">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -4636,7 +4636,12 @@
       <h3 style="font-size: 1.5rem; font-weight: 900; color: #fff; margin-bottom: 0.25rem; letter-spacing: 0.5px;">
         <span id="faucet-success-amount-text" style="color: var(--color-primary); text-shadow: 0 0 12px rgba(0,240,255,0.6);">+50.00 PGT</span> Claimed!
       </h3>
-      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+      <div style="margin: 0.35rem 0 0.85rem;">
+        <span style="display: inline-flex; align-items: center; gap: 6px; background: rgba(0, 255, 136, 0.12); border: 1px solid rgba(0, 255, 136, 0.4); color: #e6fff2; font-size: 0.88rem; font-weight: 700; padding: 0.35rem 0.95rem; border-radius: 50px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 0 15px rgba(0,255,136,0.2);" onclick="launchFromFaucetModal('nft')" title="Equip Faucet Boost NFTs to multiply rewards">
+          ⚡ <span>Boost to earn up to <strong style="color: #00ff88; font-size: 1.15rem; font-weight: 900; text-shadow: 0 0 12px rgba(0,255,136,0.7); letter-spacing: 0.5px;">2,500 PGT</strong> per claim!</span> ↗
+        </span>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem; line-height: 1.45;">
         Your tokens are in your balance. Don't let them sit idle — put them to work and multiply your PGT:
       </p>
 
@@ -4686,7 +4691,7 @@
                 <span style="font-weight: 800; font-size: 0.95rem; color: #fff;">Utility NFTs</span>
                 <span style="background: rgba(255,215,0,0.15); border: 1px solid #ffd700; color: #ffd700; font-size: 0.65rem; font-weight: 800; padding: 1px 5px; border-radius: 4px; text-transform: uppercase;">Boost Claims</span>
               </div>
-              <div style="font-size: 0.78rem; color: var(--text-muted);">Equip Faucet Boost NFTs & stack bonuses to earn up to <strong style="color: #00ff88;">2,500 PGT</strong> per claim!</div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; margin-top: 2px;">Equip Faucet Boost NFTs & stack bonuses to earn up to <strong style="color: #00ff88; font-size: 1.05rem; font-weight: 900; text-shadow: 0 0 10px rgba(0,255,136,0.6); letter-spacing: 0.5px;">2,500 PGT</strong> per claim!</div>
             </div>
           </div>
           <button class="btn-primary" style="background: linear-gradient(135deg, #ffd700, #ff8800); border-color: #ffd700; color: #000; padding: 0.45rem 0.85rem; font-size: 0.8rem; font-weight: 800; white-space: nowrap;" onclick="launchFromFaucetModal('nft')">
@@ -4930,17 +4935,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.701"></script>
+  <script src="game.js?v=1.5.702"></script>
   <script src="invaders.js?v=1.5.574"></script>
   <script src="drift.js?v=1.5.574"></script>
   <script src="stacker.js?v=1.5.574"></script>
-  <script src="space.js?v=1.5.701"></script>
+  <script src="space.js?v=1.5.702"></script>
   <script type="module" src="skeet.js?v=1.5.574"></script>
   <script type="module" src="defense.js?v=1.5.574"></script>
   <script type="module" src="runner.js?v=1.5.574"></script>
   <script type="module" src="q2048.js?v=1.5.574"></script>
   <script src="tetris.js?v=1.5.574"></script>
-  <script type="module" src="src/js/app.js?v=1.5.701"></script>
+  <script type="module" src="src/js/app.js?v=1.5.702"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Faucet Post-Claim Modal: High-Visibility 2,500 PGT Boost Callout (`v1.5.702`)**:
+  - **⚡ Prominent Top Boost Badge ([`index.html`](index.html))**:
+    - Added a glowing highlight pill directly below the claim celebration header (`+56.10 PGT Claimed!`): *"⚡ Boost to earn up to 2,500 PGT per claim! ↗"*, linking directly to the Faucet Boost NFT marketplace.
+    - Enlarged and enhanced the **2,500 PGT** typography across the Utility NFTs recommendation card with high-contrast emerald glow and bold letter spacing.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.702"` and refreshed asset cache-busters.
+
 - **Legal Navigation Polish: Removed Unrelated Wallet Portal Link (`v1.5.701`)**:
   - **🧹 Legal Navigation Cleanup ([`terms.html`](terms.html), [`privacy.html`](privacy.html))**:
     - Removed the unrelated Discord bot wallet portal link (`verify.html`) from both the top navigation header and the footer across the website Terms of Service and Privacy Policy.
