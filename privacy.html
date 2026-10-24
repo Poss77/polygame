@@ -398,7 +398,7 @@
     </div>
 
     <h1>Privacy Policy</h1>
-    <p class="subtitle">Polygon Gaming Web Platform (polygongaming.io / polygame.fun) & PolyBot Discord Ecosystem</p>
+    <p class="subtitle">Polygon Gaming Official Web Platform (polygongaming.io)</p>
 
     <!-- Table of Contents -->
     <div class="toc-container">
@@ -421,11 +421,11 @@
 
     <div class="doc-content">
       <div class="callout callout-success">
-        <strong id="commitment">Core Privacy Guarantee:</strong> Polygon Gaming is built on the fundamental principle of <strong>data minimization</strong>. We only collect the minimal technical and gameplay information required to run arcade mechanics, verify on-chain actions, and facilitate Discord community features. We <strong>never sell or monetize your data</strong>, we <strong>never collect private keys or passwords</strong>, and we employ <strong>zero third-party advertising tracking</strong>.
+        <strong id="commitment">Core Privacy Guarantee:</strong> Polygon Gaming is built on the fundamental principle of <strong>data minimization</strong>. We only collect the minimal technical and gameplay information required to run arcade mechanics, verify on-chain actions, and maintain platform security. We <strong>never sell or monetize your data</strong>, we <strong>never collect private keys or passwords</strong>, and we employ <strong>zero third-party advertising tracking</strong>.
       </div>
 
       <h2 id="collected">1. Information We Collect</h2>
-      <p>When you visit <strong>https://polygongaming.io</strong>, play web arcade games, connect an EVM wallet, or interact with <strong>PolyBot</strong> on Discord, we collect only the following information:</p>
+      <p>When you visit <strong>https://polygongaming.io</strong>, play web arcade games, or connect an EVM wallet, we collect only the following information:</p>
 
       <h3>A. Web3 Blockchain Data (Public Ledger)</h3>
       <ul>
@@ -449,13 +449,7 @@
         <li><strong>Guest Mode:</strong> If you play as a guest, zero personal data is sent to our servers; game state is stored entirely in your local browser storage.</li>
       </ul>
 
-      <h3>D. Community Discord Identifiers (PolyBot)</h3>
-      <ul>
-        <li><strong>Discord Snowflake ID & Username:</strong> Needed to identify your account, attribute in-bot PGT balances, track faucet streaks, and deliver tournament prizes.</li>
-        <li><strong>Guild & Channel IDs:</strong> Ephemeral server and channel identifiers where slash commands are executed, used solely to route responses.</li>
-      </ul>
-
-      <h3>E. Technical & Anti-Abuse Telemetry</h3>
+      <h3>D. Technical & Anti-Abuse Telemetry</h3>
       <ul>
         <li><strong>Browser Environment:</strong> Browser type, user agent string, and screen dimensions to ensure proper canvas rendering.</li>
         <li><strong>Security Logs:</strong> Ephemeral IP addresses and rate-limit counters processed in memory strictly by Cloudflare and Supabase to mitigate DDoS attacks, sybil bots, and automated cheat engines.</li>
@@ -463,13 +457,12 @@
 
       <h2 id="not-collected">2. What We NEVER Collect</h2>
       <div class="callout callout-danger">
-        <strong>Absolute Non-Custodial Boundaries:</strong> In compliance with Web3 standards and global privacy guidelines, Polygon Gaming and PolyBot do <strong>NOT</strong> collect, request, or store:
+        <strong>Absolute Non-Custodial Boundaries:</strong> In compliance with Web3 standards and global privacy guidelines, Polygon Gaming does <strong>NOT</strong> collect, request, or store:
       </div>
       <ul>
         <li><strong>Private Keys or Seed Phrases:</strong> We will never ask for your private key, recovery seed words, or external wallet password.</li>
         <li><strong>Credit Card or Bank Numbers:</strong> All platform payments are handled directly via Web3 on-chain Polygon transfers or decentralized exchanges. We do not process or store credit card numbers.</li>
         <li><strong>Real-World Identities:</strong> We do not collect government-issued IDs, physical home addresses, passport numbers, or telephone numbers.</li>
-        <li><strong>Private Chat Messages:</strong> PolyBot does not read, log, or monitor private direct messages (DMs) or general server chat history outside of slash command invocations.</li>
       </ul>
 
       <h2 id="comparison">3. Data Transparency Summary</h2>
@@ -515,12 +508,6 @@
               <td>Nowhere</td>
             </tr>
             <tr>
-              <td><strong>Discord Snowflake ID</strong></td>
-              <td><span style="color: var(--accent-cyan);">OPTIONAL</span></td>
-              <td>PolyBot tips, Discord community faucet, tournament prizes</td>
-              <td>Supabase PostgreSQL</td>
-            </tr>
-            <tr>
               <td><strong>Third-Party Ad Trackers</strong></td>
               <td><span style="color: var(--accent-red); font-weight: 700;">NEVER</span></td>
               <td>Zero marketing pixels, zero tracking cookies, zero data sales</td>
@@ -554,7 +541,6 @@
       <p>We do not share your private account data with external commercial entities. Data is only accessible to:</p>
       <ul>
         <li><strong>Cloud Infrastructure Partners:</strong> Cloud hosting, serverless functions, and encrypted database infrastructure provided by Supabase Inc. (US-East datacenter) with strict Row Level Security (RLS) policies.</li>
-        <li><strong>Discord Inc.:</strong> When you interact with PolyBot, command payloads are transmitted via Discord's developer gateway subject to Discord's Developer Terms.</li>
         <li><strong>Legal Compliance:</strong> We may disclose data only if required by valid court order, subpoena, or applicable law.</li>
       </ul>
 
@@ -563,7 +549,7 @@
       <ul>
         <li><strong>Zero-Anon-Writes Architecture:</strong> Anonymous web visitors and client applications have zero direct <code>INSERT</code> or <code>UPDATE</code> write permissions on database tables. All state changes are processed via cryptographically isolated <code>SECURITY DEFINER</code> stored procedures.</li>
         <li><strong>Anti-Replay Protections:</strong> Polygon transaction hashes are guarded by database-level unique constraints (<code>idx_nft_sales_tx_hash</code>) and single-use cryptographic challenges.</li>
-        <li><strong>Ed25519 Webhook Signatures:</strong> All incoming Discord interactions are verified cryptographically using Discord's public key before execution.</li>
+        <li><strong>Client Tamper Defense:</strong> Balance mutations are prevented by PostgreSQL security triggers (<code>prevent_direct_balance_mutation</code>).</li>
       </ul>
 
       <h2 id="rights">8. Your Privacy Rights (GDPR & CCPA Compliance)</h2>
@@ -571,11 +557,11 @@
       <ul>
         <li><strong>Right to Access:</strong> You may view all off-chain statistics, wallet linkages, and referral trees directly from your in-game profile panel.</li>
         <li><strong>Right to Rectification:</strong> You may update your profile username or unlink your Web3 wallet address at any time.</li>
-        <li><strong>Right to Erasure ("Right to be Forgotten"):</strong> You may request complete deletion of your off-chain profile, Google Auth mapping, and Discord metadata by contacting community administration in Discord. Upon verification, your profile record will be permanently purged from our active database. <em>(Note: On-chain blockchain transactions cannot be deleted due to the cryptographic nature of distributed ledgers).</em></li>
+        <li><strong>Right to Erasure ("Right to be Forgotten"):</strong> You may request complete deletion of your off-chain profile and Google Auth mapping by contacting community administration. Upon verification, your profile record will be permanently purged from our active database. <em>(Note: On-chain blockchain transactions cannot be deleted due to the cryptographic nature of distributed ledgers).</em></li>
       </ul>
 
       <h2 id="children">9. Children's Privacy</h2>
-      <p>Polygon Gaming and PolyBot are strictly intended for individuals who are <strong>18 years of age or older</strong>. We do not knowingly solicit or collect personal information from children under 18. If we discover that an account belongs to a minor, we will take immediate steps to terminate the account and purge associated off-chain records.</p>
+      <p>Polygon Gaming is strictly intended for individuals who are <strong>18 years of age or older</strong>. We do not knowingly solicit or collect personal information from children under 18. If we discover that an account belongs to a minor, we will take immediate steps to terminate the account and purge associated off-chain records.</p>
 
       <h2 id="retention">10. Data Retention & Archival</h2>
       <p>We retain active player account records for as long as your profile utilizes Polygon Gaming services. If a guest profile remains completely inactive for more than 12 consecutive months, off-chain temporary session data may be purged to ensure optimal database hygiene.</p>
@@ -584,7 +570,7 @@
       <p>If you have any questions, feedback, or data erasure requests concerning this Privacy Policy, please reach out to our team:</p>
       <ul>
         <li>Official Website: <a href="https://polygongaming.io" target="_blank" style="color: var(--accent-cyan);">polygongaming.io</a></li>
-        <li>Official Discord: <a href="https://discord.gg/bdeK7Kv8Y2" target="_blank" style="color: #5865F2;">discord.gg/bdeK7Kv8Y2</a></li>
+        <li>Discord Community: <a href="https://discord.gg/bdeK7Kv8Y2" target="_blank" style="color: #5865F2;">discord.gg/bdeK7Kv8Y2</a></li>
         <li>Terms of Service: <a href="terms.html" style="color: var(--accent-cyan);">terms.html</a></li>
       </ul>
     </div>
@@ -599,7 +585,7 @@
         <span>•</span>
         <a href="https://polygongaming.io/#tokenomics">PGT Tokenomics</a>
         <span>•</span>
-        <a href="https://discord.gg/bdeK7Kv8Y2" target="_blank">Discord Support</a>
+        <a href="https://discord.gg/bdeK7Kv8Y2" target="_blank">Discord Community</a>
       </div>
       <div>© 2026 Polygon Gaming • All Rights Reserved.</div>
     </footer>

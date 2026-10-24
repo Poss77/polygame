@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Legal Scope Refinement: Website-Dedicated Terms & Privacy (`v1.5.700`)**:
+  - **🌐 Dedicated Website Scope & Domain Cleanup ([`terms.html`](terms.html), [`privacy.html`](privacy.html))**:
+    - Removed obsolete domain reference (`polygame.fun`) from all legal documents, establishing `https://polygongaming.io` as the sole official web platform authority.
+    - Decoupled the Discord bot (PolyBot) from website legal documentation (the Discord bot maintains its own separate legal documentation and developer portal agreements).
+    - Streamlined `terms.html` and `privacy.html` strictly for visitors, players, and on-chain Web3 participants of the **Polygon Gaming Website**.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html), [`src/js/core/ui.js`](src/js/core/ui.js))**:
+    - Incremented `APP_VERSION = "1.5.700"` and refreshed asset cache-busters.
+
 - **Legal & Platform Compliance: Enterprise Terms of Service & Privacy Policy Overhaul (`v1.5.699`)**:
   - **📜 Comprehensive Terms of Service ([`terms.html`](terms.html))**:
     - Re-architected `terms.html` to comprehensively cover the entire **Polygon Gaming** ecosystem (including web platform `polygongaming.io`, skill arcades, provably fair chance games, 24h faucet, staking vaults, utility NFTs, starships, relics, 4-tier referral marketplace, and the official Discord bot `PolyBot`).

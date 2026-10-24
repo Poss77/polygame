@@ -294,7 +294,7 @@ export function openInfoModal(type) {
     title.innerText = '📜 Terms of Service & Fair Play';
     body.innerHTML = `
       <div style="background: rgba(0, 240, 255, 0.08); border-left: 3px solid var(--color-accent); padding: 0.75rem 1rem; border-radius: 0 8px 8px 0; margin-bottom: 1rem; font-size: 0.85rem; color: #e2e8f0;">
-        <strong>Summary:</strong> By interacting with polygongaming.io, our smart contracts on Polygon, or PolyBot in Discord, you agree to these Terms. Polygon Gaming is a Web3 entertainment arcade, not an investment platform.
+        <strong>Summary:</strong> By interacting with polygongaming.io or our smart contracts on Polygon, you agree to these Terms. Polygon Gaming is a Web3 entertainment arcade, not an investment platform.
       </div>
 
       <h4 style="color: var(--color-danger); margin-bottom: 0.35rem; font-size: 0.95rem;">1. Strictly 1 Account Per Person (Anti-Cheat)</h4>
