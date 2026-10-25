@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Tetris Mobile Controls: Directional Axis Locking for Swipes (`v1.5.706`)**:
+  - **📱 Gesture Axis Locking & Drift Elimination ([`tetris.js`](tetris.js))**:
+    - Introduced a directional axis-lock state machine (`gestureLock`) for touch gestures with a 10px deadzone filter.
+    - When swiping down or flicking to drop (soft drop / hard drop), the gesture immediately locks strictly to the vertical axis (`absTotalDy >= 12 && absTotalDy >= absTotalDx * 1.2`).
+    - While locked to vertical, all horizontal column movement (`moveLeft` / `moveRight`) is completely suppressed, preventing accidental left/right drifting caused by natural thumb curvature or angled downward swiping.
+    - When shifting columns horizontally (`absTotalDx >= 12 && absTotalDx >= absTotalDy * 1.2`), downward soft drops are suppressed to prevent premature drops while aiming tetrominoes into narrow gaps.
+    - Calibrated fast downward flick detection (`totalDy > 55`, `dt < 260ms`) for crisp, instant hard drops without column drift.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.706"` and refreshed cache busters for `tetris.js`, `app.js`, and `main.css`.
+
 - **Arcade Polish: In-Game Starship Size Further Boosted by +20% (`v1.5.705`)**:
   - **🚀 Extended Starship Canvas Scaling ([`src/js/features/hangar.js`](src/js/features/hangar.js), [`game.js`](game.js), [`invaders.js`](invaders.js))**:
     - Further increased the normalized Starship rendering scale by an additional +20% (`targetHalfSpan = 28.8px`, `targetLength = 59.4px`, scale range `0.28` - `0.53`).

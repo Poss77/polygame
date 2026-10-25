@@ -1369,12 +1369,13 @@ class CyberTetrisGame {
       }
     });
 
-    // Fullscreen Mobile Touch Gestures (Responsive Anywhere on Screen)
+    // Fullscreen Mobile Touch Gestures (Responsive Anywhere on Screen with Axis Locking)
     let touchStartX = 0;
     let touchStartY = 0;
     let lastStepX = 0;
     let lastStepY = 0;
     let touchStartTime = 0;
+    let gestureLock = null; // null | 'horizontal' | 'vertical'
     let movedHoriz = false;
     let movedVert = false;
 
@@ -1396,7 +1397,8 @@ class CyberTetrisGame {
       touchStartY = touch.clientY;
       lastStepX = touch.clientX;
       lastStepY = touch.clientY;
-      touchStartTime = Date.now();
+      touchStartTime = performance.now();
+      gestureLock = null;
       movedHoriz = false;
       movedVert = false;
     }, { passive: true });
@@ -1406,32 +1408,62 @@ class CyberTetrisGame {
       if (isInteractiveTarget(e.target)) return;
 
       const touch = e.touches[0];
-      const dx = touch.clientX - lastStepX;
-      const dy = touch.clientY - lastStepY;
+      const totalDx = touch.clientX - touchStartX;
+      const totalDy = touch.clientY - touchStartY;
+      const absTotalDx = Math.abs(totalDx);
+      const absTotalDy = Math.abs(totalDy);
 
-      // Horizontal column shifting (~24px per column step)
-      const stepX = 24;
-      if (Math.abs(dx) >= stepX) {
-        if (e.cancelable) e.preventDefault();
-        const steps = Math.floor(Math.abs(dx) / stepX);
-        for (let i = 0; i < steps; i++) {
-          if (dx > 0) this.moveRight();
-          else this.moveLeft();
+      // Determine directional intent before locking axis
+      if (!gestureLock) {
+        if (absTotalDx < 10 && absTotalDy < 10) {
+          // Inside deadzone to prevent jitter
+          return;
         }
-        lastStepX += (dx > 0 ? 1 : -1) * steps * stepX;
-        movedHoriz = true;
+
+        // Lock to vertical if downward or upward swipe dominates (1.2x threshold)
+        if (absTotalDy >= 12 && absTotalDy >= absTotalDx * 1.2) {
+          gestureLock = 'vertical';
+          lastStepY = touch.clientY;
+        } else if (absTotalDx >= 12 && absTotalDx >= absTotalDy * 1.2) {
+          gestureLock = 'horizontal';
+          lastStepX = touch.clientX;
+        } else {
+          // Ambiguous diagonal movement; wait for clearer intent
+          return;
+        }
       }
 
-      // Downward soft drop stepping (~28px per row drop)
-      const stepY = 28;
-      if (dy >= stepY) {
-        if (e.cancelable) e.preventDefault();
-        const steps = Math.floor(dy / stepY);
-        for (let i = 0; i < steps; i++) {
-          this.softDrop();
+      // Vertical Gestures (Strictly Drop Only - Lateral Movement Is Completely Suppressed)
+      if (gestureLock === 'vertical') {
+        const dy = touch.clientY - lastStepY;
+        const stepY = 24; // Smooth responsive soft drop stepping (~24px per row)
+        if (dy >= stepY) {
+          if (e.cancelable) e.preventDefault();
+          const steps = Math.floor(dy / stepY);
+          for (let i = 0; i < steps; i++) {
+            this.softDrop();
+          }
+          lastStepY += steps * stepY;
+          movedVert = true;
         }
-        lastStepY += steps * stepY;
-        movedVert = true;
+        return;
+      }
+
+      // Horizontal Gestures (Column Shifting - Drops Are Suppressed)
+      if (gestureLock === 'horizontal') {
+        const dx = touch.clientX - lastStepX;
+        const stepX = 26; // Responsive column step (~26px per column shift)
+        if (Math.abs(dx) >= stepX) {
+          if (e.cancelable) e.preventDefault();
+          const steps = Math.floor(Math.abs(dx) / stepX);
+          for (let i = 0; i < steps; i++) {
+            if (dx > 0) this.moveRight();
+            else this.moveLeft();
+          }
+          lastStepX += (dx > 0 ? 1 : -1) * steps * stepX;
+          movedHoriz = true;
+        }
+        return;
       }
     }, { passive: false });
 
@@ -1442,35 +1474,48 @@ class CyberTetrisGame {
       const touch = e.changedTouches[0];
       const totalDx = touch.clientX - touchStartX;
       const totalDy = touch.clientY - touchStartY;
-      const dt = Date.now() - touchStartTime;
+      const absTotalDx = Math.abs(totalDx);
+      const absTotalDy = Math.abs(totalDy);
+      const dt = performance.now() - touchStartTime;
 
-      // Upward Flick / Swipe: Hard Drop
-      if (totalDy < -35 && Math.abs(totalDy) > Math.abs(totalDx)) {
+      // 1) Fast Downward Flick: Hard Drop (Instantly drops and locks piece)
+      if ((gestureLock === 'vertical' || absTotalDy > absTotalDx * 1.3) && totalDy > 55 && dt < 260) {
         this.hardDrop();
+        gestureLock = null;
         return;
       }
 
-      // Fast downward flick: Hard Drop
-      if (totalDy > 75 && dt < 220 && Math.abs(totalDy) > Math.abs(totalDx)) {
+      // 2) Upward Flick / Swipe: Hard Drop (Alternative swift slam)
+      if (totalDy < -35 && absTotalDy > absTotalDx * 1.3 && dt < 300) {
         this.hardDrop();
+        gestureLock = null;
         return;
       }
 
-      // Quick tap anywhere outside interactive controls: Rotate Clockwise
-      if (!movedHoriz && !movedVert && Math.abs(totalDx) < 18 && Math.abs(totalDy) < 18 && dt < 280) {
+      // 3) Clean Tap Anywhere Outside Controls: Rotate Clockwise
+      if (!gestureLock && !movedHoriz && !movedVert && absTotalDx < 14 && absTotalDy < 14 && dt < 260) {
         this.rotate(true);
+        gestureLock = null;
         return;
       }
 
-      // If finger flick was swift and didn't trigger touchmove step
+      // 4) Swift short flick that ended before touchmove step triggered
       if (!movedHoriz && !movedVert) {
-        if (Math.abs(totalDx) > Math.abs(totalDy) && Math.abs(totalDx) >= 20) {
+        if (absTotalDx >= 20 && absTotalDx > absTotalDy * 1.3) {
           if (totalDx > 0) this.moveRight();
           else this.moveLeft();
-        } else if (totalDy >= 25) {
+        } else if (totalDy >= 25 && absTotalDy > absTotalDx * 1.3) {
           this.softDrop();
         }
       }
+
+      gestureLock = null;
+    }, { passive: true });
+
+    window.addEventListener('touchcancel', () => {
+      gestureLock = null;
+      movedHoriz = false;
+      movedVert = false;
     }, { passive: true });
 
     window.addEventListener('resize', () => {
