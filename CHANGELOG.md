@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade Leaderboard UX: Weekly Pool Reset Timing Clarification (`v1.5.707`)**:
+  - **🕒 Reset Notice Added Across All 9 Leaderboards ([`index.html`](index.html))**:
+    - Updated the weekly tournament banner text across all arcade leaderboard cards (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Cyber Defense, Cyber Runner, Cyber 2048, and Cyber Tetris).
+    - Added explicit community notice: *"Pool resets every Sunday (reset can be delayed by a few hours)."* to set clear expectations around weekly prize distribution and score rollover windows.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.707"` and refreshed asset cache-busters.
+
 - **Cyber Tetris Mobile Controls: Directional Axis Locking for Swipes (`v1.5.706`)**:
   - **📱 Gesture Axis Locking & Drift Elimination ([`tetris.js`](tetris.js))**:
     - Introduced a directional axis-lock state machine (`gestureLock`) for touch gestures with a 10px deadzone filter.
