@@ -32,6 +32,8 @@ export function initStakingCycle() {
   if (yieldInterval) clearInterval(yieldInterval);
   
   yieldInterval = setInterval(() => {
+    if (typeof document !== 'undefined' && document.hidden) return;
+    if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) return;
     const secondsInYear = 365 * 24 * 3600;
     let shouldUpdate = false;
 

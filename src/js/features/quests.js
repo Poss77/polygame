@@ -189,8 +189,10 @@ export function getTimeUntilUtcMidnight() {
   return `${hrs}h ${mins < 10 ? '0' : ''}${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
 }
 
-// Live timer tick every second
+// Live timer tick every second (paused during active arcade gameplay or hidden tab)
 setInterval(() => {
+  if (typeof document !== 'undefined' && document.hidden) return;
+  if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) return;
   const timerEl = document.getElementById('quest-reset-timer');
   if (timerEl) {
     timerEl.innerText = `Resets in: ${getTimeUntilUtcMidnight()}`;

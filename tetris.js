@@ -133,6 +133,7 @@ class CyberTetrisGame {
       ]
     };
 
+    this.boundLoop = this.loop.bind(this);
     this.bindInputs();
   }
 
@@ -476,7 +477,7 @@ class CyberTetrisGame {
 
     // Start game loop
     if (this.animationId) cancelAnimationFrame(this.animationId);
-    this.animationId = requestAnimationFrame(this.loop.bind(this));
+    this.animationId = requestAnimationFrame(this.boundLoop);
   }
 
   // --- Piece Spawning ---
@@ -940,6 +941,11 @@ class CyberTetrisGame {
     if (!this.isPlaying) return;
 
     const delta = time - this.lastTime;
+    // Cap at ~60 FPS on high-refresh (120Hz/144Hz) displays
+    if (delta < 14) {
+      this.animationId = requestAnimationFrame(this.boundLoop);
+      return;
+    }
     this.lastTime = time;
 
     if (!this.isPaused && this.clearingLines.length === 0) {
@@ -968,12 +974,15 @@ class CyberTetrisGame {
         }
       }
 
-      // Elapsed Time & Gravity update every second
-      this.updateGravity();
+      // Only recalculate elapsed time & gravity once per second instead of every frame
+      const nowSec = Math.floor((Date.now() - this.startTime) / 1000);
+      if (nowSec !== this.elapsedSeconds) {
+        this.updateGravity();
+      }
     }
 
     this.render();
-    this.animationId = requestAnimationFrame(this.loop.bind(this));
+    this.animationId = requestAnimationFrame(this.boundLoop);
   }
 
   // --- Canvas Rendering ---
@@ -987,21 +996,19 @@ class CyberTetrisGame {
     ctx.fillStyle = theme.bg;
     ctx.fillRect(0, 0, this.mainCanvas.width, this.mainCanvas.height);
 
-    // Subtle neon grid lines styled to active level atmosphere
+    // Subtle neon grid lines styled to active level atmosphere (batched into a single path)
     ctx.strokeStyle = theme.grid;
     ctx.lineWidth = 1;
+    ctx.beginPath();
     for (let c = 0; c <= this.cols; c++) {
-      ctx.beginPath();
       ctx.moveTo(c * size, 0);
       ctx.lineTo(c * size, this.rows * size);
-      ctx.stroke();
     }
     for (let r = 0; r <= this.rows; r++) {
-      ctx.beginPath();
       ctx.moveTo(0, r * size);
       ctx.lineTo(this.cols * size, r * size);
-      ctx.stroke();
     }
+    ctx.stroke();
 
     // Render locked stack (visible rows: hiddenRows to totalRows)
     for (let r = this.hiddenRows; r < this.totalRows; r++) {
@@ -1148,31 +1155,41 @@ class CyberTetrisGame {
     }
   }
 
-  // --- HUD & Metric Display ---
+  // --- HUD & Metric Display (Cached DOM refs + dirty-value checks) ---
   updateHUD() {
-    const scoreEl = document.getElementById('tetris-score-val');
-    const linesEl = document.getElementById('tetris-lines-val');
-    const levelEl = document.getElementById('tetris-level-val');
-    const timeEl = document.getElementById('tetris-time-val');
-    const coinsEl = document.getElementById('tetris-coins-val');
+    if (!this._scoreEl) this._scoreEl = document.getElementById('tetris-score-val');
+    if (!this._linesEl) this._linesEl = document.getElementById('tetris-lines-val');
+    if (!this._levelEl) this._levelEl = document.getElementById('tetris-level-val');
+    if (!this._timeEl) this._timeEl = document.getElementById('tetris-time-val');
+    if (!this._coinsEl) this._coinsEl = document.getElementById('tetris-coins-val');
 
-    if (scoreEl) scoreEl.innerText = this.score.toLocaleString();
-    if (linesEl) linesEl.innerText = this.lines.toString();
-    if (levelEl) {
-      levelEl.innerText = this.level >= 25 ? '20G MAX' : this.level.toString();
+    if (this._scoreEl && this._lastHudScore !== this.score) {
+      this._scoreEl.innerText = this.score.toLocaleString();
+      this._lastHudScore = this.score;
+    }
+    if (this._linesEl && this._lastHudLines !== this.lines) {
+      this._linesEl.innerText = this.lines.toString();
+      this._lastHudLines = this.lines;
+    }
+    if (this._levelEl && this._lastHudLevel !== this.level) {
+      this._levelEl.innerText = this.level >= 25 ? '20G MAX' : this.level.toString();
       const theme = this.getLevelTheme(this.level);
       if (theme && theme.accent) {
-        levelEl.style.color = theme.accent;
-        levelEl.style.textShadow = `0 0 10px ${theme.accent}`;
+        this._levelEl.style.color = theme.accent;
+        this._levelEl.style.textShadow = `0 0 10px ${theme.accent}`;
       }
+      this._lastHudLevel = this.level;
     }
-    if (coinsEl) {
-      coinsEl.innerText = (this.bonusTokensCollected || 0).toString();
+    const coins = this.bonusTokensCollected || 0;
+    if (this._coinsEl && this._lastHudCoins !== coins) {
+      this._coinsEl.innerText = coins.toString();
+      this._lastHudCoins = coins;
     }
-    if (timeEl) {
+    if (this._timeEl && this._lastHudTime !== this.elapsedSeconds) {
       const mins = Math.floor(this.elapsedSeconds / 60);
       const secs = this.elapsedSeconds % 60;
-      timeEl.innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+      this._timeEl.innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+      this._lastHudTime = this.elapsedSeconds;
     }
   }
 

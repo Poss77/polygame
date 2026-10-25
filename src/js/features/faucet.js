@@ -278,8 +278,10 @@ export function updateFaucetCooldownTimer(secondsLeft) {
   }
 }
 
-// Tick cooldown timers and weekly payouts every second
+// Tick cooldown timers and weekly payouts every second (paused during active arcade gameplay or hidden tab)
 setInterval(() => {
+  if (typeof document !== 'undefined' && document.hidden) return;
+  if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) return;
   const stateObj = getFaucetAppState();
   if (!stateObj || !stateObj.state) return;
 

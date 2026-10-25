@@ -866,7 +866,12 @@ export class CyberDefenseEngine {
           this.queueWave(this.wave + 1);
         }
       }
-      this.updateHUD();
+      if (!this._hudTick || this._hudTick >= 10) {
+        this._hudTick = 0;
+        this.updateHUD();
+      } else {
+        this._hudTick++;
+      }
       return;
     }
 
@@ -2750,41 +2755,57 @@ export class CyberDefenseEngine {
     return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
   }
 
-  // --- HUD Updates ---
+  // --- HUD Updates (Cached DOM refs + dirty checks) ---
   updateHUD() {
-    const elHp = document.getElementById('defense-hud-hp');
-    const elEnergy = document.getElementById('defense-hud-energy');
-    const elWave = document.getElementById('defense-hud-wave');
-    const elScore = document.getElementById('defense-hud-score');
-    const elSpeed = document.getElementById('defense-btn-speed');
-    const elAuto = document.getElementById('defense-btn-auto');
-    const elNext = document.getElementById('defense-btn-nextwave');
+    if (!this._elHp) this._elHp = document.getElementById('defense-hud-hp');
+    if (!this._elEnergy) this._elEnergy = document.getElementById('defense-hud-energy');
+    if (!this._elWave) this._elWave = document.getElementById('defense-hud-wave');
+    if (!this._elScore) this._elScore = document.getElementById('defense-hud-score');
+    if (!this._elSpeed) this._elSpeed = document.getElementById('defense-btn-speed');
+    if (!this._elAuto) this._elAuto = document.getElementById('defense-btn-auto');
+    if (!this._elNext) this._elNext = document.getElementById('defense-btn-nextwave');
 
-    if (elHp) elHp.innerText = `${this.coreHp} / ${this.maxCoreHp}`;
-    if (elEnergy) elEnergy.innerText = `⚡ ${this.energy}`;
-    if (elWave) elWave.innerText = `${this.wave} / ${this.maxWaves}`;
-    if (elScore) elScore.innerText = this.score.toLocaleString();
-    if (elSpeed) elSpeed.innerText = `⏩ ${this.gameSpeed}x`;
-
-    if (elAuto) {
-      elAuto.innerText = `🔄 Auto: ${this.autoWave ? 'ON' : 'OFF'}`;
-      elAuto.style.borderColor = this.autoWave ? 'var(--color-success)' : 'rgba(255,255,255,0.25)';
-      elAuto.style.color = this.autoWave ? 'var(--color-success)' : 'var(--text-muted)';
+    const hpStr = `${this.coreHp} / ${this.maxCoreHp}`;
+    if (this._elHp && this._lastHpStr !== hpStr) {
+      this._elHp.innerText = hpStr;
+      this._lastHpStr = hpStr;
+    }
+    if (this._elEnergy && this._lastEnergy !== this.energy) {
+      this._elEnergy.innerText = `⚡ ${this.energy}`;
+      this._lastEnergy = this.energy;
+    }
+    const waveStr = `${this.wave} / ${this.maxWaves}`;
+    if (this._elWave && this._lastWaveStr !== waveStr) {
+      this._elWave.innerText = waveStr;
+      this._lastWaveStr = waveStr;
+    }
+    if (this._elScore && this._lastScore !== this.score) {
+      this._elScore.innerText = this.score.toLocaleString();
+      this._lastScore = this.score;
+    }
+    if (this._elSpeed && this._lastSpeed !== this.gameSpeed) {
+      this._elSpeed.innerText = `⏩ ${this.gameSpeed}x`;
+      this._lastSpeed = this.gameSpeed;
     }
 
-    if (elNext) {
-      if (this.isPrepPhase) {
-        elNext.innerText = `▶ Start Wave`;
-        elNext.style.borderColor = 'var(--color-success)';
-        elNext.style.color = 'var(--color-success)';
-      } else if (this.waveActive) {
-        elNext.innerText = `▶ In Progress`;
-        elNext.style.borderColor = 'var(--text-muted)';
-        elNext.style.color = 'var(--text-muted)';
+    if (this._elAuto && this._lastAuto !== this.autoWave) {
+      this._lastAuto = this.autoWave;
+      this._elAuto.innerText = `🔄 Auto: ${this.autoWave ? 'ON' : 'OFF'}`;
+      this._elAuto.style.borderColor = this.autoWave ? 'var(--color-success)' : 'rgba(255,255,255,0.25)';
+      this._elAuto.style.color = this.autoWave ? 'var(--color-success)' : 'var(--text-muted)';
+    }
+
+    const nextState = this.waveActive ? 'active' : 'ready';
+    if (this._elNext && this._lastNextState !== nextState) {
+      this._lastNextState = nextState;
+      if (this.waveActive) {
+        this._elNext.innerText = `▶ In Progress`;
+        this._elNext.style.borderColor = 'var(--text-muted)';
+        this._elNext.style.color = 'var(--text-muted)';
       } else {
-        elNext.innerText = `▶ Start Wave`;
-        elNext.style.borderColor = 'var(--color-success)';
-        elNext.style.color = 'var(--color-success)';
+        this._elNext.innerText = `▶ Start Wave`;
+        this._elNext.style.borderColor = 'var(--color-success)';
+        this._elNext.style.color = 'var(--color-success)';
       }
     }
   }

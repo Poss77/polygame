@@ -605,7 +605,12 @@ export class CyberSkeetEngine {
     if (this.screenShake > 0) this.screenShake = Math.max(0, this.screenShake - 25 * dt);
     if (this.damageFlash > 0) this.damageFlash = Math.max(0, this.damageFlash - 3 * dt);
 
-    this.updateHUD();
+    if (!this._hudTick || this._hudTick >= 6) {
+      this._hudTick = 0;
+      this.updateHUD();
+    } else {
+      this._hudTick++;
+    }
   }
 
   // --- Spawning Target Clays (Strict Separation for Hazard Drones & Crossing Trajectories) ---
@@ -1167,35 +1172,46 @@ export class CyberSkeetEngine {
     } catch (e) {}
   }
 
-  // --- HUD Rendering ---
+  // --- HUD Rendering (Cached DOM refs + dirty checks) ---
   updateHUD() {
-    // Hearts Display
-    const heartsEl = document.getElementById('skeet-hud-hearts');
-    if (heartsEl) {
+    if (!this._heartsEl) this._heartsEl = document.getElementById('skeet-hud-hearts');
+    if (this._heartsEl && this._lastLives !== this.lives) {
+      this._lastLives = this.lives;
       let heartsStr = '';
       for (let i = 0; i < this.maxLives; i++) {
         heartsStr += (i < this.lives) ? '❤️ ' : '🖤 ';
       }
-      heartsEl.innerText = heartsStr.trim();
+      this._heartsEl.innerText = heartsStr.trim();
     }
 
     // Score & Multiplier
-    const scoreEl = document.getElementById('skeet-hud-score');
-    if (scoreEl) scoreEl.innerText = Math.floor(this.score).toLocaleString();
+    if (!this._scoreEl) this._scoreEl = document.getElementById('skeet-hud-score');
+    const scoreFloor = Math.floor(this.score);
+    if (this._scoreEl && this._lastScore !== scoreFloor) {
+      this._lastScore = scoreFloor;
+      this._scoreEl.innerText = scoreFloor.toLocaleString();
+    }
 
-    const comboEl = document.getElementById('skeet-hud-combo');
-    if (comboEl) {
-      comboEl.innerText = `${this.comboMultiplier}x COMBO`;
-      comboEl.style.color = this.comboMultiplier >= 7 ? '#ff0055' : (this.comboMultiplier >= 4 ? '#ffaa00' : '#00f0ff');
+    if (!this._comboEl) this._comboEl = document.getElementById('skeet-hud-combo');
+    if (this._comboEl && this._lastCombo !== this.comboMultiplier) {
+      this._lastCombo = this.comboMultiplier;
+      this._comboEl.innerText = `${this.comboMultiplier}x COMBO`;
+      this._comboEl.style.color = this.comboMultiplier >= 7 ? '#ff0055' : (this.comboMultiplier >= 4 ? '#ffaa00' : '#00f0ff');
     }
 
     // Buff Badges
-    const buffEl = document.getElementById('skeet-hud-buffs');
-    if (buffEl) {
-      let buffs = [];
-      if (this.slowmoTimer > 0) buffs.push(`⏱️ SLOW-MO ${Math.ceil(this.slowmoTimer)}s`);
-      if (this.scatterTimer > 0) buffs.push(`💥 SCATTER ${Math.ceil(this.scatterTimer)}s`);
-      buffEl.innerHTML = buffs.map(b => `<span style="background:rgba(0,240,255,0.2); border:1px solid #00f0ff; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:800; color:#00f0ff;">${b}</span>`).join(' ');
+    if (!this._buffEl) this._buffEl = document.getElementById('skeet-hud-buffs');
+    if (this._buffEl) {
+      const slowSec = this.slowmoTimer > 0 ? Math.ceil(this.slowmoTimer) : 0;
+      const scatSec = this.scatterTimer > 0 ? Math.ceil(this.scatterTimer) : 0;
+      const buffKey = `${slowSec}:${scatSec}`;
+      if (this._lastBuffKey !== buffKey) {
+        this._lastBuffKey = buffKey;
+        let buffs = [];
+        if (slowSec > 0) buffs.push(`⏱️ SLOW-MO ${slowSec}s`);
+        if (scatSec > 0) buffs.push(`💥 SCATTER ${scatSec}s`);
+        this._buffEl.innerHTML = buffs.map(b => `<span style="background:rgba(0,240,255,0.2); border:1px solid #00f0ff; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:800; color:#00f0ff;">${b}</span>`).join(' ');
+      }
     }
   }
 

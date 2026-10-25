@@ -63,8 +63,10 @@ class PolySpaceEngine {
       ? savedMode
       : (isMobile ? 'radar' : 'split');
 
-    // Auto-update UI
+    // Auto-update UI (paused during active arcade gameplay or hidden tab)
     setInterval(() => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) return;
       this.updateUI();
     }, 1000);
 

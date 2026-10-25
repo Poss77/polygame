@@ -97,6 +97,19 @@
   border-color: rgba(255, 255, 255, 0.08);
 }
 
+/* Disable heavy 16px GPU Gaussian backdrop-filter inside active 60FPS arcade view & on mobile devices */
+#view-games .card {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+@media (max-width: 768px) {
+  .card {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
 .card-header-line {
   display: flex;
   justify-content: space-between;

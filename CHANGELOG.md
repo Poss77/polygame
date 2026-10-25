@@ -5,6 +5,22 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade & UI Performance Overhaul: 60 FPS Frame-Pacing, DOM HUD Throttling & GPU Compositor Relief (`v1.5.708`)**:
+  - **⚡ Eliminated Per-Frame DOM Thrashing Across Arcade Engines ([`tetris.js`](tetris.js), [`game.js`](game.js), [`runner.js`](runner.js), [`skeet.js`](skeet.js), [`defense.js`](defense.js), [`drift.js`](drift.js))**:
+    - Cached HUD DOM element references and added dirty-value checks + frame-interval throttling across all arcade engines so `document.getElementById()`, `.innerText`, and `.innerHTML` are no longer mutated unconditionally 60–144 times per second.
+    - In `tetris.js`: pre-bound `this.boundLoop` once in the constructor (eliminating per-frame `.bind()` allocations), added a 60 FPS frame-delta cap for 120Hz/144Hz screens, gated `updateGravity()` to run once per second instead of every frame, and batched all 32 board grid lines into a single `ctx.beginPath()` / `ctx.stroke()` draw call.
+    - In `game.js`: moved `appState.getMultipliers()`, `isVipActive()`, and `getVipLevel()` inside the 10-frame HUD throttle block, cutting 90% of per-frame Set/Array allocations during Astro-Dodge flight.
+  - **🚀 Procedural Starship Renderer & DNA Memoization ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Added `Map` memoization caches (`_rarityCache`, `_dnaCache`) for `getStarshipRarity(dna)` and `decodeDNA(dna)` so 60 FPS gameplay loops never re-parse DNA strings or filter trait arrays on every frame.
+    - Replaced per-frame `ctx.createLinearGradient()` and `ctx.shadowBlur` calls on thruster plumes and hull/wing panels during active gameplay (`isGame === true`) with fast layered vector fills while preserving full glow gradients in the Hangar preview.
+  - **🔊 Pre-Cached Explosion White-Noise Buffer & Auto-Removing Unlock Listeners ([`src/js/core/audio.js`](src/js/core/audio.js))**:
+    - Cached a single reusable white-noise `AudioBuffer` (`this._explosionBuffer`) in `playExplosion()`, eliminating synchronous 28,800-iteration `Math.random()` loops on the main thread during chain explosions.
+    - Automatically removed the 5 global `capture: true` audio-unlock listeners (`click`, `touchstart`, `touchend`, `pointerdown`, `keydown`) once the `AudioContext` is unlocked and running.
+  - **🎨 Multi-Entity Canvas `shadowBlur` Cleanup & Background Timer Gating ([`invaders.js`](invaders.js), [`runner.js`](runner.js), [`src/js/features/faucet.js`](src/js/features/faucet.js), [`src/js/features/quests.js`](src/js/features/quests.js), [`src/js/features/staking.js`](src/js/features/staking.js), [`space.js`](space.js), [`src/css/views.css`](src/css/views.css))**:
+    - Removed per-alien, per-bunker-segment, per-bullet, and per-particle `ctx.shadowBlur` passes in `invaders.js` and `runner.js` (saving ~80 Gaussian blur passes per frame).
+    - Paused 1-second background DOM timers in `faucet.js`, `quests.js`, `staking.js`, and `space.js` while `document.hidden` is true or any arcade game is actively running (`window.isAnyArcadeGamePlaying()`).
+    - Disabled heavy 16px GPU `backdrop-filter` blurring on `.card` containers inside `#view-games` and on mobile viewports (`max-width: 768px`).
+
 - **Arcade Leaderboard UX: Weekly Pool Reset Timing Clarification (`v1.5.707`)**:
   - **🕒 Reset Notice Added Across All 9 Leaderboards ([`index.html`](index.html))**:
     - Updated the weekly tournament banner text across all arcade leaderboard cards (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Cyber Defense, Cyber Runner, Cyber 2048, and Cyber Tetris).

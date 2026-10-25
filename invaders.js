@@ -1436,8 +1436,6 @@ class CyberInvaders {
           this.ctx.fillStyle = `rgba(0, 240, 255, ${0.35 + hpPct * 0.55})`;
           this.ctx.strokeStyle = '#00f0ff';
           this.ctx.lineWidth = 1.5;
-          this.ctx.shadowColor = '#00f0ff';
-          this.ctx.shadowBlur = 8 * hpPct;
 
           this.ctx.fillRect(sx, sy, seg.w, seg.h);
           this.ctx.strokeRect(sx, sy, seg.w, seg.h);
@@ -1554,8 +1552,6 @@ class CyberInvaders {
     for (const b of this.bullets) {
       this.ctx.fillStyle = bulletGlow;
       this.ctx.fillRect(b.x - 2, b.y - 2, b.w + 4, b.h + 4);
-      this.ctx.shadowColor = bulletColor;
-      this.ctx.shadowBlur = 8;
       this.ctx.fillStyle = bulletColor;
       this.ctx.fillRect(b.x, b.y, b.w, b.h);
       this.ctx.fillStyle = bulletCore;
@@ -1583,9 +1579,9 @@ class CyberInvaders {
       const bx = b.x - (bw / 2);
       const by = b.y;
 
-      // 1. Radiant Amber Outer Glow & Body
-      this.ctx.shadowColor = '#ff6a00';
-      this.ctx.shadowBlur = 14;
+      // 1. Radiant Amber Outer Glow Halo & Body (Zero shadowBlur for 60 FPS)
+      this.ctx.fillStyle = 'rgba(255, 106, 0, 0.35)';
+      this.ctx.fillRect(bx - 2, by - 2, bw + 4, bh + 4);
       this.ctx.fillStyle = '#ffaa00';
       this.ctx.beginPath();
       if (this.ctx.roundRect) {
@@ -1596,8 +1592,6 @@ class CyberInvaders {
       this.ctx.fill();
 
       // 2. Pure White Super-Hot Laser Core (Cuts cleanly through all space backgrounds)
-      this.ctx.shadowColor = '#ffffff';
-      this.ctx.shadowBlur = 4;
       this.ctx.fillStyle = '#ffffff';
       this.ctx.beginPath();
       const coreW = Math.max(1.5, bw - 2.4);
@@ -1732,8 +1726,6 @@ class CyberInvaders {
       }
 
       this.ctx.fillStyle = inv.color;
-      this.ctx.shadowColor = inv.color;
-      this.ctx.shadowBlur = 8;
       this.ctx.fillRect(inv.x, inv.y, inv.w, inv.h);
 
       // Alien Type Visual Decals
@@ -1834,8 +1826,8 @@ class CyberInvaders {
       this.ctx.restore();
     }
 
-    // Draw Particles & Floating Text
-    this.ctx.shadowBlur = 4;
+    // Draw Particles & Floating Text (zero shadowBlur for 60 FPS)
+    this.ctx.shadowBlur = 0;
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
       p.x += (p.vx || 0);
@@ -1849,7 +1841,6 @@ class CyberInvaders {
         this.ctx.fillText(p.text, p.x, p.y);
       } else {
         this.ctx.fillStyle = p.color;
-        this.ctx.shadowColor = p.color;
         this.ctx.globalAlpha = Math.max(0, p.alpha);
         const sz = p.size || 2;
         this.ctx.fillRect(p.x, p.y, sz, sz);

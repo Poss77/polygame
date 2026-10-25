@@ -671,7 +671,12 @@ class CyberDriftGame {
       if (p.alpha <= 0) this.particles.splice(i, 1);
     }
 
-    this.updateHUD();
+    if (!this._hudTick || this._hudTick >= 6) {
+      this._hudTick = 0;
+      this.updateHUD();
+    } else {
+      this._hudTick++;
+    }
   }
 
   addParticle(x, y, color) {

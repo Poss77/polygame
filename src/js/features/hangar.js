@@ -182,7 +182,12 @@ export const STARSHIP_RARITY = {
  * Calculates deterministic Starship Rarity from 6-digit DNA
  * Tiers: Rare, Epic, Legendary, Mythic
  */
+const _rarityCache = new Map();
+const _dnaCache = new Map();
+
 export function getStarshipRarity(dna) {
+  const key = String(dna || 482915);
+  if (_rarityCache.has(key)) return _rarityCache.get(key);
   const num = parseInt(dna, 10) || 482915;
 
   const chassisPts  = [10, 10, 14, 14, 18]; // Stealth(10), Needle(10), Cruiser(14), Blade(14), Twin(18)
@@ -223,21 +228,26 @@ export function getStarshipRarity(dna) {
   }
 
   const def = STARSHIP_RARITY[tierKey];
-  return {
+  const res = {
     ...def,
     score,
     legendaryCount,
     pts
   };
+  if (_rarityCache.size > 200) _rarityCache.clear();
+  _rarityCache.set(key, res);
+  return res;
 }
 
 /**
  * Decodes 6-digit DNA integer into trait definitions
  */
 export function decodeDNA(dna) {
+  const key = String(dna || 482915);
+  if (_dnaCache.has(key)) return _dnaCache.get(key);
   const num = parseInt(dna, 10) || 482915;
   const d = TRAIT_DICT;
-  return {
+  const res = {
     chassis:  d.chassis[num % d.chassis.length],
     wings:    d.wings[Math.floor(num / 10) % d.wings.length],
     palette:  d.palettes[Math.floor(num / 100) % d.palettes.length],
@@ -245,6 +255,9 @@ export function decodeDNA(dna) {
     thruster: d.thrusters[Math.floor(num / 10000) % d.thrusters.length],
     decal:    d.decals[Math.floor(num / 100000) % d.decals.length]
   };
+  if (_dnaCache.size > 200) _dnaCache.clear();
+  _dnaCache.set(key, res);
+  return res;
 }
 
 /**
@@ -305,39 +318,68 @@ export function renderProceduralShip(ctx, x, y, dna, scale = 1.0, tilt = 0, anim
     const nozzleX = -t.chassis.aftLen;
 
     ctx.save();
-    // Intense Neon Glow matching Rarity Flame
-    ctx.shadowColor = rarity.flame;
-    ctx.shadowBlur = isGame ? 10 : 22;
+    if (isGame) {
+      // Zero-gradient, zero-shadowBlur fast layered vector plume for 60 FPS gameplay
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = rarity.flame;
+      ctx.beginPath();
+      ctx.moveTo(nozzleX, offsetY - t.thruster.size * 1.25);
+      ctx.lineTo(nozzleX - outerLen, offsetY);
+      ctx.lineTo(nozzleX, offsetY + t.thruster.size * 1.25);
+      ctx.closePath();
+      ctx.fill();
 
-    // Outer Plume (Vibrant Rarity Fire Color)
-    const outerGrad = ctx.createLinearGradient(nozzleX, offsetY, nozzleX - outerLen, offsetY);
-    outerGrad.addColorStop(0, rarity.flame);
-    outerGrad.addColorStop(0.35, rarity.flame);
-    outerGrad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = outerGrad;
-    ctx.beginPath();
-    ctx.moveTo(nozzleX, offsetY - t.thruster.size * 1.25);
-    ctx.lineTo(nozzleX - outerLen, offsetY);
-    ctx.lineTo(nozzleX, offsetY + t.thruster.size * 1.25);
-    ctx.closePath();
-    ctx.fill();
+      ctx.globalAlpha = 1.0;
+      ctx.fillStyle = rarity.coreFlame || '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(nozzleX, offsetY - t.thruster.size * 0.65);
+      ctx.lineTo(nozzleX - innerLen, offsetY);
+      ctx.lineTo(nozzleX, offsetY + t.thruster.size * 0.65);
+      ctx.closePath();
+      ctx.fill();
 
-    // Inner Core Spear (Rarity Core Fire Color)
-    ctx.shadowColor = rarity.coreFlame;
-    ctx.shadowBlur = isGame ? 6 : 14;
-    const innerGrad = ctx.createLinearGradient(nozzleX, offsetY, nozzleX - innerLen, offsetY);
-    innerGrad.addColorStop(0, '#ffffff');
-    innerGrad.addColorStop(0.35, rarity.coreFlame);
-    innerGrad.addColorStop(0.8, rarity.flame);
-    innerGrad.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = innerGrad;
-    ctx.beginPath();
-    ctx.moveTo(nozzleX, offsetY - t.thruster.size * 0.55);
-    ctx.lineTo(nozzleX - innerLen, offsetY);
-    ctx.lineTo(nozzleX, offsetY + t.thruster.size * 0.55);
-    ctx.closePath();
-    ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.moveTo(nozzleX, offsetY - t.thruster.size * 0.3);
+      ctx.lineTo(nozzleX - innerLen * 0.5, offsetY);
+      ctx.lineTo(nozzleX, offsetY + t.thruster.size * 0.3);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      // Intense Neon Glow matching Rarity Flame (Hangar Preview)
+      ctx.shadowColor = rarity.flame;
+      ctx.shadowBlur = 22;
 
+      // Outer Plume (Vibrant Rarity Fire Color)
+      const outerGrad = ctx.createLinearGradient(nozzleX, offsetY, nozzleX - outerLen, offsetY);
+      outerGrad.addColorStop(0, rarity.flame);
+      outerGrad.addColorStop(0.35, rarity.flame);
+      outerGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = outerGrad;
+      ctx.beginPath();
+      ctx.moveTo(nozzleX, offsetY - t.thruster.size * 1.25);
+      ctx.lineTo(nozzleX - outerLen, offsetY);
+      ctx.lineTo(nozzleX, offsetY + t.thruster.size * 1.25);
+      ctx.closePath();
+      ctx.fill();
+
+      // Inner Core Spear (Rarity Core Fire Color)
+      ctx.shadowColor = rarity.coreFlame;
+      ctx.shadowBlur = 14;
+      const innerGrad = ctx.createLinearGradient(nozzleX, offsetY, nozzleX - innerLen, offsetY);
+      innerGrad.addColorStop(0, '#ffffff');
+      innerGrad.addColorStop(0.35, rarity.coreFlame);
+      innerGrad.addColorStop(0.8, rarity.flame);
+      innerGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = innerGrad;
+      ctx.beginPath();
+      ctx.moveTo(nozzleX, offsetY - t.thruster.size * 0.55);
+      ctx.lineTo(nozzleX - innerLen, offsetY);
+      ctx.lineTo(nozzleX, offsetY + t.thruster.size * 0.55);
+      ctx.closePath();
+      ctx.fill();
+    }
     ctx.restore();
 
     // Metallic Nozzle
@@ -374,10 +416,14 @@ export function renderProceduralShip(ctx, x, y, dna, scale = 1.0, tilt = 0, anim
   ctx.stroke();
 
   // Wing Armor Panels
-  const wingGrad = ctx.createLinearGradient(-30, 0, 40, 0);
-  wingGrad.addColorStop(0, p.hullGrad[1]);
-  wingGrad.addColorStop(1, p.primary);
-  ctx.fillStyle = wingGrad;
+  if (isGame) {
+    ctx.fillStyle = p.hullGrad[1];
+  } else {
+    const wingGrad = ctx.createLinearGradient(-30, 0, 40, 0);
+    wingGrad.addColorStop(0, p.hullGrad[1]);
+    wingGrad.addColorStop(1, p.primary);
+    ctx.fillStyle = wingGrad;
+  }
 
   ctx.beginPath();
   ctx.moveTo(t.chassis.noseLen * 0.2, -4);
@@ -396,11 +442,15 @@ export function renderProceduralShip(ctx, x, y, dna, scale = 1.0, tilt = 0, anim
   ctx.fill();
 
   // 3. LAYER 1: Fuselage Hull
-  const hullGrad = ctx.createLinearGradient(-t.chassis.aftLen, 0, t.chassis.noseLen, 0);
-  hullGrad.addColorStop(0, p.hullGrad[0]);
-  hullGrad.addColorStop(0.5, p.hullGrad[1]);
-  hullGrad.addColorStop(1, p.hullGrad[2]);
-  ctx.fillStyle = hullGrad;
+  if (isGame) {
+    ctx.fillStyle = p.hullGrad[1];
+  } else {
+    const hullGrad = ctx.createLinearGradient(-t.chassis.aftLen, 0, t.chassis.noseLen, 0);
+    hullGrad.addColorStop(0, p.hullGrad[0]);
+    hullGrad.addColorStop(0.5, p.hullGrad[1]);
+    hullGrad.addColorStop(1, p.hullGrad[2]);
+    ctx.fillStyle = hullGrad;
+  }
   ctx.strokeStyle = p.primary;
   ctx.lineWidth = 2;
 

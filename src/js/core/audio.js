@@ -7,6 +7,7 @@ export class RetroSynth {
     this.unlocked = false;
     this.hyperdriveAudio = null;
     this.isHyperdrivePlaying = false;
+    this._explosionBuffer = null;
   }
 
   init(force = false) {
@@ -199,16 +200,19 @@ export class RetroSynth {
     const t = this.ctx.currentTime;
     const duration = 0.6;
 
-    // Buffer generation
-    const bufferSize = this.ctx.sampleRate * duration;
-    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
+    // Pre-generate and cache white noise buffer once instead of 28,800 Math.random() calls per explosion
+    if (!this._explosionBuffer || this._explosionBuffer.sampleRate !== this.ctx.sampleRate) {
+      const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+      const buf = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      this._explosionBuffer = buf;
     }
 
     const noiseNode = this.ctx.createBufferSource();
-    noiseNode.buffer = buffer;
+    noiseNode.buffer = this._explosionBuffer;
 
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
@@ -1033,13 +1037,19 @@ if (typeof window !== 'undefined') {
   if (typeof window._userHasInteracted === 'undefined') {
     window._userHasInteracted = false;
   }
+  const unlockEvents = ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown'];
   const unlockAudio = () => {
     window._userHasInteracted = true;
     if (window.sfx && typeof window.sfx.init === 'function') {
       window.sfx.init(true);
+      if (window.sfx.unlocked || (window.sfx.ctx && window.sfx.ctx.state === 'running')) {
+        unlockEvents.forEach(evt => {
+          window.removeEventListener(evt, unlockAudio, { capture: true });
+        });
+      }
     }
   };
-  ['click', 'touchstart', 'touchend', 'pointerdown', 'keydown'].forEach(evt => {
+  unlockEvents.forEach(evt => {
     window.addEventListener(evt, unlockAudio, { capture: true, passive: true });
   });
 

@@ -960,23 +960,22 @@ class NeonAstroDodge {
     this.difficulty += 0.00025;
     this.baseSpeedMult = 0.9 + (this.difficulty - 1) * 0.25;
 
-    // Update live PGT earned display
-    const multis = (typeof appState.getMultipliers === 'function') ? appState.getMultipliers() : { nftGameMultiplier: 0 };
-    const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-    const isVip = (typeof appState.isVipActive === 'function' && appState.isVipActive());
-    const vipLevel = (typeof appState.getVipLevel === 'function') ? appState.getVipLevel() : (isVip ? 2 : 0);
-    const vipMult = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
-    const ambMult = (appState.state && appState.state.isAmbassador) ? 2.0 : 1.0;
-    const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
-    const starshipMult = this.nftTierEarnMultiplier || 1.0;
-    const playerMult = nftMult * vipMult * ambMult * relicMult * starshipMult;
-    const globalEarnMult = (typeof appState !== 'undefined' && appState.state && appState.state.globalEarnMultiplier !== undefined) ? Number(appState.state.globalEarnMultiplier) : 1.0;
-    const liveRawPgt = Math.min(75.0, ((this.score / 2500.0) + (this.shardsCollected * 0.05)) * globalEarnMult);
-    const liveFinalPgt = Math.min(1000.0, (liveRawPgt * playerMult) + Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0));
-
-    // Throttle DOM HUD updates to once every 10 frames (~6x/sec) and cache DOM element references
+    // Throttle multiplier calculation & DOM HUD updates to once every 10 frames (~6x/sec) and cache DOM element references
     if (!this._hudTick || this._hudTick >= 10) {
       this._hudTick = 0;
+      const multis = (typeof appState.getMultipliers === 'function') ? appState.getMultipliers() : { nftGameMultiplier: 0 };
+      const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
+      const isVip = (typeof appState.isVipActive === 'function' && appState.isVipActive());
+      const vipLevel = (typeof appState.getVipLevel === 'function') ? appState.getVipLevel() : (isVip ? 2 : 0);
+      const vipMult = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
+      const ambMult = (appState.state && appState.state.isAmbassador) ? 2.0 : 1.0;
+      const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
+      const starshipMult = this.nftTierEarnMultiplier || 1.0;
+      const playerMult = nftMult * vipMult * ambMult * relicMult * starshipMult;
+      const globalEarnMult = (typeof appState !== 'undefined' && appState.state && appState.state.globalEarnMultiplier !== undefined) ? Number(appState.state.globalEarnMultiplier) : 1.0;
+      const liveRawPgt = Math.min(75.0, ((this.score / 2500.0) + (this.shardsCollected * 0.05)) * globalEarnMult);
+      const liveFinalPgt = Math.min(1000.0, (liveRawPgt * playerMult) + Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0));
+
       if (!this._earnedEl) this._earnedEl = document.getElementById('game-live-earned');
       if (this._earnedEl) this._earnedEl.innerText = liveFinalPgt.toFixed(2);
       if (!this._boostLabelEl) this._boostLabelEl = document.getElementById('game-nft-boost-label');

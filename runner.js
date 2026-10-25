@@ -842,7 +842,12 @@ class CyberRunnerGame {
       this.createTrailParticles(1, this.overdriveTimer > 0 ? '#ff007f' : '#00f0ff');
     }
 
-    this.updateHUD();
+    if (!this._hudTick || this._hudTick >= 8) {
+      this._hudTick = 0;
+      this.updateHUD();
+    } else {
+      this._hudTick++;
+    }
   }
 
   // --- Entity Spawning Engine ---
@@ -1829,11 +1834,10 @@ class CyberRunnerGame {
     // 5. Render Player Character
     this.renderPlayer(ctx);
 
-    // 6. Render Particles
+    // 6. Render Particles (zero shadowBlur for 60 FPS performance)
+    ctx.shadowBlur = 0;
     this.particles.forEach(p => {
       ctx.fillStyle = p.color;
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 8;
       ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -2407,30 +2411,47 @@ class CyberRunnerGame {
     }
   }
 
-  // --- HUD Updates ---
+  // --- HUD Updates (Cached DOM refs + dirty checks) ---
   updateHUD() {
-    const scoreEl = document.getElementById('runner-score-val');
-    const distEl = document.getElementById('runner-dist-val');
-    const timeEl = document.getElementById('runner-time-val');
-    const tokensEl = document.getElementById('runner-tokens-val');
-    const speedEl = document.getElementById('runner-speed-val');
+    if (!this._scoreEl) this._scoreEl = document.getElementById('runner-score-val');
+    if (!this._distEl) this._distEl = document.getElementById('runner-dist-val');
+    if (!this._timeEl) this._timeEl = document.getElementById('runner-time-val');
+    if (!this._tokensEl) this._tokensEl = document.getElementById('runner-tokens-val');
+    if (!this._speedEl) this._speedEl = document.getElementById('runner-speed-val');
 
-    if (scoreEl) scoreEl.innerText = this.score.toLocaleString();
-    if (distEl) distEl.innerText = `${Math.floor(this.distance)}m`;
-    if (tokensEl) tokensEl.innerText = `🪙 ${this.bonusTokensCollected} (${this.bonusTokensCollected * 5} PGT) • ✨ ${this.bonusItemsCollected}`;
-    if (speedEl) speedEl.innerText = `${Math.floor(this.speed * 4)} km/h`;
+    const scoreFloor = Math.floor(this.score);
+    if (this._scoreEl && this._lastScore !== scoreFloor) {
+      this._scoreEl.innerText = scoreFloor.toLocaleString();
+      this._lastScore = scoreFloor;
+    }
+    const distFloor = Math.floor(this.distance);
+    if (this._distEl && this._lastDist !== distFloor) {
+      this._distEl.innerText = `${distFloor}m`;
+      this._lastDist = distFloor;
+    }
+    const tokenKey = `${this.bonusTokensCollected}:${this.bonusItemsCollected}`;
+    if (this._tokensEl && this._lastTokenKey !== tokenKey) {
+      this._tokensEl.innerText = `🪙 ${this.bonusTokensCollected} (${this.bonusTokensCollected * 5} PGT) • ✨ ${this.bonusItemsCollected}`;
+      this._lastTokenKey = tokenKey;
+    }
+    const kmh = Math.floor(this.speed * 4);
+    if (this._speedEl && this._lastKmh !== kmh) {
+      this._speedEl.innerText = `${kmh} km/h`;
+      this._lastKmh = kmh;
+    }
 
-    if (timeEl) {
-      const elapsed = Math.floor(this.gameTime);
+    const elapsed = Math.floor(this.gameTime);
+    if (this._timeEl && this._lastElapsed !== elapsed) {
+      this._lastElapsed = elapsed;
       const mins = Math.floor(elapsed / 60);
       const secs = (elapsed % 60).toString().padStart(2, '0');
-      timeEl.innerText = `${mins}:${secs}`;
+      this._timeEl.innerText = `${mins}:${secs}`;
       if (this.gameTime >= 120) {
-        timeEl.style.color = 'var(--color-danger)';
+        this._timeEl.style.color = 'var(--color-danger)';
       } else if (this.gameTime >= 60) {
-        timeEl.style.color = 'var(--color-warning)';
+        this._timeEl.style.color = 'var(--color-warning)';
       } else {
-        timeEl.style.color = 'var(--color-accent)';
+        this._timeEl.style.color = 'var(--color-accent)';
       }
     }
   }
