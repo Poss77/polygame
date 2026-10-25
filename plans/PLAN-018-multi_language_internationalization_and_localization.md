@@ -1,8 +1,10 @@
-# Polygon Gaming — Multi-Language Internationalization (i18n) Plan
+# Polygon Gaming — Multi-Language Internationalization & Localization
 
-**Target Platform**: Polygon Gaming (`polygongaming.io` / `polygame.fun`)  
-**Architecture**: Vanilla HTML/CSS/JavaScript with Supabase PostgreSQL backend  
-**Status**: Planned / Reference  
+> **Plan ID**: `PLAN-018`  
+> **Codename**: PolyLocale  
+> **Target Platform**: Polygon Gaming (`https://polygongaming.io` / `https://polygame.fun`)  
+> **Architecture**: Vanilla HTML/CSS/JavaScript with Supabase PostgreSQL backend  
+> **Status**: Planned / Reference  
 
 ---
 
