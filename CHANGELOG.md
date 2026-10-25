@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade Polish: In-Game Starship Size Further Boosted by +20% (`v1.5.705`)**:
+  - **🚀 Extended Starship Canvas Scaling ([`src/js/features/hangar.js`](src/js/features/hangar.js), [`game.js`](game.js), [`invaders.js`](invaders.js))**:
+    - Further increased the normalized Starship rendering scale by an additional +20% (`targetHalfSpan = 28.8px`, `targetLength = 59.4px`, scale range `0.28` - `0.53`).
+    - Gives procedural NFT starships a bold, commanding screen presence while maintaining the standardized 14px competitive collision radius.
+    - Expanded the rarity atmospheric underglow halo to a 23px radius in Astro-Dodge.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.705"` and refreshed asset cache-busters.
+
 - **Arcade Polish: In-Game Starship Size Increased by +30% (`v1.5.704`)**:
   - **🚀 Proportional +30% Starship Upscaling ([`src/js/features/hangar.js`](src/js/features/hangar.js), [`game.js`](game.js), [`invaders.js`](invaders.js))**:
     - Increased the normalized in-game visual envelope for all procedural Starships by +30% (`targetHalfSpan = 24.0px`, `targetLength = 49.5px`, scale range `0.23` - `0.44`).

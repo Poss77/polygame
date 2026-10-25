@@ -258,9 +258,9 @@ export function decodeDNA(dna) {
  * @param {number} targetLength - Target visual total fuselage length (default 38px)
  * @returns {number} Normalized canvas render scale
  */
-export function getNormalizedShipScale(dna, targetHalfSpan = 24.0, targetLength = 49.5) {
+export function getNormalizedShipScale(dna, targetHalfSpan = 28.8, targetLength = 59.4) {
   try {
-    if (!dna) return 0.325;
+    if (!dna) return 0.39;
     const t = decodeDNA(dna);
     const span = (t.wings && typeof t.wings.span === 'number') ? t.wings.span : 70;
     const nose = (t.chassis && typeof t.chassis.noseLen === 'number') ? t.chassis.noseLen : 55;
@@ -272,9 +272,9 @@ export function getNormalizedShipScale(dna, targetHalfSpan = 24.0, targetLength 
 
     // Constrain so both wingspan and fuselage fit cleanly inside the visual envelope
     const rawScale = Math.min(scaleBySpan, scaleByLen);
-    return Math.max(0.23, Math.min(0.44, parseFloat(rawScale.toFixed(3))));
+    return Math.max(0.28, Math.min(0.53, parseFloat(rawScale.toFixed(3))));
   } catch (err) {
-    return 0.325;
+    return 0.39;
   }
 }
 
