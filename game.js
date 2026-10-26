@@ -1505,16 +1505,19 @@ class NeonAstroDodge {
         const tx = closestTarget.w ? (closestTarget.x + closestTarget.w / 2) : closestTarget.x;
         const ty = closestTarget.h ? (closestTarget.y + closestTarget.h / 2) : closestTarget.y;
         const targetAngle = Math.atan2(ty - m.y, tx - m.x);
+        const curAngle = Math.atan2(m.vy, m.vx);
         
-        // Fluid homing steering
-        m.vx += Math.cos(targetAngle) * 0.55;
-        m.vy += Math.sin(targetAngle) * 0.55;
+        // Angular difference wrapped between -PI and PI to eliminate orbiting
+        let angleDiff = targetAngle - curAngle;
+        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
 
-        const curSpeed = Math.hypot(m.vx, m.vy);
-        if (curSpeed > m.speed) {
-          m.vx = (m.vx / curSpeed) * m.speed;
-          m.vy = (m.vy / curSpeed) * m.speed;
-        }
+        // Dynamic turn rate: sharpens as the missile nears its target to prevent overshooting
+        const turnRate = minDist < 100 ? 0.25 : (minDist < 200 ? 0.18 : 0.12);
+        const newAngle = curAngle + Math.max(-turnRate, Math.min(turnRate, angleDiff));
+
+        m.vx = Math.cos(newAngle) * m.speed;
+        m.vy = Math.sin(newAngle) * m.speed;
       } else {
         // Accelerate forward if no active targets
         m.vx = Math.min(m.speed, m.vx + 0.2);
@@ -1523,16 +1526,16 @@ class NeonAstroDodge {
       m.x += m.vx;
       m.y += m.vy;
 
-      // Exhaust smoke & flame trail particles
+      // Exhaust smoke & flame trail particles (calibrated for enlarged missile)
       if (this.gameTime % 2 === 0) {
         this.particles.push({
-          x: m.x - 6,
-          y: m.y + (Math.random() * 4 - 2),
-          vx: -(1.5 + Math.random()),
-          vy: (Math.random() - 0.5) * 0.8,
+          x: m.x - 14,
+          y: m.y + (Math.random() * 6 - 3),
+          vx: -(2.0 + Math.random() * 1.5),
+          vy: (Math.random() - 0.5) * 1.2,
           color: Math.random() > 0.4 ? '#ffaa00' : '#ff0055',
-          alpha: 0.8,
-          size: 2 + Math.random() * 2
+          alpha: 0.9,
+          size: 3 + Math.random() * 2.5
         });
       }
 
@@ -1556,7 +1559,7 @@ class NeonAstroDodge {
           const e = this.enemies[j];
           const dx = m.x - e.x;
           const dy = m.y - e.y;
-          if (Math.hypot(dx, dy) < e.radius + 10) {
+          if (Math.hypot(dx, dy) < e.radius + 16) {
             e.hp -= (m.damage || 3);
             this.createExplosionSparks(e.x, e.y, '#ffaa00', 18);
             if (typeof sfx.playExplosion === 'function') sfx.playExplosion();
@@ -2083,29 +2086,49 @@ class NeonAstroDodge {
       this.ctx.restore();
     });
 
-    // 4.55 Draw Seeking Micro-Missiles (Lvl 2 Weapon Boost)
+    // 4.55 Draw Seeking Micro-Missiles (Lvl 2 Weapon Boost - Enhanced Size & Visibility)
     this.missiles.forEach(m => {
       this.ctx.save();
       this.ctx.translate(m.x, m.y);
       const angle = Math.atan2(m.vy, m.vx);
       this.ctx.rotate(angle);
 
-      // 1. Glowing Amber/Orange Rocket Hull (Zero shadowBlur)
-      this.ctx.fillStyle = '#ffaa00';
-      this.ctx.fillRect(-7, -2.5, 14, 5);
+      // 1. Outer Neon Aura / High-Visibility Glow Plume
+      this.ctx.fillStyle = 'rgba(255, 136, 0, 0.35)';
+      this.ctx.fillRect(-14, -6.5, 28, 13);
 
-      // 2. High-Tech Crimson Warhead Cone
+      // 2. Main Rocket Fuselage
+      this.ctx.fillStyle = '#ff8800';
+      this.ctx.fillRect(-12, -4.5, 24, 9);
+
+      // 3. High-Tech Crimson Warhead Cone (Enlarged)
       this.ctx.fillStyle = '#ff0055';
       this.ctx.beginPath();
-      this.ctx.moveTo(7, -2.5);
-      this.ctx.lineTo(12, 0);
-      this.ctx.lineTo(7, 2.5);
+      this.ctx.moveTo(12, -4.5);
+      this.ctx.lineTo(20, 0);
+      this.ctx.lineTo(12, 4.5);
       this.ctx.closePath();
       this.ctx.fill();
 
-      // 3. Super-Hot White Core
+      // 4. Aerodynamic Stabilizer Fins
+      this.ctx.fillStyle = '#ff3366';
+      this.ctx.beginPath();
+      this.ctx.moveTo(-12, -4.5);
+      this.ctx.lineTo(-16, -8);
+      this.ctx.lineTo(-8, -4.5);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(-12, 4.5);
+      this.ctx.lineTo(-16, 8);
+      this.ctx.lineTo(-8, 4.5);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // 5. Super-Hot Core Reactor Plume
       this.ctx.fillStyle = '#ffffff';
-      this.ctx.fillRect(-3, -1, 7, 2);
+      this.ctx.fillRect(-6, -2, 14, 4);
 
       this.ctx.restore();
     });

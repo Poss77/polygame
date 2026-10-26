@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge: High-Visibility Seeking Missiles & Proportional Angular Guidance (`v1.5.710`)**:
+  - **🚀 Missile Visual Size & Neon Plume Upgrade ([`game.js`](game.js))**:
+    - Significantly enlarged micro-missile graphics: widened fuselage from `14x5` to `24x9`, extended warhead cone length to 20px, added distinct aerodynamic stabilizer fins, and rendered a translucent high-visibility orange outer glow aura (`rgba(255, 136, 0, 0.35)`).
+    - Upgraded exhaust particle trail: moved plume origin back to align with the extended fuselage and increased particle radius and density.
+  - **🎯 Proportional Angular Guidance & Anti-Orbiting Fix ([`game.js`](game.js))**:
+    - Replaced raw vector delta addition with true angular steering (`Math.atan2` differential clamped to `[-PI, PI]`).
+    - Added distance-proportional turn rate clamping (0.12 rad/s at distance, sharpening up to 0.25 rad/s within 100px) to prevent missiles from orbiting around moving asteroids.
+    - Expanded asteroid/enemy hit-test proximity radius from `e.radius + 10` to `e.radius + 16` to reflect the larger missile dimensions.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Bumped `APP_VERSION = "1.5.710"` and updated asset cache-busters.
+
 - **Arcade Economy Balance: 30% PGT Earning Reduction for Cyber Stacker, Drift & Runner (`v1.5.709`)**:
   - **⚖️ Calibrated Base Earning Rates Across Top Arcade Games ([`drift.js`](drift.js), [`stacker.js`](stacker.js), [`runner.js`](runner.js))**:
     - Reduced the base PGT earn calculation by **30%** (multiplied by `0.70`) for Cyber Drift, Cyber Stacker, and Cyber Runner to maintain long-term game economy sustainability and curb hyper-earning.
