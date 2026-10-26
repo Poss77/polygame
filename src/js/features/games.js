@@ -583,17 +583,7 @@ if (typeof window !== 'undefined') {
 // Strict Guard: Never counts games in test mode
 // ============================================================
 
-export const ARCADE_GAMES = [
-  { key: 'astrododge', scoreField: 'game_highscore', stateScoreKey: 'gameHighScore', careerKey: 'alltimeGameHighScore', title: 'Astro-Dodge', shortTitle: 'Astro', icon: '🚀', defaultPool: 50000, settingKey: 'astrododge', modeView: 'arcade' },
-  { key: 'invaders', scoreField: 'invaders_highscore', stateScoreKey: 'invadersHighScore', careerKey: 'alltimeInvadersHighScore', title: 'Cyber Invaders', shortTitle: 'Invaders', icon: '👾', defaultPool: 50000, settingKey: 'invaders', modeView: 'invaders' },
-  { key: 'drift', scoreField: 'drift_highscore', stateScoreKey: 'driftHighScore', careerKey: 'alltimeDriftHighScore', title: 'Cyber Drift', shortTitle: 'Drift', icon: '🏎️', defaultPool: 50000, settingKey: 'drift', modeView: 'drift' },
-  { key: 'stacker', scoreField: 'stacker_highscore', stateScoreKey: 'stackerHighScore', careerKey: 'alltimeStackerHighScore', title: 'Cyber Stacker', shortTitle: 'Stacker', icon: '🧱', defaultPool: 50000, settingKey: 'stacker', modeView: 'stacker' },
-  { key: 'skeet', scoreField: 'skeet_highscore', stateScoreKey: 'skeetHighScore', careerKey: 'alltimeSkeetHighScore', title: 'Cyber Skeet', shortTitle: 'Skeet', icon: '🎯', defaultPool: 25000, settingKey: 'skeet', modeView: 'skeet' },
-  { key: 'defense', scoreField: 'defense_highscore', stateScoreKey: 'defenseHighScore', careerKey: 'alltimeDefenseHighScore', title: 'Cyber Defense', shortTitle: 'Defense', icon: '🛡️', defaultPool: 25000, settingKey: 'defense', modeView: 'defense' },
-  { key: 'runner', scoreField: 'runner_highscore', stateScoreKey: 'runnerHighScore', careerKey: 'alltimeRunnerHighScore', title: 'Cyber Runner', shortTitle: 'Runner', icon: '⚡', defaultPool: 50000, settingKey: 'runner', modeView: 'runner' },
-  { key: 'q2048', scoreField: 'q2048_highscore', stateScoreKey: 'q2048HighScore', careerKey: 'alltimeQ2048HighScore', title: 'Cyber 2048', shortTitle: '2048', icon: '🧩', defaultPool: 50000, settingKey: 'q2048', modeView: 'q2048' },
-  { key: 'tetris', scoreField: 'tetris_highscore', stateScoreKey: 'tetrisHighScore', careerKey: 'alltimeTetrisHighScore', title: 'Cyber Tetris', shortTitle: 'Tetris', icon: '🧱', defaultPool: 50000, settingKey: 'tetris', modeView: 'tetris' }
-];
+// ARCADE_GAMES is exported from games-registry.js at top of module
 
 export const GRAND_PRIX_POINTS_LOOKUP = [5, 4, 3, 2, 1, 1, 1, 1, 1, 1];
 

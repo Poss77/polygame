@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Fix: Remove duplicate ARCADE_GAMES export in games.js (`v1.5.715`)**:
+  - **🚀 Release Changes**:
+    - Fix: Remove duplicate ARCADE_GAMES export in games.js.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.715"` and refreshed asset queries.
+
 - **Architecture: Complete PLAN-019 Phases 2-4 (Dynamic Shared Leaderboard Template, Unified Games Registry & Modular Profile/Leaderboards/Holders) (`v1.5.714`)**:
   - **Single Source of Truth Arcade Registry ([`src/js/core/games-registry.js`](src/js/core/games-registry.js))**:
     - Created `ARCADE_GAMES_REGISTRY` and `ARCADE_GAMES_LIST` centralizing game keys, panel IDs, leaderboard container IDs, prize pool element IDs, score fields, and metadata for all 9 Earn Arcade games.
