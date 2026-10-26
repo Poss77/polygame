@@ -1216,7 +1216,7 @@ class CyberDriftGame {
 
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
     // Strict 75.00 PGT Base Cap
-    const rawBase = Math.min(75.0, ((cleanScore / 2500.0) + (this.orbsCollected * 0.04)) * globalEarnMult);
+    const rawBase = Math.min(75.0, (((cleanScore / 2500.0) + (this.orbsCollected * 0.04)) * 0.70) * globalEarnMult);
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
     // Strict 100.00 PGT Bonus Token Cap
     const tokenPgt = Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0);

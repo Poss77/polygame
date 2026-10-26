@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade Economy Balance: 30% PGT Earning Reduction for Cyber Stacker, Drift & Runner (`v1.5.709`)**:
+  - **⚖️ Calibrated Base Earning Rates Across Top Arcade Games ([`drift.js`](drift.js), [`stacker.js`](stacker.js), [`runner.js`](runner.js))**:
+    - Reduced the base PGT earn calculation by **30%** (multiplied by `0.70`) for Cyber Drift, Cyber Stacker, and Cyber Runner to maintain long-term game economy sustainability and curb hyper-earning.
+    - Preserved bonus token / orb mechanics and capped multiplier logic while re-aligning the base formula curve.
+  - **🔒 Synchronized Authoritative Server RPC ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Updated `public.end_arcade_session()` to enforce the identical 30% reduction on server-side settlements for Drift, Stacker, and Runner.
+    - Rebuilt `master_rpcs.sql` and generated migration [`supabase/reduce_stacker_drift_runner_earnings_30pct.sql`](supabase/reduce_stacker_drift_runner_earnings_30pct.sql).
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Bumped `APP_VERSION = "1.5.709"` and refreshed client script cache-busters.
+
 - **Arcade & UI Performance Overhaul: 60 FPS Frame-Pacing, DOM HUD Throttling & GPU Compositor Relief (`v1.5.708`)**:
   - **⚡ Eliminated Per-Frame DOM Thrashing Across Arcade Engines ([`tetris.js`](tetris.js), [`game.js`](game.js), [`runner.js`](runner.js), [`skeet.js`](skeet.js), [`defense.js`](defense.js), [`drift.js`](drift.js))**:
     - Cached HUD DOM element references and added dirty-value checks + frame-interval throttling across all arcade engines so `document.getElementById()`, `.innerText`, and `.innerHTML` are no longer mutated unconditionally 60–144 times per second.

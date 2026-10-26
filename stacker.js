@@ -782,7 +782,7 @@ class CyberStackerGame {
     const playerMult = nftMult * vipMult * ambMult * relicMult;
 
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
-    const basePgt = ((this.floors * 0.45) + (this.score / 1500.0)) * globalEarnMult;
+    const basePgt = (((this.floors * 0.45) + (this.score / 1500.0)) * 0.70) * globalEarnMult;
     const estPgt = (basePgt * playerMult) + (this.goldenCoresCollected * 5.0);
 
     earnedEl.innerText = estPgt.toFixed(2);
@@ -1036,7 +1036,7 @@ class CyberStackerGame {
 
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
     // Strict 75.00 PGT Base Cap
-    const rawBase = Math.min(75.0, ((this.floors * 0.45) + (cleanScore / 1500.0)) * globalEarnMult);
+    const rawBase = Math.min(75.0, (((this.floors * 0.45) + (cleanScore / 1500.0)) * 0.70) * globalEarnMult);
     // Strict 100.00 PGT Golden Core Bonus Cap
     const tokenPgt = Math.min((this.goldenCoresCollected || 0) * 5.0, 100.0);
     // Strict 1000.00 PGT Catastrophe Cap
