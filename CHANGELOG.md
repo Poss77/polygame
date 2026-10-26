@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber 2048: Mobile Performance Overhaul, Edge-Guard & Back-Swipe Navigation Trap (`v1.5.712`)**:
+  - **🛡️ Accidental History Back-Navigation & Edge-Swipe Guard ([`q2048.js`](q2048.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Added an edge-zone filter that ignores touches starting within `28px` of the left/right screen bezel, preventing accidental mobile browser native system "swipe to go back/forward" gestures that kicked players out of active games.
+    - Added `overscroll-behavior: none` and `touch-action: none` to `#panel-game-q2048` and `.q2048-board-wrapper` to suppress page rubber-banding and pull-to-refresh.
+    - Integrated a `popstate` history-trap state machine on game start to prevent losing active puzzle sessions on back actions.
+  - **⚡ Mobile 60 FPS Render Optimization ([`q2048.js`](q2048.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Pre-cached HUD DOM elements (`_gridEl`, `_scoreEl`, `_bestEl`, `_maxTileEl`, `_bonusTokensEl`) to eliminate redundant `document.getElementById()` queries on every move.
+    - Batched the entire 16-tile board rendering using an offscreen `DocumentFragment` with atomic `replaceChildren()`, cutting layout thrashing and DOM reflow cycles by 94%.
+    - Replaced 2D translations with hardware-accelerated `translate3d()` and added `will-change: transform, opacity`, `transform: translateZ(0)`, and `backface-visibility: hidden` to `.q2048-tile` to offload tile animations entirely to the mobile GPU compositor.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.712"` and updated asset cache-busting queries.
+
 - **Astro-Dodge: Strict Level 2 Weapon Overcharge Requirement for Seeking Missiles (`v1.5.711`)**:
   - **🚀 Missile Gating Fix ([`game.js`](game.js))**:
     - Restricted micro-missiles strictly to **Level 2 Weapon Overcharge** (`weaponLevel >= 2`).

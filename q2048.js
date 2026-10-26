@@ -222,10 +222,12 @@ class Cyber2048Game {
       }
     });
 
-    // Fullscreen Mobile Touch Swipe Handling (Anywhere on Screen)
+    // Fullscreen Mobile Touch Swipe Handling with Edge-Guard & Axis-Lock
     this.touchStartX = 0;
     this.touchStartY = 0;
     this.touchHandled = false;
+    let gestureLock = null; // null | 'horizontal' | 'vertical'
+    let isIgnoredEdgeSwipe = false;
 
     const isQ2048Active = () => {
       const panel = document.getElementById('panel-game-q2048');
@@ -236,43 +238,95 @@ class Cyber2048Game {
       return Boolean(target && target.closest && target.closest('button, a, .btn-secondary, .btn-play-game, #q2048-controls-hud, .game-overlay'));
     };
 
+    // Prevent accidental browser history 'swipe to go back' or refresh while playing
+    const handlePopState = (e) => {
+      if (isQ2048Active()) {
+        try {
+          window.history.pushState({ q2048Active: true }, '');
+        } catch (err) {}
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+
     window.addEventListener('touchstart', (e) => {
       if (!isQ2048Active() || !e.touches || e.touches.length === 0) return;
       if (isInteractiveTarget(e.target)) return;
-      this.touchStartX = e.touches[0].clientX;
-      this.touchStartY = e.touches[0].clientY;
+
+      const touch = e.touches[0];
+      const winW = window.innerWidth || document.documentElement.clientWidth || 360;
+
+      // Browser Edge Swipe Guard: Ignore touches originating within 28px of left or right screen bezel
+      // This prevents triggering mobile browser system 'back/forward' navigation gestures!
+      if (touch.clientX < 28 || touch.clientX > (winW - 28)) {
+        isIgnoredEdgeSwipe = true;
+        this.touchHandled = true;
+        return;
+      }
+
+      isIgnoredEdgeSwipe = false;
+      this.touchStartX = touch.clientX;
+      this.touchStartY = touch.clientY;
       this.touchHandled = false;
-    }, { passive: true });
+      gestureLock = null;
+
+      // Prevent pull-to-refresh or page bouncing while interacting with game board
+      if (e.cancelable && e.target && e.target.closest && e.target.closest('#panel-game-q2048')) {
+        e.preventDefault();
+      }
+    }, { passive: false });
 
     window.addEventListener('touchmove', (e) => {
       if (!isQ2048Active() || !e.touches || e.touches.length === 0) return;
       if (isInteractiveTarget(e.target)) return;
-      if (this.touchHandled) return;
+
+      // Always block default scroll/navigation when touching inside the 2048 panel
+      if (e.cancelable) e.preventDefault();
+
+      if (isIgnoredEdgeSwipe || this.touchHandled) return;
 
       const dx = e.touches[0].clientX - this.touchStartX;
       const dy = e.touches[0].clientY - this.touchStartY;
       const absX = Math.abs(dx);
       const absY = Math.abs(dy);
 
-      // Instant responsiveness threshold: 26px
-      if (Math.max(absX, absY) >= 26) {
-        if (e.cancelable) e.preventDefault();
-        this.touchHandled = true;
-        if (absX > absY) {
-          if (dx > 0) this.move(1); // Right
-          else this.move(3);        // Left
+      // Determine directional intent before locking axis
+      if (!gestureLock) {
+        if (absX < 10 && absY < 10) return; // Inside jitter deadzone
+        if (absX >= 12 && absX >= absY * 1.15) {
+          gestureLock = 'horizontal';
+        } else if (absY >= 12 && absY >= absX * 1.15) {
+          gestureLock = 'vertical';
         } else {
-          if (dy > 0) this.move(2); // Down
-          else this.move(0);        // Up
+          return; // Ambiguous diagonal movement
         }
+      }
+
+      // Responsive directional swipe trigger: 22px
+      if (gestureLock === 'horizontal' && absX >= 22) {
+        this.touchHandled = true;
+        if (dx > 0) this.move(1); // Right
+        else this.move(3);        // Left
+      } else if (gestureLock === 'vertical' && absY >= 22) {
+        this.touchHandled = true;
+        if (dy > 0) this.move(2); // Down
+        else this.move(0);        // Up
       }
     }, { passive: false });
 
     window.addEventListener('touchend', (e) => {
       if (!isQ2048Active() || !e.changedTouches || e.changedTouches.length === 0) return;
       if (isInteractiveTarget(e.target)) return;
+
+      if (isIgnoredEdgeSwipe) {
+        isIgnoredEdgeSwipe = false;
+        this.touchHandled = false;
+        gestureLock = null;
+        return;
+      }
+
       if (this.touchHandled) {
         this.touchHandled = false;
+        gestureLock = null;
         return;
       }
 
@@ -281,7 +335,7 @@ class Cyber2048Game {
       const absX = Math.abs(dx);
       const absY = Math.abs(dy);
 
-      if (Math.max(absX, absY) >= 22) {
+      if (Math.max(absX, absY) >= 18) {
         if (absX > absY) {
           if (dx > 0) this.move(1); // Right
           else this.move(3);        // Left
@@ -291,10 +345,13 @@ class Cyber2048Game {
         }
       }
       this.touchHandled = false;
+      gestureLock = null;
     }, { passive: true });
 
     window.addEventListener('touchcancel', () => {
       this.touchHandled = false;
+      isIgnoredEdgeSwipe = false;
+      gestureLock = null;
     }, { passive: true });
   }
 
@@ -345,6 +402,11 @@ class Cyber2048Game {
     this.movesSinceCoin = 0;
     this.startTime = Date.now();
     this.isPlaying = true;
+
+    // Push history state to trap accidental mobile browser back-gestures
+    try {
+      window.history.pushState({ q2048Active: true }, '');
+    } catch (e) {}
 
     // Add initial 2 tiles
     this.addRandomTile();
@@ -695,23 +757,25 @@ class Cyber2048Game {
     return false;
   }
 
-  // --- Rendering ---
+  // --- Rendering (Batched DocumentFragment + Cached DOM Nodes for 60 FPS Mobile Performance) ---
   render(direction, mergedPositions, newCoord) {
-    const gridEl = document.getElementById('q2048-grid');
-    const scoreEl = document.getElementById('q2048-score-val');
-    const bestEl = document.getElementById('q2048-best-val');
-    const maxTileEl = document.getElementById('q2048-maxtile-val');
-    const bonusTokensEl = document.getElementById('q2048-tokens-val');
+    if (!this._domCached) {
+      this._gridEl = document.getElementById('q2048-grid');
+      this._scoreEl = document.getElementById('q2048-score-val');
+      this._bestEl = document.getElementById('q2048-best-val');
+      this._maxTileEl = document.getElementById('q2048-maxtile-val');
+      this._bonusTokensEl = document.getElementById('q2048-tokens-val');
+      this._domCached = true;
+    }
 
-    if (scoreEl) scoreEl.innerText = this.score.toLocaleString();
-    if (maxTileEl) maxTileEl.innerText = this.maxTile.toString();
-    if (bonusTokensEl) bonusTokensEl.innerText = `🪙 ${this.bonusTokens} (${this.bonusTokens * 5} PGT)`;
+    if (this._scoreEl) this._scoreEl.innerText = this.score.toLocaleString();
+    if (this._maxTileEl) this._maxTileEl.innerText = this.maxTile.toString();
+    if (this._bonusTokensEl) this._bonusTokensEl.innerText = `🪙 ${this.bonusTokens} (${this.bonusTokens * 5} PGT)`;
 
     const high = (window.appState && window.appState.state) ? (window.appState.state.q2048HighScore || 0) : 0;
-    if (bestEl) bestEl.innerText = Math.max(this.score, high).toLocaleString();
+    if (this._bestEl) this._bestEl.innerText = Math.max(this.score, high).toLocaleString();
 
-    if (!gridEl) return;
-    gridEl.innerHTML = '';
+    if (!this._gridEl) return;
 
     const shiftClasses = {
       0: 'q2048-shift-up',
@@ -720,6 +784,9 @@ class Cyber2048Game {
       3: 'q2048-shift-left'
     };
     const shiftClass = direction !== undefined ? shiftClasses[direction] : '';
+
+    // Batch all 16 cells in an offscreen DocumentFragment to prevent 16 layout reflows per turn
+    const fragment = document.createDocumentFragment();
 
     for (let r = 0; r < this.size; r++) {
       for (let c = 0; c < this.size; c++) {
@@ -755,9 +822,12 @@ class Cyber2048Game {
             this.styleTileFont(cell, val);
           }
         }
-        gridEl.appendChild(cell);
+        fragment.appendChild(cell);
       }
     }
+
+    // Atomic 1-pass DOM replacement
+    this._gridEl.replaceChildren(fragment);
   }
 
   styleTileFont(el, val) {
