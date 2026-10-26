@@ -310,10 +310,8 @@ class NeonAstroDodge {
       this.bullets.push({ x: this.player.x + 22, y: this.player.y + 5, vx: 12, vy: 0, damage: plasmaDmg });
     }
 
-    // Launch Seeking Missile (only when Weapon Boost is active)
-    const hasWeaponBoost = !!(this.player.tripleGun && (this.player.weaponLevel || 0) >= 1);
-    const canLaunchMissiles = hasWeaponBoost && (!!this.nftShip || (this.player.weaponLevel || 0) >= 2);
-    if (canLaunchMissiles) {
+    // Launch Seeking Missile (strictly Weapon Level 2 Overcharge)
+    if (this.player.weaponLevel >= 2) {
       this.launchSeekingMissile();
     }
 
@@ -377,13 +375,8 @@ class NeonAstroDodge {
 
   launchSeekingMissile() {
     if (!this.player || !this.isPlaying) return;
-    // Micro-missiles strictly require active weapon boost
-    const hasWeaponBoost = !!(this.player.tripleGun && (this.player.weaponLevel || 0) >= 1);
-    if (!hasWeaponBoost) return;
-
-    const hasNftPod = !!(this.nftShip && (this.nftShip.missilePodLevel || 1) >= 1);
-    const isOvercharged = (this.player.weaponLevel || 0) >= 2;
-    if (!hasNftPod && !isOvercharged) return;
+    // Micro-missiles strictly require Level 2 Weapon Overcharge
+    if ((this.player.weaponLevel || 0) < 2) return;
 
     const now = performance.now();
     const cooldown = this.nftMissileCooldown || 1900;
@@ -1145,12 +1138,12 @@ class NeonAstroDodge {
         if (typeof sfx.playLaser === 'function') sfx.playLaser();
       }
 
-      // Auto-launch seeking micro-missiles (requires active weapon boost)
-      const hasWeaponBoost = !!(this.player.tripleGun && (this.player.weaponLevel || 0) >= 1);
-      const canLaunchMissiles = hasWeaponBoost && (!!(this.nftShip && (this.nftShip.missilePodLevel || 1) >= 1) || (this.player.weaponLevel >= 2));
-      const missileCadence = Math.max(60, Math.min(120, Math.round((this.nftMissileCooldown || 1900) / 16.67)));
-      if (canLaunchMissiles && this.gameTime % missileCadence === 0) {
-        this.launchSeekingMissile();
+      // Auto-launch seeking micro-missiles (strictly Level 2 Weapon Overcharge)
+      if (this.player.weaponLevel >= 2) {
+        const missileCadence = Math.max(60, Math.min(120, Math.round((this.nftMissileCooldown || 1900) / 16.67)));
+        if (this.gameTime % missileCadence === 0) {
+          this.launchSeekingMissile();
+        }
       }
     }
 

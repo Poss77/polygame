@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.449)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge: Strict Level 2 Weapon Overcharge Requirement for Seeking Missiles (`v1.5.711`)**:
+  - **🚀 Missile Gating Fix ([`game.js`](game.js))**:
+    - Restricted micro-missiles strictly to **Level 2 Weapon Overcharge** (`weaponLevel >= 2`).
+    - Removed fallback condition that allowed missiles to launch prematurely during Level 1 Quad-Laser Boost if a starship was equipped.
+    - Level 1 weapon boost now strictly fires the 4-bullet quad plasma spread as intended, while collecting a second weapon powerup unlocks Level 2 with high-velocity homing missiles.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.711"` and refreshed asset queries.
+
 - **Astro-Dodge: High-Visibility Seeking Missiles & Proportional Angular Guidance (`v1.5.710`)**:
   - **🚀 Missile Visual Size & Neon Plume Upgrade ([`game.js`](game.js))**:
     - Significantly enlarged micro-missile graphics: widened fuselage from `14x5` to `24x9`, extended warhead cone length to 20px, added distinct aerodynamic stabilizer fins, and rendered a translucent high-visibility orange outer glow aura (`rgba(255, 136, 0, 0.35)`).
