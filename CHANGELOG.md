@@ -5,6 +5,25 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Architecture: Complete PLAN-019 Phases 2-4 (Dynamic Shared Leaderboard Template, Unified Games Registry & Modular Profile/Leaderboards/Holders) (`v1.5.714`)**:
+  - **Single Source of Truth Arcade Registry ([`src/js/core/games-registry.js`](src/js/core/games-registry.js))**:
+    - Created `ARCADE_GAMES_REGISTRY` and `ARCADE_GAMES_LIST` centralizing game keys, panel IDs, leaderboard container IDs, prize pool element IDs, score fields, and metadata for all 9 Earn Arcade games.
+    - Integrated `initArcadeLeaderboardCards()` which dynamically hydrates all 9 arcade leaderboard cards from configuration with automatic deferred/DOM ready execution.
+  - **HTML & CSS Optimization ([`index.html`](index.html), [`src/css/views.css`](src/css/views.css))**:
+    - Deduplicated 115 lines of repetitive markup in `index.html` by replacing 9 hardcoded `<div id="leaderboard-col-*">` cards with clean mount containers.
+    - Extracted the inline `@keyframes cratePulse` `<style>` tag from `index.html` into `src/css/views.css`, eliminating all inline `<style>` tags from the HTML root.
+  - **Games Navigation & DB Sync Refactoring ([`src/js/features/games.js`](src/js/features/games.js), [`src/js/core/db-sync.js`](src/js/core/db-sync.js), [`src/js/app.js`](src/js/app.js))**:
+    - Refactored `isAnyArcadeGamePlaying()` using `ARCADE_GAMES_LIST.some()` to eliminate hardcoded multi-branch game checks.
+    - Simplified `closeGameView()` engine stops, start screen overlay restorations, and leaderboard column toggles into registry loops.
+    - Streamlined `updateLeaderboardPoolHeaders()` in `db-sync.js` to iterate over `ARCADE_GAMES_LIST` directly.
+  - **Modularized Profile Domain Architecture ([`src/js/features/leaderboards.js`](src/js/features/leaderboards.js), [`src/js/features/holders.js`](src/js/features/holders.js), [`src/js/features/profile.js`](src/js/features/profile.js))**:
+    - Extracted `src/js/features/leaderboards.js` (864 lines) for live arcade and sitewide leaderboards, caching, user row detection, and name formatting.
+    - Extracted `src/js/features/holders.js` (667 lines) for the PGT holders leaderboard, token supply history chart, and past weekly tournament archives.
+    - Reduced `src/js/features/profile.js` from 2,651 lines down to 1,116 lines while maintaining 100% backward compatibility via `export * from './leaderboards.js'` and `export * from './holders.js'`.
+    - Optimized scorecard updates in `syncProfileView()` and `openPublicProfile()` using concise `ARCADE_GAMES_LIST` loops.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.714"` and refreshed asset queries.
+
 - **Architecture: Phase 1 token optimization and release tooling (`v1.5.713`)**:
   - **🚀 Release Changes**:
     - Architecture: Phase 1 token optimization and release tooling.

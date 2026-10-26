@@ -372,7 +372,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.713">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.714">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -2310,123 +2310,16 @@
             </div>
           </div>
 
-          <!-- Leaderboard Column -->
-          <div class="card" id="leaderboard-col-arcade">
-            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-primary);">Astro-Dodge High Scores</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top players win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).</p>
-            <div style="font-size: 0.85rem; color: var(--color-warning); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
-              <span id="lb-pool-arcade">Weekly Pool: 50,000 PGT</span>
-              <span class="leaderboard-reset-timer">Resets: --d --h --m</span>
-            </div>
-
-            <div class="leaderboard-list" id="leaderboard-arcade-container">
-              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
-            </div>
-          </div>
-
-          <div class="card" id="leaderboard-col-invaders" style="display: none;">
-            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-primary);">Cyber Invaders High Scores</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top defenders win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).</p>
-            <div style="font-size: 0.85rem; color: var(--color-warning); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
-              <span id="lb-pool-invaders">Weekly Pool: 50,000 PGT</span>
-              <span class="leaderboard-reset-timer">Resets: --d --h --m</span>
-            </div>
-
-            <div class="leaderboard-list" id="leaderboard-invaders-container">
-              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
-            </div>
-          </div>
-
-          <div class="card" id="leaderboard-col-drift" style="display: none;">
-            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-accent);">Cyber Drift High Scores</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top racers win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).</p>
-            <div style="font-size: 0.85rem; color: var(--color-warning); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
-              <span id="lb-pool-drift">Weekly Pool: 50,000 PGT</span>
-              <span class="leaderboard-reset-timer">Resets: --d --h --m</span>
-            </div>
-
-            <div class="leaderboard-list" id="leaderboard-drift-container">
-              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
-            </div>
-          </div>
-
-          <div class="card" id="leaderboard-col-stacker" style="display: none;">
-            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-warning);">👑 Cyber Stacker VIP Leaderboard</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top architects win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).</p>
-            <div style="font-size: 0.85rem; color: var(--color-warning); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
-              <span id="lb-pool-stacker">Weekly Pool: 50,000 PGT</span>
-              <span class="leaderboard-reset-timer">Resets: --d --h --m</span>
-            </div>
-
-            <div class="leaderboard-list" id="leaderboard-stacker-container">
-              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
-            </div>
-          </div>
-
-          <div class="card" id="leaderboard-col-skeet" style="display: none;">
-            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-accent);">🎯 Cyber Skeet Leaderboard</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top sharpshooters win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).</p>
-            <div style="font-size: 0.85rem; color: var(--color-accent); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
-              <span id="lb-pool-skeet">Weekly Pool: 25,000 PGT</span>
-              <span class="leaderboard-reset-timer">Resets: --d --h --m</span>
-            </div>
-
-            <div class="leaderboard-list" id="leaderboard-skeet-container">
-              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
-            </div>
-          </div>
-
-          <div class="card" id="leaderboard-col-defense" style="display: none;">
-            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-primary);">🛡️ Cyber Defense Leaderboard</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top tactical commanders win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).</p>
-            <div style="font-size: 0.85rem; color: var(--color-primary); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
-              <span id="lb-pool-defense">Weekly Pool: 25,000 PGT</span>
-              <span class="leaderboard-reset-timer">Resets: --d --h --m</span>
-            </div>
-
-            <div class="leaderboard-list" id="leaderboard-defense-container">
-              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
-            </div>
-          </div>
-
-          <div class="card" id="leaderboard-col-runner" style="display: none;">
-            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-primary);">⚡ Cyber Runner Leaderboard</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top parkour runners win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).</p>
-            <div style="font-size: 0.85rem; color: var(--color-primary); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
-              <span id="lb-pool-runner">Weekly Pool: 50,000 PGT</span>
-              <span class="leaderboard-reset-timer">Resets: --d --h --m</span>
-            </div>
-
-            <div class="leaderboard-list" id="leaderboard-runner-container">
-              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
-            </div>
-          </div>
-
-          <div class="card" id="leaderboard-col-q2048" style="display: none;">
-            <h3 class="card-title" style="margin-bottom: 1rem; color: var(--color-accent);">🧩 Cyber 2048 Leaderboard</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top quantum puzzle masters win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).</p>
-            <div style="font-size: 0.85rem; color: var(--color-accent); font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
-              <span id="lb-pool-q2048">Weekly Pool: 50,000 PGT</span>
-              <span class="leaderboard-reset-timer">Resets: --d --h --m</span>
-            </div>
-
-            <div class="leaderboard-list" id="leaderboard-q2048-container">
-              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
-            </div>
-          </div>
-
-          <div class="card" id="leaderboard-col-tetris" style="display: none;">
-            <h3 class="card-title" style="margin-bottom: 1rem; color: #d500f9;">🧱 Cyber Tetris Leaderboard</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Top falling-block matrix architects win weekly tournament prizes! Pool resets every Sunday (reset can be delayed by a few hours).</p>
-            <div style="font-size: 0.85rem; color: #d500f9; font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
-              <span id="lb-pool-tetris">Weekly Pool: 50,000 PGT</span>
-              <span class="leaderboard-reset-timer">Resets: --d --h --m</span>
-            </div>
-
-            <div class="leaderboard-list" id="leaderboard-tetris-container">
-              <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
-            </div>
-          </div>
+          <!-- Leaderboard Column (Populated dynamically by initArcadeLeaderboardCards in games-registry.js) -->
+          <div class="card" id="leaderboard-col-arcade"></div>
+          <div class="card" id="leaderboard-col-invaders" style="display: none;"></div>
+          <div class="card" id="leaderboard-col-drift" style="display: none;"></div>
+          <div class="card" id="leaderboard-col-stacker" style="display: none;"></div>
+          <div class="card" id="leaderboard-col-skeet" style="display: none;"></div>
+          <div class="card" id="leaderboard-col-defense" style="display: none;"></div>
+          <div class="card" id="leaderboard-col-runner" style="display: none;"></div>
+          <div class="card" id="leaderboard-col-q2048" style="display: none;"></div>
+          <div class="card" id="leaderboard-col-tetris" style="display: none;"></div>
 
         </div>
       </section>
@@ -4770,9 +4663,7 @@
       
       <div id="mystery-box-anim-container" style="padding: 2rem 0; position: relative;">
         <div id="mystery-box-graphic" style="font-size: 5rem; animation: cratePulse 1.2s ease-in-out infinite alternate; display: inline-block;">🎁</div>
-        <style>
-          @keyframes cratePulse { 0% { transform: scale(1) rotate(-5deg); filter: drop-shadow(0 0 10px var(--color-primary)); } 100% { transform: scale(1.15) rotate(5deg); filter: drop-shadow(0 0 25px var(--color-accent)); } }
-        </style>
+
         <div style="font-size: 0.9rem; color: var(--text-muted); margin-top: 1rem;" id="mystery-anim-label">Decrypting quantum loot data...</div>
       </div>
 
@@ -4935,17 +4826,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.713"></script>
-  <script src="invaders.js?v=1.5.713"></script>
-  <script src="drift.js?v=1.5.713"></script>
-  <script src="stacker.js?v=1.5.713"></script>
-  <script src="space.js?v=1.5.713"></script>
-  <script type="module" src="skeet.js?v=1.5.713"></script>
-  <script type="module" src="defense.js?v=1.5.713"></script>
-  <script type="module" src="runner.js?v=1.5.713"></script>
-  <script type="module" src="q2048.js?v=1.5.713"></script>
-  <script src="tetris.js?v=1.5.713"></script>
-  <script type="module" src="src/js/app.js?v=1.5.713"></script>
+  <script src="game.js?v=1.5.714"></script>
+  <script src="invaders.js?v=1.5.714"></script>
+  <script src="drift.js?v=1.5.714"></script>
+  <script src="stacker.js?v=1.5.714"></script>
+  <script src="space.js?v=1.5.714"></script>
+  <script type="module" src="skeet.js?v=1.5.714"></script>
+  <script type="module" src="defense.js?v=1.5.714"></script>
+  <script type="module" src="runner.js?v=1.5.714"></script>
+  <script type="module" src="q2048.js?v=1.5.714"></script>
+  <script src="tetris.js?v=1.5.714"></script>
+  <script type="module" src="src/js/app.js?v=1.5.714"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

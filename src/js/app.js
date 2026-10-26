@@ -1,3 +1,4 @@
+import { initArcadeLeaderboardCards } from './core/games-registry.js';
 import { renderDailyQuestsUI, trackQuestProgress, syncDailyQuests } from './features/quests.js';
 import { sfx } from './core/audio.js';
 import { renderNftMarketplace, renderMysteryCrates, renderNftInventory } from './features/nft.js';
@@ -37,6 +38,7 @@ window.triggerToast = triggerToast;
 window.recordGameMetrics = recordGameMetrics;
 window.launchPolySpace = launchPolySpace;
 window.supabaseClient = supabase;
+initArcadeLeaderboardCards();
 
 // --- Master View Switcher (Router) ---
 

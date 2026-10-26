@@ -1,3 +1,4 @@
+import { ARCADE_GAMES_LIST } from './games-registry.js';
 import { supabase, ADMIN_WALLET_ADDRESS, web3Provider, realSigner, setWeb3Provider, setRealSigner, APP_VERSION } from './config.js';
 import { sfx } from './audio.js';
 import { appState, PolyState } from './state.js';
@@ -2106,63 +2107,19 @@ if (typeof window !== 'undefined') {
 export function updateLeaderboardPoolHeaders(settings) {
   if (!settings) return;
   const s = settings;
-  const poolArcade = (s.astrododge && s.astrododge.weekly_pool_pgt !== undefined) ? Number(s.astrododge.weekly_pool_pgt) : 50000;
-  const poolInvaders = (s.invaders && s.invaders.weekly_pool_pgt !== undefined) ? Number(s.invaders.weekly_pool_pgt) : 50000;
-  const poolDrift = (s.drift && s.drift.weekly_pool_pgt !== undefined) ? Number(s.drift.weekly_pool_pgt) : 50000;
-  const stackerConf = s.stacker || s.catcher || {};
-  const poolStacker = (stackerConf.weekly_pool_pgt !== undefined) ? Number(stackerConf.weekly_pool_pgt) : 50000;
-  const poolSkeet = (s.skeet && s.skeet.weekly_pool_pgt !== undefined) ? Number(s.skeet.weekly_pool_pgt) : 25000;
-  const poolDefense = (s.defense && s.defense.weekly_pool_pgt !== undefined) ? Number(s.defense.weekly_pool_pgt) : 25000;
-  const poolRunner = (s.runner && s.runner.weekly_pool_pgt !== undefined) ? Number(s.runner.weekly_pool_pgt) : 50000;
-  const poolQ2048 = (s.q2048 && s.q2048.weekly_pool_pgt !== undefined) ? Number(s.q2048.weekly_pool_pgt) : 50000;
-  const poolTetris = (s.tetris && s.tetris.weekly_pool_pgt !== undefined) ? Number(s.tetris.weekly_pool_pgt) : 50000;
-
   const formatPool = (pool) => pool > 0 ? `Weekly Pool: ${pool.toLocaleString()} PGT` : `Weekly Pool: 0 PGT (Paused)`;
 
-  const elArcade = document.getElementById('lb-pool-arcade');
-  if (elArcade) elArcade.innerText = formatPool(poolArcade);
+  for (const g of ARCADE_GAMES_LIST) {
+    const conf = s[g.settingKey] || (g.key === 'stacker' ? s.catcher : null) || {};
+    const pool = (conf.weekly_pool_pgt !== undefined) ? Number(conf.weekly_pool_pgt) : g.defaultPool;
+    const el = document.getElementById(g.poolElId) || (g.fallbackPoolElId ? document.getElementById(g.fallbackPoolElId) : null);
+    if (el) el.innerText = formatPool(pool);
 
-  const elInvaders = document.getElementById('lb-pool-invaders');
-  if (elInvaders) elInvaders.innerText = formatPool(poolInvaders);
-
-  const elDrift = document.getElementById('lb-pool-drift');
-  if (elDrift) elDrift.innerText = formatPool(poolDrift);
-
-  const elStacker = document.getElementById('lb-pool-stacker') || document.getElementById('lb-pool-catcher');
-  if (elStacker) elStacker.innerText = formatPool(poolStacker);
-
-  const elSkeet = document.getElementById('lb-pool-skeet');
-  if (elSkeet) elSkeet.innerText = formatPool(poolSkeet);
-
-  const elDefense = document.getElementById('lb-pool-defense');
-  if (elDefense) elDefense.innerText = formatPool(poolDefense);
-
-  const elRunner = document.getElementById('lb-pool-runner');
-  if (elRunner) elRunner.innerText = formatPool(poolRunner);
-
-  const elQ2048 = document.getElementById('lb-pool-q2048');
-  if (elQ2048) elQ2048.innerText = formatPool(poolQ2048);
-
-  const elTetris = document.getElementById('lb-pool-tetris');
-  if (elTetris) elTetris.innerText = formatPool(poolTetris);
-
-  if (window.gameLeaderboardsState) {
-    if (window.gameLeaderboardsState.astrododge) window.gameLeaderboardsState.astrododge.pool = poolArcade;
-    if (window.gameLeaderboardsState.invaders) window.gameLeaderboardsState.invaders.pool = poolInvaders;
-    if (window.gameLeaderboardsState.drift) window.gameLeaderboardsState.drift.pool = poolDrift;
-    if (window.gameLeaderboardsState.stacker) window.gameLeaderboardsState.stacker.pool = poolStacker;
-    if (window.gameLeaderboardsState.skeet) window.gameLeaderboardsState.skeet.pool = poolSkeet;
-    if (window.gameLeaderboardsState.defense) window.gameLeaderboardsState.defense.pool = poolDefense;
-    if (window.gameLeaderboardsState.runner) window.gameLeaderboardsState.runner.pool = poolRunner;
-    if (window.gameLeaderboardsState.q2048) window.gameLeaderboardsState.q2048.pool = poolQ2048;
-    if (window.gameLeaderboardsState.tetris) window.gameLeaderboardsState.tetris.pool = poolTetris;
-
-    if (typeof window.renderGameLeaderboard === 'function') {
-      ['astrododge', 'invaders', 'drift', 'stacker', 'skeet', 'defense', 'runner', 'q2048', 'tetris'].forEach(k => {
-        if (window.gameLeaderboardsState[k]?.data?.length > 0) {
-          window.renderGameLeaderboard(k);
-        }
-      });
+    if (window.gameLeaderboardsState && window.gameLeaderboardsState[g.key]) {
+      window.gameLeaderboardsState[g.key].pool = pool;
+      if (typeof window.renderGameLeaderboard === 'function' && window.gameLeaderboardsState[g.key].data?.length > 0) {
+        window.renderGameLeaderboard(g.key);
+      }
     }
   }
 }
