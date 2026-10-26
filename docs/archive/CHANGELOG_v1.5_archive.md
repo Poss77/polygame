@@ -1,7 +1,2497 @@
-# Polygon Gaming — Historical Changelog (v1.5.000 to v1.5.449)
+# Polygon Gaming — Historical Changelog (v1.5.000 to v1.5.689)
 
-Archived historical release notes for early v1.5 releases.
+Archived historical release notes for early and mid v1.5 releases.
 Active changelog is maintained in [CHANGELOG.md](../../CHANGELOG.md).
+
+- **PolySpace: Authoritative Starship NFT Rarity Multiplier Fix (v1.5.689)**:
+  - **Authoritative Server-Side DNA Rarity Decoding ([supabase/rpcs/06_polyspace_fleet.sql](supabase/rpcs/06_polyspace_fleet.sql), [supabase/fix_polyspace_starship_multiplier.sql](supabase/fix_polyspace_starship_multiplier.sql))**:
+    - Created immutable public.get_starship_rarity(p_dna bigint) procedure that deterministically calculates starship rarity (Rare 1.10x, Epic 1.20x, Legendary 1.30x, Mythic 1.50x) directly from on-chain 6-digit DNA.
+    - Updated claim_polyspace_expedition RPC to authoritatively resolve starship rarity from DNA when explicit rarity is absent on the stored ship object, preventing Epic, Legendary, and Mythic ships from falling back to 1.10x Rare.
+    - Added anti-cheat verification requiring tokenId > 0, isDemo = false, and non-demo name so unowned demo ships cannot claim a 1.10x boost.
+    - Created backfill migration to enrich existing equipped starships in public.users.equipped_starship and space_state.
+  - **Client-Side Hangar Fleet Enrichment ([src/js/features/hangar.js](src/js/features/hangar.js))**:
+    - Enriched starship fleet synchronization (syncFleetFromChain) and setEquippedStarship to explicitly attach rarity and baseEarnMultiplier when persisting to equipped_starship and space_state.
+  - **Version Bump & Verification ([src/js/core/config.js](src/js/core/config.js))**:
+    - Bumped APP_VERSION = '1.5.689'.
+    - Verified all immutable security invariants via python scripts/verify_security_invariants.py.
+
+- **Affiliate & Referral Network: Direct Referral Utility NFT Commission Clarification (`v1.5.688`)**:
+  - **💎 Copy & Scope Clarification ([`index.html`](index.html))**:
+    - Updated description to: `"plus 💎 10% POL Commission on direct referral Utility NFT purchases!"`.
+    - Clarified that the 10% instant POL commission applies specifically to **Utility NFTs** purchased by direct (Level 1) referrals in the marketplace.
+    - Updated the Unclaimed POL Pool card header to `💎 Unclaimed POL Pool (10% Utility NFT)` for full visual consistency across the dashboard.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.688"` in `src/js/core/config.js`.
+    - Refreshed cache-busters for `main.css?v=1.5.688`, `game.js?v=1.5.688`, `space.js?v=1.5.688`, and `app.js?v=1.5.688`.
+
+- **Security Audit Hardening: On-Chain Voucher Refunds, Edge Function Ownership Verification & RPC Guards (`v1.5.687`)**:
+  - **🛡️ S1 — Authoritative On-Chain Verified Withdrawal Refunds ([`supabase/functions/withdraw-pgt/index.ts`](supabase/functions/withdraw-pgt/index.ts), [`src/js/features/withdraw.js`](src/js/features/withdraw.js), [`supabase/harden_security_audit_s1_s7.sql`](supabase/harden_security_audit_s1_s7.sql))**:
+    - Added `action: 'refund'` branch to `withdraw-pgt` Edge Function that authenticates the caller's JWT, verifies profile ownership, and queries Polygon Mainnet `usedNonces(nonce)` before invoking `refund_failed_withdrawal` via `service_role`.
+    - Locked direct PostgREST execution of `cancel_withdrawal_voucher` and `refund_failed_withdrawal` strictly to `service_role`.
+  - **🛡️ S2 — `sync-assets` Wallet-to-Profile Ownership Guard ([`supabase/functions/sync-assets/index.ts`](supabase/functions/sync-assets/index.ts))**:
+    - Enforced server-side verification that `walletAddress` matches the target profile's `linked_wallet_address` (or `player_id`) in `public.users` before scanning and syncing on-chain NFTs and Quantum Relics.
+  - **🛡️ S3 — `mark_relic_minted` Caller Auth & `0 -> 1` Fabrication Guard ([`supabase/rpcs/03_quantum_relics.sql`](supabase/rpcs/03_quantum_relics.sql), [`supabase/harden_security_audit_s1_s7.sql`](supabase/harden_security_audit_s1_s7.sql))**:
+    - Added `assert_caller_player_id` and required `unminted >= 1` before converting an unminted relic to on-chain status.
+  - **🛡️ S4 — `record_bot_warning` Anti-Griefing Guard ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`supabase/harden_security_audit_s1_s7.sql`](supabase/harden_security_audit_s1_s7.sql))**:
+    - Verified `auth.uid()` ownership on direct HTTP calls to `record_bot_warning` while preserving all nested server-side anti-cheat RPC calls.
+  - **🛡️ S5 — `nft-referral` On-Chain `NFTMinted` Event & Minter Verification ([`supabase/functions/nft-referral/index.ts`](supabase/functions/nft-referral/index.ts))**:
+    - Decoded the `NFTMinted(address indexed to, uint256 indexed tokenId, string nftTypeId)` log from Polygon Mainnet transaction receipts and verified minter ownership before crediting 10% POL referral commissions.
+  - **🛡️ S6 & S7 — `link_wallet_to_account` Permanent Wallet Lock, Telemetry Clamping & RLS Hygiene ([`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`supabase/harden_security_audit_s1_s7.sql`](supabase/harden_security_audit_s1_s7.sql))**:
+    - Prevented overwriting an already linked wallet or merging `web3_auth_id`-bound profiles in `link_wallet_to_account`, locked `increment_jackpot` and `record_pgt_burn` to `service_role`, computed authoritative supply in `record_supply_snapshot`, clamped `log_game_metric` and `log_nft_sale`, cleaned up dormant RLS policies, and pinned `search_path = public` on trigger/helper functions.
+
+- **Architecture & Performance: Deferred Dashboard Leaderboard Queries & State Sync Payload Fix (`v1.5.686`)**:
+  - **⚡ Route-Specific Query Deferral ([`src/js/app.js`](src/js/app.js))**:
+    - Separated `switchTab('dashboard')` and `switchTab('games')` execution paths so that landing on the homepage (`#view-dashboard`) only runs `syncDailyQuests()`, `renderDailyQuestsUI()`, and `loadSitewideStats()`.
+    - Deferred the 6 arcade leaderboard queries (`loadAstroDodgeLeaderboard`, `loadInvadersLeaderboard`, `loadWeeklyWinsLeaderboard`, `loadSkeetLeaderboard`, `loadDefenseLeaderboard`, `loadTopWeeklyArcadePlayers`) and `updateGameTileBadges()` exclusively to `switchTab('games')` where those DOM tables reside, and kept `initPolySpace()` strictly scoped to `switchTab('space')`.
+    - Eliminates 6 redundant Supabase HTTP requests and associated PostgREST log entries on every initial homepage load.
+  - **🔧 Fixed `last_faucet_claim` Payload Ordering in `_executeSaveToDB` ([`src/js/core/state.js`](src/js/core/state.js))**:
+    - Moved `dbPayload.last_faucet_claim = new Date(this.state.lastClaimTime).toISOString()` above the `supabase.from('users').update(dbPayload)` call so `dbPayload` is completely constructed prior to the primary database write.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.686"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.686`, `space.js?v=1.5.686`, `app.js?v=1.5.686`, and `main.css?v=1.5.686`.
+
+- **PolySpace: Live "NEW RECORD" Badge for Breaking World Boss Milestones (`v1.5.685`)**:
+  - **🔥 Dynamic "NEW RECORD" Achievement HUD ([`space.js`](space.js))**:
+    - Enhanced `loadWorldBossLeaderboard()` to compare the current week's boss level and vitality against the all-time record kill from `boss_reset_history`.
+    - When commanders destroy a Quantum Leviathan equal to or higher than the all-time record (`isSlain && bossLvl >= rLvl`), the trophy banner automatically morphs into a vibrant neon green/gold celebration state:
+      - Displays `🔥 [NEW RECORD] LVL X DEFEATED! (Ascending to LVL X+1)`
+      - Replaces hunter count with `🎉 HISTORIC KILL`
+      - Flashes an active emerald neon border (`#00ff66`) celebrating the community milestone.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.685"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.685`, `space.js?v=1.5.685`, `app.js?v=1.5.685`, and `main.css?v=1.5.685`.
+
+- **PolySpace: World Boss All-Time Record Slaying Trophy Banner (`v1.5.684`)**:
+  - **👑 All-Time Record Slaying Banner ([`index.html`](index.html), [`space.js`](space.js))**:
+    - Embedded a permanent all-time historical achievement trophy banner directly on the Quantum Leviathan card in PolySpace Mining.
+    - Accurately showcases the fleet's all-time record kill: **Level 8 Slain** (`99.7M DMG • 35,832 PGT` bounty by `17 Hunters`).
+    - Dynamically queries `boss_reset_history` with a 5-minute memory cache (`_cachedBossRecord`) to keep historical stats up-to-date with zero impact on database log volume or egress.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.684"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.684`, `app.js?v=1.5.684`, and `main.css?v=1.5.684`.
+
+- **Arcade: Instant Post-Game Leaderboard & Grand Prix Podium Refresh (`v1.5.683`)**:
+  - **🏆 Real-Time Post-Game Leaderboard Synchronization ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Connected `endArcadeSession()` directly to the game leaderboard engine upon successful session completion.
+    - As soon as the server's `end_arcade_session` RPC commits the score and PGT payout to the database, the specific game's in-memory cache is automatically invalidated and refreshed (`loadGameLeaderboard(activeGameKey, true)`).
+    - Guarantees that players immediately see their new high score, updated ranking position, and prize pool projection directly beneath the game canvas without delay or page refresh.
+    - If the score is a new high score (`is_new_high`), the Grand Prix champions podium cache is also invalidated and reloaded in real time (`loadTopWeeklyArcadePlayers(true)`).
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.683"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.683`, `app.js?v=1.5.683`, and `main.css?v=1.5.683`.
+
+- **Performance: 90s In-Memory Client Caching, Trimmed Leaderboard Queries & Throttled Jackpot Polling (`v1.5.682`)**:
+  - **⚡ Stripped Heavy Columns from Leaderboard Queries ([`src/js/features/profile.js`](src/js/features/profile.js))**:
+    - Removed `space_state`, `owned_nfts`, and `crate_nfts` JSON columns from top-100 arcade leaderboard queries, reducing payload sizes by ~98% per request (from several megabytes of nested inventory and galaxy states down to ~10KB per game leaderboard).
+    - Kept essential identity and ranking fields (`player_id`, `linked_wallet_address`, `scoreField`, `username`, `user_id`, `auth_provider`, `vip_until`, `vip_level`, and `equipped_starship`).
+  - **⏱️ 90-Second In-Memory Client Cache (TTL) ([`src/js/features/profile.js`](src/js/features/profile.js), [`src/js/features/games.js`](src/js/features/games.js), [`src/js/features/referrals.js`](src/js/features/referrals.js))**:
+    - Implemented a 90-second client cache (`LEADERBOARD_CACHE_TTL_MS = 90000`) for all 9 arcade leaderboards, the Grand Prix champions podium, the weekly standing modal calculations, the referral leaderboard, and the weekly wins leaderboard.
+    - Switching tabs (e.g. between Dashboard, Games, Referrals) now reuses cached data instantaneously without repeatedly spamming Supabase with dozens of duplicate network requests.
+    - High score submissions automatically bypass the cache (`forceRefresh = true`) so players see their latest scores immediately upon game over.
+  - **🎰 Slowed & Guarded Progressive Jackpot Polling ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Increased background jackpot auto-sync interval from 30 seconds to 120 seconds (`120000` ms).
+    - Added visibility sentinel (`isJackpotUiActive`) ensuring polling only executes when the browser tab is active, no arcade game is playing, and the user is actively viewing the betting/jackpot UI.
+    - Added 60-second minimum throttling to `syncJackpotData()`.
+    - Optimized jackpot winner username lookups from a full-table scan down to a targeted query for only the 10 winner addresses (`.or(...).limit(20)`).
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.682"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.682`, `app.js?v=1.5.682`, and `main.css?v=1.5.682`.
+
+- **Weekly Standing: Universal Opportunity Target Badge for Unranked Games (`v1.5.681`)**:
+  - **🎯 Guaranteed Opportunity for Unranked Arcade Games ([`src/js/features/games.js`](src/js/features/games.js))**:
+    - Ensured the `🎯` opportunity target badge is always displayed for unranked games (`!rank || rank > 100 || score === 0`), guaranteeing that players are encouraged to play and enter the weekly tournament payout leaderboard.
+    - If the player has a career best score on file, the badge highlights the exact leaderboard rank and PGT payout their career best can reach in this week's active bracket (e.g. `🎯 Unranked Opportunity! Career Best (24,500 pts) can reach Rank #8 (+2,400 PGT)`).
+    - If the player has not yet set a score, the badge provides a clear call-to-action inviting them to set a score and claim weekly rewards.
+    - Retained the refined >33% career headroom rule for games where the player is already ranked (`rank <= 100`), keeping ranked games tidy and uncluttered.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.681"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.681`, `app.js?v=1.5.681`, and `main.css?v=1.5.681`.
+
+- **Faucet Retention: Post-Claim Game Action Modal & 24h Reminder System (`v1.5.680`)**:
+  - **🎉 Post-Claim "Where to Next?" Exploration Modal ([`src/js/features/faucet.js`](src/js/features/faucet.js), [`index.html`](index.html))**:
+    - Eliminated the 24-hour "dead-end" experience where users claim the faucet, see a disabled countdown, and immediately close the tab.
+    - Successfully claiming the faucet now automatically reveals `#modal-faucet-success` showcasing their newly earned tokens with direct 1-click action paths into games:
+      - **Astro-Dodge**: 100% free arcade play to earn more PGT and climb the board.
+      - **Cyber Mines**: Fast 5 PGT bets with instant cash-out to multiply starter tokens up to 5x.
+      - **Sunday Reset**: Highlighting the weekly standing prize pool where top pilots share thousands of PGT.
+  - **🔔 Browser Push Notifications & 1-Click Calendar Reminders ([`src/js/features/faucet.js`](src/js/features/faucet.js), [`index.html`](index.html))**:
+    - Added `#btn-faucet-reminder` both inside the post-claim modal and directly on the faucet cooldown card.
+    - Integrates the Web Notification API (`Notification.requestPermission`) and Service Worker (`sw.js`) to trigger a notification the moment the 24h faucet cooldown expires.
+    - Built-in 1-click Google Calendar / Apple Calendar fallback for iOS Safari and permission-blocked browsers, allowing 100% of players on any device to set a reminder in 1 tap.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.680"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.680`, `app.js?v=1.5.680`, and `main.css?v=1.5.680`.
+
+- **Starship Fleet: Canonical Serial Resolution & Mint Re-Entrancy Guard (`v1.5.679`)**:
+  - **🛸 Canonical Starship Serial Resolution ([`src/js/features/hangar.js`](src/js/features/hangar.js), [`starship-metadata/index.ts`](supabase/functions/starship-metadata/index.ts), [`src/js/features/profile.js`](src/js/features/profile.js))**:
+    - Resolved an issue where minting multiple starships rapidly caused consecutive tokens (e.g. #74, #75, #76, #77, #78) to share the same duplicate name `"Starship #74"` due to outdated speculative RPC reads of `totalSupply()`.
+    - Implemented `formatCanonicalShipName(rawName, tokenId)`: when a starship has a default or serial name pattern (`Starship #N`, `Pilot Flagship #N`, `PolySpace Flagship`), the serial number strictly and dynamically resolves to its authentic on-chain `tokenId` (`Starship #74`, `Starship #75`, `Starship #76`, etc.), while still preserving custom player ship names.
+    - Deployed updated `starship-metadata` Edge Function (`v11`) on Supabase, immediately correcting all affected metadata and dynamic SVG artwork for OpenSea and decentralized marketplaces worldwide.
+  - **🔒 Mint Re-Entrancy & Anti-Spam Mutex ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Added `isMintingStarship` execution lock preventing players from spam-clicking the `[ 🚀 Mint (2.0 POL) ]` button while a transaction is awaiting wallet signature or Polygon confirmation.
+    - Updated contract call to pass `""` for default naming, eliminating client-side speculative numbers from being hardcoded into future on-chain contract mappings.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.679"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.679`, `app.js?v=1.5.679`, and `main.css?v=1.5.679`.
+
+- **Weekly Standing: Refined Career Best Opportunity Threshold (`v1.5.678`)**:
+  - **🎯 33%+ Career Headroom Filter ([`src/js/features/games.js`](src/js/features/games.js))**:
+    - Refined the target opportunity icon `🎯` so it only displays when a player's career best score is **more than 33% higher** than their current weekly score (`careerBest > score * 1.33`) or when a game is unplayed this week (`score === 0` and `careerBest > 0`).
+    - Eliminates icon clutter across the breakdown list, spotlighting only games where the player has substantial room to climb ranks with low effort.
+    - Updated interactive tooltip and toast text to show the exact headroom percentage over the weekly score: e.g. `"🎯 Easy Beat! Career Best (95,000 pts (+85% vs weekly)) can reach Rank #2 (+12,000 PGT)"`.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.678"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.678`, `app.js?v=1.5.678`, and `main.css?v=1.5.678`.
+
+- **Weekly Standing: Career Best Target Opportunities Badge (`v1.5.677`)**:
+  - **🎯 Career Best Rank-Beat Indicator ([`src/js/features/games.js`](src/js/features/games.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Added an animated target badge `🎯` right next to the game title in the weekly tournament breakdown whenever a player's career best score is higher than their current weekly score and would advance them to a higher rank tier.
+    - Evaluates live competitors to calculate the exact rank the player's career record would achieve (e.g., from #8 to #2, or from Unranked into the Top 100 payout pool).
+    - **Interactive Tooltip & Mobile Toast**: Hovering on desktop displays a detailed tooltip, and tapping on mobile triggers a helpful notification toast showing the target rank and potential extra PGT payout: `"🎯 Target! Career Best (95,000 pts) can reach Rank #1 (+12,000 PGT)"`.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.677"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.677`, `app.js?v=1.5.677`, and `main.css?v=1.5.677`.
+
+- **Weekly Standing Modal: Mobile Responsive Layout Optimization (`v1.5.676`)**:
+  - **📱 Resolved Mobile Text Clipping in Tournament Breakdown Rows ([`src/css/features/games.css`](src/css/features/games.css), [`src/js/features/games.js`](src/js/features/games.js))**:
+    - Eliminated hardcoded `min-width: 140px` and `min-width: 110px` horizontal blocks that exceeded mobile screen width (~280px container) and pushed the rightmost PGT payout figures off-screen.
+    - Restructured breakdown items into a clean 3-column responsive flex grid:
+      - **Game & Pool**: Flexible auto-width column with text truncation safety (`.standing-col-game`).
+      - **Rank & High Score**: Compact stacked column displaying the rank badge directly above the player's numerical score (`.standing-col-rank`).
+      - **Estimated PGT Payout**: Fully visible right-aligned column with `white-space: nowrap;` ensuring large multi-digit figures (e.g. `+30,000 PGT`, `+157,950 PGT`) and multiplier tags never get clipped (`.standing-col-payout`).
+  - **📐 Modal Viewport & Padding Calibration ([`index.html`](index.html), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Removed inline `padding: 1.6rem` from `index.html` in favor of scoped responsive CSS (`padding: 1.1rem 0.65rem` on mobile $\le 600\text{px}$, `1.5rem 1.4rem` on desktop).
+    - Added custom 4px slim cyan scrollbar styling for `.standing-rows-container`, freeing up horizontal space.
+    - Reduced summary cards min-width threshold to `minmax(130px, 1fr)` for balanced mobile wrapping.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.676"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.676`, `app.js?v=1.5.676`, and `main.css?v=1.5.676`.
+
+- **Weekly Grand Prix & Payout: "My Standing" Live Rankings & Projected PGT Rewards Modal (`v1.5.675`)**:
+  - **📊 "My Standing" Button in Weekly Champions Header ([`index.html`](index.html), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Added a sleek neon cyberpunk button `[ 📊 My Standing ]` directly beside `[ ℹ️ Rules ]` in the "Top 3 Weekly Players" showcase card.
+    - Designed with green-cyan gradient accents (`#00ff87`), glowing hover elevation, and responsive inline wrapping for mobile screens.
+  - **🏆 Comprehensive Weekly Standings & Payout Modal (`#modal-my-weekly-standing`) ([`index.html`](index.html), [`src/js/features/games.js`](src/js/features/games.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Opens a high-density, cyberpunk modal breaking down the player's complete weekly performance across all 9 arcade tournaments (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, Cyber Defense, Cyber Runner, Cyber 2048, and Cyber Tetris).
+    - **Overall Grand Prix Standing**: Calculates real-time championship points and overall tournament rank (1st=5pts, 2nd=4pts, 3rd=3pts, 4th=2pts, 5th-10th=1pt), matching the live showcase podium.
+    - **Active Multiplier Indicator**: Displays the user's active leaderboard prize multiplier (`⚡ 2.0x` for VIP Gold, `1.25x` for VIP Silver, plus NFT boosts).
+    - **Projected Sunday PGT Payout Sum**: Sums estimated weekly pool payouts across all games where the player is in the top 100, factoring in pool weights and player multipliers.
+    - **Game-by-Game Breakdown**: Scrollable list showing the player's exact rank (with glowing medals for top 3), high score, Grand Prix points, and individual game PGT payout. Clicking any game row immediately navigates to and launches that game.
+    - **Guest & Unconnected State Handling**: Friendly, clear zero-states encouraging wallet connection or showing local session scores for guests.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.675"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.675`, `app.js?v=1.5.675`, and `main.css?v=1.5.675`.
+
+- **Astro-Dodge: Restore Authentic Canvas Overlay Bounds & Preserve Single-Row Buttons (`v1.5.674`)**:
+  - **📐 Restored Authentic Canvas Bounds for Overlays ([`src/css/features/games.css`](src/css/features/games.css), [`game.js`](game.js))**:
+    - Reverted the `position: fixed` modal expansion for `.game-overlay`, restoring all arcade game overlays to their authentic canvas container bounds (`position: absolute; inset: 0; width: 100%; height: 100%;`).
+    - Fixed non-fullscreen layout on mobile where overlays previously overflowed the canvas boundaries onto tabs and navbar.
+    - Preserved authentic flex centering (`justify-content: center`) inside the canvas wrapper for all games.
+  - **🕹️ Astro-Dodge Single-Row Action Buttons Retained ([`index.html`](index.html), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Kept the side-by-side single-row layout (`flex-wrap: nowrap`) for Astro-Dodge's primary action button and "Starship Hangar NFT" button, scoped cleanly to `#astro-dodge-btn-group`.
+    - Maintained concise, punchy button labels: **`Launch`** on the start screen and **`Relaunch`** on game over.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html), [`src/css/main.css`](src/css/main.css))**:
+    - Incremented `APP_VERSION = "1.5.674"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.674`, `main.css?v=1.5.674`, and `games.css?v=1.5.674`.
+
+- **Astro-Dodge: Mobile UI Overlay Viewport Elevation & Single-Row Launch/Relaunch Buttons (`v1.5.673`)**:
+  - **📱 Mobile UI Overlay Viewport Elevation ([`src/css/features/games.css`](src/css/features/games.css))**:
+    - Resolved the critical mobile bug where start and endgame screens were clamped inside the ~210px 16:9 canvas box with `justify-content: center`, which pushed titles ("STARSHIP CRASHED" / "Astro-Dodge Arcade") and score stats into negative coordinate space unreachable by touch scrolling.
+    - Elevated `.game-overlay` on mobile (`max-width: 768px` and landscape `max-height: 600px`) using `position: fixed`, utilizing the entire viewport from `top: calc(54px + safe-area)` to `bottom: calc(14px + safe-area)`.
+    - Added `margin-top: auto` / `margin-bottom: auto` child spacers and `justify-content: flex-start` to guarantee seamless top-down scrollability without negative coordinate clipping on small screens.
+  - **🕹️ Side-by-Side Single-Row Action Buttons ([`index.html`](index.html), [`game.js`](game.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Placed primary launch button and "Starship Hangar" button side-by-side on the exact same row using `flex-wrap: nowrap; flex: 1 1 0; min-width: 0; min-height: 42px;`.
+    - Simplified action button labels to concise, punchy text: strictly **`Launch`** on the start screen and **`Relaunch`** on the endgame screen (replacing verbose "Launch Starship" and "Relaunch Capsule").
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html), [`src/css/main.css`](src/css/main.css))**:
+    - Incremented `APP_VERSION = "1.5.673"` in `src/js/core/config.js`.
+    - Updated cache-busters `game.js?v=1.5.673`, `main.css?v=1.5.673`, and `games.css?v=1.5.673`.
+
+- **PolySpace: Flagship Docking Clearance & Text Spacing Calibration (`v1.5.672`)**:
+  - **🚀 Flagship Vertical Spacing & Idle Docking Glow ([`space.js`](space.js))**:
+    - Lifted the Flagship sprite and magnetic docking cradle upward by ~19px (`hangarCy` adjusted to `h / 2 - 24` in split mode, `h / 2 - 28` in hangar mode) to utilize the open space in the upper gantry bay.
+    - Calibrated docked idling thruster plumes (`flameLen` reduced from 30–40px to an authentic 14–18px idle plasma glow), eliminating thruster flame blow-over onto the text underneath.
+    - Shifted the Tier Evolution title badge and Power/Level subtitle down (`cy + 76` and `cy + 90`), creating more than 30px of clear space between the ship's wings/thrusters and the text while maintaining an aesthetic 38px buffer above the equipped NFT console dock.
+  - **🚀 Cache-Buster Refresh ([`index.html`](index.html))**:
+    - Updated `space.js?v=1.5.672` script tag in `index.html`.
+
+- **PolySpace: Segmented View Mode Selector (Radar / Hangar / Split) & Mobile Optimization (`v1.5.671`)**:
+  - **📱 Full-Width Segmented View Modes ([`index.html`](index.html), [`space.js`](space.js))**:
+    - Introduced a responsive segmented mode selector (`[ 🗺️ Radar ]` / `[ 🚀 Hangar ]` / `[ ◫ Split ]`) directly inside the Fleet Command canvas header.
+    - **🗺️ Radar Mode (Mobile Default)**: Expands the tactical star map to 100% canvas width ($0 \dots w$). The Outpost Hub is centered at $(0.50w, 0.50h)$, all 6 planetary destinations are balanced radially across the wide expanse, and interactive 1x–5x zoom, pan, and click-to-lock operate seamlessly across the entire screen.
+    - **🚀 Hangar Mode**: Dedicates 100% canvas width to the flagship gantry bay. Centered flagship sprite at $(w/2, h/2 - 12)$, symmetrical gantry architecture with energy conduits on both walls, centered holographic magnetic docking cradle, dynamic diagnostic laser sweep, and centered bottom Starship NFT console dock.
+    - **◫ Split Mode (Desktop Default)**: Restores side-by-side split ($0.43w$ Hangar, $0.57w$ Radar Map) with strict clipping boundaries, preventing visual overlap across the divider.
+    - Added user preference persistence via `localStorage.getItem('polyspace_canvas_mode')` and automatic default selection based on device viewport width (<768px defaults to Radar).
+  - **🚀 Cache-Buster Refresh ([`index.html`](index.html))**:
+    - Updated `space.js?v=1.5.671` script tag in `index.html`.
+
+- **PolySpace: Expedition Card Mobile Responsive Optimization & Radar Button Removal (`v1.5.670`)**:
+  - **📱 Mobile Screen Optimization & Horizontal Overflow Resolution ([`space.js`](space.js))**:
+    - Removed the redundant `[🎯 Radar]` button from active expedition cards in the Fleet Command Center, freeing up substantial horizontal space and resolving button clipping on iPhone and mobile viewports.
+    - Added `box-sizing: border-box`, `flex-wrap: wrap`, and a `0.35rem` gap to expedition cards so the mission timer, boost badge, and `[Abort]` button always remain 100% visible and accessible on screen.
+    - Applied `white-space: nowrap; overflow: hidden; text-overflow: ellipsis;` to mission titles to prevent awkward multi-line vertical word-wrapping.
+  - **🚀 Cache-Buster Refresh ([`index.html`](index.html))**:
+    - Updated `space.js?v=1.5.670` script tag in `index.html`.
+
+- **PolySpace: Cruising Starship Tactical Scale Calibration (`v1.5.669`)**:
+  - **🛸 50% Cruising Starship Scale Reduction ([`space.js`](space.js))**:
+    - Calibrated the cruising procedural Starship NFT sprite scale from `0.24` down to `0.12` (50% smaller) on the tactical expedition map, ensuring starships feel agile and proportional along the trajectory corridors at both overview (1.0x) and deep zoom (up to 5.0x).
+    - Reduced the fallback probe hull and plasma thruster dimensions by 50% to maintain visual parity.
+    - Adjusted floating progress percentage text offset to sit snug and centered right above the miniaturized hull.
+  - **🚀 Cache-Buster Refresh ([`index.html`](index.html))**:
+    - Updated `space.js?v=1.5.669` script tag in `index.html`.
+
+- **PolySpace: 5x Zoom, Equipped NFT Cruising Sprites, Mission Cycling & Clean Percentages (`v1.5.668`)**:
+  - **🔍 5.0x Deep Cosmic Zoom Expansion ([`space.js`](space.js))**:
+    - Expanded the radar zoom range up to **5.0x** (previously 3.0x), allowing players to inspect active missions and starship hulls in close detail.
+  - **🛸 Equipped Starship NFT Cruising Sprites ([`space.js`](space.js))**:
+    - Replaced the generic white arrow probe with the player's actual equipped Starship NFT using `window.PolyHangar.renderProceduralShip()`.
+    - Starships render with authentic procedural vector chassis, custom wings, cockpit geometry, and animated rarity-driven thruster fire (e.g. Legendary gold, Mythic plasma, Cyber blue) matching their on-chain DNA.
+  - **🎯 Multi-Mission Radar Cycling & Direct Ship Lock ([`space.js`](space.js))**:
+    - **Cycle via Track Button**: Clicking `[🛸 Track]` now cycles through all concurrent expeditions (`🛸 Track (1/3)` -> `🛸 Track (2/3)` -> `🛸 Track (3/3)` -> Unlock).
+    - **Direct Fleet Command Lock**: Added a `[🎯 Radar]` button on every active expedition card in the Fleet Command Center to instantly lock the camera on that specific starship.
+    - **Click-to-Lock on Canvas**: Clicking directly on or near any cruising starship on the tactical radar map immediately locks tracking to that ship.
+  - **✨ Minimalist Floating Percentage Text ([`space.js`](space.js))**:
+    - Removed the heavy background bounding box and spaceship emoji from the flight progress indicators, replacing them with clean floating `${pct}%` text rendered with a dark glow shadow for optimal contrast across deep space.
+  - **🚀 Cache-Buster Refresh ([`index.html`](index.html))**:
+    - Updated `space.js?v=1.5.668` script tag to ensure instant client cache refresh.
+
+- **PolySpace: Hotfix Syntax Error & Cache-Buster Refresh (`v1.5.667`)**:
+  - **🐛 Duplicate Variable Declaration Resolution ([`space.js`](space.js))**:
+    - Removed redundant `const activeList` declaration within `renderHangarView()`, resolving the `Uncaught SyntaxError: Identifier 'activeList' has already been declared` that halted script evaluation and prevented the PolySpace canvas from initializing.
+  - **🚀 Cache-Buster Upgrade ([`index.html`](index.html))**:
+    - Updated `space.js?v=1.5.667` script tag in `index.html` to force immediate browser cache eviction across mobile and desktop clients.
+
+- **PolySpace: Centered Outpost Hub, Bottom-Left Nebula & Interactive Zoom/Pan Radar Tracking (`v1.5.666`)**:
+  - **🌍 Outpost Hub & Nebula Sector Repositioning ([`space.js`](space.js))**:
+    - Shifted the Outpost Hub from the edge of the hangar divider ($0.49w, 0.50h$) to the comfortable center of the tactical map viewport ($0.62w, 0.48h$).
+    - Moved the **Nebula (2h)** destination to the **bottom-left** sector ($0.51w, 0.78h$) with an accompanying radiant violet cosmic gas cloud, fulfilling the tactical navigation layout requested by the user.
+    - Re-balanced all peripheral destination nodes (`asteroids`, `sector9`, `deepspace`, `void`, `odyssey`) and ambient asteroid clusters in a clean radial compass distribution around the newly centered Outpost Hub.
+  - **🔍 Interactive Tactical Map Zoom & Pan Navigation ([`space.js`](space.js), [`index.html`](index.html))**:
+    - Added an in-canvas frosted-glass Cyberpunk Radar HUD (`#space-map-zoom-hud`) featuring:
+      - `[−]` and `[+]` zoom buttons with a live multiplier indicator (`1.0x` – `3.0x`).
+      - `[🛸 Track]` button to lock the radar camera onto the primary cruising starship.
+      - `[⟲]` quick reset button to snap the map back to default overview (`1.0x`).
+    - Added comprehensive canvas interaction controls:
+      - **Mouse Wheel**: Smooth zoom-in / zoom-out when hovering over the tactical map.
+      - **Click & Drag**: Pan around the zoomed cosmic sector freely with reactive grab/grabbing cursor feedback.
+      - **Double-Click**: Fast-toggle between 1.0x overview and 2.0x zoom.
+      - **Touch Controls**: 1-finger drag-to-pan and 2-finger pinch-to-zoom on mobile devices.
+    - **🛡️ Strict Viewport Clipping Boundary**:
+      - Encapsulated all tactical map transforms within `ctx.clip()` bounded strictly to the right section ($0.43w \dots 1.0w$), guaranteeing that zoom and pan operations never bleed into or distort the left Starship Hangar bay.
+  - **🛸 Cinematic Starship Tracking Lock**:
+    - When tracking is engaged, the tactical camera automatically and smoothly lerps to follow the active cruising starship along its trajectory line in high detail.
+
+- **PolySpace: World Boss Strike Boss 10x Button (`v1.5.665`)**:
+  - **🚀 Strike Boss 10x Action ([`index.html`](index.html), [`space.js`](space.js))**:
+    - Replaced the ambiguous `All-Out Quantum Barrage (Max Available)` button with the explicit, predictable `Strike Boss 10x (Cost: 10k Quantum Crystals)` button.
+    - Updated click action to `attackWorldBoss(10)`, cleanly deducting 10,000 Quantum Crystals and firing 10 authoritative server-side combat calculations in a single batch.
+    - Enhanced feedback toasts to dynamically display the strike multiplier (e.g. `💥 BARRAGE HIT (10x)! Dealt ... DMG`).
+
+- **PolySpace: Hyperdrive Calibration Dynamic Targets & Focused Node Progression (`v1.5.664`)**:
+  - **🎲 Dynamic Target Arc Randomization ([`space.js`](space.js))**:
+    - Replaced hard-coded harmonic target locations with randomized sector angles distributed across balanced quadrants with angular jitter, ensuring green target bars are in unique, unpredictable positions each game.
+    - Upgraded hit detection to normalized clockwise angular distance (`diff <= arcWidth`), handling all full 360° wraps seamlessly for clockwise and counter-clockwise rings.
+  - **🎯 Single-Ring Revolving Node Focus & Disappearing Completed Nodes ([`space.js`](space.js))**:
+    - Resolved visual confusion where all 3 revolving nodes moved simultaneously: the rotating node is now rendered **strictly on the active ring**.
+    - When a harmonic bar is locked, its revolving point **disappears completely** with a 22-particle neon green spark explosion, and the locked bar remains solidly illuminated in bright green (`#00ff66`).
+    - The next ring's revolving point then appears 180° opposite its target bar, providing an immediate, unmistakable visual cue that the player has advanced to the next circle.
+
+- **Arcade Integrity: Astro-Dodge Score Velocity Ceiling Calibration & Poss Highscore Restoration (`v1.5.663`)**:
+  - **🚀 Score Velocity Rate Clamp Recalibration ([`fix_astrododge_score_clamp.sql`](supabase/fix_astrododge_score_clamp.sql), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
+    - Identified root cause of Astro-Dodge high scores being truncated in `end_arcade_session`: the legacy score velocity ceiling was hard-coded at `v_duration_seconds * 250` pts/sec.
+    - In a 319-second run, an 83,000 pt game ($83,000 / 319 \approx 260.19$ pts/sec) was clamped down to $319 \times 250 = \mathbf{79,750}$ pts before saving to the weekly leaderboard.
+    - Recalibrated the Astro-Dodge rate clamp to `v_duration_seconds * 700` with an explicit `500,000` pt ceiling (`LEAST(v_clamped_score, 500000, GREATEST(500, v_duration_seconds * 700))`), accommodating high combo streaks (up to 8x), boss defeats (+1500 to +3000 pts), and near-misses without risk of artificial truncation.
+  - **🏆 Restored Poss's Astro-Dodge High Score to 83,000 PTS**:
+    - Updated `game_highscore` to `83000` on Poss's account (`0xpgt8312e02d37185b5983e6922d1dae1cce`) in `public.users`.
+    - Corrected session `d901b0ca-7247-4e88-8730-6359672a6805` score from `79750` to `83000` in `public.arcade_sessions`.
+    - Restores Poss's rightful 83,000 pts on the active weekly Astro-Dodge leaderboard.
+
+- **VIP Upgrades: 1:5 Silver-to-Gold Conversion & Confirmation Modal (`v1.5.662`)**:
+  - **👑 1:5 Time Ratio Conversion ([`convert_silver_to_gold_vip.sql`](supabase/convert_silver_to_gold_vip.sql), [`08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql))**:
+    - When a player with active Silver VIP (`vip_level = 1`) activates a Gold VIP pass (30-day `nft_vip_pass` or 365-day `nft_vip_pass_yearly`), the system now converts their remaining Silver VIP duration into Gold VIP at a 1:5 ratio (`1 Gold day for every 5 Silver days`).
+    - The converted Gold duration is stacked onto the new Gold pass duration, and the account is immediately elevated to full Tier 2 Gold VIP (2.0x payouts, captcha bypass, VIP Faucet).
+    - Upgraded both `activate_vip_pass` (in-game crate consumption) and `credit_verified_vip_burn` (on-chain Polygon burns via Edge Function) with the atomic conversion calculation.
+    - Preserved anti-downgrade protection: active Gold VIP users cannot activate Silver VIP until their Gold status expires.
+  - **💬 Cyberpunk Confirmation Modal ([`index.html`](index.html), [`nft.js`](src/js/features/nft.js))**:
+    - Introduced `#modal-vip-upgrade` to clearly explain the conversion to the user before consuming the pass or initiating an on-chain transaction.
+    - Displays dynamic breakdown: Active Silver Remaining, 1:5 Conversion Rate, Converted Gold Bonus, New Pass Duration, and New Total Gold VIP Days.
+    - If user cancels, the operation is cleanly aborted without burning any NFT or consuming any pass from inventory.
+
+- **Mobile Auth: Silent JWT Refresh, Sleep/Wake Recovery & Universal RPC Pipeline (`v1.5.661`)**:
+  - **📱 Mobile Sleep/Wake Tab Resumption ([`auth-web3.js`](src/js/core/auth-web3.js))**:
+    - Added reactive lifecycle listeners for `pageshow`, `visibilitychange`, and `focus` (with 3-second debouncing) to immediately detect when a mobile browser wakes up or resumes from background sleep.
+    - Proactively validates Supabase Auth session token expiry (`expires_at <= now + 60s`) and performs a silent token refresh before any RPCs or user actions trigger.
+  - **🔄 Concurrency Mutex & Stored Refresh Token Recovery ([`auth-web3.js`](src/js/core/auth-web3.js))**:
+    - Implemented `getStoredSupabaseTokens()` to safely extract stored tokens from `localStorage` (`sb-*-auth-token`).
+    - Handled cold-start session losses in GoTrue memory by falling back to `setSession({ refresh_token, access_token })` instead of throwing `AuthSessionMissingError`.
+    - Wrapped all session refresh flows in an `_activeRefreshPromise` singleton mutex to eliminate concurrent refresh token rotation collisions and invalidation.
+  - **🛡️ Universal `executeAuthenticatedRpc` Pipeline Across Platform**:
+    - Routed all critical state-altering and economy RPCs through `executeAuthenticatedRpc`, guaranteeing proactive pre-call token freshness and automatic single-retry self-healing on auth errors:
+      - **Arcade Sessions & Outposts ([`db-sync.js`](src/js/core/db-sync.js))**: `start_arcade_session` (initial & Turnstile retry), `end_arcade_session`, `submit_invaders_score`, `link_wallet_to_account`, `poke_allied_outpost`, `launch_outpost_raid`.
+      - **PolySpace Engine ([`space.js`](space.js))**: `start_polyspace_expedition`, `claim_polyspace_expedition` (single & batch `ALL`), `cancel_polyspace_expeditions` (single & batch), `upgrade_polyspace_module`, `smelt_space_ore`, `scan_polyspace_anomaly`, `strike_world_boss`, and hyperdrive boost RPCs.
+      - **Daily Quests & Faucets ([`quests.js`](src/js/features/quests.js), [`faucet.js`](src/js/features/faucet.js))**: `sync_daily_quests`, `claim_daily_quest`, `claim_faucet`, `claim_vip_faucet`, and `request_vip_faucet_pol_payout`.
+      - **Staking Hub ([`staking.js`](src/js/features/staking.js))**: `deposit_stake`, `harvest_yield`, `harvest_all_yield`, `unstake_position`, `unstake_all`, and `fast_forward_staking_locks`.
+      - **Referrals, Relics & Messages ([`referrals.js`](src/js/features/referrals.js), [`relics.js`](src/js/features/relics.js), [`messages.js`](src/js/features/messages.js), [`withdraw.js`](src/js/features/withdraw.js), [`nft.js`](src/js/features/nft.js))**: `harvest_referral_rewards`, `request_pol_referral_payout`, `mark_relic_minted`, `get_player_messages`, `mark_player_message_read`, `mark_all_player_messages_read`, `refund_failed_withdrawal`, `activate_vip_pass`, `open_pgt_mystery_box`, `buy_onsite_nft`.
+
+- **Starships: Fast 1-Call Batch On-Chain Query, Mobile RPC Resilience & Cross-Device Fleet Sync (`v1.5.660`)**:
+  - **⚡ 1-Call Batch On-Chain Stats ([`hangar.js`](src/js/features/hangar.js))**:
+    - Replaced the slow, failure-prone loop of 25 sequential `getStarshipStats(tokenId)` calls with smart contract native `getBatchStarshipStats(uint256[] tokenIds)`.
+    - Queries all starship stats across large fleets in a single RPC round-trip (<200ms) with resilient per-token fallback boundaries.
+  - **📱 Mobile Public RPC Reliability ([`hangar.js`](src/js/features/hangar.js))**:
+    - Prioritized high-throughput, CORS-friendly Polygon endpoints (`polygon-bor-rpc.publicnode.com`, `polygon.drpc.org`, `polygon-rpc.com`), eliminating rate-limiting 410/429 HTTP errors and timeouts on mobile browsers.
+    - Added safe non-destructive error handling ensuring RPC connection hiccups never clear or wipe locally cached fleets.
+  - **🔄 Cross-Device Fleet Synchronization ([`hangar.js`](src/js/features/hangar.js), [`db-sync.js`](src/js/core/db-sync.js))**:
+    - Enhanced `getUserFleet()` with dual fallbacks: restores fleet from `spaceState.starshipFleet` or the user's equipped starship if local storage is uninitialized on new devices (e.g. phones/tablets).
+    - Enabled automatic background fleet synchronization on profile load in `syncDown()` and `restoreFromDB()`.
+    - Persisted verified on-chain fleet directly into `space_state.starshipFleet` via [`sync_poss_starship_fleet.sql`](supabase/sync_poss_starship_fleet.sql) for Poss (`25 starships`).
+
+- **Starships: Disable Demo Test Flights & Purge Unowned Hulls (`v1.5.659`)**:
+  - **🚫 Removed Demo Starship Test Flights ([`hangar.js`](src/js/features/hangar.js), [`game.js`](game.js))**:
+    - Completely disabled test flight equipping for unowned demo ships across the platform. Users who do not own a minted on-chain starship can no longer equip or pilot demo ships in Astro-Dodge or PolySpace.
+    - Replaced the "Test Fly Demo Ship" button in the Hangar Bay with a clear unowned status badge (`🔒 Unowned — Mint on Polygon to Equip & Fly`).
+    - Added strict validation to `equipSelectedShip()` rejecting unowned / demo hulls and prompting pilots to mint a procedural ship on Polygon.
+  - **🛡️ Strict State & Leaderboard Protection ([`profile.js`](src/js/features/profile.js), [`state.js`](src/js/core/state.js), [`db-sync.js`](src/js/core/db-sync.js), [`space.js`](space.js))**:
+    - Gated `getLeaderboardStarshipBadge()` to strictly ignore demo hulls (`isDemo === true`, `tokenId === 0`, or name including 'demo'), ensuring players without real on-chain starships cleanly display standard status without rarity badges.
+    - Updated `state.js` `saveToDB()` payload generation to exclude unowned demo ships from database persistence.
+    - Updated `db-sync.js` (`syncDown` and `restoreFromDB`) to purge any cached demo hulls from memory and local storage upon profile load.
+    - Updated `space.js` `getEquippedStarshipMultiplier()` to treat unowned/demo hulls as unequipped (default 1.0x baseline).
+  - **🧹 Database Sanitization ([`cleanup_demo_starships.sql`](supabase/cleanup_demo_starships.sql))**:
+    - Purged demo starships from `public.users.equipped_starship` and `space_state.equippedStarship` across all affected accounts (`Vezuvius King`, `Laur Laur`, `Bennie`, `Theo`).
+
+- **Security Patch: Anti-Impersonation RPC Hardening & World Boss Restoration (`v1.5.658`)**:
+  - **🛡️ `assert_caller_player_id` Anti-Impersonation Shield ([`01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql))**:
+    - Completely patched an anonymous caller spoofing vulnerability where unauthenticated PostgREST callers (`v_auth_uid IS NULL`) could invoke state-altering RPCs on registered accounts with linked Web3 wallets.
+    - Any registered user profile (accounts with `user_id`, `web3_auth_id`, or `linked_wallet_address`) now strictly requires an active authenticated session (`v_auth_uid IS NOT NULL`).
+    - Internal server execution bypass is strictly restricted to `SESSION_USER = 'postgres'` or `service_role`.
+  - **🔒 Strict RPC Execute Permissions ([`09_world_boss.sql`](supabase/rpcs/09_world_boss.sql))**:
+    - Revoked `EXECUTE` privileges from `PUBLIC` and `anon` on `strike_world_boss`, restricting combat execution strictly to `authenticated` and `service_role`.
+  - **💎 Account & Boss Integrity Restoration**:
+    - Restored **486,000 Quantum Crystals** back to user **Origin** (`space_state.quantum = 486,925`).
+    - Reverted unauthorized strike damage from Origin's profile back to legitimate values (`boss_weekly_damage = 724,942`, `boss_attacks_count = 7`).
+    - Restored **40,626,868 HP** back to the Cosmic World Boss (`boss_current_hp = 93,587,640 / 128,144,531`).
+
+- **UI/UX: Astro-Dodge Hangar Ship Total Multiplier Display (`v1.5.657`)**:
+  - **⚡ Top-Right Ship Window Multiplier HUD ([`hangar.js`](src/js/features/hangar.js))**:
+    - Embedded a futuristic glassmorphic HUD pill in the top-right corner of the Astro-Dodge Hangar 3D/vector ship preview window (`#hangar-ship-canvas`).
+    - Displays the active/previewed ship's total multiplier in bold gold (`⚡ 1.50x (+50%)`, `⚡ 2.25x (+125%)`) with real-time status (`TOTAL MULTIPLIER`, `T3+ BOOST`, or `SIMULATED`).
+    - Added Sci-Fi diagnostic corner brackets to the 60FPS canvas starfield loop for an authentic aerospace tuning bay aesthetic.
+  - **🛸 Fleet Strip Multiplier Indicators ([`hangar.js`](src/js/features/hangar.js))**:
+    - Added instant total multiplier badges (`⚡ X.XXx`) directly on each ship pill inside the horizontal fleet docking selector, enabling fast multiplier comparison across owned starships.
+
+- **UI/UX: Arcade Tournament Leaderboard Starship Badge Refinement (`v1.5.656`)**:
+  - **🚀 Clean Starship Identification ([`profile.js`](src/js/features/profile.js))**:
+    - Replaced the expedition yield percentage (`(+x%)`) with `STARSHIP` on all tournament leaderboard rarity badges (e.g. `🟣 EPIC STARSHIP`, `🟡 LEGENDARY STARSHIP`, `🔴 MYTHIC STARSHIP`, `🔵 RARE STARSHIP`).
+    - Removed `(1x)` from unequipped players to cleanly display `🛸 Standard Hull`.
+    - Eliminates confusion regarding score mechanics since Starship yield multipliers apply specifically to PolySpace expeditions rather than arcade game high scores.
+
+- **UI/UX: AAA Sci-Fi Visual Overhaul for PolySpace Starship Hangar (`v1.5.655`)**:
+  - **🛸 Holographic Launch Platform & Magnetic Docking Cradle ([`space.js`](space.js))**:
+    - Rendered an isometric holographic launch platform under the Flagship dreadnought with concentric glowing depth rings, center hex anchor, upward projector glow, and 4 pulsing perimeter runway strobe beacons.
+  - **⚡ Automated Diagnostic Hull Scanner Beam ([`space.js`](space.js))**:
+    - Added a sweeping laser scanner line moving smoothly up and down across the Flagship hull with dynamic fan projection and live scan percentage telemetry readout (`SCAN // XX%`).
+  - **🏗️ Hangar Bulkhead Architecture & Gantry Framework ([`space.js`](space.js))**:
+    - Added structural corner trusses with rivet beacons and a vertical energy conduit line on the left wall with animated traveling plasma packets and telemetry (`BAY 01 • CLAMPS LOCKED`).
+    - Added floating zero-gravity ion dust motes drifting gently across the hangar bay.
+  - **🛸 Upgraded Equipped Starship Mini-Dock HUD ([`space.js`](space.js))**:
+    - Enhanced the bottom-left mini-dock with a live pulsing green status dot (`● ACTIVE DOCK`), sleek rarity pill badges, bold golden yield multiplier, and an interactive `[ FLEET ↗ ]` button pill.
+  - **🌌 Tactical Radar Sweep & Cosmic Nebula Backdrop ([`space.js`](space.js))**:
+    - Added deep space cosmic indigo and magenta gas cloud gradients across the expedition tactical map.
+    - Integrated a 360-degree rotating tactical sonar radar sweep beam radiating outwards from the Outpost Hub with concentric range sonar rings.
+
+- **Bugfix: Leaderboard Name Formatter Parameter Reference Error Resolved (`v1.5.654`)**:
+  - **🔧 Function Signature Patch ([`profile.js`](src/js/features/profile.js))**:
+    - Fixed `ReferenceError: includeStarship is not defined` inside `formatLeaderboardName` by adding `includeStarship = false` to the function parameter definition.
+    - Resolved leaderboard loading crash on all arcade game scoreboards (Astro-Dodge, Cyber Invaders, Cyber Skeet, etc.) and PolySpace fleet leaderboards.
+
+- **Bugfix: PolySpace Starship Base Rarity Multipliers Corrected (`v1.5.653`)**:
+  - **⚡ Base Multiplier Resolution ([`space.js`](space.js))**:
+    - Fixed an issue where `getEquippedStarshipMultiplier()` was reading `rarity.earnMultiplier` instead of `rarity.baseEarnMultiplier`.
+    - Corrected the yield multiplier mapping so that **Epic Starships** accurately display and apply **1.20x PGT Yield (+20%)** (Rare = 1.10x, Epic = 1.20x, Legendary = 1.30x, Mythic = 1.50x).
+    - Updated both the Starship Hangar mini-dock HUD badge and the expedition dispatch yield calculations.
+
+- **UI/UX: 2-Line Mobile-First Leaderboards with High-Visibility Starship Badges (`v1.5.652`)**:
+  - **🏆 2-Line Row Layout Across All Tournament Leaderboards ([`profile.js`](src/js/features/profile.js), [`games.css`](src/css/features/games.css))**:
+    - Replaced the single-line row with a clean 2-line card layout across all 9 arcade tournament leaderboards, referral leaderboards, and holder boards.
+    - **Line 1 (Identity & Score)**: Displays Rank (`🥇 1`, `🥈 2`, `🥉 3`, etc.) + Player Name + VIP Crown badge (`👑`) + `(You)` tag on the left, paired with bold High Score (`88,800 pts`) on the right.
+    - **Line 2 (Starship & Rewards)**: Dedicated second line displays the player's equipped Starship rarity badge (`🔴 MYTHIC (+50%)`, `🟡 LEGENDARY (+30%)`, `🟣 EPIC (+20%)`, `🔵 RARE (+10%)`) or `🛸 Standard Hull (1x)` on the left, paired with the Weekly Tournament Prize + Multiplier (`15,000 PGT (2x)`) on the right.
+    - Solves truncation completely on narrow/mobile viewports: player names have ~2× more space and starship badges are never pushed into ellipsis (`...`).
+  - **✨ Unified Styling**:
+    - Updated CSS `.leaderboard-info`, `.leaderboard-info-top`, `.leaderboard-info-bottom`, `.leaderboard-stats`, `.leaderboard-score`, and `.leaderboard-prize` for responsive flex alignment with podium glow borders.
+
+- **UI/UX: PolySpace Starship Hangar Equipped NFT Mini-Dock & Multiplier HUD (`v1.5.651`)**:
+  - **🛸 Bottom-Left Equipped Starship Mini-Dock ([`space.js`](space.js))**:
+    - Embedded a dedicated interactive HUD mini-dock inside the PolySpace Starship Hangar canvas in the bottom-left corner below the Flagship dreadnought stats.
+    - Displays the player's equipped procedural Starship NFT with active animated thruster flame bloom matching its rarity tier.
+    - Prominently showcases the Starship's base rarity tier badge (e.g. `🛸 MYTHIC STARSHIP`, `🛸 LEGENDARY STARSHIP`) and its exact PGT mining yield multiplier (e.g. `⚡ 1.50x Yield (+50%)`, `⚡ 1.10x Yield (+10%)`).
+    - Clicking the mini-dock immediately opens the Starship Hangar modal, allowing seamless inspection, switching, or minting.
+    - If no Starship is equipped, displays a responsive prompt (`🛸 NO STARSHIP EQUIPPED` / `Click to Equip (+10-50%)`).
+  - **🚀 Hangar Fleet Management UX ([`hangar.js`](src/js/features/hangar.js))**:
+    - Updated equip action buttons to clarify global utility across Arcade games and the PolySpace fleet (`Equip Starship (Fleet & Games)`).
+
+- **Features: Cyber Invaders Procedural Starship Skin, PolySpace Mining Yield Multipliers & Leaderboard Badges (`v1.5.650`)**:
+  - **🛸 Cyber Invaders Procedural Starship & Dynamic Fire ([`invaders.js`](invaders.js))**:
+    - Equipped Starships now render in Cyber Invaders with full procedural hull geometry, wings, cockpit canopy, and upward-firing orientation (`-Math.PI / 2`).
+    - Integrated dynamic thruster plume bloom matching Starship rarity (Cyan for Rare, Violet for Epic, Solar Gold for Legendary, Cosmic Crimson for Mythic).
+    - Synchronized player weapon projectiles and Overdrive hyper-beam with the ship's propulsion fire and white-hot core spears.
+    - Preserved standard baseline earn multipliers for Invaders (visual cosmetic skin & weapon FX only, zero extra earn boost).
+  - **🪐 PolySpace: Authoritative Starship Base Rarity Mining Yield Multiplier ([`space.js`](space.js), [`06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`update_starship_multiplier_polyspace.sql`](supabase/update_starship_multiplier_polyspace.sql))**:
+    - Connected PolySpace expedition mining yields strictly to the equipped Starship's base rarity tier (without Combat Module Tier 3+ boosts):
+      - **Rare**: Base **1.10x** (+10% PGT Yield).
+      - **Epic**: Base **1.20x** (+20% PGT Yield).
+      - **Legendary**: Base **1.30x** (+30% PGT Yield).
+      - **Mythic**: Base **1.50x** (+50% PGT Yield).
+    - Added equipped Flagship badge indicator (`🛸 Flagship Multiplier`) in the PolySpace expedition dispatch corridor.
+    - Updated server-side stored procedure `claim_polyspace_expedition` to authoritatively apply `v_starship_mult` to PGT expedition rewards.
+  - **🏆 Arcade Leaderboard Starship Badges ([`profile.js`](src/js/features/profile.js))**:
+    - Added live Starship rarity badges (`🔴 Mythic`, `🟡 Legendary`, `🟣 Epic`, `🔵 Rare`) next to player usernames on the tournament leaderboards.
+    - Updated database queries to fetch `equipped_starship` and `space_state` with schema error resilience and graceful backward compatibility.
+    - Included equipped Starship badge in the pinned `YOUR STANDING` user row.
+
+- **Architecture: Decoupled Starship Fleet from PolySpace (Dedicated equipped_starship Column) (`v1.5.649`)**:
+  - **🚀 Dedicated Database Column ([`add_equipped_starship_column.sql`](supabase/add_equipped_starship_column.sql), [`master_schema.sql`](supabase/master_schema.sql))**:
+    - Created clean database migration [`supabase/add_equipped_starship_column.sql`](supabase/add_equipped_starship_column.sql) adding `equipped_starship JSONB DEFAULT NULL` to `public.users`.
+    - Included automated one-time backfill from `space_state->'equippedStarship'` into the new column.
+    - Decoupled starship fleet state from the PolySpace idle mining resource engine (`space_state`), ensuring starships can be equipped and synced regardless of mining activity.
+  - **🔄 Resilient Client Hydration & Auto-Fallback ([`state.js`](src/js/core/state.js), [`db-sync.js`](src/js/core/db-sync.js), [`hangar.js`](src/js/features/hangar.js))**:
+    - Updated `defaultState` and `saveToDB()` to push equipped starships directly to `equipped_starship`.
+    - Added backward-compatible dual hydration: reads from `equipped_starship` with automatic fallback to `space_state.equippedStarship`.
+    - Added resilient PostgREST schema error catching: gracefully strips `equipped_starship` if the column has not yet been migrated in the live database.
+
+- **Astro-Dodge: Dynamic Starship Rarity Fire Beam & Matching Plasma Projectiles (`v1.5.648`)**:
+  - **🔥 Dynamic Fire Beam Colors ([`game.js`](game.js))**:
+    - Connected Astro-Dodge's weapon firing engine directly to the equipped Starship's rarity tier and thruster propulsion fire.
+    - Plasma projectile beams now render with the exact outer flame, glow aura, and core spear colors of your ship's propulsion:
+      - **Rare**: Cyan Plasma beam (`#00f0ff`) with pure white core (`#ffffff`) and cyan aura.
+      - **Epic**: Hyper Violet beam (`#bd00ff`) with radiant orchid core (`#ff88ff`) and purple aura.
+      - **Legendary**: Solar Flare beam (`#ff8800`) with molten golden core (`#fff59d`) and gold aura.
+      - **Mythic**: Cosmic Crimson beam (`#ff0055`) with electric singularity cyan core (`#00ffff`) and crimson aura.
+    - Synchronized boss impact spark effects to burst in the projectile's matching rarity flame color.
+
+- **Starship Fleet: Complete Logout Purge & Strict Session Gating for Hangar Bay (`v1.5.647`)**:
+  - **🔒 Strict Session Gating for Starship Fleet ([`hangar.js`](src/js/features/hangar.js), [`db-sync.js`](src/js/core/db-sync.js))**:
+    - Resolved an issue where logging out of PolyGame still displayed the previously connected wallet's minted starships in the Hangar.
+    - Added comprehensive logout purges for `polygame_user_fleet` and `polygame_equipped_starship` in `logoutUser()`, and added `window.PolyHangar.clearFleet()` to instantly reset in-memory active fleet state.
+    - Updated `getUserFleet()` and `getEquippedStarship()` to strictly return empty fleet (triggering Demo Mode) whenever the player is logged out or unauthenticated in guest mode.
+    - Gated `getActiveWalletAddress()` and `isPossOrAdmin()` so that unauthenticated guest sessions never silently infer injected `window.ethereum.selectedAddress` or trigger unauthorized on-chain fleet synchronizations.
+    - In `openHangarModal()`, on-chain contract queries are now strictly conditioned on an active, authenticated wallet address (`targetWallet != null`).
+
+- **Starship Hangar: Added Prominent Random On-Chain Mint Notices for Demo Simulator (`v1.5.646`)**:
+  - **📢 Clear Demo Simulator Disclaimers ([`hangar.js`](src/js/features/hangar.js))**:
+    - Added explicit messaging in the Starship Hangar modal making it clear to players that the demo ship is strictly a visual simulator / preview tool.
+    - Added a prominent top alert in the fleet banner: *"⚠️ DEMO SIMULATOR — PREVIEW ONLY: This demo ship is for visual test-flights. Minting does NOT mint this previewed ship — the smart contract rolls a brand-new random DNA on-chain!"*
+    - Tagged the preview ship name with a clear amber `PREVIEW ONLY` badge.
+    - Added a highlighted disclaimer box directly above the mint/action buttons informing players that clicking "Mint Ship (2.0 POL)" generates a brand-new, randomized on-chain DNA with its own unique traits and rarity.
+
+- **Vault Staking: Eliminated VIP Pass APY Double-Dipping (Restored 23.91% APY for Gold VIP) (`v1.5.645`)**:
+  - **🛡️ Restored Staking APY Parity ([`nft.js`](src/js/features/nft.js))**:
+    - Corrected an issue where setting `stakingBoost` on VIP passes in `NFT_REGISTRY` caused `getMultipliers()` to treat the pass as a passive additive/multiplicative NFT core in `nftStakingBoost`, which was then multiplied *again* by `vipStakingBoost` (x2.0) in the final APY calculation.
+    - Zeroed out `stakingBoost` on `nft_vip_pass_t1`, `nft_vip_pass`, and `nft_vip_pass_yearly` in `NFT_REGISTRY`. VIP staking boosts are strictly applied via the VIP membership system (`vipStakingBoost`: 1.25x Silver / 2.0x Gold).
+    - Restored true APY calculation parity: Gold VIP players with Ambassador (1.1x) and passive NFT cores now correctly see **23.91% APY** instead of the inflated 59.77%.
+
+- **Starship Hangar: Horizontal Docking Strip with Scroll Navigation for Large Fleets (`v1.5.644`)**:
+  - **🛸 Compact Horizontal Docking Strip ([`hangar.js`](src/js/features/hangar.js), [`modals.css`](src/css/modals.css))**:
+    - Replaced the vertical multi-row wrapping fleet selector with a sleek, space-efficient single-row horizontal docking strip (`#hangar-fleet-strip`).
+    - Added responsive left/right navigation arrow buttons (`◀` / `▶`) when a player owns more than 3 starships, allowing quick flicking through the fleet.
+    - Added mousewheel listener enabling horizontal desktop scrolling directly over the docking strip.
+    - Integrated smooth auto-centering on selection: selecting or navigating to any ship smoothly scrolls its pill tab directly into the center of the viewport.
+    - Styled custom neon-cyan webkit scrollbar matching the cyberpunk aesthetic.
+
+- **Staking: Calibrated Silver VIP Staking Boost (1.25x vs Gold 2.0x) & Added Staking Perks to VIP Pass Descriptions (`v1.5.643`)**:
+  - **⚡ Calibrated Silver VIP Staking Boost (1.25x vs Gold 2.0x) ([`staking.js`](src/js/features/staking.js), [`state.js`](src/js/core/state.js), [`index.html`](index.html), [`supabase/rpcs/07_vault_staking.sql`](supabase/rpcs/07_vault_staking.sql))**:
+    - Corrected an issue where Silver VIP (`vip_level = 1`) was receiving or displaying a `2.0x` staking multiplier instead of its intended `1.25x` boost (+25% APY).
+    - Updated `getMultipliers()`, `calculateStakingReward()`, and `deposit_stake` frontend handlers to dynamically resolve `vipStakingBoost`: `vipLevel >= 2 ? 2.0 : 1.25`.
+    - Made the APY breakdown VIP row in [`index.html`](index.html) and [`state.js`](src/js/core/state.js) dynamic: displays `🥈 Silver VIP Multiplier: x1.25 (+25%)` for Silver VIPs and `👑 Gold VIP Multiplier: x2.0 (+100%)` for Gold VIPs.
+    - Updated PostgreSQL `deposit_stake` stored procedure ([`supabase/update_silver_vip_staking_multiplier.sql`](supabase/update_silver_vip_staking_multiplier.sql)) to authoritatively validate and apply `1.25x` for Silver VIP and `2.0x` for Gold VIP.
+  - **👑 Staking Bonus in VIP Pass Descriptions & Metadata ([`nft.js`](src/js/features/nft.js), [`metadata/`](metadata/))**:
+    - Added explicit staking boost perks to the NFT Marketplace and Backpack Inventory cards in [`nft.js`](src/js/features/nft.js):
+      - **Silver VIP Pass** (`nft_vip_pass_t1`): `1.25x Staking APY Boost (+25%)`.
+      - **Gold VIP Pass** (`nft_vip_pass` & `nft_vip_pass_yearly`): `2.0x Staking APY Boost (+100%)`.
+    - Synchronized `NFT_REGISTRY` description strings and on-chain metadata files ([`nft_vip_pass_t1.json`](metadata/nft_vip_pass_t1.json), [`nft_vip_pass.json`](metadata/nft_vip_pass.json), [`nft_vip_pass_yearly.json`](metadata/nft_vip_pass_yearly.json)) with dedicated `"Staking APY Boost"` attribute traits.
+    - Updated navbar and profile VIP badge tooltips in [`profile.js`](src/js/features/profile.js) to highlight staking benefits.
+
+- **Astro-Dodge: Server-Side Starship Rarity Multiplier Support (up to 2.25x) & Dynamic Game-Over Multiplier Label (`v1.5.642`)**:
+  - **🚀 Dynamic Starship Game-Over Overlay Label ([`game.js`](game.js))**:
+    - Resolved an issue on the Astro-Dodge game over screen where the starship boost badge was hardcoded as `(Tier 3+ Ship 1.5x)`.
+    - Formatted badge label dynamically with `parseFloat(starshipMult.toFixed(2))`, properly displaying `(Tier 3+ Ship 1.8x)` for Epic ships at Tier 3+ (and dynamically reflecting 1.65x for Rare, 1.95x for Legendary, 2.25x for Mythic).
+  - **🛡️ Server-Side Stored Procedure Upgrade (`end_arcade_session`) ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/update_starship_rarity_multiplier_astrododge.sql`](supabase/update_starship_rarity_multiplier_astrododge.sql))**:
+    - Upgraded authoritative NFT & starship multiplier clamping in PostgreSQL `end_arcade_session` stored procedure.
+    - Previously, the procedure clamped starship boosts to a rigid 1.5x, causing players with Epic Tier 3+ ships ($1.8\times$) or higher to have their total multiplier clamped from $21.1\times$ down to $\sim 17.55\times$ on payout calculation.
+    - Updated verification logic to authorize dynamic starship rarity multipliers up to $2.25\times$ (Mythic Tier 3+), ensuring full payout parity between HUD display ($21.1\times$) and actual balance credit ($2.95\text{ PGT}$ vs previous $2.39\text{ PGT}$).
+
+- **Starship Fleet: Radiant Rarity Thruster Fire Bloom, Demo Ship Astro-Dodge Flight Preview & Standalone Demo Sync (`v1.5.641`)**:
+  - **🔥 Radiant Rarity Thruster Fire Bloom ([`hangar.js`](src/js/features/hangar.js), [`demo_procedural_ships.html`](demo_procedural_ships.html), [`starship-metadata`](supabase/functions/starship-metadata/index.ts))**:
+    - Fixed an issue where thruster fire appeared muted or unchanged across rarities due to zero shadow blur, linear alpha dropoff into transparent black, and overpower from the hull's neon palette glow.
+    - Added dedicated, isolated neon glow (`ctx.shadowColor = rarity.flame; ctx.shadowBlur = 22;`) and enlarged plume dimensions ($+25\%$ length and width).
+    - Upgraded gradient stops with high saturation retention (`0%` to `35%` solid `rarity.flame`) and transition into vibrant core spears (`#ffffff` &rarr; `rarity.coreFlame` &rarr; `rarity.flame`).
+    - Added SVG `filter="url(#neonGlow)"` to thruster plumes in `starship-metadata` edge function.
+  - **🛸 Demo Starship In-Flight Preview in Astro-Dodge ([`hangar.js`](src/js/features/hangar.js), [`game.js`](game.js))**:
+    - Resolved an issue where equipping demo ships was ignored or bypassed in `game.js`, causing Astro-Dodge flights to fall back to hardcoded magenta/cyan engine fire.
+    - Players can now click **"🎮 Test Fly in Astro-Dodge"** on any rolled demo ship to fly its exact procedural model, wings, canopy, and dynamic rarity thruster fire in live gameplay (with earn multipliers held at baseline 1.0x until on-chain minting).
+  - **🚀 Standalone Demo Page Synchronization ([`demo_procedural_ships.html`](demo_procedural_ships.html))**:
+    - Brought `demo_procedural_ships.html` up to parity with the live game engine, integrating `STARSHIP_RARITY`, `getStarshipRarity`, Rarity Badges, Rarity Scores, and dynamic rarity thruster fire (replacing legacy palette flame).
+
+- **Starship Fleet: Calibrated Rarity Distribution (Rare > Epic, Mythic ~2%), Multiplicative Tier 3+ Boosts & In-Image Rarity Badge (`v1.5.640`)**:
+  - **📊 Calibrated Rarity Hierarchy (Rare > Epic & Mythic ~2%) ([`hangar.js`](src/js/features/hangar.js), [`starship-metadata`](supabase/functions/starship-metadata/index.ts))**:
+    - Rebalanced procedural rarity thresholds across all 900,000 possible 6-digit DNA combinations to establish a healthy, authentic rarity pyramid where Rare is significantly more common than Epic:
+      - **Rare**: **~51.3%** (base fleet tier; up from 15.5%).
+      - **Epic**: **~31.7%** (intermediate tier; down from 39.9%).
+      - **Legendary**: **~15.2%** (high-tier fleet; down from 28.7%).
+      - **Mythic**: Calibrated to **~1.8% – 2.0%** (ultra-rare grail tier; down from 15.9%), triggered by score $\ge 90$ or $3$ legendary traits with special DNA sequence patterns (triples/palindromes).
+  - **🚀 Rarity-Scaled Multipliers & Multiplicative Tier 3+ Milestone ([`hangar.js`](src/js/features/hangar.js), [`game.js`](game.js))**:
+    - Implemented rarity-scaled base Astro-Dodge PGT earn multipliers:
+      - **Rare**: Base **1.1x** (+10%) &rarr; Tier 3+: **1.65x** (+65%).
+      - **Epic**: Base **1.2x** (+20%) &rarr; Tier 3+: **1.80x** (+80%).
+      - **Legendary**: Base **1.3x** (+30%) &rarr; Tier 3+: **1.95x** (+95%).
+      - **Mythic**: Base **1.5x** (+50%) &rarr; Tier 3+: **2.25x** (+125%).
+    - Multiplier scales multiplicatively ($\text{Base} \times 1.5$) upon reaching Tier 3+ (all 4 modules at Lv3+ or `shipTier >= 3`).
+    - Updated Hangar UI badges, perk milestone card copy, active flight multipliers in `game.js`, and equip toasts to dynamically reflect active and potential multipliers.
+  - **🎨 In-Image NFT SVG Rarity Layout ([`starship-metadata`](supabase/functions/starship-metadata/index.ts))**:
+    - Re-positioned the SVG text layout so that the Rarity line (`RARITY: [TIER] (SCORE [XX]/100)`) renders clearly directly below the Token # and DNA line with high-contrast rarity tier colors.
+    - Added `Base Earn Multiplier` attribute (`1.1x`, `1.2x`, `1.3x`, `1.5x`) to OpenSea NFT metadata.
+    - Successfully re-deployed Edge Function to Supabase (`jgtfnsufemvqkyytscgl`).
+
+- **Starship Fleet: 4-Tier Rarity Engine (Rare, Epic, Legendary, Mythic) & Dynamic Rarity Thruster Fire (`v1.5.639`)**:
+  - **🔥 Dynamic Rarity-Based Thruster Fire Colors ([`hangar.js`](src/js/features/hangar.js), [`starship-metadata`](supabase/functions/starship-metadata/index.ts), [`metadata/ships/`](metadata/ships/))**:
+    - Introduced a deterministic 4-tier rarity engine without requiring contract re-deployment, categorizing starships into **Rare**, **Epic**, **Legendary**, and **Mythic** (Common and Uncommon removed).
+    - Thruster flame and inner plasma core colors in both the Hangar Bay 3D canvas and live Astro-Dodge arcade flights are now dynamically governed by the ship's Rarity Tier:
+      - **Rare**: Electric Cyan Plasma Flame (`#00f0ff`) with White-Hot Core (`#ffffff`).
+      - **Epic**: Hyper Violet Flame (`#bd00ff`) with Radiant Orchid Core (`#ff88ff`).
+      - **Legendary**: Molten Solar Gold Flame (`#ff8800`) with Golden Flare Core (`#fff59d`).
+      - **Mythic**: Cosmic Crimson Flame (`#ff0055`) with Electric Cyan Singularity Core (`#00ffff`).
+  - **✨ Hangar UI Badges & Rarity Scoring ([`hangar.js`](src/js/features/hangar.js))**:
+    - Displayed glowing Rarity Badges (e.g. `RARE`, `EPIC`, `LEGENDARY`, `MYTHIC`) with normalized scores (`50..100`) directly on the ship preview header and fleet navigation pills.
+    - Updated Procedural Trait Breakdown card with dynamic `🔥 Thruster Fire: [Flame Name]` indicator.
+  - **⛵ OpenSea Metadata & Dynamic SVG Vector Badges ([`starship-metadata`](supabase/functions/starship-metadata/index.ts))**:
+    - Deployed `starship-metadata` Edge Function (`v8`) on Supabase.
+    - Rendered top-right glowing Rarity Badge on all generated SVG vector artwork for OpenSea and decentralized wallets.
+    - Added OpenSea attributes: `Rarity` (`Rare`/`Epic`/`Legendary`/`Mythic`), `Rarity Score` (`50..100`), and `Thruster Fire`.
+    - Resynced all on-chain minted token metadata in [`metadata/ships/`](metadata/ships/).
+
+- **Starship Fleet: HTML5 Fullscreen Top-Layer Modal & Toast Promotion (`v1.5.638`)**:
+  - **🛸 Fullscreen Modal Top-Layer Promotion ([`hangar.js`](src/js/features/hangar.js), [`ui.js`](src/js/core/ui.js), [`notifications.css`](src/css/notifications.css))**:
+    - Fixed an issue on PC where opening the Starship Hangar (`#modal-astro-hangar`) during HTML5 native fullscreen caused the modal to render behind/under the game window (only becoming visible after exiting fullscreen).
+    - Cause: HTML5 Fullscreen API promotes the native fullscreen element (`#game-window-container`) to the browser's isolated "top layer", preventing elements attached to `document.body` from rendering above it regardless of `z-index`.
+    - Implemented top-layer promotion in `openHangarModal()` and universal `openModal()`: when native fullscreen is active, modals and notification toasts are dynamically appended into `document.fullscreenElement`, rendering seamlessly on top of active gameplay and canvas views.
+    - Added automatic restoration to `document.body` upon modal closing and registered native `fullscreenchange` event listeners to safely restore elements when users press `ESC` or toggle fullscreen.
+    - Elevated `.notification-container` to `z-index: 100000005 !important` so notification toasts always display cleanly above open modals.
+
+- **Starship Fleet: Baseline +10% PGT Earn Boost for Equipped Starships (`v1.5.637`)**:
+  - **🚀 Option B Starship NFT Earn Boost ([`hangar.js`](src/js/features/hangar.js), [`game.js`](game.js))**:
+    - Implemented Option B for Starship NFT earnings: all equipped Starship NFTs now grant an immediate, baseline **+10% PGT Earn Boost (1.10x)** in Astro-Dodge out-of-the-box, even when unupgraded or at Tier 1 / Tier 2.
+    - Preserves the milestone perk: upgrading all 4 on-chain combat modules to Level 3+ (or reaching Tier 3) unlocks the escalated **1.50x (+50%) PGT Earn Boost**.
+    - Updated Hangar modal UI:
+      - Header tier pill displays `Tier X ★ 1.1x Boost` for baseline ships, switching to `Tier X ★ 1.5x Boost` at Tier 3+.
+      - Combat module milestone card displays `✨ Base Starship Perk: +10% PGT Earn Boost (1.1x) Active` and progress `✨ 1.1x (X/4 at Lv3+)`, switching to `⚡ Tier 3+ Perk: +50% PGT Earn Boost (1.5x) Active` with `🔥 1.5x ACTIVE` at Tier 3+.
+      - Equip toast alerts players with `✨ 1.1x PGT Earn Boost Active!` or `⚡ 1.5x PGT Earn Boost Active!`.
+    - Updated Astro-Dodge game over screen in [`game.js`](game.js) to display `(Starship 1.1x)` vs `(Tier 3+ Ship 1.5x)` dynamically.
+
+- **Starship Fleet: Compact "+1lvl (5k PGT)" Buttons & Compact Text Metrics (`v1.5.636`)**:
+  - **📐 Ultra-Compact Combat Module UI ([`hangar.js`](src/js/features/hangar.js))**:
+    - Refactored combat module upgrade buttons to the ultra-compact notation **`+1lvl (${costLabel})`** (e.g. `+1lvl (5k PGT)`, `+1lvl (42.5k PGT)`, `+1lvl (85k PGT)`, `+1lvl (150k PGT)`).
+    - Updated cadence and duration metrics to save critical horizontal width: `"Cadence: 140 → 90 ms"`, `"Duration: 20 → 35s"`, and `"Cadence: 2.0 → 1.0s"`.
+    - Compacted level progress pips to `8px × 5px` (`2px` gap), reclaiming 45px of space for module titles and ensuring labels like "Overdrive Matrix" and "Micro-Missiles" never truncate with ellipses.
+
+- **Starship Fleet: Web3 Wallet Connect Guard for Google Sessions (`v1.5.635`)**:
+  - **🛡️ Google OAuth Web3 Prompt Guard ([`hangar.js`](src/js/features/hangar.js))**:
+    - Guarded on-chain minting (`mintNewStarship`), skill upgrading (`upgradeSkill`), and manual blockchain fleet synchronization (`syncFleetFromChain`) against unsolicited `window.ethereum` popups when authenticated via Google OAuth without an active Web3 wallet session.
+    - Displays friendly, accurate warning toast: `"Please sign in or connect your Web3 wallet first."` and opens the unified wallet modal, eliminating unlinked signer prompts and local mock fallbacks.
+    - Enhanced signer resolution to prioritize `window.realSigner` and `web3Provider.getSigner()` for seamless compatibility with MetaMask and WalletConnect.
+
+- **Starship Fleet: Single-Line Combat Module UI Polish (`v1.5.634`)**:
+  - **📐 Single-Line Module Layout ([`hangar.js`](src/js/features/hangar.js), [`index.html`](index.html))**:
+    - Compacted combat module upgrade buttons to format `+1 (${nextCost})` (e.g. `+1 (5,000 PGT)`) with `white-space: nowrap; flex-shrink: 0;`, preventing button text from breaking across two lines.
+    - Wrapped level progress bar segments in a flex container (`gap: 3px; flex-shrink: 0; white-space: nowrap;`) with optimized `10px` pips, guaranteeing all 5 level segments stay permanently on 1 horizontal row without wrapping.
+    - Added `white-space: nowrap; overflow: hidden; text-overflow: ellipsis;` to module labels and effect descriptions to prevent awkward vertical word breaks.
+    - Expanded Hangar modal container `max-width` from `720px` to `760px` for optimal breathing room on desktop and tablet viewports.
+
+- **Starship Fleet: Nomenclature Standardization & Dynamic Metadata Sync (`v1.5.633`)**:
+  - **🚀 Nomenclature Harmonization ("Starship #X") ([`hangar.js`](src/js/features/hangar.js), [`starship-metadata/index.ts`](supabase/functions/starship-metadata/index.ts), [`metadata/ships/`](metadata/ships/))**:
+    - Standardized all starship nomenclature across the ecosystem from `"Pilot Flagship #X"` to **`"Starship #X"`**, unifying OpenSea metadata, vector SVG artwork labels, and in-game UI badges.
+    - Updated [`hangar.js`](src/js/features/hangar.js) so mint transactions call `mintStarship("Starship #N")`, and equipped ship buttons display `✅ Active Starship`.
+    - Deployed updated dynamic Edge Function `starship-metadata` (`v7`) on Supabase and resynced all 6 on-chain minted tokens to [`metadata/ships/`](metadata/ships/).
+
+- **World Boss: 25% Consolation Prize Pool on Boss Survival & Level 1 Reset (`v1.5.632`)**:
+  - **🏆 25% Consolation Prize Pool on Boss Survival ([`09_world_boss.sql`](supabase/rpcs/09_world_boss.sql), [`master_rpcs.sql`](supabase/master_rpcs.sql), [`update_world_boss_25pct_consolation_pool.sql`](supabase/update_world_boss_25pct_consolation_pool.sql))**:
+    - Upgraded `distribute_weekly_boss_prizes()` server-side procedure so that if the Quantum Leviathan is NOT defeated before the Sunday 23:59 UTC reset, **25% of the weekly prize pool** is awarded to all participating commanders proportionally to their damage dealt.
+    - Implemented Option C level behavior: if the boss survives, its level and prize pool reset back to **Level 1** (5,000,000 HP, 10,000 PGT base pool) for the new week rather than escalating or retaining scaled HP.
+    - Recorded consolation distributions in `public.boss_reset_history` with full telemetry, winner count, and top hunter damage breakdowns.
+  - **🪐 PolySpace HUD & Admin Announcements Alignment ([`space.js`](space.js), [`index.html`](index.html), [`admin.js`](tools/admin/admin.js))**:
+    - Updated World Boss status banners across [`index.html`](index.html) and [`space.js`](space.js) to display: `"⚔️ Reduce HP to 0 for 100% PGT Pool (+50% HP & +20% Pool at LVL X). If Boss survives Sunday reset, 25% pool is distributed to hunters & resets to LVL 1."`
+    - Enhanced hunter estimated share HUD badge to display guaranteed minimum PGT share: `🔒 MIN X.XX PGT (25%)` while locked, upgrading to `🔓 100% UNLOCKED` when the Leviathan is slain.
+    - Updated Discord webhook announcements in [`admin.js`](tools/admin/admin.js) for manual, automated cron, and resent weekly raid broadcasts to announce the 25% consolation prize pool distribution.
+
+- **Starship Fleet: Hangar Modal UX Polish (`v1.5.631`)**:
+  - **📐 Anchored Top-Right Modal Close Button ([`hangar.js`](src/js/features/hangar.js), [`index.html`](index.html))**:
+    - Relocated the Hangar modal close button (`&times;`) to the fixed top-right corner (`position: absolute; top: 0.85rem; right: 0.85rem;`) matching all other system modals in PolyGame.
+    - Added relative positioning to `#hangar-modal-content` and responsive right-padding (`2.2rem`) to the action button toolbar (`Mint`, `Sync`, `OpenSea`), preventing overlap across desktop and mobile screens.
+
+- **Starship Fleet NFT: Public Hangar Launch & Dynamic Metadata Engine (`v1.5.630`)**:
+  - **🚀 Public Hangar Bay Release ([`hangar.js`](src/js/features/hangar.js), [`index.html`](index.html), [`game.js`](game.js))**:
+    - Officially opened the **Starship Hangar & Tuning Bay** to all players across the platform, graduating the feature from closed alpha.
+    - Updated `#btn-open-hangar` with direct inline visibility and active `NFT` badge on the Astro-Dodge launch deck.
+    - Connected all equipped starship procedural vector visual layers (60 FPS thruster flames, banking roll) and combat module stat multipliers (Rapid Fire, Plasma Damage, Overdrive Matrix, Micro-Missiles, and Tier 3+ 1.5x PGT boost) for any pilot owning on-chain ships.
+  - **✨ Dynamic Real-Time Metadata & On-Chain Parity ([`PolyGameStarshipNFT.sol`](contracts/PolyGameStarshipNFT.sol), [`metadata/ships/`](metadata/ships/), [`sync_starships_metadata.py`](scripts/sync_starships_metadata.py))**:
+    - Confirmed live on-chain deployment of `PolyGameStarshipNFT` (`PGSHIP`) at `0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99` on Polygon.
+    - Connected on-chain `tokenURI` directly to the live dynamic Supabase Edge Function (`/functions/v1/starship-metadata/`), enabling instantaneous OpenSea trait and SVG updates upon minting or upgrading.
+    - Synchronized all 4 currently minted starships (`Tokens #1–#4`) into local repository static backup metadata.
+
+- **Security Sentinel: Transient Hydration Guard & Account Unification (`v1.5.629`)**:
+  - **🛡️ Anti-Impersonation Hydration Shield ([`01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Patched `assert_caller_player_id` to prevent false-positive `identity_impersonation_attempt` strikes during client state hydration or tab refreshes.
+    - Extended the transient hydration guard so that unlinked temporary guest accounts (0 balance, no linked wallet, matching username, or recently initialized session) are rejected as `SESSION_HYDRATING` rather than escalating to bot security warnings and auto-bans.
+  - **🔗 Player Account Reconciliation & Merge ([`supabase/unban_and_merge_laur_laur.sql`](supabase/unban_and_merge_laur_laur.sql))**:
+    - Fully merged player "Laur Laur" Google OAuth session (`0xpgt8215c3b5`) and Web3 wallet session (`0xpgt23077b25` / `0xe7bd2f16eb090faceec3ee83aa75f66ba7d633ad`) into a unified canonical profile.
+    - Consolidated all highscores (Cyber Invaders 32,490 pts, AstroDodge 18,200 sectors, Cyber 2048 5,798 pts), 11.22 PGT balance, 117 staked PGT, space fleet state, and reset bot warning count to 0 with account status unbanned.
+
+- **Quantum Relics: 4-Way Ecosystem Parity Hardening (`v1.5.628`)**:
+  - **🏺 Vault, Harvest Popups, Metadata & Profile Alignment ([`relics.js`](src/js/features/relics.js), [`confetti.js`](src/js/utils/confetti.js), [`space.js`](space.js), [`metadata/relics/`](metadata/relics/))**:
+    - Performed a full 4-way consistency audit of all 17 active Serie 1 Quantum Relics across the **Relics Vault**, **Harvest/Discovery Celebration Hologram Popups**, **OpenSea JSON Metadata**, and **Player Public Profiles**.
+    - Exported `window.getRelicMeta` in [`relics.js`](src/js/features/relics.js) and integrated automated canonical resolution inside `triggerRelicCelebration` in [`confetti.js`](src/js/utils/confetti.js), guaranteeing that discovery popups always display the true in-game name, rarity, and description regardless of calling context.
+    - Resolved PolySpace expedition harvest popups in [`space.js`](space.js) to resolve true relic names (e.g. **`Tachyon Warp Coil`**, **`Solar Plasma Harvester`**, **`Dark Matter Capsule`**) instead of raw uppercase ID strings.
+    - Verified 0 mismatches across all 17 Serie 1 Relics.
+
+- **NFT Ecosystem: OpenSea Metadata & Website Nomenclature Harmonization (`v1.5.627`)**:
+  - **🏷️ 100% Registry Uniformity across OpenSea and PolyGame ([`metadata/*.json`](metadata/), [`scripts/uniformise_metadata.py`](scripts/uniformise_metadata.py), [`scripts/generate_metadata.py`](scripts/generate_metadata.py))**:
+    - Synchronized all 19 Utility NFT metadata files with the authoritative in-game registry (`NFT_REGISTRY` in [`nft.js`](src/js/features/nft.js)) and player public profiles.
+    - Resolved nomenclature discrepancies where OpenSea displayed legacy working titles (e.g. `Common Boost Core` → **`Copper Core`**, `Epic Yield Core` → **`Apex Matrix`**, `Rare Shield Core` → **`Viper Shield`**, `Legendary King Core` → **`Omni Lord`**, `VIP Access Pass` → **`Gold VIP Pass`**, `Yearly VIP Access Pass` → **`Yearly Gold VIP Pass`**, etc.).
+    - Audited the entire Quantum Relics collection ([`metadata/relics/`](metadata/relics/)) and Starship Fleet dynamic metadata engine, confirming 100% nomenclature parity with in-game stats and profile showcases.
+
+- **NFT Backpack: On-Chain OpenSea Acquisition Sync Hardening (`v1.5.626`)**:
+  - **🎒 Authoritative Edge Sync for Backpack Manual Refresh ([`nft.js`](src/js/features/nft.js))**:
+    - Connected the **"🔄 Sync Backpack"** action (`syncNftBackpack`) directly to the serverless `sync-assets` Supabase Edge Function (`/functions/v1/sync-assets`).
+    - Secondary market purchases (e.g. on OpenSea) previously updated local client-side state in memory without persisting through the authoritative PostgreSQL RPC (`sync_onchain_nfts`, restricted to `service_role`). Manual syncs now permanently reconcile and write on-chain token acquisitions to `public.users.owned_nfts` and `public.users.relics` in Supabase.
+    - Successfully reconciled and synced user account `mihaykawax12` (`0xpgt3c9d34e0`), verifying and linking on-chain Token #16 (`nft_common_boost`) and Token #102 (`nft_epic_yield`), plus 4 minted Relic NFTs (`#44`, `#45`, `#46`, `#47`).
+
+- **Official Links & DEX Hub: Starship Fleet NFT Integration (`v1.5.625`)**:
+  - **🚀 Starship Fleet On-Chain Links ([`index.html`](index.html), [`hangar.js`](src/js/features/hangar.js))**:
+    - Added dedicated **PolyGame Starship Fleet (PGSHIP)** contract card to the *Official Ecosystem Links & Contracts Hub* (`#view-links`).
+    - Integrated direct 1-click verified links for [OpenSea Collection](https://opensea.io/assets/polygon/0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99), [PolygonScan Contract Explorer](https://polygonscan.com/address/0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99), and instant contract address copying (`0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99`).
+    - Added direct **OpenSea Collection ↗** link in the header of the in-game *Starship Hangar & Tuning Bay* modal (`hangar.js`).
+
+- **Authentication: Web3 vs. Google Session False-Positive Resolution (`v1.5.624`)**:
+  - **🔐 Auth Provider Separation ([`profile.js`](src/js/features/profile.js), [`db-sync.js`](src/js/core/db-sync.js), [`ui.js`](src/js/core/ui.js), [`state.js`](src/js/core/state.js), [`auth-web3.js`](src/js/core/auth-web3.js), [`discord.js`](src/js/utils/discord.js))**:
+    - Resolved a bug where any user authenticating via native Web3 (EIP-4361 SIWE) had their account erroneously labeled as `Connected (Google Account)` in the profile modal and DevTools console (`Google Account Synced`).
+    - Added explicit `authProvider` tracking in `PolyState` to distinguish between `web3`, `google`, and `guest` sessions.
+    - Updated `profile.js` so that `Google Social Auth:` strictly checks for genuine Google email/provider association; for pure Web3 players, it accurately displays **Not Connected** alongside the **`🌐 Link Google`** button.
+    - Corrected the DevTools sync banner in [`db-sync.js`](src/js/core/db-sync.js) to display **`Web3 Account Synced: 0x...`** for Web3 sessions and reserve `Google Account Synced` for Google OAuth users.
+    - Prevented Web3 users from incorrectly seeing the Google-only "Delete Account" button.
+
+- **Admin Portal: Silver VIP & Tournament Leaderboard Multipliers Minting (`v1.5.623`)**:
+  - **👑 Admin Minting Studio Additions ([`tools/admin/admin.html`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/tools/admin/admin.html), [`tools/admin/admin.js`](file:///c:/Users/pasca/.gemini/antigravity/scratch/PolyGame/tools/admin/admin.js))**:
+    - Added **Silver VIP Pass** (`nft_vip_pass_t1`) and the 3 **Leaderboard Multipliers** (`nft_lb_bronze`, `nft_lb_silver`, `nft_lb_gold`) to the Admin Utility NFT Minting Studio dropdown (`#admin-nft-type`).
+    - Maintained clean separation between studios: Quantum Relics Studio (`#admin-relic-type`) remains dedicated strictly to game relics, while the Utility NFT Studio (`#admin-nft-type`) handles all VIP passes and tournament multipliers.
+
+- **Faucet Multipliers & Sanity Clamps Expansion (`v1.5.622`)**:
+  - **🚰 Raised PGT & VIP POL Sanity Ceilings ([`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`update_faucet_sanity_clamps.sql`](supabase/update_faucet_sanity_clamps.sql), [`faucet.js`](src/js/features/faucet.js), [`state.js`](src/js/core/state.js))**:
+    - Raised the VIP POL claim sanity clamp from `0.250000` (client JS) / `0.300000` (database RPC) to **`0.500000 POL`**, preventing truncation when players combine Gold VIP (2.5x), DEX LP bonus (up to 1.3x), Apex Relics (1.5x), Whales (+25%, +10%), Ambassador (2.0x), and active seasonal event boosts (+10%).
+    - Integrated dynamic seasonal event multiplier (`+10%` during active events) into the client-side `getVipEstimatedClaimPol()` estimate calculator in [`faucet.js`](src/js/features/faucet.js).
+    - Raised the PGT faucet circuit breaker ceiling from `1,500.00` to **`2,500.00 PGT`** in `claim_faucet` RPC to accommodate stacked multipliers as players advance through higher DEX Liquidity Provider tiers ($100 & $150).
+
+- **Hotfix: Anti-Cheat Trigger Field Reference Resolution (`v1.5.621`)**:
+  - **🛡️ Resolved Save Error 42703 ([`12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`fix_anticheat_trigger_is_super_admin.sql`](supabase/fix_anticheat_trigger_is_super_admin.sql))**:
+    - Fixed a PostgreSQL runtime error (`42703: record "new" has no field "is_super_admin"`) that blocked profile saves (`PATCH /rest/v1/users`) in `state.js:511`.
+    - Removed non-existent `is_super_admin` column references from `public.prevent_direct_balance_mutation()`, keeping `is_admin` strictly protected under existing role guards.
+    - Preserved `SECURITY INVOKER` execution mode on the trigger function and verified all anti-cheat security invariants.
+
+- **Hotfix: Faucet Interval Loop Syntax Resolution (`v1.5.620`)**:
+  - **🔧 Fixed Missing Brace in Faucet Ticker ([`faucet.js`](src/js/features/faucet.js))**:
+    - Restored missing closing brace in the 1-second VIP cooldown evaluation branch inside [`faucet.js`](src/js/features/faucet.js), fixing `Uncaught SyntaxError: Unexpected token ','`.
+    - Verified all JS files pass strict syntax and brace balance checks.
+
+- **Seasonal Events & Holiday Skins: Extensible Holiday Engine & Faucet Boosts (`v1.5.619`)**:
+  - **🎃 Spooky Halloween & Holiday Engine ([`seasonal-events.js`](src/js/features/seasonal-events.js), [`faucet.js`](src/js/features/faucet.js), [`state.js`](src/js/core/state.js), [`faucet.css`](src/css/features/faucet.css), [`index.html`](index.html))**:
+    - Architected an extensible, annual recurring seasonal events registry supporting automatic calendar recurrence for Halloween (Oct 1–31), Christmas / Winter Holiday (Dec 15–Jan 2), and Easter (Spring).
+    - Added the **Spooky Halloween Faucet Skin**: atmospheric Jack-o'-lantern and haunted violet accents, animated web and bat corner elements, eerie glow animations, dynamic Halloween countdown badge, and festive captcha verification symbols (`🎃`, `👻`, `🦇`, `🍬`, `🕸️`, `🕷️`, `💀`, `🧙`).
+    - Stored holiday skin definitions permanently in CSS and the events registry so they automatically re-engage next year and every future year without requiring code modifications.
+  - **🛡️ Server-Authoritative Seasonal RPCs & POL Clamp ([`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`00_schema_guarantees.sql`](supabase/rpcs/00_schema_guarantees.sql), [`create_seasonal_events_system.sql`](supabase/create_seasonal_events_system.sql))**:
+    - Created `public.seasonal_events` table and PostgreSQL stored function `public.get_active_seasonal_event(timestamptz)` to compute active seasonal boosts server-side with zero client trust.
+    - Updated `public.claim_faucet` and `public.claim_vip_faucet` stored procedures to automatically grant +10% seasonal bonuses to all claims during active events.
+    - Increased maximum VIP POL faucet sanity clamp from `0.250000` to `0.300000` POL in `claim_vip_faucet` to ensure fully stacked Gold VIP (2.5x), NFT (+50%), Whale (+25%), Relics (1.5x), LP (1.3x), and seasonal (+10%) players receive their full rewards without truncation.
+
+- **Public Profile UI: Remove Redundant Active Players Subtext (`v1.5.618`)**:
+  - **👤 Streamlined Network Wealth Metrics ([`index.html`](index.html), [`profile.js`](src/js/features/profile.js))**:
+    - Removed the redundant `⚡ 0 Active (L1)` subtext beneath the Downlines metric block in the public profile modal.
+    - Verified that active direct referrals continue to be prominently displayed in the dedicated affiliate breakdown row below (`⚡ Active L1 Referrals`).
+
+- **UI & VIP Copy: Refine VIP Card Perks & Eliminate Redundancies (`v1.5.617`)**:
+  - **🎫 Clarified VIP Benefit Bullets ([`nft.js`](src/js/features/nft.js), [`index.html`](index.html))**:
+    - Separated the faster faucet cooldown into its own dedicated bullet point (`10% Faster Cooldown` for Silver, `20% Faster Cooldown` for Gold) distinct from arcade daily plays.
+    - Clarified Turnstile bypass to explicitly state `Faucet Turnstile Bypass & VIP Game Access`.
+    - Removed redundant "Double" phrasing from multiplier bullets (`2.0x Arcade PGT Payout`, `2.0x Weekly Tournament Prize`, `2.0x Referral Commissions`).
+
+- **Economy & VIP Rewards: Align Gold VIP POL Faucet Multiplier to 2.5x (`v1.5.616`)**:
+  - **👑 Gold VIP POL Multiplier Alignment ([`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`update_vip_pol_faucet_multiplier.sql`](supabase/update_vip_pol_faucet_multiplier.sql))**:
+    - Upgraded Gold VIP (Level 2) multiplier in `public.claim_vip_faucet` from 2.0x to 2.5x, perfectly matching the 2.5x Gold VIP multiplier for PGT daily faucet claims.
+    - Updated client-side payout estimations in [`faucet.js`](src/js/features/faucet.js) and [`state.js`](src/js/core/state.js) to compute estimated POL rewards at 2.5x for Gold VIP and 1.0x for Silver VIP.
+    - Synchronized VIP bonus copy in [`nft.js`](src/js/features/nft.js) and [`index.html`](index.html) to consistently reflect 2.5x for Gold VIP across both PGT and POL faucets.
+
+- **NFT Asset Sync: De-escalate Unlinked Wallet Sync & Warning Reconciliation (`v1.5.615`)**:
+  - **⚡ Safe Unlinked NFT Sync ([`08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`remove_nft_sync_no_wallet_warning.sql`](supabase/remove_nft_sync_no_wallet_warning.sql))**:
+    - Removed `record_bot_warning` penalty for `nft_sync_no_wallet` inside `public.sync_onchain_nfts`. Accounts syncing assets without a linked wallet address (or during initial wallet hydration) now safely return existing inventory without triggering security strikes or warning increments.
+    - Purged historical `nft_sync_no_wallet` records from `public.bot_security_logs` and reconciled affected user warning balances.
+
+- **Relics Anti-Cheat: Purge Obsolete Premature Duration Logs & Warning Reconciliation (`v1.5.614`)**:
+  - **🏺 Eliminated Premature Duration Discrepancy ([`purge_premature_duration_relic_warnings.sql`](supabase/purge_premature_duration_relic_warnings.sql))**:
+    - Purged all 16 obsolete `unauthorized_relic_probe_premature_duration` audit records from `public.bot_security_logs` (relics can legitimately be caught within the first seconds of an arcade run).
+    - Deducted false-positive warning increments from affected active player accounts:
+      - **Tonytechsavvy** (`0xpgt11f3d9e4`): Deducted 3 warnings (`3` -> `0`).
+      - **Paul V** (`0xpgt3a44cee7`): Deducted 2 warnings (`8` -> `6`).
+      - **Cybermix** (`0xpgt58f5eb8c`): Deducted 1 warning (`1` -> `0`).
+    - Confirmed that current `grant_relic_drop` procedure in [`03_quantum_relics.sql`](supabase/rpcs/03_quantum_relics.sql) contains zero duration gates, keeping legitimate rapid drops fully supported.
+
+- **Account Security: Deprecate Client Account Deletion & Restore Dobby Profile (`v1.5.613`)**:
+  - **🛡️ Locked `delete_user_account` to Service Role ([`12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`db-sync.js`](src/js/core/db-sync.js), [`master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Disallowed client-facing self-deletion via PostgREST to prevent banned exploiters or flagged accounts from erasing their ban status, bot warning history, and audit ledger.
+    - Revoked `EXECUTE` on `delete_user_account` from `PUBLIC`, `anon`, and `authenticated`; locked strictly to `service_role`.
+    - Disabled client-side `deleteUserAccount` helper in `db-sync.js` with an administrative notice.
+    - Extracted authoritative state snapshot for Dobby (`0xpgt003e7625` / `user_id = 003e7625-...`) from the latest backup and generated [`supabase/restore_dobby_from_backup.sql`](supabase/restore_dobby_from_backup.sql) to restore his original profile, Odyssey status, and ban flags.
+
+- **Security Sentinel: Startup Guest Hydration Anti-Framing Shield & Warning Remediation (`v1.5.612`)**:
+  - **🛡️ Shielded Player Messages & Identity Guard Against Transient Guest Hydration ([`messages.js`](src/js/features/messages.js), [`01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`app.js`](src/js/app.js), [`db-sync.js`](src/js/core/db-sync.js), [`profile.js`](src/js/features/profile.js))**:
+    - Discovered and neutralized a false-positive anti-bot trigger where page refresh / startup would trigger `loadPlayerMessages()` before session hydration completed, passing transient `0xguest...` identifiers alongside authentic authenticated JWTs.
+    - Updated `assert_caller_player_id` to recognize transient `0xguest...` addresses during session hydration and reject safely without escalating to malicious `identity_impersonation_attempt` bot warnings.
+    - Hardened `loadPlayerMessages`, `markPlayerMessageReadAction`, and `markAllPlayerMessagesReadAction` in `messages.js` to strictly require `appState.isPlayerConnected()` and exclude `0xguest...` identifiers.
+    - Scheduled `loadPlayerMessages()` invocation in `db-sync.js` and `profile.js` to fire strictly after user authentication and DB profile sync complete.
+    - Prepared remediation migration [`remediate_guest_hydration_false_positives.sql`](supabase/remediate_guest_hydration_false_positives.sql) restoring legitimate standings for Paul V and Ninja.
+
+- **PolySpace: Authoritative Server Claim Enforcement & Offline Fallback Deprecation (`v1.5.611`)**:
+  - **🚀 Client-Side Anti-Desync Hardening ([`space.js`](space.js))**:
+    - Disallowed client-side offline claiming fallback (`claimExpeditionLoot`, `claimAllExpeditions`) for connected accounts (`isPlayerConnected === true`).
+    - Fixed visual desync where client-side memory manipulation (`[PolySpace ForceClaim]`) falsely showed expeditions as "Returned!" while Supabase's server-side trigger correctly held fleet slots and prevented balance mutation.
+    - Any failed or detached server claim RPC now forces an immediate authoritative cloud resync (`syncCloudSpaceState(true)`), preventing misleading UI states.
+
+- **PolySpace: World Boss Fake Damage Exploit Seal (`v1.5.610`)**:
+  - **🛡️ Database Anti-Cheat Trigger Hardening ([`seal_polyspace_boss_fake_damage.sql`](supabase/seal_polyspace_boss_fake_damage.sql), [`12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`space.js`](space.js))**:
+    - Addressed critical vulnerability reported by Dobby where direct client PostgREST calls (`users.update({ boss_weekly_damage: 1e17 })`) were allowed to mutate weekly boss damage and hijack the leaderboard.
+    - Updated `prevent_direct_balance_mutation` trigger (strictly `SECURITY INVOKER`) to make `boss_weekly_damage`, `alltime_boss_damage`, and `boss_attacks_count` strictly immutable against direct client updates (`anon`/`authenticated`).
+    - Extended immutability guards to `total_staking_yield`, `total_earned`, `withdrawals_disabled`, and `is_super_admin`.
+    - World boss damage and rewards are now strictly server-authoritative, exclusively modifiable through the `strike_world_boss` RPC.
+    - Reset Dobby's test probe damage back to 0 on the live leaderboard.
+
+- **Arcade Gameplay: Session Verification & Reward Pipeline Restoration (`v1.5.609`)**:
+  - **🕹️ Resolved Session Handshake 42703 Crash ([`restore_start_arcade_session.sql`](supabase/restore_start_arcade_session.sql), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
+    - Fixed an issue causing `⚠️ Session Not Verified • Rewards Paused` in games (such as AstroDodge) caused by a column reference error (`v_user.is_tester`) in a draft migration of `start_arcade_session`.
+    - Fully restored the authoritative `start_arcade_session` procedure from modular RPCs, correctly evaluating whitelisted testers and issuing authoritative game sessions.
+    - Successfully verified live end-to-end game start and payout completion with genuine PGT rewards.
+
+- **VIP Pass On-Chain Burn Verification & Exploit Seal (`v1.5.608`)**:
+  - **🛡️ Cryptographic On-Chain Burn Verification ([`verify-vip-burn/index.ts`](supabase/functions/verify-vip-burn/index.ts), [`seal_vip_burn_vulnerability.sql`](supabase/seal_vip_burn_vulnerability.sql), [`08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`nft.js`](src/js/features/nft.js))**:
+    - Addressed critical vulnerability reported by Dobby where unverified dummy 64-hex strings were accepted as valid on-chain burn transactions in `activate_vip_pass`.
+    - Deployed new **`verify-vip-burn` Edge Function** that queries the Polygon blockchain to strictly verify:
+      - Transaction status `1` (success).
+      - Recipient matches official PolyGame NFT contract (`0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`).
+      - Signer matches player's `linked_wallet_address`.
+      - Contains genuine ERC-721 `Transfer` event to `address(0)` burning the exact VIP pass token.
+      - Token metadata (`tokenURI` at pre-burn block) corresponds to the requested VIP pass tier.
+    - Created private `credit_verified_vip_burn` stored procedure restricted strictly to `service_role`.
+    - Hardened `activate_vip_pass` to reject any direct client-submitted `p_burn_tx_hash`, sealing all bypass vectors.
+    - Preserved Dobby's VIP status until 2027 as white-hat bug bounty reward.
+
+- **Turnstile Verification: False-Positive Unverified Counter Fix (`v1.5.607`)**:
+  - **🛡️ Routine Checkpoint vs. Bypass Distinction ([`fix_turnstile_false_positive_counting.sql`](supabase/fix_turnstile_false_positive_counting.sql), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
+    - Fixed an issue in `start_arcade_session` where routine milestone captcha prompts (e.g., after 7 completed games) were immediately counting as an unverified attempt before the challenge could be solved.
+    - Routine checkpoint prompts now initialize attempts to `0` without penalty. Only repeated bypass requests within 10 minutes without solving increment unverified counters.
+    - Updated `record_verified_turnstile` so that solving Turnstile cleanly resets `turnstile_unverified_attempts = 0`, `turnstile_unverified_today = 0`, and clears `last_unverified_attempt_at`.
+    - Reset unverified counters and daily strikes for user `Poss`.
+
+- **Player Message Center: Ultra-Lean Receipts Architecture (`v1.5.606`)**:
+  - **⚡ Zero Row Duplication for Broadcasts ([`lean_broadcast_receipts.sql`](supabase/lean_broadcast_receipts.sql), [`11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`master_schema.sql`](supabase/master_schema.sql))**:
+    - Replaced multi-row copy fan-out with an ultra-lean read/dismiss receipts architecture (`public.player_message_receipts`).
+    - Broadcasting creates exactly **1 single record** in `public.player_messages` with `player_id = 'ALL'`, storing announcement text only once regardless of whether there are 255 or 100,000 players.
+    - Inactive accounts consume **zero bytes** (0 rows).
+    - When an active player marks an announcement as read or dismissed, an atomic 20-byte receipt record is created exclusively for that player in `player_message_receipts`.
+    - `get_player_messages` dynamically joins broadcast receipts to deliver 100% per-player isolation with optimal database storage efficiency.
+
+- **Player Message Center: Broadcast Read & Dismiss State Isolation Fix (`v1.5.605`)**:
+  - **📬 Per-Player Broadcast Row Isolation ([`fix_broadcast_per_player_isolation.sql`](supabase/fix_broadcast_per_player_isolation.sql), [`11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql))**:
+    - Resolved critical state concurrency bug where a global broadcast (`player_id = 'ALL'`) marked as read or dismissed by one player would erroneously update that single row for all players on the platform.
+    - Updated `admin_send_player_message` so that broadcasting to `'ALL'` atomically inserts an individual copy for every registered player in `public.users`.
+    - Enforced strict player scoping in `get_player_messages`, `mark_player_message_read`, and `mark_all_player_messages_read` (`WHERE LOWER(player_id) = LOWER(v_pid)`).
+    - Guarantees 100% independent read badges, unread counts, and dismissal states across all players.
+
+- **POL Referral & VIP Faucet Payout Inbox Receipts & Refund Automation (`v1.5.604`)**:
+  - **📬 Automated POL Payout Inbox Receipts ([`add_pol_payout_messages.sql`](supabase/add_pol_payout_messages.sql), [`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql))**:
+    - **On Request**: Automatically inserts a `⏳ WITHDRAWAL QUEUED` receipt into the player's Message Center upon submitting a POL referral or VIP faucet payout request, specifying the amount and destination wallet.
+    - **On Admin Completion**: `complete_pol_payout_request` automatically issues a `✅ WITHDRAWAL COMPLETE` notice with a 1-click **`🔍 View Transaction Receipt ↗`** button linking to the PolygonScan on-chain tx.
+    - **On Admin Rejection**: `reject_pol_payout_request` automatically refunds the unclaimed POL balance back to the player's account (referral or VIP faucet balance) and writes a `❌ WITHDRAWAL REFUNDED` notice explaining the admin-stated reason.
+  - **🎨 Message Center UI Enhancements ([`messages.js`](src/js/features/messages.js))**:
+    - Added dedicated styling and badge for `⏳ WITHDRAWAL QUEUED` (`withdrawal_pending`) in cyan glowing style.
+    - Included pending requests under the `💰 Withdrawals` filter pill.
+
+- **Player Message Center & Admin Alerts System (PLAN-014) (`v1.5.603`)**:
+  - **📬 In-Game Player Message Center ([`index.html`](index.html), [`messages.js`](src/js/features/messages.js), [`profile.js`](src/js/features/profile.js))**:
+    - Implemented dedicated Player Message Center in `My Profile` with unread notification badge, header navigation dot indicator, and category filter pills (`All`, `Withdrawals`, `Security`, `Admin`).
+    - Added instant read marking, "Mark All as Read", auto-refresh on profile navigation, and direct clickable action links (e.g. PolygonScan transaction explorer links for approvals).
+    - Integrated prominent account suspension notice banner (`🚫 Account Suspended`) with 1-click Discord dispute appeal button.
+  - **🛡️ Automated Security & Transaction Notices ([`create_player_messages.sql`](supabase/create_player_messages.sql), [`11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql))**:
+    - Added automated inbox notifications dispatched upon high-value PGT withdrawal approvals (including PolygonScan tx receipt link), manual withdrawal rejections (with full refund & reason), and Cloudflare Turnstile verification reminders / bot warning advisories.
+    - Zero client-write RLS security on `public.player_messages`, strictly queried and modified through `SECURITY DEFINER` RPCs (`get_player_messages`, `mark_player_message_read`, `mark_all_player_messages_read`, `admin_send_player_message`).
+  - **👑 Master Admin Messaging & Broadcast Operations ([`admin.html`](tools/admin/admin.html), [`admin.js`](tools/admin/admin.js))**:
+    - Added 1-click `✉️ Message` action button on each player row in the Player Database Ledger.
+    - Added `📢 Broadcast` capability to dispatch announcements to all registered players at once.
+    - Included pre-configured message templates (`🧪 Test Connectivity Ping`, `⚠️ Bot Fair Play Advisory`, `🛡️ Turnstile Verification Reminder`, `🎁 Bonus Reward Notification`, `📢 Maintenance Notice`).
+
+- **Discord: Weekly Tournament Admin Alert & Whitelist Authorization Fix (`v1.5.602`)**:
+  - **🛡️ Edge Function Whitelisted Categories & Passkey Pass-Through ([`discord.js`](src/js/utils/discord.js), [`index.ts`](supabase/functions/discord-relay/index.ts))**:
+    - Resolved the `403 (Forbidden)` error occurring during Step 1 Weekly Leaderboard distribution. The main announcement in `#announcements` succeeded (HTTP 200), but the subsequent internal audit alert sent via `sendAdminAlert` threw 403 because it lacked passkey authorization and its category (`'WEEKLY PAYOUT AUDIT'`) was omitted from the edge function's category filter.
+    - Updated `sendAdminAlert` in `discord.js` to automatically retrieve and include `adminPasskey` from active Master Admin session storage.
+    - Added direct webhook fallback to `getDiscordWebhook('admin')` in `sendAdminAlert` mirroring `sendDiscordAnnouncement`.
+    - Expanded `WHITELISTED_SYSTEM_CATEGORIES` in `discord-relay` to include `'AUDIT'`, `'WEEKLY'`, `'PAYOUT'`, `'TOURNAMENT'`, and `'MINT'`.
+    - Deployed new revision of `discord-relay` edge function to Supabase.
+
+- **Profile: Direct Web3 Wallet Connect & Link Action (`v1.5.601`)**:
+  - **🦊 Profile Web3 Wallet Connect / Link Button ([`index.html`](index.html), [`profile.js`](src/js/features/profile.js))**:
+    - Added a direct `🔗 Connect Wallet` / `🔗 Connect / Link Wallet` button to the `Web3 Wallet Provider` status row inside My Profile (`#card-profile-account`).
+    - Synchronized button state with session signer activity: when a player connects via Google and has a linked wallet that is not active this session (`Linked (Not Connected this session)`), the button provides 1-click access to connect their Web3 wallet without needing to open the header wallet modal.
+    - Automatically hides the button once an active signer session is verified (`Connected (METAMASK)`), keeping the interface clean and concise.
+
+- **Faucet: VIP Base Payout Update (0.010 POL) & VIP Pass Pricing Display Alignment (`v1.5.600`)**:
+  - **⚡ Base VIP Payout Updated to 0.010 POL ([`index.html`](index.html), [`state.js`](src/js/core/state.js), [`faucet.js`](src/js/features/faucet.js), [`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql))**:
+    - Updated the locked VIP Faucet feature card from `⚡ 0.005 Base` to `⚡ 0.010 Base` (multiplied up to 0.10+ POL daily based on boosts).
+    - Updated initial static HTML base POL display in the Payout Multipliers card from `0.0050 POL` to `0.0100 POL`.
+    - Synchronized client defaults and fallbacks across `state.js` and `faucet.js` to `0.010 POL`.
+    - Updated `claim_vip_faucet` RPC default fallback in `04_faucets_vip_yields.sql` to `0.01 POL` and rebuilt `master_rpcs.sql`.
+  - **👑 VIP Pass Unlock Pricing Alignment ([`index.html`](index.html))**:
+    - Updated the locked VIP Faucet unlock button label from `👑 Unlock VIP Pass (100 POL / 30 Days)` to `👑 Unlock VIP Pass (Starts at 20 POL / 30 Days)`, accurately reflecting the entry price for Tier 1 Silver VIP Pass (20 POL / 30 Days).
+
+- **Faucet: Expired VIP POL Balance Visibility & On-Chain Withdrawal Access (`v1.5.599`)**:
+  - **👑 Common Payout Section & Balance Persistence ([`index.html`](index.html), [`faucet.js`](src/js/features/faucet.js))**:
+    - Extracted the Accumulated POL Balance & Payout Request box outside the VIP-only station (`#vip-faucet-active-station`) into a shared container (`#vip-faucet-payout-section`).
+    - Resolved issue where players whose VIP membership expired were completely locked out of seeing their accumulated POL gas token rewards or requesting payouts.
+    - Added automatic detection in `renderVipFaucetUI()`: whenever a player has accumulated POL (`unclaimed_vip_faucet_pol > 0`) or prior VIP faucet history, the balance and payout box is preserved and rendered alongside the VIP renewal station.
+    - Added an informational badge `👑 VIP Expired (Withdrawals Allowed)` so players know their funds remain safe and withdrawable without requiring an active subscription renewal.
+  - **💎 Withdrawal Support for Expired VIP Accounts ([`faucet.js`](src/js/features/faucet.js))**:
+    - Confirmed backend RPC `public.request_vip_faucet_pol_payout` permits payout requests from non-VIP accounts with sufficient balance (`>= 5.0 POL`) and valid EVM wallet.
+    - Updated client button logic to enable `💎 Request 5.00 POL Payout` for eligible non-VIP players, allowing direct on-chain payout requests to their linked Web3 address.
+    - Updated Discord admin alerts to dynamically tag payout requests with account status (`👑 VIP Member` vs `Player (VIP Expired)`).
+
+- **Daily Traffic Analytics: Guest Arcade Tracking & New Accounts Metric (`v1.5.598`)**:
+  - **🎮 Active Guest Game Plays Tracking ([`db-sync.js`](src/js/core/db-sync.js))**:
+    - Resolved issue where `guest_game_plays` was permanently remaining at 0. Previously, `startArcadeSession()` aborted immediately when `!appState.isPlayerConnected()` without executing `recordGuestGamePlay()`.
+    - Hooked `recordGuestGamePlay()` directly into `startArcadeSession()` for non-connected sessions, automatically tracking guest game launches across all 9 arcade games in `public.daily_traffic_stats`.
+  - **✨ New Accounts Created Metric ([`admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`admin.html`](tools/admin/admin.html), [`admin.js`](tools/admin/admin.js))**:
+    - Created standalone migration [`add_new_accounts_to_daily_traffic_stats.sql`](supabase/add_new_accounts_to_daily_traffic_stats.sql) adding `new_accounts_created` column to `daily_traffic_stats` with an automatic `AFTER INSERT` trigger on `public.users` and historical backfill.
+    - Updated `get_traffic_analytics()` RPC to expose `new_accounts_created` per day and in the summary totals.
+    - Added "New Accounts Created Today" KPI card and table column to the Admin Dashboard traffic viewer.
+
+- **Astro-Dodge Boss Movement Fluidity & Entrance State Decoupling (`v1.5.597`)**:
+  - **👾 Decoupled Boss Entrance State Machine ([`game.js`](game.js))**:
+    - Fixed a bug causing severe stutter and jerky oscillation in Tier 2, Tier 3, and Tier 4 bosses. Previously, bosses in combat patrol compared `if (b.x > b.targetX)` to trigger entrance movement (`b.x -= 2.2`). Whenever harmonic horizontal swaying moved a higher-tier boss to the right of `targetX`, the engine incorrectly re-entered the entrance loop, halting vertical movement and fighting the sine wave.
+    - Added an explicit `hasEntered` boolean state flag and `b.swayTime` relative clock, guaranteeing bosses transition into combat permanently without re-triggering entrance routines.
+  - **📐 Smooth Harmonic Sway & Boundary Clamping ([`game.js`](game.js))**:
+    - Replaced absolute global time with `swayTime` initialized to 0 on entry completion, eliminating multi-pixel position snaps on spawn.
+    - Clamped vertical wall collisions using absolute directional velocity (`Math.abs(vy)` and `-Math.abs(vy)`), preventing multi-frame edge chatter.
+    - Clamped maximum horizontal sway (`Math.min(this.width - b.w - 15, ...)`) to ensure bosses and engine plumes remain 100% inside the viewport.
+    - Connected boss velocity and sway advancement to the Chronos Slow-Mo Matrix (`bossSpeedMult`), maintaining fluid physics parity across time-warp effects.
+
+- **Arcade Daily Play Limit VIP Scaling & Toast Notification Parity (`v1.5.596`)**:
+  - **👑 Start-Session Toast VIP Limit Parity ([`db-sync.js`](src/js/core/db-sync.js))**:
+    - Synchronized `startArcadeSession` toast notification with `appState.getMaxDailyPlaysPerGame()`, calculating the player's effective VIP limit (`Math.max(serverMax, clientVipMax)`) so Gold VIP players see `⚠️ Daily play limit reached (68/60)` instead of the unscaled base `(68/30)`.
+    - Added an authoritative gate `completedToday >= effectiveMaxDaily` preventing premature daily limit toast notifications when a VIP player is between 31 and 60 plays.
+  - **🗄️ SQL Migration for Stored Procedures ([`fix_start_arcade_session_vip_scaling.sql`](supabase/fix_start_arcade_session_vip_scaling.sql))**:
+    - Created clean standalone migration to update `public.start_arcade_session` in Supabase, dynamically multiplying `v_max_daily_plays` by 1.5x for Silver VIP and 2.0x for Gold VIP to achieve 100% parity with `public.end_arcade_session`.
+    - Rebuilt `supabase/master_rpcs.sql`.
+
+- **Astro-Dodge VIP Daily Limit Synchronization & Scope Fix (`v1.5.595`)**:
+  - **👑 VIP Daily Play Limit Synchronization ([`state.js`](src/js/core/state.js), [`game.js`](game.js))**:
+    - Added `getMaxDailyPlaysPerGame()` helper method to `PolyState` in `state.js`, automatically multiplying the daily arcade limit by 2.0x for Gold VIP (Level 2) and 1.5x for Silver VIP (Level 1).
+    - Updated `game.js` to read authoritative `completed_today` and `max_daily_plays` directly from the server response, accurately rendering `⚠️ Daily Limit (60/60 plays) • Rewards Paused` instead of unscaled base limits.
+  - **🐛 Scope Reference Fix ([`game.js`](game.js))**:
+    - Fixed `ReferenceError: isDailyLimitReached is not defined` on game session finalization and bumped cache-buster script tags.
+
+- **Astro-Dodge Deterministic Fixed Timestep & Combat Difficulty Parity (`v1.5.594`)**:
+  - **⏱️ Deterministic Fixed 60 FPS Physics Clock ([`game.js`](game.js))**:
+    - Replaced variable-interval RAF pacing with a strict accumulator-based fixed timestep loop (`16.667ms`). Capped the accumulator to a maximum of 1 physics update per frame, guaranteeing 100% physics velocity and spawn rate equality across 60Hz, 90Hz, 120Hz, and 144Hz screens on both desktop and mobile.
+    - Eliminated catch-up acceleration spikes when touching or holding mobile screens.
+  - **🚀 Enemy Laser Speed Calibration & Slow-Mo Parity ([`game.js`](game.js))**:
+    - Connected `this.enemyBullets` to the Chronos Slow-Mo matrix (`bulletSpeedMult`), ensuring enemy lasers properly slow down by 50% during time-warp like all other obstacles.
+    - Balanced shooter enemy laser velocity to `4.2 + (difficulty - 1) * 0.35` (down from `-6.0`), and Tier 1 boss laser speed to `5.2` (down from `6.5`), providing fair and equal dodge reaction windows on mobile screens.
+  - **📱 Zero-Reflow Touch Geometry Caching ([`game.js`](game.js))**:
+    - Cached canvas bounding rectangle coordinates (`getCachedRect()`) on resize/scroll rather than issuing synchronous `getBoundingClientRect()` layout reflow calls on every 120Hz touch event.
+    - Standardized touch displacement to exact 1:1 scale (`1.0x` on X and Y) matching mouse precision.
+
+- **Astro-Dodge 60 FPS Pacing & Mobile Touch Event Isolation (`v1.5.593`)**:
+  - **⏱️ Locked 60 FPS Interval Pacing ([`game.js`](game.js))**:
+    - Re-locked the core game loop to the 60 FPS fixed-timestep interval with a 2.5ms VSync tolerance buffer. On mobile screens with 120Hz/90Hz display refresh rates (e.g. ProMotion/Galaxy OLEDs), uncapped delta-time loops were advancing simulation physics up to 2x faster, making obstacles, lasers, and background motion run at hyperspeed.
+    - Added a 250ms elapsed spike guard that discards lag hiccups during backgrounding without speeding up simulation clocks.
+  - **📱 Touch Event Synthetic Suppression ([`game.js`](game.js))**:
+    - Wrapped `touchstart`, `touchmove`, `touchend`, and `touchcancel` with explicit `e.cancelable && e.preventDefault()`, stopping mobile browsers from emitting synthetic `mousedown`/`mousemove` clicks that triggered concurrent steering conflicts.
+
+- **Astro-Dodge Mobile Touch Controls & Velocity Calibration (`v1.5.592`)**:
+  - **📱 Single-Delta Touch Move Tracking ([`game.js`](game.js))**:
+    - Fixed a bug on mobile touch devices where moving a finger across the screen caused the ship and motion to accelerate uncontrollably until release.
+    - Updated touch tracking origin coordinates (`touchStartX`, `touchStartY`) immediately on each `touchmove` delta rather than accumulating displacement offsets, ensuring smooth, predictable 1:1 steering.
+    - Calibrated vertical touch sensitivity to `1.35x` and horizontal sensitivity to `1.05x` for responsive dodging without overshooting.
+  - **🔁 Game Loop Animation Frame Single-Instance Shield ([`game.js`](game.js))**:
+    - Stored `this.animationId` and added explicit `cancelAnimationFrame(this.animationId)` checks across `startGame()`, `stop()`, `gameOver()`, and `loop()`, eliminating duplicate concurrent game loop instances on rapid restarts.
+
+- **Astro-Dodge Barrel Roll Performance & Slipstream Collision Fix (`v1.5.591`)**:
+  - **🌀 Multi-Frame Laser Gate Collision Fix ([`game.js`](game.js))**:
+    - Fixed a critical performance bug where rolling through a wide laser gate obstacle evaluated `this.checkCollision()` continuously over 8–15 consecutive frames, triggering repeated particle explosion bursts, sound plays, and DOM text animations every frame that choked CPU/GPU render threads.
+    - Added an `obs.slipstreamDodged` single-trigger flag per obstacle gate so slipstream dodges evaluate and trigger exactly once per pass.
+  - **✨ Dash Contrail Particle Optimization ([`game.js`](game.js))**:
+    - Reduced initial dash invocation burst from 18 particles to 6 particles, and throttled ongoing roll contrails from every 2 frames to every 4 frames with reduced particle lifetime.
+  - **🛡️ Procedural Starship In-Game Hardware Optimization ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Completely disabled `shadowBlur` across wings and canopy during in-game flight (`!isGame`), eliminating matrix transform filter penalties during high-speed rolls and maneuvers.
+
+- **Astro-Dodge Ultra Smooth 60 FPS Performance Update (`v1.5.590`)**:
+  - **🚀 Pure High-Precision Delta-Time Game Loop ([`game.js`](game.js))**:
+    - Replaced the frame-skipping timer logic with true continuous delta-time ($\Delta t$) updates (`update(dt)`).
+    - Guarantees butter-smooth sub-pixel entity movement and screen scrolling on any desktop refresh rate (60Hz, 75Hz, 120Hz, 144Hz, 240Hz) with zero frame stepping or stuttering.
+  - **✨ Background Starfield Reduction & Grid Stutter Removal ([`game.js`](game.js))**:
+    - Reduced background stars to a single lightweight, elegant cosmic layer of 25 stars with zero per-frame state changes.
+    - Completely removed the moving vertical grid lines that were creating a distracting optical illusion of screen stepping across desktop monitors.
+  - **⚡ Complete Eradication of Canvas `shadowBlur` & Dynamic Gradients ([`game.js`](game.js))**:
+    - Removed every remaining instance of hardware-taxing `shadowBlur` and `createRadialGradient` across active shields, tactical dash rolls, homing missiles, asteroids, enemy shooter ships, quantum relics, and HUD timer badges.
+    - Converted all glowing visual effects to high-performance, hardware-accelerated layered alpha fills (`rgba(...)`), completely eliminating render hitches.
+
+- **Astro-Dodge Performance & Score Fairness Update (`v1.5.589`)**:
+  - **⚖️ Leaderboard Score Fairness & Visual Streak Preservation ([`game.js`](game.js))**:
+    - Preserved the exciting visual arcade combo system (streak counter $\times 2$ to $\times 8$, top-right HUD banner, combo float text, and streak sounds) while removing score multiplication so every game action awards flat, standard base points.
+    - Shards award flat $+100$ pts, fighters award $+200$ pts, asteroids award $+100$ pts, near-misses award $+50$ pts, slipstream dodges award $+100$ pts, dash shatters award $+250$/$+150$ pts, and boss rams award $+150$ pts.
+    - Preserves historical leaderboard integrity and parity with all previous runs while maintaining pilot thrill and visual flair.
+  - **🖥️ Desktop Screen Movement Stepping & Stuttering Fix ([`game.js`](game.js))**:
+    - Replaced the discrete accumulator game loop with a VSync-tolerant 60 FPS pacing loop (`fpsInterval - 2.5ms` threshold) to completely eliminate screen movement micro-stepping on desktop monitors (60Hz, 75Hz, 120Hz, 144Hz).
+    - Removed expensive per-frame `createRadialGradient` dynamic nebulae fills and heavy canvas `shadowBlur` filters on obstacles, shards, and bullets.
+    - Streamlined laser gate obstacles with high-performance alpha layer fills and electric core beams.
+    - Streamlined faceted crystal shards with crisp alpha aura blooms and sparkling facets, running locked at 60 FPS.
+
+- **Astro-Dodge Tier 3+ Starship Combat Perk: 1.5x PGT Earn Multiplier (`v1.5.588`)**:
+  - **⚡ 1.5x PGT Earn Boost for Tier 3+ Starships ([`src/js/features/hangar.js`](src/js/features/hangar.js), [`game.js`](game.js))**:
+    - Piloting an equipped Starship with all 4 combat modules upgraded to Tier 3+ (`rapidFireLevel >= 3`, `plasmaDamageLevel >= 3`, `overdriveLevel >= 3`, `missilePodLevel >= 3`, or `shipTier >= 3`) permanently unlocks an authoritative $1.5\times$ PGT harvest multiplier for Astro-Dodge.
+    - Integrated seamlessly into live in-game HUD (`game-nft-boost-label`) and real-time live earned display so players immediately see their boosted yields during flight.
+    - Integrated into the game over summary screen with a glowing cyan `🚀 (Tier 3+ Ship 1.5x)` badge and multiplier breakdown.
+  - **🏆 Hangar Bay Milestone UI ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Added an interactive Tier 3+ Combat Multiplier Milestone Perk card in the Hangar modal under the Combat Skills matrix.
+    - Displays live unlock status (`🔥 1.5x ACTIVE` in glowing gold/green when equipped, or progress tracker `X/4 at Lv3+` with clear unlock requirements).
+    - Added celebration toast feedback when equipping a Tier 3+ Starship.
+  - **🛡️ Server-Side RPC Multiplier Verification ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/add_starship_tier3_multiplier_astrododge.sql`](supabase/add_starship_tier3_multiplier_astrododge.sql))**:
+    - Updated `end_arcade_session` RPC to authoritatively validate and grant the $1.5\times$ PGT multiplier for Astro-Dodge sessions piloting a Tier 3+ Starship.
+    - Maintained zero breaking changes to existing RPC parameter signature and preserved anti-cheat validation bounds.
+    - Rebuilt `supabase/master_rpcs.sql` via `python scripts/build_master_rpcs.py`.
+
+- **Astro-Dodge Major Gameplay & Graphics Evolution (`v1.5.587`)**:
+  - **🌀 Tactical Barrel Roll & Evasive Dash ([`game.js`](game.js))**:
+    - Introduced pilot Barrel Roll maneuver activated via `Shift`, `C`, right-click, double-tap, or the on-screen mobile HUD button.
+    - Grants 0.36s of full invulnerability frames (i-frames) and 3D rotational spin to slip past dense laser hazard gates, deflect incoming enemy plasma bolts, and ram-shatter obstacles.
+    - Added dedicated HUD recharge gauge in the bottom-right corner with real-time cooldown tracking.
+  - **🔥 Arcade Combo Multiplier System ([`game.js`](game.js))**:
+    - Chaining asteroid destructions, fighter kills, near-misses, and shard harvests builds a dynamic $\times 2$ to $\times 8$ combo multiplier.
+    - Multiplies score and rewards aggressive, high-skill flight; rendered as a pulsing fiery neon combo HUD banner with an active decay bar in the top-right.
+  - **🌌 Cosmic Parallax Nebulae & Dual-Tier Starfield ([`game.js`](game.js))**:
+    - Added 5 procedural cosmic nebula gas clouds drifting smoothly in deep space across magenta, cyan, violet, and electric blue spectrums.
+    - Upgraded starfield into dual-tier parallax layers with distant slow stars and foreground warp-speed light streaks.
+  - **⚡ High-Voltage Magnetic Plasma Field Emitter Pylons ([`game.js`](game.js))**:
+    - Completely overhauled hazard gate visuals into industrial sci-fi pylons featuring titanium housings, glowing magnetic core coils, and crackling high-voltage dual lightning arcs.
+  - **🚀 Reactive Afterburner Flame Boosts ([`game.js`](game.js))**:
+    - Upgraded thruster exhausts to flare into elongated high-speed plasma plumes during maneuvers and tactical barrel rolls.
+
+- **Astro-Dodge Quantum Energy Shard & Collectible Visual Overhaul (`v1.5.586`)**:
+  - **💎 3D Faceted Quantum Crystal Shards ([`game.js`](game.js))**:
+    - Replaced the flat 2D diamond shard with a multi-layered, 3D-shaded faceted crystalline gem featuring 5 distinct light-refracting facets (shadow teal, radiant cyan, neon highlight, and specular light cyan).
+    - Added floating vertical hover bobbing ($\pm 2\text{px}$) and smooth slow axial rotation as shards drift through space.
+    - Added a glowing cyan ambient bloom aura (`#00f0ff`) with breathing pulse effects.
+    - Added dynamic specular star glints (4-point lens flare sparkles) that twinkle along crystal facets.
+  - **✨ Enhanced Collectible FX & Ultra-Rare Crystals ([`game.js`](game.js))**:
+    - Replaced generic platform emojis on Ultra-Rare (+10 PGT) crystals with an exquisite golden 6-point prismatic diamond star with metallic luster facets.
+    - Upgraded shard collection bursts to emit dual-tone sparkling particles (neon cyan + brilliant white sparks).
+
+- **Astro-Dodge Tier 3 Boss (Solar Devourer) Combat Rebalance (`v1.5.585`)**:
+  - **🔥 Balanced Solar Devourer Attack Cadence & Projectile Speed ([`game.js`](game.js))**:
+    - **Reduced Bullet Speed**: Reduced Solar Devourer's 4-stream plasma volley speed from `7.8` down to `5.6` (over 28% slower), with unified speed on inner streams.
+    - **Increased Cooldown Between Volleys**: Increased shoot interval from `42` frames (every ~0.70s) to `68` frames (every ~1.13s), giving a 62% longer resting cooldown between attacks.
+    - **Gentler Spread Angles**: Adjusted outer stream vertical velocity from $\pm 2.2$ down to $\pm 1.6$, and inner streams to $\pm 0.5$, keeping an open dodging lane in the center.
+    - **Harmonized Tier 4+ Scaling**: Scaled Tier 4+ dreadnought bullet speed to `6.2` and resting intervals to $\ge 45$ frames for a smooth difficulty ramp.
+
+- **Astro-Dodge Tier 2 Boss (Void Sovereign) Combat Rebalance (`v1.5.584`)**:
+  - **👾 Balanced Void Sovereign Attack Pacing & Laser Speed ([`game.js`](game.js))**:
+    - **Reduced Bullet Speed**: Slowed Void Sovereign's triple spread projectile speed from `7.2` down to `5.0` (over 30% slower), giving players ample reaction time to spot incoming laser spreads and weave safely through.
+    - **Increased Cooldown Between Volleys**: Increased shoot interval from `50` frames (every ~0.83s) to `75` frames (every ~1.25s), giving a 50% longer resting window between volleys.
+    - **Gentler Spread Angles**: Adjusted vertical fan angle velocity to $\pm 1.2$ with normalized center bolt speed, eliminating unavoidable tight spread pinches.
+
+- **Astro-Dodge Micro-Missile Weapon Boost Restriction & Obstacle Pacing Audit (`v1.5.583`)**:
+  - **🚀 Micro-Missiles Strictly Gated to Active Weapon Boost ([`game.js`](game.js))**:
+    - Fixed an issue where equipped NFT Starships auto-fired seeking micro-missiles from frame 0 right at game start.
+    - Seeking micro-missiles now strictly require an active Weapon Boost (`player.tripleGun && player.weaponLevel >= 1`) to fire (both in auto-fire cadence and manual blaster bursts).
+    - When the weapon boost expires, micro-missiles immediately cease until the next Weapon Overcharge power-up is collected.
+  - **🛡️ Obstacle Spawn Cadence Verified ([`game.js`](game.js))**:
+    - Verified that obstacle gate spawn rate was untouched and preserved at its relaxed breathing room cadence (`Math.max(120 - Math.floor(difficulty * 6), 70)` frames), ensuring no unintended spike in laser hazard density.
+
+- **Starship NFT OpenSea Metadata Website Link Integration (`v1.5.582`)**:
+  - **🌐 Embedded Official Website in Metadata Description ([`supabase/functions/starship-metadata`](supabase/functions/starship-metadata), [`metadata/ships/`](metadata/ships/))**:
+    - Updated OpenSea metadata description across the live Supabase Edge Function (v6) and static repository backups to include a direct link to the official gaming platform: `Official Website: https://polygongaming.io`.
+    - Enables marketplace browsers on OpenSea, Rarible, and PolygonScan to immediately discover and link to the game, hangar, and staking vaults directly from the NFT details panel.
+
+- **Astro-Dodge Multi-Tier Boss Evolution & Escalating Difficulty Engine (`v1.5.581`)**:
+  - **👾 4 Unique Procedural Boss Archetypes ([`game.js`](game.js))**:
+    - **Tier 1 — Cyber Dreadnought**: Heavy crimson wedge vanguard with dual parallel railgun cannons (`50 HP`, `1,500 pts`, `+10 PGT`).
+    - **Tier 2 — Void Sovereign**: Ultraviolet/neon purple swept-blade stealth titan featuring a rotating singularity core, triple-fan spread lasers, and evasive horizontal sways (`85 HP`, `2,500 pts`, `+15 PGT`).
+    - **Tier 3 — Solar Devourer**: Molten gold/charcoal heavy battle colossus with pulsating emerald reactor, quad-plasma barrage, accelerated thrusts, and an enrage mode at $<40\%$ HP (`135 HP`, `4,000 pts`, `+20 PGT`).
+    - **Tier 4+ — Quantum Leviathan (Apex / MK-II+)**: Colossal deep navy apex dreadnought with dual forward mandibles, lightning energy arcs, 5-way spread cannons, seeking ion orbs, and figure-8 combat evasion (`180+ HP`, `6,000+ pts`, `+25+ PGT`).
+  - **📈 Escalating Difficulty & Combat AI Scaling ([`game.js`](game.js))**:
+    - Boss HP, movement speed, attack cadence, and projectile density dynamically scale across consecutive waves (each boss appearance is tougher and more lethal than the last).
+    - Added direct ramming/collision check: colliding with the boss hull pops energy shields or triggers a hull breach game over.
+  - **🎯 Dynamic Boss HUD & Projectile Artistry ([`game.js`](game.js))**:
+    - Rendered distinct color-matched plasma bolts and glowing seeking ion orbs per boss archetype.
+    - Added live segmented health bars, tier badges, enrage badges, and dynamic incoming countdown warning banners (`⚠️ [TIER N] BOSS IN Xs`).
+    - Highlighted total boss defeats on the game-over rewards breakdown overlay.
+
+- **Starship Hangar Mint Accessibility & Header Quick Actions (`v1.5.580`)**:
+  - **🚀 Prominent Starship Minting Access ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Relocated the primary **"🚀 Mint (2.0 POL)"** button into the top modal header bar alongside **"🔄 Sync"** and Close **"✕"**, guaranteeing immediate 100% visibility on all screen sizes regardless of fleet size.
+    - Added secondary **"➕ Mint Another Starship (2.0 POL)"** action in the ship details preview column directly below the active equip button.
+    - Upgraded fleet switcher tabs to wrap gracefully (`flex-wrap: wrap`) instead of overflowing off the right margin when pilots hold multiple ships.
+  - **🧹 Cleaned Hangar Interface ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Removed the one-time admin button **"🌐 Sync Edge URI"** now that contract base URI synchronization to the Supabase Edge Function is complete on Polygon Mainnet.
+
+- **Mobile Fullscreen Starship Hangar Stacking & Responsive Layout Fix (`v1.5.579`)**:
+  - **📱 Fullscreen Game Window Z-Index Elevation ([`src/css/modals.css`](src/css/modals.css), [`index.html`](index.html))**:
+    - Resolved stacking conflict where mobile and desktop arcade fullscreen containers (`.mobile-fullscreen-active` / `.fullscreen-active`) with `z-index: 99999999` completely covered the `#modal-astro-hangar` modal (previously `z-index: 1000000`).
+    - Elevated `#modal-astro-hangar` to `z-index: 100000000 !important` and `.modal-content` to `z-index: 100000001 !important`, ensuring the hangar interface opens cleanly on top of active fullscreen gameplay on any mobile device or browser.
+  - **📐 Mobile Viewport Fitting & Touch Scrolling ([`src/css/modals.css`](src/css/modals.css))**:
+    - Added responsive constraints for small screens (`max-height: 94vh`, `overflow-y: auto`, `-webkit-overflow-scrolling: touch`) so pilots can comfortably scroll through fleet management, minting controls, and combat modules in portrait or landscape without obstruction.
+
+- **Astro-Dodge Endgame Points & Rewards Breakdown Overlay Restoration (`v1.5.574`)**:
+  - **🏆 Restored Endgame Details Window ([`index.html`](index.html), [`game.js`](game.js))**:
+    - Re-inserted the missing `id="game-overlay-desc"` element inside `game-ui-overlay`, which was inadvertently removed during the Alpha Hangar launcher button layout update.
+    - Added automatic fallback dynamic element creation in `gameOver()` so the points, shards, multipliers, and final payout breakdown can never fail to render.
+    - Wrapped `endArcadeSession` in a protected `try/catch` block to guarantee network/RPC delays never prevent the game over UI from appearing.
+    - Implemented clean UI state resets in `startGame()` and `stop()` to ensure smooth transitions between active arcade play and endgame rewards screens.
+
+- **Automated OpenSea Metadata Engine & Serverless Edge Streaming (`v1.5.573`)**:
+  - **🌐 Dynamic Serverless OpenSea Engine ([`supabase/functions/starship-metadata`](supabase/functions/starship-metadata))**:
+    - Deployed production Edge Function `starship-metadata` on Supabase to serve dynamic JSON metadata and procedural vector SVG artwork on the fly for any token ID.
+    - Zero Git push dependency: any player worldwide can mint or upgrade, and OpenSea will dynamically fetch their latest traits, levels, and vector rendering via smart contract RPC calls.
+  - **⚙️ Hangar Contract Base URI Synchronizer ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Added one-click **"🌐 Sync Edge URI"** button in the Hangar for Poss / contract owner to immediately update `baseTokenURI` on the Polygon Mainnet contract to point to the serverless Edge Function.
+
+- **Astro-Dodge In-Game NFT Combat Multipliers Verification & Hookup (`v1.5.572`)**:
+  - **⚡ Rapid Fire Cadence Scaling ([`game.js`](game.js))**:
+    - Connected `this.nftShotCooldown` (140ms down to 90ms) to the game's core auto-fire loop (`autoFireCadence` scaled from 8 down to 5 frames at 60 FPS).
+    - Enabled continuous rapid fire when holding Spacebar or mouse down.
+  - **💥 Plasma Beam Impact Damage ([`game.js`](game.js))**:
+    - Fixed collision handler to apply `this.nftPlasmaMultiplier` (1.0x up to 2.6x) to both Boss and enemy asteroids/fighters.
+  - **🚀 Micro-Missiles Defense Pod Activation ([`game.js`](game.js))**:
+    - Equipped NFT starships now automatically launch tracking micro-missiles during flight every `this.nftMissileCooldown` (1.9s down to 1.0s), with zero power-up prerequisite required.
+  - **🛡️ Overdrive Matrix Power-Up Scaling ([`game.js`](game.js))**:
+    - Verified all 3 power-up durations (Chronos Warp, Weapon Overcharge, Energy Shield) scale up to 1.75x (20s up to 35s).
+
+- **Live PolyGameStarshipNFT Polygon Mainnet Deployment (`v1.5.571`)**:
+  - **🚀 Deployed Contract Address ([`src/js/core/config.js`](src/js/core/config.js), [`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Connected newly deployed `PolyGameStarshipNFT` contract at `0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99` on Polygon Mainnet.
+    - Integrated real on-chain fleet synchronizer `syncFleetFromChain(userAddress)` querying `tokensOfOwner` and `getStarshipStats`.
+    - Added automatic PGT ERC-20 token approval handling prior to combat module skill upgrades.
+    - Added dedicated **"🎁 Owner Free Mint"** action for contract owner / admin testing alongside the **2.0 POL** public minting flow.
+
+- **PGT Skill Upgrade Costs Economy Calibration (`v1.5.570`)**:
+  - **⚡ Calibrated Combat Module Sinks ([`contracts/PolyGameStarshipNFT.sol`](contracts/PolyGameStarshipNFT.sol), [`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Reduced the starter Tier 1 -> Tier 2 upgrade cost down to **5,000 PGT** (from 35,000 PGT), giving pilots an accessible initial progression hook.
+    - Slashed all subsequent skill tiers by 50%:
+      - Tier 2 -> 3: **42,500 PGT** (down from 85k)
+      - Tier 3 -> 4: **85,000 PGT** (down from 170k)
+      - Tier 4 -> 5: **150,000 PGT** (down from 300k)
+    - Full max progression sink per module reduced to **282,500 PGT** (1,130,000 PGT across all 4 combat trees), while preserving the single atomic transaction 10% burn / 90% treasury model.
+
+- **Starship Hangar Multi-Ship Fleet Switching, Demo Mode & 2.0 POL Minting (`v1.5.569`)**:
+  - **🛸 Multi-Ship Fleet Management ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Added an interactive fleet switcher carousel allowing pilots who own multiple starships to toggle between their fleet vessels (`Ship #1`, `Ship #2`, etc.).
+    - Selecting any ship dynamically updates the 60 FPS real-time vector preview, refreshes procedural DNA traits, and displays that ship's specific combat upgrade levels.
+    - Added one-click **"🚀 Equip for Astro-Dodge"** button to bind the chosen ship as the active combat flagship.
+  - **⚠️ Non-Owner Demo Mode**:
+    - Pilots who do not yet own a starship see an interactive procedural Demo Ship preview with a **"🎲 Roll Demo Ship"** button to cycle through all 36,000+ visual DNA combinations.
+    - Combat modules display as locked with a prominent call-to-action to mint.
+  - **🚀 2.0 POL Starship Minting & On-Chain PGT Upgrades**:
+    - Added **"➕ Mint Starship (2.0 POL)"** flow supporting on-chain minting on Polygon via Web3 signer and alpha test fleet minting.
+    - On-chain combat skills upgrade with 10% burn / 90% treasury tokenomics in a single atomic transaction.
+
+- **Astro-Dodge Syntax Fix & Starship Hangar Alpha Visibility Hardening (`v1.5.568`)**:
+  - **🚀 Astro-Dodge Game Loop Restore ([`game.js`](game.js))**:
+    - Fixed a missing closing brace on the starfield particle loop in `startGame()` that triggered `Uncaught SyntaxError: Unexpected identifier 'gameOver' at game.js:389` and prevented the "Launch Starship" button from firing.
+  - **🛸 Strict Hangar Button Access Control ([`index.html`](index.html), [`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Set `#btn-open-hangar` to `display: none` by default so regular players cannot see the button.
+    - Dynamically reveals the button only when active session matches Poss (`0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5` / `0xpgt8312e02d37185b5983e6922d1dae1cce`) or Master Admin (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`).
+    - Added `modal.classList.add('active')` so the modal becomes fully opaque and interactive upon opening.
+
+- **PLAN-008: 100% On-Chain Generative Starship NFTs & Poss Alpha Hangar Bay (`v1.5.567`)**:
+  - **⛓️ Smart Contract Architecture ([`contracts/PolyGameStarshipNFT.sol`](contracts/PolyGameStarshipNFT.sol))**:
+    - Built the full ERC-721Enumerable, ERC-2981, and ERC-4906 Generative Starship contract for Polygon Gaming.
+    - Integrated on-chain pseudo-random 6-digit DNA generation mapping to the 6 procedural visual trait layers.
+    - Integrated `upgradeSkillWithPGT(tokenId, skillType)`: Upgrades combat skills on-chain in a **single atomic transaction** pulling PGT, burning **10% directly to `0x...dead`**, and routing 90% to the treasury. No secondary transaction ever needed.
+    - Included free `ownerMint` for Poss and Admin alpha fleet testing without paying POL mint fees.
+  - **🛸 Astro-Dodge Hangar & Tuning Bay Modal ([`src/js/features/hangar.js`](src/js/features/hangar.js), [`index.html`](index.html))**:
+    - Created interactive Hangar Bay modal featuring a 60 FPS real-time HTML5 canvas vector starship renderer (zero external asset downloads).
+    - Trait inspector displaying Chassis Archetype, Wing Geometry, Shaders & Palette, Cockpit Canopy, Afterburners, and Decals.
+    - Combat skill module cards with 5-tier level progression for Rapid Fire, Plasma Beam, Overdrive Matrix, and Micro-Missiles.
+    - Added "🛸 Starship Hangar" launch button inside Astro-Dodge.
+  - **⚡ In-Game Combat Multipliers ([`game.js`](game.js))**:
+    - Equipped NFT starships dynamically replace the default interceptor sprite with the live procedural vector ship.
+    - Scaled rapid fire shot delay (140ms down to 90ms), plasma impact damage (1.0x to 2.6x), overdrive powerup durations (20s up to 35s), and micro-missile reload cadence (2.0s down to 1.0s).
+    - Alpha access is strictly gated to **Poss's wallet** (`0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5`) and **Master Admin** (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`).
+
+- **Official Discord Community Invite Link Refresh (`v1.5.566`)**:
+  - **💬 Fresh Permanent Invite URL Deployment**:
+    - Replaced the expired Discord invitation link (`kuyUXNWf3`) with the new permanent invite link (`https://discord.gg/bdeK7Kv8Y2`) across all ecosystem touchpoints.
+    - Updated navigation footers, Ambassador applications, Contact & Support hub, Schema.org SEO structured metadata, documentation (`llms.txt`, `llms-full.txt`), and marketing announcements.
+
+- **Silver VIP Tier State Sync & Accurate Tier Multiplier Resolution (`v1.5.565`)**:
+  - **🥈 Database Sync Tier Population ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Fixed a bug where `syncUserData()`, `loadInitialStateFromSupabase()`, and `connectWeb3()` loaded `vip_until` but never mapped `vip_level` from `public.users` into `appState.state.vipLevel`.
+    - `vipLevel` is now properly populated as `Number(data.vip_level != null ? data.vip_level : (data.vip_until ? 2 : 0))`.
+  - **👑 Strict Tier Resolution Safeguard ([`src/js/core/state.js`](src/js/core/state.js))**:
+    - Fixed `appState.getVipLevel()` where `Number(this.state.vipLevel || 2)` evaluated falsy `0 || 2` to `2` (Gold VIP) whenever `vipLevel` was unassigned or zero.
+    - Explicitly evaluates raw values: level `1` returns `1` (Silver VIP), `>= 2` returns `2` (Gold VIP), and active legacy passes default to `2`.
+  - **🎨 Silver VIP Visual Styling & Navbar Consistency ([`src/js/core/state.js`](src/js/core/state.js), [`src/js/features/profile.js`](src/js/features/profile.js), [`src/js/features/faucet.js`](src/js/features/faucet.js))**:
+    - Updated navbar VIP indicator (`#btn-header-join-vip`) and VIP pass profile button (`#btn-buy-vip`) to render metallic silver gradients (`#c0c0c0`) when Silver VIP is active.
+    - Ensured leaderboard multipliers (1.25x Silver / 2.0x Gold), faucet multipliers (1.5x Silver / 2.5x Gold), and cooldown timers (21.6h Silver / 19.2h Gold) strictly respect Tier 1.
+
+- **Staking Yield Stat Wei Normalization & Admin Calibration Tool (`v1.5.564`)**:
+  - **🌾 Corrupted Wei Yield Normalization ([`tools/admin/admin.js`](tools/admin/admin.js), [`supabase/fix_total_staking_yield.sql`](supabase/fix_total_staking_yield.sql))**:
+    - Discovered single player account (`Dobby TheDEV`) had an unformatted 18-decimal Wei value (`12661418716101884000` = `~12.66` PGT) stored in `total_staking_yield`, causing the admin portal stat to explode and collide into adjacent cards.
+    - Added defensive normalization check in `renderAdminPanel`: any user yield `> 1e12` is automatically divided by `1e18` before aggregating, displaying the true aggregate (`166,027.75 PGT`).
+    - Added clean thousand-separator formatting (`.toLocaleString('en-US')`) and CSS `text-overflow: ellipsis; white-space: nowrap;` to prevent layout collision.
+  - **🛠️ Interactive Yield Calibration Admin Tool ([`tools/admin/admin.html`](tools/admin/admin.html), [`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Added `🔄 Reset / Calibrate Staking Yield` button directly on the Staking Statistics card in the Admin Portal.
+    - Allows the master admin to: (1) Normalize corrupted Wei values to normal PGT (~166,027 PGT total), (2) Reset corrupted accounts to 0 (~166,015 PGT total), or (3) Reset all players' staking yields to 0.
+
+- **Admin Panel Arcade Metrics Reset & Clean Zero Display Fix (`v1.5.563`)**:
+  - **🔄 Authoritative Arcade Metrics Reset RPC ([`supabase/fix_reset_arcade_game_metrics.sql`](supabase/fix_reset_arcade_game_metrics.sql), [`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql))**:
+    - Fixed database RPC `public.reset_arcade_game_metrics(p_admin_passkey)` which previously deleted from a legacy table without updating `public.game_metrics`.
+    - Added reset query to zero out `total_wagered`, `total_payout`, and `total_playtime_seconds` across all canonical and alias arcade game names (`LOWER(game_name) IN (...)`).
+    - Updates `public.global_settings.arcade_last_reset` to `NOW()` and ensures `authenticated` and `service_role` roles have execution permissions guarded by `public.verify_admin_passkey`.
+  - **📊 Fixed UI Display Falling Back to Historical Sessions ([`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Fixed table rendering logic in `admin.js` where `metricPayout > 0 ? metricPayout : sessStats.payout` was overriding zero values with lifetime historical session data.
+    - `sinceResetPayout` and `totalPlaytime` now properly render clean `0.00 PGT` and `0m 0s` when reset, while preserving career numbers under `Total Payout (All-Time)`.
+    - Updated `resetArcadeMetrics()` to verify `rpcRes.success` from the server and instantly reload table data.
+
+- **Mobile Web3 Auth Auto-Refresh & Casino Self-Healing RPC Retries (`v1.5.562`)**:
+  - **📱 Silent Mobile JWT Session Refresh ([`src/js/core/auth-web3.js`](src/js/core/auth-web3.js))**:
+    - Fixed mobile browser sleep / tab suspension issue where frozen background timers allowed Supabase Auth JWT access tokens to expire (1h default), causing subsequent bets to fail with `AUTHENTICATION_REQUIRED`.
+    - Enhanced `ensureValidSupabaseSession()` and `authenticateWeb3Wallet()` to check `session.expires_at` against current epoch; if expired or expiring within 60s, it automatically executes silent `client.auth.refreshSession()` with stored refresh tokens without user prompts.
+    - Added proactive `visibilitychange` and `window.focus` event listeners to seamlessly refresh expired sessions as soon as the user returns to the game tab.
+  - **🎲 Universal Self-Healing Casino RPC Retries ([`src/js/core/auth-web3.js`](src/js/core/auth-web3.js), [`src/js/features/`](src/js/features/))**:
+    - Introduced `executeAuthenticatedRpc(rpcName, params)` which proactively guarantees fresh tokens and automatically catches `AUTHENTICATION_REQUIRED` or JWT expiry errors to perform an instant re-auth and single retry.
+    - Refactored all 5 casino betting games ([`roshambo.js`](src/js/features/roshambo.js), [`spinner.js`](src/js/features/spinner.js), [`plinko.js`](src/js/features/plinko.js), [`crash.js`](src/js/features/crash.js), [`mines.js`](src/js/features/mines.js)) to route database RPCs through `executeAuthenticatedRpc`.
+    - Enhanced error detection in [`faucet.js`](src/js/features/faucet.js) and [`referrals.js`](src/js/features/referrals.js) to catch server-returned `AUTHENTICATION_REQUIRED` objects for seamless automatic recovery.
+
+- **PolySpace Hyperdrive Boost: 10%-35% Server RNG, Half-Size Target, Missed Timeout (`v1.5.561`)**:
+  - **🎲 Server-Authoritative 10%–35% Random Boost ([`supabase/create_polyspace_hyperdrive_boost_rpc.sql`](supabase/create_polyspace_hyperdrive_boost_rpc.sql), [`space.js`](space.js))**:
+    - Replaced static 25% reduction with cheat-proof server-side RNG rolling between **10% and 35%** duration reduction on `complete_hyperdrive_boost`.
+    - Expedition cards now display the exact rolled percentage (e.g., `⚡ -31%` or `⚡ -18%`).
+  - **⏳ Timeout Missed Penalty & No-Retry Enforcement ([`space.js`](space.js), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - When the 8.5s calibration timer expires, the boost is permanently missed instead of looping retries.
+    - Added `fail_hyperdrive_boost` RPC to persist `hasBoosted = true` and `boostMissed = true`.
+    - Expedition cards render a red `⚡ Missed` badge when calibration times out.
+  - **🎯 Increased Skill Difficulty & Half-Size Harmonic Target Arc ([`space.js`](space.js), [`index.html`](index.html))**:
+    - Cut the green target window arc in half (from ~81° down to ~39.6° across all 3 rings).
+    - Reduced target line thickness to 4px with strict hit boundary checks, requiring precise player timing.
+
+- **PolySpace Hyperdrive Boost Animation Loop Status Fix (`v1.5.560`)**:
+  - **⚡ Harmonic Ring Motion & Animation Loop Fix ([`space.js`](space.js))**:
+    - Fixed frozen rotating nodes bug caused by `startHyperdriveLoop()` previously calling `stopHyperdriveLoop()` which set `_hyperdriveStatus = 'idle'`.
+    - `startHyperdriveLoop()` now explicitly maintains `_hyperdriveStatus = 'playing'`, allowing nodes to revolve at full 60 FPS and timer to count down smoothly.
+    - Adjusted ring sector boundaries strictly within `[0, 2π)` and added `±0.08 rad` alignment tolerance so locking harmonic rings feels responsive.
+    - Removed stale `playing` guard in `openHyperdriveCalibration()` to guarantee fresh canvas & timer initialization on every modal open.
+
+- **PolySpace Hyperdrive Boost Database Deployment & Anti-Cheat Sync Fix (`v1.5.559`)**:
+  - **⚡ Server RPC Deployment ([`supabase/create_polyspace_hyperdrive_boost_rpc.sql`](supabase/create_polyspace_hyperdrive_boost_rpc.sql))**:
+    - Deployed `start_hyperdrive_boost` and `complete_hyperdrive_boost` RPCs to Supabase production database (`jgtfnsufemvqkyytscgl`).
+    - Configured human latency calibration check to lower threshold of **1.0s** (`1000ms` min, `18000ms` max) to allow high-skill ring alignments.
+    - Added cryptographic nonce challenge verification and enforced single-use per mission (`hasBoosted = true`).
+  - **🛡️ Client State Synchronization & Infinite Loop Fix ([`space.js`](space.js), [`src/js/core/ui.js`](src/js/core/ui.js))**:
+    - Resolved the state clobber bug where local `exp.hasBoosted` was immediately overwritten by premature cloud fetching before database write.
+    - Implemented dedicated `finalizeHyperdriveBoost()` that awaits server authoritative completion and binds the returned `new_end_time` and `space_state`.
+    - Prevented duplicate boost triggers by rendering the persistent `⚡ Boosted` badge and guarding against concurrent mini-game sessions.
+    - Added automatic challenge nonce regeneration on mini-game timeout retries and integrated loop termination into `closeModal('hyperdrive-boost')`.
+
+- **PolySpace Pillar 4 & 5: Visual Ship Evolution, Hyperdrive Boost & Tactical Sector Radar (`v1.5.558`)**:
+  - **🚀 Pillar 5: Procedural Ship Evolution & Hull Upgrades ([`space.js`](space.js))**:
+    - Replaced basic static ship vector rendering with a dynamic procedural 2D flagship graphics engine across 5 Evolution Tiers derived from average module level (`warpLevel`, `laserLevel`, `cargoLevel`):
+      - **Tier 1 (Scout Shuttle, Lvl 1–9)**: Streamlined needle fuselage, single ion thruster flame, needle nose blaster.
+      - **Tier 2 (Plasma Frigate, Lvl 10–19)**: Swept reinforced delta wings, twin side-mounted thrusters, dual wing laser blasters.
+      - **Tier 3 (Void Battlecruiser, Lvl 20–29)**: Heavy titanium armor chevron plates, pulsating gold/cyan shield resonance bubble, triple thruster array, dual turret pods.
+      - **Tier 4 (Apex Dreadnought, Lvl 30–39)**: Triple hull outrigger sponsons, quad heavy thrusters, spinal cannon conduit, and **2 real-time orbiting tactical escort combat drones** with laser tether links.
+      - **Tier 5 (Singularity Titan, Lvl 40+)**: Monumental dark-matter obsidian titan hull, hex-thrusters, **4 advanced orbiting quantum escort drones**, and central **animated Gravitational Singularity Core** with rotating accretion disk and black event horizon.
+    - Dynamically mapped thruster flame plumes to Warp Level: Neon Cyan (1–9), Plasma Violet (10–19), Solar Gold (20–29), Singularity Crimson (30–39), and Prismatic Quantum Void Flare cycling hue (40+).
+    - Added live flagship class and level badge underneath the ship in the Hangar view.
+  - **⚡ Pillar 4: In-Flight Hyperdrive Boost Mini-Game ([`space.js`](space.js), [`index.html`](index.html))**:
+    - Active expedition cards now feature a `⚡ Boost` action button (or `⚡ Boosted` badge) allowing one hyperdrive speed boost per expedition (`hasBoosted = false`).
+    - Added the retro 3-ring harmonic calibration HUD modal (`#modal-hyperdrive-boost`) with interactive canvas:
+      - Players tap "LOCK HARMONIC" or hit Spacebar to lock each concentric rotating frequency ring inside its green harmonic sector.
+      - Locking all 3 rings immediately shaves **-25% off remaining travel duration**, persists `hasBoosted = true`, and syncs to Supabase.
+  - **🛰️ Pillar 4: Sector Tactical Radar & Animated Outpost Raids ([`space.js`](space.js), [`index.html`](index.html))**:
+    - Upgraded Outpost Raids to open the interactive Sector Tactical Radar modal (`#modal-sector-radar`) with real-time 360° radar sweep canvas and blip detection:
+      - **Target Alpha (Drone Depot)**: Low risk, 85% win rate, yields Iron + Titanium haul.
+      - **Target Beta (Refinery Silo)**: Med risk, 65% win rate, yields Quantum Crystals + Iron.
+      - **Target Gamma (Rogue Dreadnought)**: High risk, 40% win rate + Fleet Power bonus, yields Rare PGT Ore & Relics.
+    - Engaging a raid launches a 3.0-second **animated tactical dogfight simulation** (`#canvas-raid-combat`) showing player starship exchanging rapid laser volleys, missile streaks, shield impacts, and spark explosions with the target outpost.
+    - At 3.0s, triggers the authoritative server-side `launch_outpost_raid` RPC, concluding with an animated Victory or Defeat Scorecard and mineral loot breakdown.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md), [`index.html`](index.html))**:
+    - Bumped release version to `APP_VERSION = "1.5.558"` and synced asset cache busters.
+
+- **NFT Backpack On-Chain Multicall3 Scanning & Sync Fix (`v1.5.557`)**:
+  - **⚡ Server-Side Multicall3 Edge Function Upgrade ([`supabase/functions/sync-assets/index.ts`](supabase/functions/sync-assets/index.ts))**:
+    - Resolved critical bug where `sync-assets` attempted to query `tokenOfOwnerByIndex` on the PolyGame NFT contract (`0x45D80Ea3a24978350ccC6A61A2d89B031435eCB8`), which does not implement ERC-721 Enumerable and always reverted.
+    - Upgraded `sync-assets` Edge Function to use Multicall3 (`0xcA11bde05977b3631167028862bE2a173976CA11`) `aggregate3` scanning, matching the frontend client architecture to verify all 17 on-chain tokens in a single fast round-trip.
+    - Fixed non-deduplicated token counting so duplicate cores (e.g. multiple `nft_common_boost` tokens) are fully preserved in the backpack count.
+    - Added error guards ensuring transient RPC errors never wipe or reset verified on-chain assets in the database.
+  - **🛡️ Client State Protection ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Guarded `loadFromDB`, `syncProfileWithDb`, and `syncAuthenticatedUser` against overwriting local verified `ownedNfts` with empty or incomplete database payloads.
+    - Prevented empty server responses from wiping verified backpack inventories.
+  - **📦 Database RPC & Master Scripts ([`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`supabase/update_sync_onchain_nfts_leaderboard_cores.sql`](supabase/update_sync_onchain_nfts_leaderboard_cores.sql))**:
+    - Rebuilt `supabase/master_rpcs.sql`.
+    - Generated migration script to support leaderboard cores (`nft_lb_bronze`, `nft_lb_silver`, `nft_lb_gold`) in `sync_onchain_nfts`.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md), [`index.html`](index.html))**:
+    - Bumped release version to `APP_VERSION = "1.5.557"` and updated asset cache busters.
+
+- **NFT Market VIP Pass Card Description Streamlining (`v1.5.556`)**:
+  - **🧹 Clean VIP Card UI ([`src/js/features/nft.js`](src/js/features/nft.js), [`metadata/nft_vip_pass_t1.json`](metadata/nft_vip_pass_t1.json))**:
+    - Removed redundant inline parenthesis text repeating perk breakdowns in Silver VIP, Gold VIP, and Yearly Gold VIP pass store cards.
+    - Preserved high-contrast bulleted perk lists (`🚀 ...`) for improved visual hierarchy and readability.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md), [`index.html`](index.html))**:
+    - Bumped release version to `APP_VERSION = "1.5.556"` and updated asset cache busters.
+
+- **On-Chain VIP Pass Burn Verification & Anti-Replay Engine (`v1.5.555`)**:
+  - **🔗 Polygon On-Chain Burn Transaction Binding ([`src/js/features/nft.js`](src/js/features/nft.js))**:
+    - Captured confirmed transaction hash (`burnTxHash = tx.hash`) upon executing `nftContract.burn(targetTokenId)` on Polygon Mainnet.
+    - Passed `p_burn_tx_hash` to `activate_vip_pass` RPC so on-chain burned tokens (such as Silver VIP Pass Token #13) are authoritatively credited.
+    - Sealed false-positive UI toasts: strictly verifies `!vipErr && vipRes && vipRes.success` before updating client state, preventing optimistic client updates if the backend RPC was rejected or unreachable.
+  - **🛡️ Server-Side Anti-Replay Burn Table & RPC Upgrade ([`supabase/rpcs/00_schema_guarantees.sql`](supabase/rpcs/00_schema_guarantees.sql), [`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Created `public.processed_vip_burns` table with unique `tx_hash` primary key to prevent double-spending or replay attacks across all VIP tiers.
+    - Enhanced `public.activate_vip_pass(p_player_id, p_pass_type, p_burn_tx_hash)` to validate transaction hash formatting (`^0x[0-9a-f]{64}$`), check anti-replay history, and atomically log burns.
+    - Maintained full backwards-compatibility with off-chain crate inventory (`crate_nfts`) and legacy backpack items.
+    - Generated migration script [`supabase/update_activate_vip_pass_onchain_burn.sql`](supabase/update_activate_vip_pass_onchain_burn.sql).
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md), [`index.html`](index.html))**:
+    - Bumped release version to `APP_VERSION = "1.5.555"` and refreshed asset cache busters.
+
+- **VIP Tier Cross-Activation Safeguard (Mutual Exclusion) (`v1.5.554`)**:
+  - **🛡️ Client-Side Tier Conflict Guard ([`src/js/features/nft.js`](src/js/features/nft.js))**:
+    - Added mutual exclusion guard in `activateVipPass()` before initiating on-chain transactions or off-chain pass consumption.
+    - Prevents activating Silver VIP while Gold VIP is active (*"⚠️ You already have active Gold VIP! You cannot activate a Silver Pass until your Gold status expires."*).
+    - Prevents activating Gold VIP while Silver VIP is active (*"⚠️ You already have active Silver VIP! You cannot activate a Gold Pass until your Silver status expires."*).
+    - Prevents accidental token burning or gas expenditure in MetaMask.
+  - **🔒 Server-Side Database Safeguard ([`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Added pre-consumption tier conflict verification to `public.activate_vip_pass()`.
+    - Returns descriptive error if an active player attempts to cross-activate a conflicting tier.
+    - Generated migration script [`supabase/update_activate_vip_pass_tier_guard.sql`](supabase/update_activate_vip_pass_tier_guard.sql).
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md), [`index.html`](index.html))**:
+    - Bumped release version to `APP_VERSION = "1.5.554"` and refreshed asset cache busters.
+
+- **Arcade Leaderboard Multiplier Display & Profile Card Integration (`v1.5.553`)**:
+  - **🏆 Arcade Leaderboard Multiplier Breakdown ([`src/js/features/profile.js`](src/js/features/profile.js))**:
+    - Compacted VIP badge indicators in leaderboard player names from verbose `👑 GOLD` / `🥈 VIP` pills to compact emoji symbols (`👑` / `🥈`), preventing username truncation on desktop and mobile screens.
+    - Added live leaderboard multiplier badges (e.g. `(2x)`, `(2.5x)`) right after tournament prize allocations (e.g. `400 PGT (2x)`), incorporating interactive tooltip detailing final payout calculation.
+    - Leaderboard multipliers stack multiplicatively between VIP tier factor (Gold 2.0x, Silver 1.25x) and NFT tournament cores (Bronze 1.25x, Silver 1.5x, Gold 2.0x).
+    - Applied leaderboard multipliers to both active paginated rows and the sticky `#YOUR STANDING` row.
+    - Updated PostgREST fetch query in `fetchAndLoadGameLeaderboard` to select `owned_nfts, crate_nfts` from `public.users` so all tournament competitors display authentic live multipliers.
+  - **📊 Total Active Multipliers Profile Card ([`index.html`](index.html), [`src/js/features/profile.js`](src/js/features/profile.js), [`src/js/core/state.js`](src/js/core/state.js))**:
+    - Added a 5th active multiplier chip in My Profile: `🏆 Leaderboard Multiplier` displaying live stacked tournament multiplier (e.g. `2.00x` or `2.50x`), turning bright gold `.active` when `> 1.00x`.
+    - Integrated `totalLeaderboardMultiplier`, `vipLeaderboardMultiplier`, and `rawNftLeaderboardMultiplier` into `PolyState.getMultipliers()`.
+  - **⚙️ Backend Prize Distribution Alignment ([`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Synchronized `distribute_weekly_arcade_prizes()` across all 9 arcade games to stack VIP tier and NFT tournament multipliers multiplicatively (`v_lb_mult := v_vip_lb_mult * v_nft_lb_mult`).
+    - Provided updated migration script [`supabase/update_distribute_weekly_arcade_prizes_mult.sql`](supabase/update_distribute_weekly_arcade_prizes_mult.sql).
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md), [`index.html`](index.html))**:
+    - Bumped release version to `APP_VERSION = "1.5.553"` and refreshed asset cache busters.
+
+- **VIP Daily Play Quota Multiplier Labels Update (`v1.5.552`)**:
+  - **🎟️ Dynamic Multiplier Play Quota Text ([`src/js/features/nft.js`](src/js/features/nft.js))**:
+    - Updated Silver VIP Pass description and bonus bullets from static "75 plays/day" to dynamic multiplier format "1.5x plays/day" across both the NFT Marketplace and NFT Backpack Inventory.
+    - Updated Gold VIP Pass (Monthly and Yearly) descriptions and bonus bullets from static "100 plays/day" to dynamic multiplier format "2x plays/day" across both the NFT Marketplace and NFT Backpack Inventory.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md), [`index.html`](index.html))**:
+    - Bumped release version to `APP_VERSION = "1.5.552"` and refreshed asset cache busters.
+
+- **Invaders.js Duplicate Identifier & State.js ReferenceError Fix (`v1.5.551`)**:
+  - **👾 Fixed SyntaxError in Cyber Invaders ([`invaders.js`](invaders.js))**:
+    - Removed duplicate `const isVip` and `const vipLevel` re-declarations within `gameOver()` function scope, resolving `Uncaught SyntaxError: Identifier 'isVip' has already been declared`.
+  - **⚙️ Restored Multiplier Scope in State ([`src/js/core/state.js`](src/js/core/state.js))**:
+    - Restored `totalReferralMultiplier` and `totalFaucetBoostPercent` variable definitions in `PolyState.getMultipliers()`, eliminating `ReferenceError: totalReferralMultiplier is not defined` during app boot and profile sync.
+  - **🛡️ Discord Relay Whitelist & Cache-Buster Sync ([`supabase/functions/discord-relay/index.ts`](supabase/functions/discord-relay/index.ts), [`index.html`](index.html))**:
+    - Added `'ALERT'` category to `WHITELISTED_SYSTEM_CATEGORIES` in serverless `discord-relay` Edge Function.
+    - Updated script and stylesheet cache busters across [`index.html`](index.html) from stale `v=1.5.544` to `v=1.5.551`.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - Bumped release version to `APP_VERSION = "1.5.551"`.
+
+- **Calibrate VIP Arcade Multipliers & Eliminate Double-Count Desync (`v1.5.550`)**:
+  - **🎮 Resolved Multiplier Desync in Arcade Games ([`src/js/features/nft.js`](src/js/features/nft.js), [`src/js/core/state.js`](src/js/core/state.js))**:
+    - Zeroed out `gameMultiplier`, `faucetBoost`, `stakingBoost`, and `referralMultiplier` on VIP Pass entries in `NFT_REGISTRY`. VIP perks are awarded through the VIP membership system (`vipMult` 1.5x Silver / 2.0x Gold, `v_vip_mult` in RPCs), eliminating double-counting where client was treating VIP passes as passive additive NFT cores and displaying 17.7x instead of the true 11.7x.
+    - Updated `renderNftMarketplace` and `renderNftInventory` to render dedicated formatted perk lists for Silver VIP Pass and Gold VIP Pass.
+    - Added Silver VIP Pass activation action in NFT backpack inventory.
+    - Enhanced `getMultipliers()` in `state.js` to return `isVip`, `vipLevel`, and `vipMultiplier`.
+  - **🕹️ Dynamic VIP Tier Integration Across All 9 Arcade Games ([`game.js`](game.js), [`invaders.js`](invaders.js), [`drift.js`](drift.js), [`stacker.js`](stacker.js), [`skeet.js`](skeet.js), [`defense.js`](defense.js), [`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js))**:
+    - Replaced hardcoded `vipMult = 2.0` with dynamic VIP tier evaluation: `vipLevel >= 2 ? 2.0 : 1.5` for Silver VIP (1.5x) vs Gold VIP (2.0x).
+    - Updated Game Over breakdown badge strings to display 👑 `[Gold VIP 2.0x]` or 🥈 `[Silver VIP 1.5x]`.
+    - HUD live multiplier calculations and Game Over breakdown math now 100% align with server-side authoritative payouts.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - Bumped release version to `APP_VERSION = "1.5.550"`.
+
+- **VIP Faucet Cooldown Scope Reference Fix (`v1.5.549`)**:
+  - **⏱️ Resolved `ReferenceError: stateObj is not defined` ([`src/js/features/faucet.js`](src/js/features/faucet.js))**:
+    - Fixed undefined `stateObj` access inside `updateVipFaucetCooldownTimer()` by initializing `const stateObj = getFaucetAppState()`.
+    - Eliminates crashes when switching tabs to Faucet or ticking VIP cooldown timers during profile sync.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - Bumped release version to `APP_VERSION = "1.5.549"`.
+
+- **Game Tile Badges Null-Safety & Discord Relay Auth Header Fix (`v1.5.548`)**:
+  - **🛡️ Null-Safe Profile Card Handling ([`src/js/features/games.js`](src/js/features/games.js))**:
+    - Fixed `TypeError: Cannot set properties of null (setting 'innerHTML')` in `updateGameTileBadges()` triggered during initial authentication sync (`syncAuthenticatedUser`) and tab switching.
+    - Added null-guard check for `.game-tile-badges` on profile game cards (`.profile-game-card[data-game-key]`).
+  - **📢 Supabase Gateway Headers for Discord Relay ([`src/js/utils/discord.js`](src/js/utils/discord.js))**:
+    - Added mandatory `apikey` and `Authorization: Bearer <KEY>` headers to `relayDiscordNotification()`, eliminating `POST 403 (Forbidden)` error when calling the `discord-relay` Edge Function.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - Bumped release version to `APP_VERSION = "1.5.548"`.
+
+- **Two-Tier VIP System & Leaderboard Multiplier NFTs Architecture (`v1.5.547`)**:
+  - **👑 Two-Tier VIP Membership Architecture ([`PLAN-016`](PLAN-016-two_tier_vip_system.md), [`src/js/core/state.js`](src/js/core/state.js), [`src/js/features/nft.js`](src/js/features/nft.js), [`src/js/features/faucet.js`](src/js/features/faucet.js), [`src/js/features/profile.js`](src/js/features/profile.js))**:
+    - Introduced **Tier 1 Silver VIP Pass** (`nft_vip_pass_t1`) @ 20 POL (30 days) and enhanced **Tier 2 Gold VIP Pass** (`nft_vip_pass` @ 100 POL / 30d, `nft_vip_pass_yearly` @ 900 POL / 365d).
+    - Tradeable ERC-721 passes (`soulbound: false`) tradeable on OpenSea and secondary markets.
+    - Grandfathered all existing active VIP subscribers to Tier 2 (Gold VIP) with zero disruption.
+    - Tiered perk breakdown:
+      - **PGT Faucet**: Silver = 1.5x payout & 21.6h cooldown (-10%); Gold = 2.5x payout & 19.2h cooldown (-20%).
+      - **VIP POL Faucet**: Silver = 1.0x base POL & 21.6h cooldown; Gold = 2.0x base POL & 19.2h cooldown.
+      - **Arcade Daily Caps**: Scaled dynamically from `global_settings.max_daily_plays_per_game` (Silver = 1.5x cap, Gold = 2.0x cap).
+      - **Arcade Payout Multiplier**: Silver = 1.5x PGT; Gold = 2.0x PGT.
+      - **Referral Commission Multiplier**: Silver = 1.2x; Gold = 2.0x.
+      - **Badges**: Distinctive 🥈 `[SILVER VIP]` and 👑 `[GOLD VIP]` badges on all 9 Arcade Leaderboards and Top Holders ranking.
+  - **🏆 Dedicated Leaderboard Multiplier Utility NFTs ([`src/js/features/nft.js`](src/js/features/nft.js), [`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql))**:
+    - Added 3 tradeable Leaderboard Multiplier Utility NFTs in Marketplace & Inventory:
+      - `nft_lb_bronze`: 1.25x (+25%) Weekly Arcade Leaderboard Prize Multiplier @ 50 POL.
+      - `nft_lb_silver`: 1.50x (+50%) Weekly Arcade Leaderboard Prize Multiplier @ 100 POL.
+      - `nft_lb_gold`: 2.00x (+100%) Weekly Arcade Leaderboard Prize Multiplier @ 500 POL.
+    - In `distribute_weekly_arcade_prizes()`, final prizes now scale by the highest bonus between VIP status (1.25x Silver / 2.0x Gold) and Leaderboard NFTs (`GREATEST(v_lb_mult, ...)`).
+  - **🛡️ Strict Anti-Cheat & Trigger Immutability ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`supabase/migration_two_tier_vip_system.sql`](supabase/migration_two_tier_vip_system.sql))**:
+    - Sealed `vip_level` and `vip_until` against direct client mutation in the `prevent_direct_balance_mutation` trigger. On `INSERT` forced to 0 / NULL; on `UPDATE` frozen to `OLD` values.
+    - Validated all security invariants with `scripts/verify_security_invariants.py`.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - Bumped release version to `APP_VERSION = "1.5.547"`.
+
+- **Lucky Spinner Wheel Multiplier Synchronization Fix (`v1.5.546`)**:
+  - **🎡 Database & Visual Wheel Alignment ([`supabase/rpcs/05_casino_minigames.sql`](supabase/rpcs/05_casino_minigames.sql), [`supabase/fix_play_spinner_segments.sql`](supabase/fix_play_spinner_segments.sql), [`src/js/features/spinner.js`](src/js/features/spinner.js))**:
+    - Discovered and corrected a mismatch where the live Supabase `play_spinner` procedure was running a legacy 8-segment model with a non-existent `1.5x` multiplier.
+    - Synchronized `public.play_spinner` to strictly use the canonical 6-segment wheel: `0x` (45%), `1.2x` (25%), `0.5x` (16%), `2.0x` (9%), `5.0x` (3.5%), `10x` (1.5%) with 95.0% RTP.
+    - Hardened client animation in `spinner.js` to strictly map server multipliers directly to their matching visual SVG segment (`0x` -> 0, `1.2x` -> 1, `0.5x` -> 2, `2.0x` -> 3, `5.0x` -> 4, `10x` -> 5), ensuring the needle always points to the exact multiplier awarded.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - Bumped release version to `APP_VERSION = "1.5.546"`.
+
+- **Arcade Test Mode Server & Client Lockdown (`v1.5.545`)**:
+  - **🛡️ Server-Side Test Mode Enforcement ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/enforce_arcade_test_mode_server_lock.sql`](supabase/enforce_arcade_test_mode_server_lock.sql))**:
+    - Hardened `start_arcade_session()` to verify `test_mode` status from `global_settings.game_payout_settings` for each requested game key.
+    - Strictly blocks session issuance with a `test_mode: true` security error unless the calling account is an Admin, Ambassador, or part of the verified tester whitelist (`Master Admin`, `Poss`, `Troubs`).
+    - Eliminates devtools console exploits where unwhitelisted players could execute `start_arcade_session` directly and submit unauthorized game scores.
+  - **🎮 Full-Stack Client Test Mode Gating ([`tetris.js`](tetris.js), [`runner.js`](runner.js), [`q2048.js`](q2048.js), [`src/js/features/games.js`](src/js/features/games.js), [`index.html`](index.html))**:
+    - Embedded `test_mode` checks inside `CyberTetrisGame.start()`, `CyberRunnerGame.start()`, and `Cyber2048Game.start()` before any session request is initiated.
+    - Updated `updateGameTileBadges()` to target `.profile-game-card[data-game-key]` in addition to Arcade grid cards, hiding "Play Tetris / Runner / 2048" buttons on the Player Dashboard from unauthorized accounts when those games are set to test mode.
+  - **🚀 Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - Bumped release version to `APP_VERSION = "1.5.545"`.
+
+- **Public Profile Active Referral Census (L1-L5) & Total Claims Hardening (`v1.5.544`)**:
+  - **👥 Public Profile Direct Active Referrals ([`src/js/features/profile.js`](src/js/features/profile.js), [`index.html`](index.html))**:
+    - Enhanced the Public Player Profile modal to query and display authentic **Active L1 Referrals** (`last_weekly_active_tier` / `weekly_active_tier` between Level 1 Scout and Level 5 Legend).
+    - Excludes dormant accounts (`⚪ L0 Dormant`) from the active count, giving players an accurate snapshot of their real engaged affiliate network.
+    - Added a dedicated `⚡ Active L1 Referrals` metric in the Affiliates card as well as an active indicator under the Downlines badge.
+  - **🛡️ Database Column Compatibility & Resilient Streak Fallbacks ([`src/js/core/db-sync.js`](src/js/core/db-sync.js), [`supabase/quick_fix_restore_total_claims.sql`](supabase/quick_fix_restore_total_claims.sql))**:
+    - Created immediate restoration script for `public.users.total_claims` to eliminate PostgREST 400 Bad Request and 42703 schema errors on page and leaderboard loads.
+    - Hardened `claimStreak` parsing in `db-sync.js` to prioritize modern `faucet_streak` across all local hydration paths.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.544"`.
+
+- **Dedicated Player Activity Tracking (`last_active_at`) & Admin Ledger Inactivity Filters (`v1.5.543`)**:
+  - **⏱️ Dedicated Player Activity Timestamp Architecture ([`supabase/master_schema.sql`](supabase/master_schema.sql), [`supabase/add_last_active_at_tracking.sql`](supabase/add_last_active_at_tracking.sql))**:
+    - Introduced a dedicated `last_active_at TIMESTAMPTZ DEFAULT NOW()` column and index on `public.users` to separate true human engagement from database row mutations (`updated_at`).
+    - Backfilled `last_active_at` across all accounts using authentic historical activity: `GREATEST(created_at, last_faucet_claim, (SELECT MAX(last_seen) FROM user_ips))`.
+    - Updated `prevent_direct_balance_mutation` trigger and game RPCs (`claim_faucet`, `claim_vip_faucet`, `end_arcade_session`) to refresh `last_active_at` strictly on genuine player interactions.
+    - Guaranteed that administrative payout procedures (`snapshot_weekly_activity_tiers`, `distribute_weekly_arcade_prizes`) and backend migrations never touch `last_active_at`, keeping historical inactivity dates 100% accurate.
+  - **💤 Admin Portal Inactivity Filters & Last Active Sorting ([`tools/admin/admin.html`](tools/admin/admin.html), [`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Added an Activity Filter dropdown on the Player Database Ledger: `All Accounts`, `Active (Last 7 Days)`, `Inactive > 30 Days`, `Inactive > 90 Days`, and `Inactive > 1 Year`.
+    - Added a dedicated "Last Active" column to the table displaying human-readable relative activity (`🟢 Today`, `🟢 4d ago`, `🟡 18d ago`, `🟠 2mo ago`, `🔴 8mo ago`, `💀 1.2y ago`) with exact UTC timestamp on hover.
+    - Added clickable column header sorting for "Last Active" (`data-sort="last_active_at"`), allowing instant one-click sorting to bring the most abandoned accounts to the top of the list.
+    - Zero Attack Surface: Kept account deletion strictly server-side / SQL-level as requested, omitting any client-facing delete buttons to protect player safety against compromised sessions.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.543"`.
+
+- **Multi-Game Discord Big Earn Announcements & Test-Mode Auto-Sync (`v1.5.542`)**:
+  - **🏆 Discord Big Earn Announcements Coverage ([`q2048.js`](q2048.js), [`defense.js`](defense.js), [`runner.js`](runner.js), [`tetris.js`](tetris.js), [`drift.js`](drift.js))**:
+    - Connected `sendDiscordEarnAnnouncement()` across all remaining arcade games upon authoritative session settlement.
+    - Added user activity feed entries (`addActivity`) for Cyber 2048, Cyber Runner, and Cyber Tetris.
+    - Cyber 2048 good scores (> 20 PGT) now actively trigger rich "Big earn on Cyber 2048!" notifications in the community `#winners` Discord channel.
+  - **🛡️ Serverless Edge & Client Test-Mode Filter ([`supabase/functions/discord-relay/index.ts`](supabase/functions/discord-relay/index.ts), [`src/js/utils/discord.js`](src/js/utils/discord.js))**:
+    - Updated `discord-relay` Edge Function (v5) to verify `global_settings.game_payout_settings` test mode before dispatching public earn announcements.
+    - Games in test mode (Cyber Defense, Cyber Runner, Cyber Tetris) are automatically silenced from public Discord win posts during testing.
+    - The moment any test game is released (`test_mode: false`) in Admin Settings, its high scores and big payouts will immediately start posting to Discord with zero code or deployment updates required.
+  - **🧹 Cache-Busting Sync ([`index.html`](index.html), [`tools/admin/admin.html`](tools/admin/admin.html))**:
+    - Synchronized all module scripts, game bundles, and stylesheets to `v1.5.542`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.542"`.
+
+- **Dynamic Arcade Discord Announcements & Test-Mode Autonomy (`v1.5.541`)**:
+  - **📢 Dynamic Discord Announcement Iterator ([`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Replaced static announcement fields in `distributeWeeklyArcadePrizes()` and `resendWeeklyArcadeAnnouncement()` with dynamic iteration across all 9 arcade games (`astrododge`, `invaders`, `drift`, `stacker`, `skeet`, `q2048`, `defense`, `runner`, `tetris`).
+    - Dynamically queries fresh `global_settings.game_payout_settings` from Supabase to prevent stale browser memory.
+    - Accurately includes released games (Cyber 2048 with 30,000 PGT) in public Discord totals and fields.
+    - Honors `test_mode: true` flags, automatically hiding test games (Cyber Defense, Cyber Runner, Cyber Tetris) from Discord public announcements until they are toggled to live (`test_mode: false`) in Admin Settings with zero code changes required.
+    - Dynamically computes winner count in `resendWeeklyArcadeAnnouncement()` filtering by active released games.
+  - **🧹 Admin Cache-Busting Refresh ([`tools/admin/admin.html`](tools/admin/admin.html))**:
+    - Updated script and CSS imports from stale versions (`v1.5.388` / `v1.5.527`) to `v1.5.541` to prevent browsers executing outdated cached admin logic.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.541"`.
+
+- **Weekly Winners Archive & Tournament Payout Multi-Game Integration (`v1.5.540`)**:
+  - **🏆 Complete Weekly Winners Archive Coverage ([`src/js/features/profile.js`](src/js/features/profile.js))**:
+    - Added `defense`, `runner`, `q2048`, and `tetris` tournament pools to `gameTitles` and the fallback sub-grouping map in `loadPastWeeklyArchive`.
+    - Expanded historical score extractors to check `defense_score`, `runner_score`, `q2048_score`, and `tetris_score`, ensuring all 9 arcade game snapshots render cleanly in player profile archives.
+  - **📢 Admin Step 1 Discord Announcement Sync ([`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Included Cyber Runner, Cyber 2048, and Cyber Tetris pools in the official Discord announcement broadcast payload in `distributeWeeklyArcadePrizes()`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.540"`.
+
+- **Turnstile Arcade Sentinel Game Pause Hardening (`v1.5.539`)**:
+  - **🛡️ Engine Pause/Resume Coverage ([`src/js/features/arcade-security.js`](src/js/features/arcade-security.js))**:
+    - Added `cyberRunner`, `cyber2048`, and `cyberTetrisGame` engine state references to `pauseAllArcadeGames()` and `resumeAllArcadeGames()`.
+    - Fully completes PLAN-013 Section 6.7 specifications, ensuring zero obstacle/physics bleed if a human verification challenge appears during active play.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.539"`.
+
+- **Ad Removal & Pure Web3 UI Restoration (`v1.5.538`)**:
+  - **🧹 Ad Unit Decommission ([`index.html`](index.html))**:
+    - Completely removed the experimental A-Ads ad unit from the **Win PGT (Bet)** page (`#grid-category-bet`).
+    - Restored the 100% ad-free, pure Web3 gaming layout with full grid spacing and intact badges.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.538"`.
+
+- **A-Ads Banner Placement Optimization (`v1.5.537`)**:
+  - **📢 Game Grid Banner Relocation ([`index.html`](index.html))**:
+    - Relocated the Adaptive A-Ads ad unit (`2457404`) from the top of the category view to directly underneath the game tiles in the betting grid (`#grid-category-bet .nft-grid`).
+    - Configured with `grid-column: 1 / -1; margin-top: 1rem;` to cleanly span beneath Cyber Mines while preserving the right-hand weekly leaderboard sidebar layout.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.537"`.
+
+- **A-Ads Banner Unit Integration for Win PGT (Bet) Page (`v1.5.536`)**:
+  - **📢 Banner Ad Placement ([`index.html`](index.html))**:
+    - Embedded the Adaptive A-Ads ad unit (`2457404`) at the top of the **Win PGT (Bet)** view (`#grid-category-bet`).
+    - Configured clean responsive centering with `margin-bottom: 1.5rem` and fallback min-height styling above the Progressive Jackpot and wagering game selections.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.536"`.
+
+- **Cyber Skeet Server Payout Rate Calibration & Token Grace Buffer (`v1.5.535`)**:
+  - **🎯 Server-Side RPC Formula Calibration ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/fix_cyber_skeet_payout_rate.sql`](supabase/fix_cyber_skeet_payout_rate.sql))**:
+    - Calibrated `end_arcade_session` stored procedure so Cyber Skeet base PGT calculation strictly matches the designed formula: `((clamped_score / 2000.0) + (clamped_items * 0.05)) * global_earn_mult`, eliminating the stale `/ 1000.0` double-rate issue in production.
+    - Added a `+1` grace buffer to token duration rate-clamping (`(duration / 15) + 1`), preventing legitimate token collections in fast or standard rounds (e.g. 5 tokens in 67s) from being truncated.
+    - Increased Cyber Skeet maximum base earn ceiling to 125.00 PGT to accommodate high-combo clay accuracy.
+  - **✨ Client Breakdown & Payout Synchronization ([`skeet.js`](skeet.js))**:
+    - Synced end-game display with server response: reads `serverTokenPgt` directly from `res.bonus_token_pgt` and calculates `verifiedBase` from actual server payout.
+    - Guarantees complete harmony between the game-over headline payout and the itemized multiplier breakdown.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.535"`.
+
+- **UI Refinement: Conceal Global Multiplier in Base Payouts (`v1.5.534`)**:
+  - **✨ End-Game Breakdown Streamlining ([`q2048.js`](q2048.js), [`tetris.js`](tetris.js), [`runner.js`](runner.js))**:
+    - Removed visible `(0.8x Global)` text indicator across game-over payout breakdown displays in **Cyber 2048**, **Cyber Tetris**, and **Cyber Runner**.
+    - The global earn multiplier remains accurately calculated and seamlessly incorporated into the base payout value (`verifiedBase`), keeping player UI clean and focused on personal NFT/VIP multipliers.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.534"`.
+
+- **Mobile Touch Controls & Larger Button Optimization for Cyber 2048 (`v1.5.533`)**:
+  - **📱 Mobile Button Ergonomics & Sizing ([`src/css/features/games.css`](src/css/features/games.css), [`index.html`](index.html))**:
+    - Increased directional D-Pad button sizes on mobile from 68px &times; 38px to 88px &times; 54px (~42% taller and ~30% wider), comfortably exceeding touch target accessibility standards.
+    - Scaled directional arrow indicators from 1.15rem to 1.45rem for improved readability on smartphone screens.
+    - Added instant-response `:active` tactile visual feedback with cyan neon glow and scale transformation.
+    - Set `touch-action: manipulation` and `-webkit-tap-highlight-color: transparent` across all 2048 buttons to eliminate mobile double-tap delays.
+    - Sized in-game action buttons ("Restart Board", "Exit to Arcade") and overlay buttons ("START PUZZLE", "PLAY AGAIN") to comfortable minimum touch targets on mobile devices.
+  - **🚀 Version Bump (`src/js/core/config.js`, `src/css/main.css`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.533"`.
+
+- **Remove Ambassador Bypass from Arcade Turnstile Sentinel (`v1.5.532`)**:
+  - **🛡️ Server-Side Turnstile Sentinel Policy Realignment ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/remove_ambassador_turnstile_bypass.sql`](supabase/remove_ambassador_turnstile_bypass.sql))**:
+    - Removed hardcoded `is_ambassador` exemption from `start_arcade_session`.
+    - Turnstile bot challenges now uniformly apply to all players based on the configured frequency threshold (`turnstile_arcade_frequency`), with bypass exclusively governed by the configurable VIP bypass switch (`turnstile_arcade_vip_bypass`) for active VIP pass holders.
+    - Updated `start_arcade_session` return object to include authoritative `completed_since_turnstile` count on session initialization.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.532"`.
+
+- **Instant Auto-Refund on MetaMask Rejection & Live Queue Verification (`v1.5.531`)**:
+  - **⚡ Immediate Balance Rollback on Wallet Rejection ([`src/js/features/withdraw.js`](src/js/features/withdraw.js))**:
+    - Fixed JavaScript lexical scoping bug where `activeNonce` was trapped inside the `try` block and inaccessible in `catch (err)`.
+    - Promoted `activeNonce` and `withdrawAmount` to function scope in `executeWithdrawPGT()`, ensuring that any rejected or cancelled MetaMask transaction immediately triggers the `refund_failed_withdrawal` RPC on the spot.
+    - Atomically restores the player's full off-chain PGT balance, removes pending manual queue entries, cleans up unconsumed vouchers, updates `appState`, and syncs the open withdrawal modal instantly.
+    - Extended the startup self-healing verification from 24 hours to 7 days to rescue any historical unconsumed vouchers.
+  - **🔍 Live On-Chain Nonce Verification in Admin Queue ([`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Replaced hardcoded `"0.5 POL fee paid"` text with dynamic on-chain query to `usedNonces(instant_nonce)` on Polygon Mainnet.
+    - Clearly distinguishes between claimed vouchers (`✓ Claimed (0.5 POL fee paid)`) and abandoned/cancelled vouchers (`⚠️ Unclaimed (0.5 POL NOT paid)`).
+    - Added warning tooltips on the `"👑 Mint & Complete"` button to alert the admin when an instant voucher was never claimed on-chain.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.531"`.
+
+- **Proactive Security Hardening: Anti-Framing, RPC Search-Path Locks & Username Defense (`v1.5.530`)**:
+  - **🛡️ Anti-Framing Clickjacking Defense ([`index.html`](index.html))**:
+    - Embedded early frame-busting sentinel in the HTML document `<head>`. If PolyGame is framed by unauthorized external phishing or clickjacking iframes, the script busts out to `window.self.location` or immediately blanks the framed document.
+  - **🔒 Stored Procedure Search-Path Lockdown ([`supabase/proactive_security_hardening_v1530.sql`](supabase/proactive_security_hardening_v1530.sql), [`supabase/rpcs/`](supabase/rpcs/), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Added explicit `SET search_path = public, extensions` (and `public, auth, extensions`) across all 80+ PostgreSQL `SECURITY DEFINER` stored procedures. Completely shields against schema search-path hijacking attacks and satisfies Supabase Database Advisor guidelines.
+  - **👤 Database & Client Username Hardening ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`src/js/core/state.js`](src/js/core/state.js))**:
+    - Hardened `prevent_direct_balance_mutation` trigger on INSERT and UPDATE: clamps usernames to 30 characters, strips HTML markup (`<>&"'`) and ASCII control characters, and blocks non-admins from spoofing administrative titles (`admin`, `moderator`, `official`, `support`, `system`).
+    - Added defensive XSS escaping across activity feed renderer using `escapeHtml()`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.530"`.
+
+- **Split Withdrawal Atomic Rollback & Real-Time Discord Admin Alerts (`v1.5.529`)**:
+  - **🛡️ Enhanced Split Withdrawal Rollback ([`supabase/enhance_split_withdrawal_rollback.sql`](supabase/enhance_split_withdrawal_rollback.sql), [`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`src/js/features/withdraw.js`](src/js/features/withdraw.js))**:
+    - Upgraded `refund_failed_withdrawal` RPC to atomically rollback both the instant voucher amount AND the manual queued remainder if a player's on-chain transaction fails or is rejected in MetaMask, safely removing unconsumed pending rows from `manual_withdrawals_queue`.
+    - Updated client rollback handler to accurately restore and toast the full composite refund amount to the player's balance.
+  - **📢 Real-Time Discord Webhook Alerts ([`src/js/features/withdraw.js`](src/js/features/withdraw.js), [`tools/admin/admin.js`](tools/admin/admin.js), [`supabase/functions/discord-relay/index.ts`](supabase/functions/discord-relay/index.ts))**:
+    - Dispatches real-time embedded notification to the private Admin Discord channel whenever a player initiates a high-value split withdrawal request (> 3,000 PGT) with breakdown of instant vs queued tokens and recipient wallet address.
+    - Added Discord webhook confirmation in Admin Portal when manual withdrawals are rejected and refunded.
+    - Whitelisted `WITHDRAWAL` and `MANUAL_WITHDRAWAL` categories in `discord-relay` Edge Function (deployed v4).
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.529"`.
+
+- **Withdrawal Modal Clean-up & Admin MetaMask Multi-Account Prompt (`v1.5.528`)**:
+  - **🧹 Cleaned Withdrawal UI ([`index.html`](index.html))**:
+    - Completely removed the lingering Discord contact prompt at the bottom of the withdrawal modal under the Confirm button.
+  - **👑 Master Admin Wallet Selector Prompt ([`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Enhanced `approveAndMintManualPgt`: Automatically prompts MetaMask account picker (`wallet_requestPermissions`) if another wallet account (e.g., player test account) is currently selected in the browser.
+    - Added automatic network switch request (`wallet_switchEthereumChain`) to Polygon Mainnet (137).
+    - Clear UI toast identifying the Master Admin wallet address (`0x10B9...654d`) signing the transaction before submitting the mint.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.528"`.
+
+- **Uncapped Withdrawal Architecture & Modal Polish (`v1.5.527`)**:
+  - **💸 Uncapped Withdrawal Interface ([`src/js/features/withdraw.js`](src/js/features/withdraw.js), [`index.html`](index.html))**:
+    - Completely removed the redundant *"Need a higher limit? Contact admin on Discord"* prompt from the withdrawal modal.
+    - Updated limits card to explicitly state that there is **No Maximum Limit**:
+      - `Instant On-Chain Claim: Min: 10 • Up to 3,000 PGT`
+      - `Above 3,000 PGT: No Max (Approved by Admin)`
+    - Enhanced split notification banner dynamically showing instant vs admin-approved breakdown when users request amounts above the 3,000 PGT instant threshold.
+  - **⚙️ Config & Admin Fallbacks ([`tools/admin/admin.html`](tools/admin/admin.html), [`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Calibrated Admin manual payouts queue table and HUD labels for the active 3,000 PGT voucher threshold.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.527"`.
+
+- **Hybrid Split Withdrawal Model & Master Admin Minting Queue (`v1.5.526`)**:
+  - **💸 Hybrid Split Withdrawal Architecture ([`src/js/features/withdraw.js`](src/js/features/withdraw.js), [`index.html`](index.html))**:
+    - Enhanced token withdrawal flow: players can request cashouts exceeding `max_withdraw_pgt` (5,000 PGT).
+    - Up to 5,000 PGT is minted instantly on-chain via the standard cryptographic voucher, guaranteeing payment of the 0.5 POL network protocol fee on-chain.
+    - Excess amounts exceeding 5,000 PGT are automatically queued into `public.manual_withdrawals_queue` for manual Administrator review and direct on-chain minting.
+    - Added dynamic live UI split notice container (`#withdraw-split-notice`) rendering instant vs manual queued breakdown with fee breakdown in real time as players type amounts.
+  - **🛡️ Server-Side Split & Atomic Queue Logic ([`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`supabase/master_schema.sql`](supabase/master_schema.sql))**:
+    - Upgraded `request_withdrawal_voucher` RPC: atomically deducts the total balance, logs the 5,000 PGT instant claim in `withdrawals_history`, logs the remainder into `manual_withdrawals_queue`, and returns split metadata.
+    - Preserves security gates: permanently suspended and quarantined accounts (`withdrawals_disabled = true`) cannot initiate automatic or split withdrawals.
+  - **👑 Master Admin 1-Click Mint & Queue Portal ([`tools/admin/admin.html`](tools/admin/admin.html), [`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Created `#admin-manual-withdrawals-card` and header HUD notification pill (`#admin-hud-manual-withdraw-pill`) in the Admin Operations Portal.
+    - Implemented `loadManualWithdrawalsQueue()`: Displays pending cashout requests with recipient wallet links, fee status, and user ban/quarantine state.
+    - Implemented `approveAndMintManualPgt()`: Prompts MetaMask from Master Admin wallet to call `PolyGameToken.mint(recipient, amount)` directly on Polygon, records `tx_hash`, and marks request as completed.
+    - Implemented `rejectManualWithdrawal()`: Prompts for rejection reason and invokes `admin_reject_manual_withdrawal` RPC to atomically refund the token balance back to the player.
+    - Implemented `toggleUserWithdrawalLock()`: 1-click `🔒 Lock W/D` / `🔓 Unlock W/D` toggle directly in the Player Database Ledger table with dynamic badges.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `sw.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.526"`.
+
+- **Anti-Cheat Withdrawal Sentinel: Sybil Farm Quarantine & Dynamic Bot Loop Sentinel (`v1.5.525`)**:
+  - **🛡️ Withdrawal Quarantine Column & Index ([`supabase/master_schema.sql`](supabase/master_schema.sql))**:
+    - Added `withdrawals_disabled BOOLEAN DEFAULT false` and `idx_users_withdrawals_disabled` to `public.users`. Allows accounts to continue playing arcade games and generating on-site activity metrics while fully preventing on-chain token extraction.
+  - **🤖 Dynamic Cadence Bot Heuristic & Static Quarantine Gate ([`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Upgraded `request_withdrawal_voucher` RPC:
+      1. **Static Lock**: Explicitly rejects vouchers for quarantined accounts (`withdrawals_disabled = true`) with a security verification notice directing them to Discord.
+      2. **Dynamic Timing Sentinel**: Automatically inspects recent completed arcade session start intervals for fixed-frequency loops (< 0.25s timing jitter, e.g. 67.7s Drift bot or 590s Invaders cron). If $\ge 5$ suspicious fixed intervals are detected within the last 7 days, the account is automatically locked from future withdrawals without manual admin intervention.
+      3. **Safe Incident Logging**: Logs security telemetry directly to `public.bot_security_logs` to avoid accumulating warning counts that would prematurely trigger full gameplay bans.
+  - **📑 Forensic Audit Dossier & Ready-to-Apply Migrations**:
+    - Documented complete technical proof in [`docs/security/AUDIT_SYBIL_FARM_PAUL_V.md`](docs/security/AUDIT_SYBIL_FARM_PAUL_V.md).
+    - Prepared standalone migration [`supabase/lock_sybil_farm_and_enable_autodetect_withdrawals.sql`](supabase/lock_sybil_farm_and_enable_autodetect_withdrawals.sql).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.525"`.
+
+- **Mobile Web3 Auth Session Resilience & Self-Healing Referral / Faucet Harvesting (`v1.5.524`)**:
+  - **🔐 Active Supabase Auth Session Validator ([`src/js/core/auth-web3.js`](src/js/core/auth-web3.js))**:
+    - Implemented and exported `ensureValidSupabaseSession()`: Inspects `supabase.auth.getSession()` directly to ensure an unexpired, active JWT bearer token exists before invoking authenticated database RPCs.
+    - Corrected `isMetaMaskInApp` detection: Replaced restrictive `&&` condition with `window.ethereum.isMetaMask || /MetaMask/i.test(navigator.userAgent)`, preventing Android MetaMask in-app browser from erroneously firing external `metamask://` deep links during EIP-4361 SIWE signature requests.
+  - **🌾 Self-Healing Referral Rewards Harvesting ([`src/js/features/referrals.js`](src/js/features/referrals.js))**:
+    - Replaced naive `activeSt.state.authUserId` check with `await ensureValidSupabaseSession()`. Resolves the bug where stale `authUserId` persisted in `localStorage` caused mobile browsers with expired JWT tokens to bypass interactive authentication and invoke `harvest_referral_rewards` as `anon`, triggering PostgreSQL error `42501 permission denied`.
+    - Added self-healing retry on `permission denied`: Automatically prompts 1-click wallet SIWE re-authentication and retries the harvest RPC without requiring page reload.
+  - **⚡ Faucet & VIP Faucet Claim Session Resilience ([`src/js/features/faucet.js`](src/js/features/faucet.js))**:
+    - Added self-healing re-authentication retry logic to `claim_faucet` and `claim_vip_faucet` when a mobile user's JWT expires during background tab hibernation.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.524"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
+- **Discord Relay Edge Function Security Hardening & Exploit Seal (`v1.5.523`)**:
+  - **🛡️ Channel & Action Isolation Matrix ([`supabase/functions/discord-relay/index.ts`](supabase/functions/discord-relay/index.ts))**:
+    - **Sealed Public Embed Injection**: Strictly isolated `channel: 'main'` (#winners) so that ONLY pre-templated server-constructed announcements (`earn_announcement`, `win_announcement`, `jackpot_announcement`) are permitted. Any attempt to send unauthenticated `admin_alert`, arbitrary ANSI text, custom descriptions, or custom fields to public channels is now rejected immediately with `403 Forbidden`.
+    - **Admin Alert Locking**: Restricted `action: 'admin_alert'` strictly to `channel: 'admin'`. Added Master Admin Passkey authentication (`verify_admin_passkey`) for custom alerts, with non-passkey alerts restricted to whitelisted system sentinel categories (`SECURITY`, `MULTI_ACCOUNT`, `BOT_DETECTION`) and sanitized against ANSI code injection and mention abuse.
+    - **Dedicated Jackpot Action**: Added `jackpot_announcement` action with a rigid server-constructed embed template and input sanitization, replacing arbitrary client alert calls.
+  - **📱 Client Utility Synchronization ([`src/js/utils/discord.js`](src/js/utils/discord.js))**:
+    - Updated `sendDiscordJackpotWin` to invoke `jackpot_announcement` on `channel: 'main'` with structured parameters.
+    - Updated `sendDiscordAlert` to route to `channel: 'admin'` only.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.523"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
+- **Cyber Runner Blast Wall Aesthetic Polish: Removed "BLOCKED" Text (`v1.5.522`)**:
+  - **🚧 Vector Blast Barrier Refinement ([`runner.js`](runner.js))**:
+    - Removed the redundant `"BLOCKED"` text label from the reinforced blast barrier obstacle (spawning at ~45-50s) in favor of a sleek, pure cyberpunk aesthetic.
+    - Centered and scaled the procedural glowing hazard triangle with internal vector exclamation mark (`!`) directly at the structural midpoint of the blast wall, flanked by carbon steel pylons, hazard chevrons, diagonal trusses, and pulsing overhead strobe beacons.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.522"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
+- **Fullscreen Mobile Touch Swipe Gestures Anywhere on Screen (`v1.5.521`)**:
+  - **📱 Screen-Wide Swipe & Tap Controls ([`tetris.js`](tetris.js), [`runner.js`](runner.js), [`q2048.js`](q2048.js))**:
+    - **Cyber Tetris**: Migrated touch gesture listeners from the narrow `#tetris-canvas` element to `window`, allowing swipes, soft drops, hard drops, and rotate taps anywhere across the entire mobile screen (including letterboxed side and top margins). Added fluid multi-column horizontal sliding, swift upward/downward flick hard drops, and tap-to-rotate outside interactive buttons.
+    - **Cyber Runner**: Migrated touch gesture listeners from `#panel-game-runner` to `window`. Replaced sluggish `touchend` evaluation with instant `touchmove` lane-switch, jump, and slide detection (24px threshold), completely eliminating input latency and obstacle collision delays.
+    - **Cyber 2048**: Migrated touch listeners to `window` with instant `touchmove` 4-directional matrix shifting (26px threshold), allowing smooth swiping anywhere across the display.
+    - **Interactive Exclusion Safety**: All games guard virtual HUD buttons, side controls (Hold/Pause), and overlay menus (`closest('button, a, .btn-secondary, [id$="-controls-hud"], .tetris-side-col, .game-overlay')`) so tapping on-screen controls never triggers accidental swipes or rotations.
+  - **📐 Viewport Lock & Fullscreen Responsive Rules ([`src/css/features/games.css`](src/css/features/games.css))**:
+    - Added `#panel-game-runner` and `#panel-game-q2048` to the `.game-window-container.fullscreen-active` and `.mobile-fullscreen-active` 100vw/100vh layout rules.
+    - Enforced `touch-action: none !important;` across all arcade panels and boards to prevent mobile browser pull-to-refresh, elastic rubber-banding, or scroll interference during active play.
+    - Added responsive board wrapper constraints for `#panel-game-q2048` in fullscreen mode to guarantee full visibility on all mobile aspect ratios.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.521"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
+- **Cyber Tetris Speed Progression Pacing & Longer Survival Sessions (`v1.5.520`)**:
+  - **⏱️ 2x Slower Gravity Acceleration ([`tetris.js`](tetris.js), [`index.html`](index.html))**:
+    - Calibrated the level speed progression curve to ramp up twice as slowly, doubling average game duration and giving players significantly more room to strategize and enjoy each level theme.
+    - Time-based level progression scaled from +1 level every 7 seconds to +1 level every 15 seconds.
+    - Line-based level progression scaled from +1 level every 10 lines to +1 level every 20 lines.
+    - Lock delay decay softened to scale at `500 - (level * 6)` ms instead of `500 - (level * 12)` ms, preserving maneuverability at higher speeds.
+    - Updated start overlay description in [`index.html`](index.html) to reflect the extended survival duration (5 to 6 minutes vs 3 minutes).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.520"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
+- **Cyber Runner Obstacle Vector Graphics & Missing Emoji Glyphs Fix (`v1.5.519`)**:
+  - **🚧 Procedural Reinforced Blast Wall ([`runner.js`](runner.js))**:
+    - Replaced the placeholder flat cyan rectangle and system font `⚠️ BLOCKED` text on the `fullWall` obstacle (which begins spawning at ~45-50s) with a procedural neon cyberpunk blast barrier.
+    - Added heavy industrial steel anchor pylons, dark armor plating with neon crimson accents, reinforced diagonal warning hazard cross-trusses (`X` brace), glowing procedural vector caution triangle with exclamation mark `!`, bold clean ASCII `BLOCKED` text, and flashing overhead warning strobe beacons.
+    - Completely eliminated font rendering dependency, ensuring no device ever displays an unknown character `?` glyph.
+  - **💎 Procedural Collectible & Powerup Icons ([`runner.js`](runner.js))**:
+    - Converted shield, magnet, and 2X overdrive powerup pickups from system emoji text (`🛡️`, `🧲`, `⚡2X`) to procedural vector canvas art (vector shield crest with cyber cross, U-shaped horseshoe magnet with silver magnetic poles, and high-energy lightning bolt with `2X` badge).
+    - Sanitized HUD powerup active badge labels to clean ASCII strings (`SHIELD READY`, `MAGNET (...)`, `TURBO 2X (...)`).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.519"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
+- **Cyber Tetris Mobile Layout Refinement: Single Right Sidebar & Screen Clipping Elimination (`v1.5.518`)**:
+  - **📱 Single Right-Side HUD Column ([`index.html`](index.html), [`tetris.js`](tetris.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Replaced the two-column sidebar layout (which occupied over 190px and caused the matrix to clip off the right edge of mobile screens) with a single compact right-hand column (`#tetris-side-col`, 76px–80px).
+    - Consolidated `HOLD (C)` preview box, `📦 HOLD` tap button, `NEXT (3)` queue box, and `⏸ PAUSE` button into the right sidebar.
+  - **📐 Zero-Clipping Dynamic Matrix Scaling ([`tetris.js`](tetris.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Overhauled `resizeCanvases()` to dynamically compute `cellSize` constrained by BOTH available width (`window.innerWidth - sidebarWidth - gap - padding`) and available height (`window.innerHeight - reservedHeight`).
+    - Added `flexShrink: '0'` and explicit pixel dimensions to `#tetris-board-wrapper`, preventing flexbox from shrinking the container and clipping the 9th/10th columns.
+    - Integrated `cyberTetrisGame.resizeCanvases()` into `exitGameFullscreen` and `fullscreenchange` event listeners in [`src/js/app.js`](src/js/app.js).
+  - **🧹 Clean Fullscreen Gameplay UI ([`index.html`](index.html))**:
+    - Removed the redundant bottom action buttons (`🔄 Restart Game` and `← Exit to Arcade`) from the active fullscreen gameplay page under the mobile controls HUD.
+    - Integrated dedicated `▶ RESUME`, `🔄 RESTART`, and `← EXIT TO ARCADE` actions cleanly inside the Pause overlay (`#tetris-pause-screen`) and Start overlay (`#tetris-start-screen`).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.518"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
+- **Cyber 2048 Economy Rebalance: 3x Fewer Bonus Coins & 2x Reduced Base Earn (`v1.5.517`)**:
+  - **🪙 Rebalanced Bonus PGT Coins & Milestones ([`q2048.js`](q2048.js), [`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
+    - Rare bonus coin spawn interval increased 3x (from 28 moves to 85 moves), preventing board overcrowding and making coin harvests genuinely rare.
+    - Milestone merge bonus tokens reduced ~3x (11 total to 2048 -> 4 total: 512: 1, 1024: 1, 2048: 2, 4096: 3).
+    - Session bonus tokens hard-capped to 8 tokens (max 40.00 PGT bonus vs 100.00 PGT previously).
+  - **📉 2x Base Earn Reduction ([`q2048.js`](q2048.js), [`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
+    - Base earn multiplier reduced by 2x from 5.0x to 2.5x (`((cleanScore / 2500.0) + (finalTokens * 0.5)) * 2.5`).
+    - Base earn ceiling aligned to 75.00 PGT across client and server.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.517"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
+- **Turnstile Security Integration Fix & Anti-Cheat Sentinel Debounce (`v1.5.516`)**:
+  - **🛡️ Resolved Missing Turnstile Client Module Handshake ([`src/js/app.js`](src/js/app.js))**:
+    - Fixed missing import of `arcade-security.js` in `src/js/app.js`, ensuring `window.arcadeSecurity` is always initialized to render the Cloudflare Turnstile verification challenge when triggered by server frequency sentinels.
+  - **⚡ Resilient Session Initiation & Button Debounce ([`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js))**:
+    - Added click debouncing (`isStarting` guard) and resilient error handling across Cyber Runner, Cyber 2048, and Cyber Tetris `start()` methods to prevent button multi-clicking or frozen overlays if an arcade session fails to start.
+  - **🛡️ Database Sentinel Rapid-Click Protection ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/unban_poss_account.sql`](supabase/unban_poss_account.sql))**:
+    - Debounced Turnstile unverified attempt counting (3-second window) to ignore fast human clicks and prevent false-positive auto-bans.
+    - Added Ambassador exemption alongside Admin exemption and activated VIP Turnstile bypass (`turnstile_arcade_vip_bypass = true`).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.516"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
+- **Global Sound Mute Synchronization & Arcade Anti-Cheat Calibration (`v1.5.515`)**:
+  - **🔊 Site-Wide SFX Mute Handshake ([`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js))**:
+    - Connected Cyber Runner, Cyber 2048, and Cyber Tetris sound engines directly to the global audio status (`window.sfx.enabled`). Toggling sound OFF via the site header now instantly silences all 3 games.
+  - **🛡️ Server Anti-Cheat & Velocity Bounds Calibration ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/align_arcade_anticheat_and_remove_runner_185s_limit.sql`](supabase/align_arcade_anticheat_and_remove_runner_185s_limit.sql))**:
+    - Removed obsolete 185s survival limit bot warning in Cyber Runner (aligns with endless supersonic runner curve).
+    - Calibrated velocity and score rate bounds: 450 pts/s (Runner), 250 pts/s (2048), and 350 pts/s (Tetris) with standardized 500,000 pts upper security ceiling matching tournament submission RPCs.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.515"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
+- **Cyber Tetris Audio Optimization & Level-Up Sound Muting (`v1.5.514`)**:
+  - **🔇 Muted Level Advancement Audio SFX ([`tetris.js`](tetris.js))**:
+    - Silenced the repetitive synthesizer sweep triggered on level increments (`level_up` audio handler muted per player request).
+    - Preserved visual phase shifts, floating badges, board glowing transitions, and all essential gameplay audio (line clears, tetris fanfare, hard drops, and 5 PGT bonus coin chimes).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.514"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
+- **Arcade Payout Economy Boost for Cyber Runner (5x), Cyber 2048 (5x) & Cyber Tetris (3x) (`v1.5.513`)**:
+  - **⚡ Scaled Base PGT Payout Multipliers ([`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js))**:
+    - **Cyber 2048 (5x Earn Boost)**: Re-balanced base earn formula to `(((score / 2500.0) + (tokens * 0.5)) * 5.0) * globalEarnMult` (yielding 5x higher base PGT per merged quantum tile and milestone). Raised base earn ceiling to 150.00 PGT.
+    - **Cyber Tetris (3x Earn Boost)**: Re-balanced base earn formula to `(((score / 2000.0) + (lines * 0.05)) * 3.0) * globalEarnMult` (yielding 3x higher base PGT per cleared line and combo drop). Raised base earn ceiling to 150.00 PGT.
+    - **Cyber Runner (5x Earn Boost)**: Re-balanced base earn formula to `(((score / 2000.0) + (shards * 0.04)) * 5.0) * globalEarnMult` (yielding 5x higher base PGT for cyber distance, acrobatic vaults/slides, and quantum shards). Raised base earn ceiling to 150.00 PGT.
+  - **🗄️ Database RPC & Anti-Cheat Sentinel Parity ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/boost_runner_2048_tetris_arcade_payouts.sql`](supabase/boost_runner_2048_tetris_arcade_payouts.sql))**:
+    - Updated PostgreSQL stored procedure `public.end_arcade_session` with exact 5x (Runner, 2048) and 3x (Tetris) multiplier scaling and 150.00 PGT base cap.
+    - Calibrated velocity anti-cheat sentinels: raised `v_max_velocity_rate` to `1.75` PGT/sec for Cyber Runner and `1.25` PGT/sec for Cyber 2048 and Tetris, ensuring high-scoring skilled runs are never throttled.
+    - Created standalone migration [`supabase/boost_runner_2048_tetris_arcade_payouts.sql`](supabase/boost_runner_2048_tetris_arcade_payouts.sql) and rebuilt `supabase/master_rpcs.sql`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.513"` and refreshed cache busting on all scripts and stylesheets.
+
+- **Endgame Payout Popup Standardization for Cyber Runner, Cyber 2048 & Cyber Tetris (`v1.5.512`)**:
+  - **🏆 Standardized Endgame Breakdown UI ([`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js), [`index.html`](index.html))**:
+    - Aligned the game over popup layout across all three new games to match the established standard in AstroDodge, Cyber Drift, and Cyber Invaders.
+    - **Base PGT Display**: Dynamically displays authoritative verified base earnings (`Base: X.XX PGT`) factoring in global earn multiplier boosts (`(X.Xx Global)`).
+    - **Compound Multiplier Display**: Clearly showcases player multiplier breakdown (`Multiplier: X.Xx (NFT% + VIP + Ambassador + S1 Apex Relics)`).
+    - **Final Payout Display**: Prominently features the authoritative final payout (`Final Payout: +X.XX PGT`) with clear distinction for rare 5 PGT bonus tokens (`+ X PGT Bonus`) or admin harvest pause / daily limit states.
+    - Synchronized DOM structure in [`index.html`](index.html) with clean ordering: Final Score, Game Stats (Distance, Max Tile, Lines), Acrobatics/Bonus Coins, Base & Multiplier breakdown, and Final Payout badge.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.512"` and refreshed cache busting query parameters across all scripts and stylesheets.
+
+- **Admin Operations Portal Integration for Cyber Runner, Cyber 2048 & Cyber Tetris (`v1.5.511`)**:
+  - **📊 Arcade Games (Earn) Metrics Table ([`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Integrated **Cyber Runner**, **Cyber 2048**, and **Cyber Tetris** into the live Arcade Games (Earn) table on the Admin Operations Portal (`http://localhost:8080/tools/admin/admin.html`).
+    - Added normalization and fallback metrics extraction mapping `runner`, `2048`/`q2048`, and `tetris` arcade session logs to compute real-time playtime, payouts since reset, earn rates (PGT/min), and all-time earnings.
+    - Updated player activity aggregation (`userArcadePayouts`) to track runner, 2048, and tetris payout events.
+    - Enhanced admin player directory table sorting and arcade scorecard tooltips to include all 9 games.
+  - **🔄 Weekly Operations & Reset Sync ([`tools/admin/admin.js`](tools/admin/admin.js), [`tools/admin/admin.html`](tools/admin/admin.html), [`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Updated `resetArcadeMetrics()` prompt and fallback games list to reset stats across all 9 arcade titles.
+    - Synchronized weekly tournament pipeline score resets and career all-time highscore preservation for Runner, 2048, and Tetris.
+    - Added `loadRunnerLeaderboard()`, `loadQ2048Leaderboard()`, and `loadTetrisLeaderboard()` to live UI refresh sequences in admin pipeline and highscore submissions.
+    - Updated Turnstile Anti-Bot Shield and Step 1 tournament payout descriptions in [`tools/admin/admin.html`](tools/admin/admin.html).
+  - **🗄️ Database & RPC Sync ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`supabase/add_new_arcade_games_to_metrics.sql`](supabase/add_new_arcade_games_to_metrics.sql))**:
+    - Added `game_metrics` update block to `end_arcade_session()` RPC to guarantee live database metrics increments.
+    - Updated `reset_arcade_game_metrics()` stored procedure to zero `game_metrics` for all 9 games.
+    - Rebuilt `supabase/master_rpcs.sql` and created database seed migration `[supabase/add_new_arcade_games_to_metrics.sql](supabase/add_new_arcade_games_to_metrics.sql)`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.511"` and refreshed cache busting on all scripts and stylesheets.
+
+- **Arcade Multipliers Synchronization & Endgame Breakdown Display (`v1.5.510`)**:
+  - **⚡ Real-Time Multipliers & Breakdown Display ([`tetris.js`](tetris.js), [`index.html`](index.html))**:
+    - Resolved client-side display desynchronization where Cyber Tetris previously attempted to call non-existent `window.PolyState.calculateTotalMultiplier`, causing client breakdown labels to remain static at `1.00x` despite server-side multipliers (e.g. 2.40x) applying properly.
+    - Synchronized multiplier retrieval via `appState.getMultipliers()`, dynamically calculating compound multipliers across Utility NFTs, S1 Apex Relics, and active VIP pass.
+    - Moved breakdown calculation to execute immediately upon game over, ensuring the player instantly sees `NFT: X.XXx • Relics: X.XXx • VIP: X.Xx (Total: X.XXx)`.
+    - Fixed `#tetris-final-coins` element nesting so bonus coins display with full label `🪙 Bonus Coins: 0 (0.00 PGT)` instead of overwriting with a raw number.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.510"` and purged service worker cache to ensure immediate browser asset updates.
+
+- **Neon Matrix Level Shift in Tetris & Rare 5 PGT Bonus Coins Across Arcade Suite (`v1.5.509`)**:
+  - **🌌 Neon Matrix Level Shift in Cyber Tetris ([`tetris.js`](tetris.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - **Atmospheric Phase Transitions**: Implemented dynamic visual phase shifts tied to player level progression across 5 distinct aesthetic tiers:
+      - *Level 1–4*: **Cyan Nebula** (`#00f0ff` accent, deep dark cyan canvas)
+      - *Level 5–9*: **Synth Violet** (`#a855f7` accent, dark synth purple canvas)
+      - *Level 10–14*: **Laser Magenta** (`#ec4899` accent, dark laser magenta canvas)
+      - *Level 15–19*: **Cyber Amber** (`#f59e0b` accent, dark cyber amber canvas)
+      - *Level 20+*: **Quantum Overdrive** (`#10b981` accent, deep quantum emerald canvas)
+    - Grid line rendering, canvas background, `#tetris-board-wrapper` neon box shadow, and the HUD level indicator dynamically synchronize to active level atmospheres.
+    - Added celebratory dual-oscillator ascending arpeggio and animated floating callout on level thresholds.
+  - **🪙 Universal Rare 5 PGT Bonus Coin Mechanics**:
+    - **Cyber Tetris ([`tetris.js`](tetris.js), [`index.html`](index.html))**:
+      - Embeds a rare golden 5 PGT coin mino within a tetromino every 18–30 pieces, announced with audio chime and a floating `"🪙 5 PGT COIN PIECE!"` badge.
+      - Clearing the line containing the coin harvests the token (+500 pts, audio chime, toast, and floating harvest badge).
+      - Added `#tetris-coins-val` to HUD and `#tetris-final-coins` to Game Over overlay, submitting harvested tokens to `endArcadeSession` (1 token = 5.0 PGT server-side).
+    - **Cyber Runner ([`runner.js`](runner.js), [`index.html`](index.html))**:
+      - Throttled coin spawning to a rare event (minimum 35s cooldown with ~35% spawn chance), preserving shards as common collectibles.
+      - Rendered 3D rotating gold token with embossed `"5"` and specular glint sparks.
+      - Collecting awards +5 PGT (or +10 PGT during 2X Overdrive), animated floating callout, and toast notification.
+      - Updated HUD and Game Over acrobatics summary to display total coins collected and PGT yield.
+    - **Cyber 2048 ([`q2048.js`](q2048.js), [`index.html`](index.html), [`src/css/features/games.css`](src/css/features/games.css))**:
+      - Rare 5 PGT coin spawns on an empty grid cell every 28–36 moves with an 8-move expiration countdown.
+      - Rendered with animated gold-dashed pulsing cell (`.q2048-coin-cell`) showing 🪙 icon, `"5 PGT"`, and remaining moves countdown.
+      - Sliding a tile into the cell claims the coin (+1 bonus token, +500 pts, audio chime, toast, and floating badge).
+      - Added `#q2048-final-tokens` to Game Over overlay and submitted tokens directly to `endArcadeSession`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.509"` and refreshed service worker cache.
+
+- **Cyber Runner Acrobatic Vault & Slide Trick Bonus System (`v1.5.508`)**:
+  - **⚡ Risk-Reward Acrobatics Engine & Scoring ([`runner.js`](runner.js))**:
+    - Solved gameplay balance where swerving around obstacles was previously easier with no incentive to jump or slide.
+    - Implemented lane-aligned acrobatics detection: executing a clean jump over a low barrier (`this.y >= 16`) or slide under a laser hurdle (`this.isSliding && this.y <= 12`) in the obstacle's direct lane (`|laneX - obs.lane| <= 0.52`) now awards **+75 Trick Bonus Points** (doubled to **+150 Points** during 2X Overdrive).
+    - Swerving to an open lane allows safe passage, but awards zero trick bonus points.
+  - **🔥 Consecutive Trick Streaks & Pitch-Ascending Synthesizer ([`runner.js`](runner.js))**:
+    - Chaining consecutive vaults and slides within 2.5s increments an acrobatics streak counter with animated floating neon callouts (`"⚡ VAULT x2! +75"`, `"🌀 SLIDE x3! +75"`, etc.).
+    - Created procedural Web Audio synthesizer SFX (`'trick'`) featuring a crisp triangle arpeggio (D5 -> A5 -> D6) whose frequency scales dynamically with the active trick streak.
+    - Erupts neon spark particles upon executing vaults (cyan `#00f0ff`) and slides (gold `#ffd700`).
+  - **📊 Game Over Acrobatics Breakdown & UI Polish ([`index.html`](index.html), [`runner.js`](runner.js))**:
+    - Added dedicated `#runner-final-tricks` statistics row to the Game Over overlay showing total vaults, slides, and trick score earned.
+    - Updated the start screen guide to highlight the +75 Trick Points reward for vaulting and sliding under obstacles.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.508"` and refreshed service worker cache.
+
+- **Cyber Tetris Matrix Initialization & Safe Line Clearing (`v1.5.507`)**:
+  - **🛡️ Pre-Initialized Board Matrix in Constructor ([`tetris.js`](tetris.js))**:
+    - Fixed client-side runtime exception (`Uncaught TypeError: Cannot read properties of undefined (reading '0') at tetris.js:832:36`) caught by the Discord Security Sentinel.
+    - When navigating to the Cyber Tetris tab in the arcade lobby, `src/js/features/games.js` triggers `window.cyberTetrisGame.render()` to paint the idle matrix preview before the match starts.
+    - Pre-initialized `this.board` as a full $22 \times 10$ matrix (`Array.from({ length: this.totalRows }, () => Array(this.cols).fill(null))`) in the constructor so pre-start preview rendering is 100% crash-free.
+  - **🔒 Defensive Row Bounds Checking ([`tetris.js`](tetris.js))**:
+    - Added row existence guards in `render()` and `checkCollision()` to guarantee safe property access under all edge cases and canvas resize events.
+  - **✨ Immutable Multi-Line Clearing Pipeline ([`tetris.js`](tetris.js))**:
+    - Replaced sequential in-place `splice()` / `unshift()` row removal with immutable filtering and prepending, preventing row index shifting desynchronization during simultaneous multi-line clears.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.507"` and refreshed service worker cache.
+
+- **Cyber Runner Uncapped Continuous Acceleration & Pure Reflex Survival Curve (`v1.5.506`)**:
+  - **🚫 Removed Artificial Time Limit & Hard Kill Cutoff ([`runner.js`](runner.js), [`index.html`](index.html))**:
+    - Removed the artificial 3:00 / 180s countdown timer cap and hard engine termination (`gameOver()`) at 179.5s.
+    - Removed the artificial 3-lane unavoidable `singularity_wall` at 175s.
+    - Changed the HUD status bar from `Time Limit: 3:00` to dynamic elapsed survival time `Time: 0:00` (`#runner-time-val`), shifting smoothly to warning yellow at 60s and danger red at 120s+.
+  - **⚡ Uncapped Continuous Speed Escalation Curve ([`runner.js`](runner.js))**:
+    - Replaced the capped speed curve with an infinite continuous acceleration model:
+      - $0 - 40\text{s}$: $10 \to 15$ ($40 - 60\text{ km/h}$) — Smooth rhythm warm-up
+      - $40 - 80\text{s}$: $15 \to 22$ ($60 - 88\text{ km/h}$) — Engaging arcade rhythm
+      - $80 - 120\text{s}$: $22 \to 32$ ($88 - 128\text{ km/h}$) — High-speed reflex challenge
+      - $120 - 160\text{s}$: $32 \to 46$ ($128 - 184\text{ km/h}$) — Blistering hyperdrive
+      - $160 - 200\text{s}$: $46 \to 65$ ($184 - 260\text{ km/h}$) — Hypersonic velocity
+      - $> 200\text{s}$: $65 + 0.55/\text{sec}$ continuously into supersonic speeds where arrival time drops under $180\text{ms}$, pushing past human neurological reaction thresholds naturally.
+  - **🌊 Dynamic Wave Spacing & Reflex Variety ([`runner.js`](runner.js))**:
+    - Calibrated obstacle wave arrival spacing to scale with speed, ensuring jumps and slides have necessary aerodynamic clearance without overlapping.
+    - High-velocity overdrive waves feature rapid skill tests (jumping hurdles or sliding under lasers in the single open lane flanked by walls).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.506"` and refreshed service worker cache.
+
+- **Cyber Tetris Floating Arcade Badges, Combo Streaks, Perfect Clear & Clean Playfield (`v1.5.505`)**:
+  - **✨ Floating Neon Arcade Badges & Combo Callouts ([`tetris.js`](tetris.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - **Line Clear Badges**: Animated neon arcade callouts floating up and scaling over `#tetris-board-wrapper` for clears: `"SINGLE"`, `"DOUBLE"`, `"TRIPLE"`, `"⚡ TETRIS!"`, and `"🔥 BACK-TO-BACK TETRIS!"`.
+    - **Consecutive Combo Streaks**: Tracking consecutive piece locks with line clears. Consecutive clears award escalating score bonuses ($50 \times \text{combo} \times \text{level}$) and spawn floating combo callouts (`"🔥 COMBO x2!"`, `"🔥 COMBO x3!"`, etc.).
+    - **Pitch-Ascending Combo SFX**: Procedural Web Audio synth frequency scales dynamically with the active combo streak.
+    - **✨ Perfect Clear (All Clear) Recognition**: Full-matrix scan after line clearing; wipes that completely clear the board award $+2,000 \times \text{level}$ bonus points, custom triumphant chord fanfare, and a radiant `"✨ PERFECT CLEAR!"` neon badge.
+  - **🚫 Clean Playfield — Removed Bottom Ghost Piece ([`tetris.js`](tetris.js))**:
+    - Removed the ghost piece shadow projection outline rendered at the bottom of the board, providing a classic, uncluttered playing matrix while maintaining accurate `hardDrop()` and 20G instant-drop calculations.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `src/css/main.css`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.505"` and refreshed service worker cache.
+
+- **Cyber 2048 CSS Grid Stability Fix, Subsheet Cache Purge & Directional Animation Polish (`v1.5.504`)**:
+  - **🧩 100% Rock-Solid CSS Grid Rendering ([`q2048.js`](q2048.js), [`src/css/features/games.css`](src/css/features/games.css), [`index.html`](index.html))**:
+    - Fixed broken layout glitch where tiles rendered as wide, flat horizontal strips overflowing the board across the screen into the sidebar.
+    - Eliminated fragile absolute positioning overlay container (`#q2048-tile-container`). Replaced with a unified 4x4 CSS Grid inside `#q2048-grid` where every cell and active tile is strictly constrained by `aspect-ratio: 1 / 1; width: 100%; height: 100%; box-sizing: border-box;`.
+    - Tiles can never deform, misalign, squish, or overflow the matrix regardless of viewport size, browser cache state, or dynamic layout updates.
+  - **🔄 Global CSS Subsheet Cache Busting ([`src/css/main.css`](src/css/main.css), [`index.html`](index.html))**:
+    - Identified and eliminated browser caching of stale CSS: `src/css/main.css` `@import` rules were previously referencing outdated versions (`games.css?v=1.5.307`), which prevented new styling rules from loading on clients with cached assets.
+    - Updated all `@import` subsheets to `?v=1.5.504` and bumped `main.css?v=1.5.504` in `index.html`.
+  - **⚡ Directional Movement Shift & Organic Animations ([`src/css/features/games.css`](src/css/features/games.css), [`q2048.js`](q2048.js))**:
+    - Added crisp, responsive directional slide animations (`.q2048-shift-up`, `.q2048-shift-right`, `.q2048-shift-down`, `.q2048-shift-left`) on the grid during moves.
+    - Preserved spawn pop-in (`.q2048-tile-new`), merge pulses (`.q2048-tile-merged`), simultaneous merge cascade combos ($\ge 2$ merges), milestone quantum particle bursts (32 neon particles), and harmonic pitch-ascending Web Audio chimes.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.504"` and refreshed service worker cache.
+
+- **Cyber Runner Streamlined Obstacle Aesthetics & Calibrated Fence Stature (`v1.5.503`)**:
+  - **🚫 Removed In-Game Obstacle Text ([`runner.js`](runner.js))**:
+    - Removed `▲ JUMP ▲` text from the low road hurdle (`lowBarrier`), replacing it with a clean high-tech hazard accent stripe and crisp diagonal warning stripes.
+    - Removed `▼ SLIDE UNDER ▼` overhead text and `▼  ▼  ▼` clearance text from the electric laser gate (`highLaser`).
+  - **⚡ Twice Smaller Overhead Electric Laser Fence ([`runner.js`](runner.js))**:
+    - **Calibrated Vertical Stature**: Cut the towering $140\text{px}$ laser gate down to half its height (`gateTop = -70 * factor` instead of `-140 * factor`), creating a balanced, authentic obstacle stature that doesn't overwhelm the upper half of the screen.
+    - **Proportional Pylons & Laser Beams**: Compacted industrial side pylons to $74\text{px}$ height with dual pulsing energy coils and 2 high-intensity magenta laser beams (`[-34, -54]`) with white heat cores.
+    - **Overhead Hazard Beacons & Ground Glow**: Added sleek pulsing amber hazard beacon nodes to the overhead crossbar and a soft ground-cast ambient cyan laser projection beneath the $22\text{px}$ slide opening.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.503"` and refreshed cache.
+
+- **Cyber 2048 Smooth CSS Sliding Animations, Cascade Combos, Milestone Particle Burst & Harmonic Audio (`v1.5.502`)**:
+  - **✨ Smooth Sliding CSS Animations & Persistent Tile Slots ([`q2048.js`](q2048.js), [`src/css/features/games.css`](src/css/features/games.css), [`index.html`](index.html))**:
+    - **Persistent Tile Slot Architecture**: Replaced instant innerHTML grid re-renders with persistent `.q2048-tile-slot` elements inside dedicated absolute `#q2048-tile-container`. Tiles smoothly slide into their destination positions with responsive `transform: translate(calc(...))` transitions ($110\text{ms}$).
+    - **Spawn Pop-in & Merge Pop Animations**: Tiles appear with dynamic scale pop-in (`@keyframes q2048-appear`) and merged synthesis pulses (`@keyframes q2048-pop`, $1.18\times$ pulse). Empty background slots remain static in `#q2048-grid` as recessed neon matrix cells.
+    - **Atomic Cleanup & Anti-Clobbering**: Moving tiles that merge into targets smoothly slide to the destination cell before atomic DOM disposal ($110\text{ms}$ delay or immediate flush upon rapid keystrokes).
+  - **🔥 Cascade Combos & Milestone Quantum Particle Fanfare ([`q2048.js`](q2048.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - **Simultaneous Merge Combos**: Tracking merges per move; $\ge 2$ simultaneous merges in a single turn trigger combo bonuses: $+(\text{turnMerges} - 1) \times 150$ bonus score, rapid ascending synth audio chirps, and an animated floating neon combo badge (`🔥 COMBO x${turnMerges}! +${bonus} PTS`).
+    - **Milestone Quantum Particle Burst**: Synthesizing milestone tiles ($256, 512, 1024, 2048, 4096$) triggers board-wide flash bloom (`q2048-milestone-flash`) and releases 32 multi-colored radiant quantum particles (`.q2048-particle`) bursting outwards.
+  - **🎵 Harmonic Pitch-Ascending Audio & High-Tier Arpeggios ([`q2048.js`](q2048.js))**:
+    - **Musical Merge Synthesis**: Merges dynamically scale in musical frequency using a calibrated neon scale (C4 at $4$ up to A5 at $2048$), with dual-oscillator resonant bell chimes.
+    - **Triumphant Cyber Arpeggios**: Merging high-tier tiles ($\ge 1024$) triggers a glorious 3-note ascending cyber arpeggio, plus a 4-note chord fanfare on milestones.
+    - **Blocked Move Feedback**: Visual `.q2048-shake` feedback preserved and tuned.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.502"` and refreshed cache.
+
+- **Cyber Runner Neon Power-Ups (Shield, Magnet, Overdrive), 3D City Scenery & Floating Popups (`v1.5.501`)**:
+  - **🛡️ In-Run Neon Power-Ups System ([`runner.js`](runner.js))**:
+    - **Energy Shield (`type: 'shield'`)**: Collectible glowing hexagonal forcefield medallion. Grants 1 free collision buffer with a pulsing cyan shield bubble and orbiting energy nodes surrounding the runner. Upon collision, the shield shatters with electric particles and screen-shake, providing $1.4\text{ s}$ of recovery invulnerability instead of instant game over.
+    - **Rare Shield NFT Integration**: Automatically equips a free Energy Shield at run start for players holding the Rare Shield NFT (`nft_rare_shield`).
+    - **Quantum Magnet (`type: 'magnet'`)**: Collectible pulsing electromagnetic attractor ($8\text{ s}$ duration) with dynamic cyan lightning arcs between the player and nearby coins/shards, automatically drawing collectibles into the player's path.
+    - **Cyber Overdrive / Turbo (`type: 'overdrive'`)**: Fiery $2\times$ turbo crystal ($5.5\text{ s}$ duration) granting $+6$ speed boost, massive dual plasma thruster flames, speed lines, and $2\times$ PGT token and score rewards.
+  - **🏙️ 3D Perspective Cyber Cityscape Scenery ([`runner.js`](runner.js))**:
+    - Procedurally generated neon skyscrapers and monolith towers with illuminated window matrices, roof antennas, and blinking warning beacons flanking both sides of the track in perspective depth.
+  - **✨ Floating Text FX & On-Canvas Power-Up HUD ([`runner.js`](runner.js))**:
+    - Floating popups for score pickups (`+100`, `+50 ✨`, `+200 (2X!)`), shield events (`🛡️ SHIELD ACTIVE!`, `🛡️ SHIELD SHATTERED!`), magnet, and turbo.
+    - Clean top-left on-canvas status badges tracking active shield readiness and remaining magnet/turbo timers.
+  - **🔊 Web Audio Synthesizer SFX ([`runner.js`](runner.js))**:
+    - Procedural synthesizer sound effects for shield activation, shield shatter, magnet tractor beam, and overdrive rocket ignition.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.501"` and refreshed cache.
+
+- **Cyber Runner Towering Laser Gate (Slide Only), Distinct Road Hurdle & Calibrated Jump (`v1.5.500`)**:
+  - **⚡ Towering 140px Overhead Laser Gate (Slide Under) ([`runner.js`](runner.js))**:
+    - **Massive Vertical Stature**: Replaced the floating 14px beam with a towering $140\text{px}$ high-voltage electric laser gate extending from ground clearance ($-24\text{px}$) to deep overhead ($-140\text{px}$). Heavy side pylons extend across the full height with pulsing energy coils and a neon electric forcefield mesh.
+    - **4-Tier Laser Grid & Overhead Warning**: Features 4 pulsating horizontal electric laser beams ($-30\text{px}, -60\text{px}, -90\text{px}, -120\text{px}$), an overhead structural header reading `▼ SLIDE UNDER ▼`, and cyan downward arrows pointing to the ground clearance slide gap. It is visually and physically impossible to jump over.
+  - **🚧 Distinct Low Road Hurdle (Jump Over) ([`runner.js`](runner.js))**:
+    - Calibrated low barrier to $28\text{px}$ height with yellow hazard stripes, glowing amber top rail, and a clear `▲ JUMP ▲` indicator, creating an instant, unmistakable visual contrast: Red = JUMP, Purple = SLIDE.
+  - **🎯 Calibrated Snappy Jump Physics ([`runner.js`](runner.js))**:
+    - Tuned `jumpForce` to `10.2` and `gravity` to `-0.80`, providing a clean, controlled $65\text{px}$ jump apex ($y_{\text{max}} = 65\text{px}$). More than double the $28\text{px}$ road hurdle for effortless clearance, while staying well within the $140\text{px}$ laser gate span.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.500"` and refreshed cache.
+
+- **Cyber Runner Collision Precision Overhaul & Soaring Jump Calibration (`v1.5.499`)**:
+  - **🛡️ Swept Continuous Collision & Cleared Obstacle State ([`runner.js`](runner.js))**:
+    - **Eliminated Ghost & Premature Collision**: Replaced the overly broad $z \in [60, 140]$ window with swept continuous collision detection centered tightly at player depth ($z \in [85, 110]$ or crossing $z = 100$). Players no longer die 40 Z-units before reaching a barrier.
+    - **`obs.cleared` State Persistence**: Once an obstacle is safely evaded (jumped over, slid under, or in another lane), `obs.cleared` is set to `true`. This guarantees that when a player lands on the track after jumping over a fence, the barrier behind them can NEVER re-trigger a collision upon landing.
+    - **Generous Hurdle Threshold**: Adjusted the low barrier hurdle clearance check from `y < 32` down to `y < 18`. Any jump clears this hurdle in under $0.035\text{s}$ (2 frames) and maintains clearance throughout the entire airborne arc.
+  - **🚀 Soaring Jump Physics & Input Buffering ([`runner.js`](runner.js))**:
+    - **Higher Apex**: Increased `jumpForce` from `11.8` to **`13.5`** and adjusted `gravity` to **`-0.70`**, boosting peak jump apex from $94\text{px}$ to **$124.5\text{px}$** (nearly $4\times$ the barrier height) with an athletic $0.94\text{s}$ airtime arc.
+    - **Jump Input Buffering**: Added a 0.18s jump buffer window (`jumpBufferTimer`). If the player taps Jump right before landing, the jump fires automatically upon touchdown without input dropping.
+    - **Snappy Fast Fall**: Increased slide fast-fall velocity from `-12` to `-16` for instant tactical drop-downs.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.499"` and purged service worker cache.
+
+- **Cyber Runner Visual Overhaul, Foreground Ground Calibration & Athletic Jump Physics (`v1.5.498`)**:
+  - **🏃 Runner Screen Placement & Athletic Jump Physics ([`runner.js`](runner.js))**:
+    - **Foreground Track Anchoring**: Calibrated `playerGroundY` from `h * 0.68` down to `h * 0.81` ($81\%$ canvas height), positioning the runner character naturally in the foreground lower-third of the speedway with $68\text{px}+$ below feet and $116\text{px}+$ of open runway ahead to incoming obstacles.
+    - **Athletic Jump Dynamics**: Increased initial `jumpForce` from `8.8` to `11.8` and tuned `gravity` from `-0.8` to `-0.74`, nearly doubling max jump apex ($y \approx 94\text{px}$ vs $48\text{px}$) with an athletic $\approx 0.80\text{s}$ airtime arc. Updated low barrier clearance threshold (`y < 32`), allowing graceful hurdle clearances.
+  - **🎨 Cyberpunk Runner Character Model & Animation ([`runner.js`](runner.js))**:
+    - **Articulated Mechanical Cyber Legs**: Replaced static block silhouette with animated cyber legs pumping in a realistic run stride cycle (`sin(time * freq)`), featuring high-top cyber boots with glowing cyan neon magnetic soles. Added an aerodynamic tuck-jump pose in mid-air.
+    - **Active Jetpack Propulsion**: Mounted dual rear thruster packs with active plasma exhaust flames during sprints, and blazing high-energy multi-gradient rocket plumes (`#ffffff` -> `#ff0055` -> `#ff9900`) firing downward during jumps.
+    - **Torso Armor & Reactor Core**: Layered dark carbon fiber chestplate with glowing cyan armor piping and a pulsing central PGT Arc Reactor Core.
+    - **Cyber Helmet & Visor**: Added aerodynamic helm with rear spoiler fin and wide glowing magenta visor with dynamic specular reflection sweep.
+    - **Dynamic Banking**: Applied lateral tilt/banking rotation (`ctx.rotate(tilt)`) during lane changes for organic movement responsiveness.
+    - **Streamlined Power Slide**: Designed low-profile sliding pose with forward cyan/magenta energy shield, rear jet exhausts, and dynamic friction sparks spraying onto the asphalt.
+  - **🪙 Dynamic 3D Spinning Gold PGT Coins & Quantum Shards ([`runner.js`](runner.js))**:
+    - **3D Rotating PGT Coins**: Replaced flat yellow circle with a 3D spinning gold coin rotating on the Y-axis (`Math.cos(spinAngle)`), featuring outer glowing corona, 3D rim thickness, multi-stop metallic gold gradient, inner recessed coin face, embossed bold 'P' logo with bevel drop-shadow, and periodic specular sparkle glints.
+    - **Faceted Quantum Shards**: Upgraded cyan diamonds into 4-faceted crystal prisms with directional light shading, central white energy core beam, floating levitation bobbing, and electric cyan bloom.
+  - **🌌 Synthwave Sky, Mountains & Neon Grid Horizon ([`runner.js`](runner.js))**:
+    - **Twinkling Starfield**: Added deep space starfield with 70 twinkling cyber stars drifting in cosmic indigo gradients.
+    - **Retro Synthwave Sun**: Expanded sun diameter with atmospheric radial halo bloom and graduated horizontal scanlines that widen toward the horizon.
+    - **Wireframe Mountain Range**: Rendered distant polygonal mountain peaks framing the sun on both sides with glowing magenta silhouettes and cyan wireframe grid ridges.
+    - **Horizon Haze & Glowing Rails**: Added warm horizon bloom fog along the vanishing line, continuous gridlines extending to $z = 1500$, and glowing cyan outer track boundary rails.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.498"` and invalidated cache across all modules.
+
+- **Cyber 2048 Touch Gestures, Directional D-Pad & Blocked Direction Shake Feedback (`v1.5.497`)**:
+  - **📱 Touch Gestures & Scroll Isolation ([`src/css/features/games.css`](src/css/features/games.css))**:
+    - Applied `touch-action: none;` to `.q2048-board-wrapper` and `.q2048-grid`, completely preventing mobile/trackpad browser page scroll from intercepting vertical swipe gestures (swiping Up and Down).
+  - **🎮 On-Screen Directional D-Pad Controls ([`index.html`](index.html))**:
+    - Embedded a dedicated cyber-styled directional D-Pad (`▲`, `◀`, `▼`, `▶`) directly beneath the 4x4 matrix, allowing players to move and merge tiles via mouse clicks or mobile screen taps in addition to keyboard and swipe gestures.
+  - **💫 Blocked Move Visual Feedback & Deadlock Detection ([`q2048.js`](q2048.js))**:
+    - Added `.q2048-shake` animation triggered whenever a player attempts a move in a blocked direction while other directions remain open, clearly indicating that the direction is full.
+    - Added fallback `canMove()` evaluation on blocked moves to guarantee immediate `gameOver()` overlay activation when no valid moves remain anywhere on the board.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.497"`.
+
+- **Eliminate Stale Duplicate Module Caching & Calibrate 16:9 Canvas Framing (`v1.5.496`)**:
+  - **🚫 Stale Module Caching Elimination ([`src/js/app.js`](src/js/app.js))**:
+    - Removed duplicate unversioned side-effect imports (`../../runner.js`, `../../q2048.js`, `../../skeet.js`, `../../defense.js`) from `src/js/app.js`. Because `app.js` imported unversioned URLs while `index.html` loaded version-tagged `<script type="module">` tags, browsers executed the cached unversioned modules from disk cache on page boot, completely overwriting `window.cyberRunner` and `window.cyber2048` with the old buggy instances. All arcade game engines are now strictly loaded via deterministic version-tagged script tags in `index.html`.
+  - **🏃 Runner 16:9 Aspect Ratio & Canvas Clipping Fix ([`runner.js`](runner.js), [`index.html`](index.html))**:
+    - **16:9 Ratio Synchronization**: Synchronized `runner.js` canvas aspect ratio (`9 / 16 = 360 / 640`, matching `.game-canvas-wrapper`'s `aspect-ratio: 16/9; overflow: hidden;`), eliminating a 40px vertical overflow truncation bug where the bottom of the canvas was hidden behind the wrapper container.
+    - **Prominent Runner Elevation**: Calibrated `playerGroundY` to `h * 0.68` ($68\%$ canvas height), framing the runner prominently on the track with $115\text{px}+$ of visible road flowing beneath. Added safe `drawRoundRect` polyfill fallback for older canvas contexts.
+  - **🧩 2048 & Runner Key Event Robustness ([`q2048.js`](q2048.js), [`runner.js`](runner.js))**:
+    - Added dual-property event normalization checking both `e.code` and `e.key` across all directional arrows and WASD inputs, ensuring 100% reliable input registration regardless of international keyboard layout (QWERTY, AZERTY, QWERTZ).
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`, `sw.js`)**:
+    - Bumped release version to `APP_VERSION = "1.5.496"`.
+
+- **Cyber Runner Track Elevation & Deterministic Script Cache Busting (`v1.5.495`)**:
+  - **🏃 Runner Track Framing & Grid Continuity ([`runner.js`](runner.js))**:
+    - **Optimized Lower-Middle Ground Anchor**: Adjusted `playerGroundY` from `h * 0.78` to `h * 0.72` ($72\%$ canvas height), elevating the runner into clear, prominent view in the center-lower area of the track with $100\text{px}+$ of visible road flowing beneath.
+    - **Seamless Grid Extension**: Extended moving horizontal synthwave gridlines down to $z = 30$ with a 40-unit step (`offset % 40`), eliminating edge cutoff and guaranteeing smooth, continuous perspective lines across the entire road surface.
+  - **🔄 Global Deterministic Cache Invalidation ([`index.html`](index.html), [`sw.js`](sw.js), [`src/js/core/config.js`](src/js/core/config.js), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - **Synchronized Script & CSS Tags**: Bumped cache-busting query strings across all game engines and modules in `index.html` (`runner.js`, `q2048.js`, `tetris.js`, `app.js`, `skeet.js`, `defense.js`, `game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, and `main.css`) to `?v=1.5.495`, preventing browsers from serving stale cached JS.
+    - **Service Worker Cache Purge**: Bumped `CACHE_NAME = 'polygame-pwa-v1.5.495'` in `sw.js` to trigger immediate service worker activation and purge stale CacheStorage entries.
+    - Bumped release version to `APP_VERSION = "1.5.495"`.
+
+- **Cyber Runner Perspective Ground Projection & Jump Physics Calibration (`v1.5.494`)**:
+  - **🏃 Perspective Projection Calibration ([`runner.js`](runner.js))**:
+    - **Visible Runner Ground Anchor**: Resolved bug where `getScreenPos()` calculated `factor = 160 / z` with player depth at $z = 100$, projecting the runner at $119.2\%$ of canvas height (115px below the visible screen). Calibrated perspective factor to `100 / max(10, z)` with `playerGroundY = h * 0.78`, ensuring the runner is centered and clearly visible on the track.
+    - **Athletic Jump Arc Tuning**: Reduced excessive jump force (`13.5` down to `8.8`) and calibrated gravity (`-0.8`) with fast fall (`-12`), adjusting maximum jump apex from $134.7$ down to $51.4$ units ($0.58$s duration). The runner now executes a crisp, controlled hurdle that safely clears roadblocks without flying into the sky.
+    - **Grounded 3D Perspective Shadow**: Shadow remains anchored directly on the track beneath the runner when jumping, shrinking realistically to provide clear depth and height perception. Added running stride bobbing, glowing jump thruster flame effects, and synchronized high laser beam clearance.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.494"`.
+
+- **Cyber 2048 Arrow Key & Swipe Movement Direction Mapping Fix (`v1.5.493`)**:
+  - **🧩 Grid Movement Mechanics ([`q2048.js`](q2048.js))**:
+    - **Direction Fix**: Replaced faulty matrix rotation formulas (`(4 - direction) % 4`) that inverted directional moves (e.g. Up moved Left, Right moved Up).
+    - **Direct Axis Processing**: Implemented direct row and column vector sliding (`UP: c = 0..3 (r = 0..3)`, `DOWN: c = 0..3 (r = 3..0)`, `LEFT: r = 0..3 (c = 0..3)`, `RIGHT: r = 0..3 (c = 3..0)`), ensuring 100% accurate 1:1 response for keyboard Arrow keys, WASD, and touch swipe gestures.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.493"`.
+
+- **Cyber Tetris Launch Routing & View Navigation Fix (`v1.5.492`)**:
+  - **🕹️ Arcade View Routing Bugfix ([`tetris.js`](tetris.js), [`src/js/features/games.js`](src/js/features/games.js))**:
+    - **Dashboard Redirect Prevention**: Fixed navigation bug where clicking the Cyber Tetris game card invoked `launchCyberTetris()` which improperly called `switchTab('game-tetris')`. Because `'game-tetris'` is not a root navigation tab, `switchTab()` fell back to `'dashboard'` and executed `closeGameView()`.
+    - **Clean Sub-View Setup**: Streamlined `switchGameModeView('tetris')` to directly mount canvas contexts, render the starting board, and initialize highscores/leaderboard without calling `switchTab()`.
+    - **Turnstile & Guest Graceful Fallback**: In `tetris.js`, updated `start()` to only hide start overlay screens after `startArcadeSession('tetris')` successfully resolves, permitting guest play and cleanly aborting if Turnstile verification is cancelled without leaving an unplayable blank canvas. Added `stop()` method to cleanly halt requestAnimationFrame loops.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped release version to `APP_VERSION = "1.5.492"`.
+
+- **Cyber Tetris Neon Matrix Puzzle & Dynamic Exponential Gravity Release (`v1.5.491`)**:
+  - **🧱 Cyber Tetris Engine ([`tetris.js`](tetris.js), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`add_cyber_tetris_game.sql`](supabase/add_cyber_tetris_game.sql))**:
+    - **Engine Mechanics**: Built authentic 10x20 visible matrix (+2 hidden buffer rows) with all 7 classic tetrominoes, 7-Bag randomizer, SRS wall kick tables, ghost piece shadow drop projection, Hold queue (`C` key / mobile Hold button), and Next 3 upcoming pieces preview queue.
+    - **Dynamic Exponential Gravity Acceleration Curve (<3min Impossible Survival)**: Implemented an exponential speed curve scaling with both lines cleared and elapsed time (+1 level every 7 seconds). Drop interval scales from 800ms down to instant 0ms 20G at Level 25+ (~2:30–3:00 minutes) with lock delay decaying from 500ms down to 180ms, making survival past 3 minutes naturally near impossible without arbitrary kill screens.
+    - **Complete Audio Synthesizer**: Self-contained Web Audio API retro cyberpunk synthesizer producing custom square/sawtooth chords and frequency ramps for moves, rotations, hard drops, line clears, Tetris 4-line clear chords, and game over sequences.
+    - **Controls & Mobile Accessibility**: Full keyboard support (`Arrow Keys` / `WASD` / `Space` / `C` / `P`) plus dedicated on-screen mobile virtual buttons (`◀`, `▶`, `↻`, `▼`, `⚡`, `📦`) and responsive touch swipe gestures on the matrix canvas.
+    - **Complete Weekly Tournament & Prize Pool**: Added weekly tournament prize pool of 50,000 PGT with 1st place receiving 17,500 PGT (35%). Leaderboards archive and reset every Sunday midnight UTC alongside other arcade games.
+  - **🛡️ Authoritative Anti-Cheat & Career Sync Integration**:
+    - **Zero-Tolerance Anti-Cheat**: Requires cryptographic session authorization via `start_arcade_session('tetris')`, Cloudflare Turnstile verification, monotonic score validation, and anti-tamper column protections (`tetris_highscore`, `alltime_tetris_highscore`).
+    - **Quest & Operations Hub Integration**: Playing Cyber Tetris advances the daily "Play 3 Arcade Games" quest (`trackQuestProgress('arcade', 1)`). Added scorecards to the Profile Career Operations Hub and public player profile modals.
+    - **Account Linking Score Merge**: Both all-time and weekly scores for Tetris merge seamlessly via `link_wallet_to_profile` when linking Web3 and Google accounts.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.491"`.
+
+- **Cyber Runner & Cyber 2048 Arcade Engine Release (`v1.5.490`)**:
+  - **🏃 Cyber Runner 3-Lane Synthwave Engine ([`runner.js`](runner.js), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`add_runner_and_2048_games.sql`](supabase/add_runner_and_2048_games.sql))**:
+    - **Engine Mechanics**: Built high-octane 3-lane pseudo-3D perspective canvas engine with lane shifts, jump over barriers, slide under overhead laser grids, collectible PGT Tokens (+0.25 to +0.50 PGT) and Quantum Shards (+1 Shard).
+    - **Impossible Survival Barrier (<180s)**: Implemented mathematically and physically inescapable survival cap with accelerating terminal velocity (up to 36 px/frame) and a 3-lane singularity firewall past 150 seconds, preventing any session from exceeding 3 minutes.
+    - **Complete Weekly Tournament & Prize Pool**: Added weekly tournament prize pool of 50,000 PGT with 1st place receiving 17,500 PGT (35%). Leaderboards archive and reset every Sunday midnight UTC alongside the other arcade games.
+  - **🧩 Cyber 2048 Quantum Matrix Tile Merge Engine ([`q2048.js`](q2048.js), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql))**:
+    - **New Dedicated Puzzle Section**: Added dedicated "🧩 Puzzle Games" section below the Arcade section with glowing cyberpunk cards, neon tile visuals (2 through 4096), keyboard (Arrow/WASD) and touch swipe navigation.
+    - **Milestone PGT Drops**: Awards instant verified PGT drops on tile merges (256: 0.5 PGT, 512: 1.0 PGT, 1024: 2.5 PGT, 2048: 5.0 PGT) scaled by NFT, Relic, and VIP multipliers.
+    - **Competitive Tournament**: 50,000 PGT weekly tournament prize pool with Sunday midnight UTC automated payouts and archiving.
+  - **🛡️ Authoritative Anti-Cheat & Career Sync Integration**:
+    - **Zero-Tolerance Anti-Cheat**: Both games require `start_arcade_session` cryptographic session authorization, Cloudflare Turnstile bot checks, monotonic score validation, and anti-tamper column protections (`runner_highscore`, `q2048_highscore`, `alltime_runner_highscore`, `alltime_q2048_highscore`).
+    - **Quest & Operations Hub Integration**: Playing Cyber Runner and Cyber 2048 advances the daily "Play 3 Arcade Games" quest (`play_arcade_game`). Added scorecards to the Arcade & Career Operations Hub and public player profile modals.
+    - **Account Linking Score Merge**: Both all-time and weekly scores for Runner and 2048 seamlessly merge via `link_wallet_to_profile` when linking Web3 and Google accounts.
+  - **🏺 Season 2 Quantum Relics Dormant Architecture ([`03_quantum_relics.sql`](supabase/rpcs/03_quantum_relics.sql))**:
+    - Prepared schema definitions and table constraints for Season 2 Quantum Relics (relic IDs 18–34) with drop rates set to 0.0%, fully dormant and unobtainable until Season 2 launch.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.490"`.
+
+- **Automated Turnstile Session Spam Bot Warning & Defense Sentinel (`v1.5.486`)**:
+  - **🛡️ Option B: Automated Session Spam Penalty ([`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`turnstile_spam_bot_warning_migration.sql`](supabase/turnstile_spam_bot_warning_migration.sql))**:
+    - **Consecutive Unverified Attempt Counter**: Added `turnstile_unverified_attempts` and `last_unverified_attempt_at` columns to `public.users` to track rejected session initializations when human Turnstile verification is required.
+    - **Automated Spam Detection**: If an automated script or bot repeatedly issues `start_arcade_session` calls (3 or more times within a 10-minute window) while ignoring or failing the Turnstile challenge, the database now automatically triggers `public.record_bot_warning(..., 'turnstile_session_spam', ...)` to award a `+1` bot warning on each spam attempt.
+    - **Legitimate Player Protection**: Casual players who encounter the captcha and cancel, take a break, or return after >10 minutes start fresh with a reset counter, ensuring zero false positive bot warnings for humans.
+    - **Atomic Clearance on Verification**: Completing a real Cloudflare Turnstile challenge via `record_verified_turnstile` or launching a valid session atomically wipes `turnstile_unverified_attempts` back to 0.
+    - **Anti-Cheat Trigger Security**: Protected new tracking columns in `prevent_direct_balance_mutation` trigger, ensuring clients cannot tamper with or reset their attempt counter via direct PostgREST calls.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.486"`.
+
+- **Cyber Mines Tile Reveal State Harmonization & Board Unfreeze (`v1.5.485`)**:
+  - **💣 Cyber Mines Tile Reveal Status Harmonization ([`mines.js`](src/js/features/mines.js), [`05_casino_minigames.sql`](supabase/rpcs/05_casino_minigames.sql))**:
+    - **Fixed Stuck Tile Reveal Freeze**: Resolved issue where clicking board tiles appeared to do nothing and permanently froze input. A status code mismatch between the server RPC (`status: 'active'`) and client event handler (expecting `status: 'gem'`) caused client code to skip gem animation and leave the `isBusy` lock enabled.
+    - **Dual Status & Property Support**: Updated `handleMinesTileClick` in `mines.js` to recognize both status formats (`mine`/`lost`/`is_mine: true` and `gem`/`active`/`won`/`is_mine: false`), ensuring that diamonds uncover immediately and multiplier increments are displayed without lag.
+    - **RPC Field Harmonization**: Updated `reveal_mines_tile` and `cashout_mines_game` RPCs in Supabase PostgreSQL to return comprehensive compatibility aliases (`status`, `is_mine`, `tile`, `tile_index`, `revealed_count`, `all_mines`, `mine_positions`).
+    - **Session Ownership Guard Redundancy**: Expanded session lookup in `reveal_mines_tile` and `cashout_mines_game` to match both resolved `player_id` and raw `wallet_address`, preventing any wallet formatting mismatches.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.485"`.
+
+- **Casino Bet Griefing Authentication Seal & Authoritative Arcade Turnstile Verification (`v1.5.484`)**:
+  - **🎰 Casino Bet Impersonation & Balance Griefing Hardening ([`05_casino_minigames.sql`](supabase/rpcs/05_casino_minigames.sql), [`harden_casino_auth_and_arcade_turnstile.sql`](supabase/harden_casino_auth_and_arcade_turnstile.sql))**:
+    - **Patched Anonymous Wager Attack Vector**: Resolved critical exploit where unauthenticated callers could place bets on behalf of any player's `player_id` or EVM wallet, repeatedly calling casino RPCs (`play_crash`, `play_roshambo`, `play_spinner`, `play_plinko`, `start_mines_game`, `reveal_mines_tile`, `cashout_mines_game`) to systematically drain their balance down to zero.
+    - **Enforced Strict `auth.uid()` Ownership Check**: All 7 casino functions now strictly verify `auth.uid() IS NOT NULL` and require that `auth.uid()` matches either `v_user.user_id` or `v_user.web3_auth_id`. Unauthenticated or mismatched callers are instantly rejected with an unauthorized exception.
+    - **PostgreSQL Privilege Revocation**: Revoked execution permissions from `PUBLIC` and `anon` across all casino functions, granting execution strictly to `authenticated` and `service_role`.
+  - **🛡️ Server-Authoritative Cloudflare Turnstile Verification ([`verify-turnstile`](supabase/functions/verify-turnstile/index.ts), [`02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`db-sync.js`](src/js/core/db-sync.js))**:
+    - **Eliminated Client Captcha Bypass**: Closed vulnerability where `start_arcade_session` accepted any arbitrary 20+ character dummy string as a valid captcha token (`LENGTH(p_captcha_token) >= 20`).
+    - **Deployed Serverless Edge Function `verify-turnstile`**: Deployed production Edge Function interfacing directly with Cloudflare's `siteverify` API endpoint using secret key authentication.
+    - **Service-Role Gated Captcha Clearance**: Implemented `record_verified_turnstile(p_player_id, p_game_name)` restricted exclusively to `service_role`. The Edge Function verifies the token with Cloudflare and authoritatively records clearance in PostgreSQL before the session is opened.
+    - **Client-Side Verification Flow**: Updated `src/js/core/db-sync.js` to dispatch Turnstile tokens to `supabase.functions.invoke('verify-turnstile')` before starting arcade gameplay sessions.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`, `index.html`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.484"`.
+
+- **Masked Cross-Origin & Browser Extension Sentinel False Alarm Suppression (`v1.5.483`)**:
+  - **🛡️ Cross-Origin "Script error." Filtering ([`app.js`](src/js/app.js))**:
+    - **Eliminated False Alarm Discord Webhooks**: Silenced harmless `"Script error."` events triggered by third-party browser extensions (MetaMask, Rabby, Phantom, adblockers, Brave Shields) and cross-origin iframes (Cloudflare Turnstile).
+    - **Masked Origin Guard**: Added explicit suppression when `msg.includes('script error')` or when `lineno === 0 && colno === 0 && !e.filename` (standard browser Same-Origin Policy masking pattern).
+  - **🌐 CDN CORS Alignment ([`index.html`](index.html))**:
+    - Added `crossorigin="anonymous"` attribute to external CDN script tags (`ethers.js`, `@supabase/supabase-js`, `chart.js`), preventing legitimate script errors from being masked as generic Script errors.
+    - Updated client cache-busting script version queries to `v=1.5.483`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.483"`.
+
+- **POL Mystery Box On-Chain Verification & Cyber Mines RLS Seal (`v1.5.482`)**:
+  - **📦 Cryptographic On-Chain Verification for POL Mystery Crate ([`open-pol-crate`](supabase/functions/open-pol-crate/index.ts), [`open_pol_mystery_box`](supabase/rpcs/08_withdrawals_store.sql), [`nft.js`](src/js/features/nft.js), [`seal_mystery_box_and_mines_rls.sql`](supabase/seal_mystery_box_and_mines_rls.sql))**:
+    - **Sealed Free Unboxing Vulnerability**: Identified and sealed an exploit where `open_pol_mystery_box` could be called directly via PostgREST without on-chain payment proof, allowing rapid automated rolls.
+    - **Deployed `open-pol-crate` Edge Function**: Implemented and activated a high-reliability Supabase Edge Function that connects to Polygon Mainnet RPC providers with fallback redundancy, verifying transaction confirmation (`status = 1`), treasury receiver validation (`0x14791697260E4c9A71f18484C9f997B308e59325`), and minimum value transfer (50.0 POL).
+    - **Anti-Replay Ledger & Partial Unique Index**: Added `idx_nft_sales_tx_hash` on `public.nft_sales (LOWER(tx_hash))` and server-side duplicate hash checking to prevent any transaction hash from being redeemed multiple times.
+    - **Strict Service Role Lock**: Revoked execution privileges on `open_pol_mystery_box` from `PUBLIC`, `anon`, and `authenticated`, restricting invocation exclusively to `service_role` from the verified Edge Function.
+    - **Frontend Synchronization**: Updated `src/js/features/nft.js` to dispatch transaction receipts directly through `client.functions.invoke('open-pol-crate')`.
+  - **💣 Cyber Mines Table Direct Read Vulnerability & RLS Isolation ([`05_casino_minigames.sql`](supabase/rpcs/05_casino_minigames.sql), [`00_schema_guarantees.sql`](supabase/rpcs/00_schema_guarantees.sql))**:
+    - **Eliminated Client-Side Bomb Peeking**: Dropped the insecure policy `"Allow public read own mines_sessions"` (`USING (true)`) which permitted clients to read raw `mine_positions` arrays directly from PostgreSQL.
+    - **Revoked Table Privileges**: Executed `REVOKE ALL ON TABLE public.mines_sessions FROM PUBLIC, anon, authenticated;`, ensuring that zero direct table reads or writes are permitted.
+    - **Enforced Authoritative RPC Gate**: All gameplay is routed exclusively through server-side `SECURITY DEFINER` routines (`start_mines_game`, `reveal_mines_tile`, `cashout_mines_game`) with `PUBLIC` and `anon` execution revoked.
+  - **🎁 PGT Mystery Box Hardening ([`08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql))**:
+    - Explicitly revoked `open_pgt_mystery_box` from `PUBLIC, anon`, enforcing that database modifications require authenticated player sessions.
+  - **🛡️ Player Account Preservation**:
+    - Per user directive, Dobby's account state, balance, and inventory were preserved untouched for manual administrative review.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.482"`.
+
+- **VIP POL Payout Impersonation Seal & Casino Max Bet Cap Hardening (`v1.5.481`)**:
+  - **🔒 Strict Authentication Guard on POL Payout RPCs ([`seal_pol_payout_and_crash_bet_exploits.sql`](supabase/seal_pol_payout_and_crash_bet_exploits.sql), [`04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - **Patched Anonymous Payout Vulnerability**: Discovered via vulnerability disclosure that `request_vip_faucet_pol_payout` and `request_pol_referral_payout` were accessible via anonymous PostgREST callers due to default PostgreSQL `PUBLIC` execution privileges and unauthenticated Web3 caller resolution.
+    - **Enforced Session UID Ownership Check**: Server-side RPCs now strictly verify `auth.uid() IS NOT NULL` and enforce that the calling session UID matches either `user_id` or `web3_auth_id` on the target user record before deducting accumulated VIP faucet POL or referral POL.
+    - **Explicit Role Revocation**: Explicitly executed `REVOKE ALL ON FUNCTION ... FROM PUBLIC, anon;` and restricted execution strictly to `authenticated` and `service_role`.
+  - **🎰 Authoritative 5,000 PGT Maximum Bet Cap Across All Casino Games ([`05_casino_minigames.sql`](supabase/rpcs/05_casino_minigames.sql), [`crash.js`](src/js/features/crash.js), [`roshambo.js`](src/js/features/roshambo.js), [`spinner.js`](src/js/features/spinner.js), [`plinko.js`](src/js/features/plinko.js), [`mines.js`](src/js/features/mines.js))**:
+    - **Cyber-Crash Wager Ceiling**: Added server-side validation `IF p_bet > 5000 THEN RETURN ... 'Maximum bet is 5,000 PGT'; END IF;` to `play_crash`, closing an exploit where accounts with outsized balances could wager hundreds of thousands of PGT at 1.01x to extract near-guaranteed profit.
+    - **Universal Casino Mini-Game Bet Limits**: Enforced the same 5,000 PGT maximum wager ceiling across `play_roshambo`, `play_spinner`, and `play_plinko` (matching `start_mines_game`), along with explicit `REVOKE ALL FROM PUBLIC, anon;`.
+    - **Frontend Input & Wager Button Clamping**: Updated client-side wager controls across all 5 casino games so that the "MAX" button clamps to `Math.min(5000, balance)` and manual inputs exceeding 5,000 PGT are rejected with informative toast notifications.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.481"`.
+
+- **Official Contact & Support Email Synchronization (`v1.5.480`)**:
+  - **✉️ Universal Contact Email Update ([`contact.html`](contact.html), [`index.html`](index.html), [`src/js/app.js`](src/js/app.js), [`src/js/core/ui.js`](src/js/core/ui.js))**:
+    - Synchronized the official support, business inquiry, and partnership email address to `posscrypto@gmail.com` across all portal pages, contact modals, and SEO metadata tags.
+    - Updated direct `mailto:` links, subject lines, and 1-click clipboard copy triggers across the ecosystem.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.480"`.
+
+- **Public Repository Security Isolation & Intellectual Property Protection (`v1.5.479`)**:
+  - **🛡️ Public Git Exposure Elimination ([`.gitignore`](.gitignore))**:
+    - **Excluded Backend Database Architecture (`supabase/`, `scratch/`)**: Completely untracked all backend PostgreSQL stored procedures (RPCs), anti-cheat triggers (`12_anticheat_triggers.sql`), jackpot math, and historical database migration files from the public Git repository.
+    - **Excluded Internal Strategic Roadmaps (`plans/`)**: Untracked all internal feature specifications, architecture plans, and milestone documentation.
+    - **Excluded Automation & Security Tooling (`scripts/`, `run_daily_backup.bat`)**: Untracked local Python validation suites and database backup routines from public GitHub.
+    - **Excluded Internal Agent Protocols (`.agents/`)**: Untracked internal developer credentials, master wallet references, and architectural instructions.
+    - **Local Workspace Preservation**: All files remain 100% intact and operational locally on the host machine for development, testing, and AI-assisted pair programming, while preventing copycats and automated scraping bots from cloning internal assets.
+
+- **Native Daily Traffic & Unique Guest Analytics System (`v1.5.478`)**:
+  - **📊 Privacy-First In-House Traffic & Guest Engine ([`create_daily_traffic_analytics_system.sql`](supabase/create_daily_traffic_analytics_system.sql), [`11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`master_rpcs.sql`](supabase/master_rpcs.sql), [`master_schema.sql`](supabase/master_schema.sql))**:
+    - **Adblocker-Proof Architecture**: Replaced reliance on external tracking pixels (which are blocked by ~50% of crypto/Web3 users) with an adblocker-proof first-party analytics system powered directly by PostgreSQL and Supabase RPCs.
+    - **Daily Uniqueness Tracking**: Implemented `daily_traffic_stats` (aggregated daily KPI metrics) and `daily_visitor_pings` (de-duplication ledger for visitors).
+    - **Authoritative RPCs**: Created `record_daily_visit(p_visitor_id, p_is_guest, p_referrer, p_device)`, `record_guest_game_play()`, and `get_traffic_analytics(p_days)`.
+    - **Automated Breakdown Tracking**: Aggregates top referrer sources (e.g. `twitter.com`, `discord.gg`, `direct`) and device types (`mobile`, `tablet`, `desktop`) in daily JSONB payloads.
+  - **🕹️ Client-Side Session & Gameplay Telemetry ([`db-sync.js`](src/js/core/db-sync.js), [`defense.js`](defense.js))**:
+    - **Lightweight Non-Blocking Ping**: Automatically dispatches a single session ping 1.2s after initial page load, differentiating between guest sessions (`0xguest...`) and authenticated profiles.
+    - **Guest Arcade Play Capture**: Increments daily guest gameplay activity whenever unauthenticated players complete runs in Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Skeet, or Cyber Defense.
+  - **🖥️ Master Admin Traffic & Guest Dashboard ([`tools/admin/admin.html`](tools/admin/admin.html), [`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - **Live KPI Grid**: Displays real-time cards for Today's Unique Guests, Today's Registered Players, Today's Pageviews, and Today's Guest Game Plays.
+    - **14-Day Traffic Trend Chart**: Interactive multi-line Chart.js visualization comparing Unique Guests (pink), Registered Players (cyan), and Pageviews (green dashed).
+    - **History & Referral Diagnostics**: Provides a 7-day historical ledger table and breakdowns of top referring domains and mobile/desktop distribution.
+
+- **Cyber Defense Progressive Difficulty Overhaul (`v1.5.477`)**:
+  - **🛡️ Accessible & Forgiving Early Game (Tiers 1-2 / Waves 1-10) ([`defense.js`](defense.js))**:
+    - **Balanced Base Creep Health**: Calibrated starter creep durability (Drone HP reduced from 75 to 52; Swarm HP from 42 to 30; Trojan HP from 200 to 140; Specter HP from 95 to 75 / Shield from 110 to 85).
+    - **Gradual Tier & Intra-Tier Ramps**: Tier 1 base multiplier tuned to `0.70x` (down from 1.00x) and Tier 2 to `1.25x` (down from 1.85x), with intra-tier wave scaling softened from +14%/wave to +8%/wave (`1 + waveInTier * 0.08`).
+    - **Accessible Level 2 Turret Upgrades**: Lowered Level 2 upgrade thresholds so early defenses can evolve quickly (Laser L2: 140⚡ down from 180⚡; Plasma L2: 210⚡ down from 260⚡; EMP L2: 170⚡ down from 200⚡; Railgun L2: 280⚡ down from 340⚡). Enhanced baseline turret outputs (Laser: 9.0 dmg / 0.20s; Plasma: 120 dmg / 3.00s; EMP: 8 dmg / 1.05s; Railgun: 90 dmg / 1.90s).
+    - **Smooth Early Wave Clear Stipends**: Boosted early wave bonus to `36⚡` on Wave 1 (tapering down to 16⚡ in late game), ensuring players reliably earn enough energy to reinforce their grid.
+  - **👾 Scaled Boss Progression & Mechanized Encounters ([`defense.js`](defense.js))**:
+    - **Wave 5 Boss Rebalance**: Wave 5 Leviathan base stats tuned to 700 HP / 200 Shield (~830 total effective HP, down from 2,652 HP). Removed all escort creeps so the first boss is an exciting, beatable milestone.
+    - **Eliminated Early Boss EMP Jammers**: The disruptive 145px EMP jammer pulse is completely disabled on Wave 5, allowing early turrets to continuously fire. Wave 10 jammer radius reduced to 95px (1.2s jam every 10-13s).
+    - **Dynamic Boss Slow Resistance**: Replaced static 65% slow resistance with a wave-scaled formula: Wave 5 bosses now take 75% slow effect (25% resist, 75% duration), scaling gradually to 70% resist / 40% duration by Wave 25.
+    - **Forgiving Core Leak Damage**: Early boss leaks deal only 3 Core HP (Wave 5) and 4 Core HP (Wave 10), preventing instant game-over from a single slip-up.
+  - **🔥 Escalating High-Stakes Climax (Tiers 4-5 / Waves 16-25) ([`defense.js`](defense.js))**:
+    - **Late-Game Menace**: Late waves scale into formidable encounters with Tier 4 (`4.40x` HP / `1.40x` speed / 0.42s spawn) and Tier 5 APEX Nightmare (`8.20x` HP / `1.62x` speed / 0.28s spawn).
+    - **Endgame Bosses & Swarm Pressure**: Wave 20 Leviathan possesses ~12,700 effective HP with 155px EMP disruption (2.4s jam), escorted by heavy battle groups. Wave 25 features Dual Omega Leviathans (~30,000 HP each) inflicting lethal 10 Core damage on leak.
+
+- **Mystery Crate Duplicate NFT Accumulation & Backpack Quantity Tracking (`v1.5.476`)**:
+  - **🎁 Multi-Quantity Crate NFT Support ([`open_pgt_mystery_box`](supabase/rpcs/08_withdrawals_store.sql), [`open_pol_mystery_box`](supabase/rpcs/08_withdrawals_store.sql), [`allow_duplicate_mystery_crate_nfts.sql`](supabase/allow_duplicate_mystery_crate_nfts.sql))**:
+    - **Duplicate Unboxing Bug Resolved**: Previously, `open_pgt_mystery_box` used an exclusionary `IF NOT (v_crate_nfts @> jsonb_build_array(v_nft_id))` check that silently dropped unboxed NFT rewards if the player already owned that core type, leaving the player with 0 items for their 1,000 PGT crate cost.
+    - **Direct Crate Inventory Stacking**: The procedure now unconditionally appends unboxed utility cores to `users.crate_nfts` JSONB array, allowing players to accumulate duplicate NFTs (`x2`, `x3`, etc.).
+    - **Synchronized POL Quantum Crate**: Implemented matching duplicate accumulation and authoritative caller verification for `open_pol_mystery_box`.
+    - **Authoritative Inventory Return**: Returns the complete, updated `crate_nfts` array in the RPC response payload for immediate frontend reconciliation.
+  - **🎒 Enhanced Backpack & Result Modal UI ([`nft.js`](src/js/features/nft.js))**:
+    - **Real-Time Duplicate Feedback**: The mystery box result modal dynamically calculates total copies owned and announces: `You unboxed a rare Utility Core: [Name] (You now own xN)!`.
+    - **Immediate Inventory Sync**: `showMysteryBoxResult` directly adopts the returned `crate_nfts` array from the database and updates `balancePgt`, eliminating state lag.
+    - **Clean Boost Multiplier Invariant**: In accordance with user preference, gameplay multipliers remain cleanly applied once per unique core type via `getMultipliers()` and server RPCs, preventing runaway economic inflation while allowing full item collection and future trading.
+
+- **Database Request Error Eradication & PostgREST Client Hardening (`v1.5.475`)**:
+  - **🛡️ 401 Unauthorized Eradication on `users` Table ([`state.js`](src/js/core/state.js), [`db-sync.js`](src/js/core/db-sync.js))**:
+    - **Root Cause Eliminated**: Resolved the primary cause of over 275+ HTTP 401 errors logged by Supabase Edge servers. `syncProfileWithDb` was inadvertently assigning `activeAppState.state.authUserId` to `data.user_id` for Web3-only wallet and guest players, which caused periodic `saveToDB()` intervals to fire unauthorized `PATCH /rest/v1/users` requests with the `anon` key.
+    - **Strict Pre-Flight Auth Verification**: Added `await supabase.auth.getSession()` pre-flight verification in `_executeSaveToDB()` and retry fallbacks. Unauthenticated sessions cleanly bypass direct table PATCH attempts, ensuring zero unauthorized calls are dispatched.
+    - **Guarded App Version & Referral Code Sync**: Guarded `app_version` and initial referral code updates in `db-sync.js` to execute only when an authentic Supabase Auth session (`activeUserId`) exists.
+  - **🚫 403 Forbidden High-Score RPC & Fallback Eradication ([`db-sync.js`](src/js/core/db-sync.js))**:
+    - **Eliminated Obsolete RPC Call**: Removed obsolete client calls to `submit_arcade_highscore` in `submitHighScoreToDB()`, which was generating 403 Forbidden errors because the legacy procedure had been properly locked to `service_role` during earlier anti-cheat migrations.
+    - **Eliminated 401 Fallback**: Removed the fallback attempt in `submitHighScoreToDB()` that tried to run `supabase.from('users').update(dbUpdate)`, since arcade tournament and all-time high scores are already authoritatively recorded and verified by `end_arcade_session`.
+  - **🔒 Clean Client-Side Operations ([`profile.js`](src/js/features/profile.js), [`nft.js`](src/js/features/nft.js))**:
+    - **Profile Username Guard**: Guarded direct DB update in `profile.js` with active Supabase session checks, avoiding 401 errors when Web3 wallet players save their display name.
+    - **NFT Direct Table Update Cleanup**: Removed unauthorized direct `users.update({ owned_nfts })` calls in `activateVipPass` and `syncNftBackpack`. On-chain NFTs are queried live from Polygon smart contracts, while database mutations are handled authoritatively by `activate_vip_pass`.
+
+- **Cyber Defense Anti-Inflation Economy: 250⚡ Start & Late-Game Scarcity (`v1.5.474`)**:
+  - **⚡ Comfortable Early Game Foundation ([`defense.js`](defense.js))**:
+    - Restored starting energy to **250⚡**, allowing players to establish their preferred tactical opening setup (Laser + Plasma, Laser + EMP, or Railgun) without early starvation on Waves 1-3.
+  - **📉 Late-Game Energy Inflation Neutralization ([`defense.js`](defense.js))**:
+    - **Diminishing Wave Clear Stipends**: Replaced the escalating wave bonus curve (`20 + wave * 4.0` which inflated to 120⚡ in late game) with an anti-inflation curve `Math.max(14, 32 - Math.floor(wave * 0.75))`. Early waves receive generous 30-32⚡ stipends, while late waves with massive creep volume taper down to 14-17⚡.
+    - **Flat Creep Bounties (Eliminated Tier Inflation)**: Removed the +25%/tier energy multiplier (`bountyMult`), preventing high-density late waves from flooding player reserves with hundreds of free energy per wave. Leaderboard scoring retains full tier scaling (`scoreMult`).
+    - **Zero-Bounty Cluster Mini-Swarms**: Ruptured mini-swarms from Tier 4+ Trojans now yield 0⚡ bounty, ensuring cluster ruptures remain a pure defensive crisis rather than a cash generator.
+    - **Tuned Core Surges**: Reduced power core surge frequency from 6% to 3.5% and capped the bonus to max +2⚡ on legitimate non-zero bounties.
+    - **Strategic Level 3 Scarcity**: Across all 25 waves, total cumulative energy is now tightly bounded (~2,000⚡ total), ensuring players can only afford 2 to 3 Level 3 superweapons rather than effortlessly maxing all 12 pads.
+
+- **Cyber Defense Tactical Difficulty Rebalance & Boss EMP Jammer Overhaul (`v1.5.473`)**:
+  - **⚡ High-Stakes Gameplay & Organic Spawn Cadence Overhaul ([`defense.js`](defense.js))**:
+    - **Spawn Interval Overwrite Bug Resolved**: Fixed the game loop bug where `this.spawnInterval = 0.65 + Math.random() * 0.45` was overriding tier spawn pacing after every creep spawn, which was causing late-game waves (Tier 4 & Tier 5) to trickle in slowly and passively. Tier intervals now respect progressive ramp down to `0.28s` in Tier 5.
+    - **Lightning Swarm Burst Spawning**: Implemented rapid-cadence burst streaming for Swarm runners (`0.16s - 0.24s`), creating dense cluster rushes that test player point-defense coverage.
+    - **Rebalanced Resource Economy**: Calibrated starting energy from 250⚡ to 180⚡, requiring players to make tactical starter turret placement choices on Wave 1 rather than establishing immediate blanket coverage. Tuned wave clear energy bonus curve to `20 + wave * 4.0` with +-15% flux, and rebalanced creep kill bounties.
+    - **Tier Upgrade Cost Ramp**: Scaled Level 2 and Level 3 upgrade costs across all four turret archetypes (Laser: L2 180⚡ / L3 320⚡; Plasma: L2 260⚡ / L3 450⚡; EMP: L2 200⚡ / L3 360⚡; Railgun: L2 340⚡ / L3 560⚡), requiring deliberate positioning and strategic leveling.
+  - **👾 Boss EMP Jammer & Enemy Countermeasures ([`defense.js`](defense.js))**:
+    - **Boss EMP Jammer Shockwave**: Bosses and Omega Leviathans now emit a periodic EMP disruption pulse every 6.5s - 9.0s that disables and jams all turrets within a 145px blast radius for 2.2 seconds.
+    - **Visual Jamming Indicators**: Jammed turrets display a pulsing neon crimson disruption ring and a floating `⚡ JAMMED` combat warning pill while disabled.
+    - **Boss Cryogenic Resistance**: Bosses now feature 65% slow resistance against EMP Frost Pylons with 50% reduced debuff duration, preventing permanent freeze-locking.
+    - **Plasma Mortar Rebalance**: Rebalanced Plasma Mortar boss multiplier from 5.0x down to a tactical 2.2x heavy impact damage, and updated tooltip in [`index.html`](index.html).
+    - **Cluster Trojan Ruptures**: Destroying heavy Trojans in Tier 4+ (Wave 16+) triggers a rupture that deploys 2 high-speed mini-swarms directly at the casualty point.
+    - **High-Stakes Core Damage**: Rebalanced core leak damage so that Bosses deal 6 Core HP (10 Core HP for Omega Leviathans) and Trojans deal 2 Core HP, making leaking large threats lethal to survival.
+
+- **Database Performance Optimization, RLS Policy Deduplication & Index Hardening (`v1.5.472`)**:
+  - **⚡ 100% Performance Linter Clearance ([`supabase/optimize_database_performance_and_rls_policies.sql`](supabase/optimize_database_performance_and_rls_policies.sql), [`supabase/rpcs/00_schema_guarantees.sql`](supabase/rpcs/00_schema_guarantees.sql))**:
+    - Dissected and eradicated all 58 "Multiple Permissive Policies" warnings flagged across 9 public tables (`bet_wins`, `boss_reset_history`, `deposits_history`, `global_jackpot`, `global_settings`, `nft_sales`, `pgt_supply_history`, `user_stakes`, `withdrawals_history`), consolidating duplicate policies into single, high-efficiency rules.
+    - Resolved `auth_rls_initplan` evaluation bottleneck on `public.users` by wrapping `auth.uid()` calls with `(SELECT auth.uid())`, enabling PostgreSQL to evaluate user credentials once per query rather than once per candidate row.
+    - Dropped redundant duplicate index `users_player_id_unique` from `public.users` after cleanly re-pointing the foreign key `user_stakes_player_id_fkey` directly to the primary key `users_pkey`.
+    - Added covering indexes `idx_user_stakes_wallet_address` and `idx_user_stakes_wallet` on `public.user_stakes`, eliminating unindexed foreign key scans and speeding up vault operations.
+  - **🛡️ Security Advisor Lockdown**:
+    - Revoked obsolete and overly permissive `Allow all access on global_settings` from `public`, isolating write operations strictly to `service_role`.
+    - Corrected role leakage on `boss_reset_history` and `deposits_history`, ensuring service-role write operations are strictly restricted to `service_role` rather than `public`.
+    - Defined explicit `service_role` policies on private internal tables (`admin_security_config`, `admin_discord_secrets`, `account_merge_backups`), achieving 0 missing RLS policy warnings.
+
+- **PolySpace Expedition Claim Repair & Signature Lockout Resolution (`v1.5.471`)**:
+  - **🚀 Authoritative PolySpace Claim Repair ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`supabase/repair_polyspace_claims_and_signature_shield.sql`](supabase/repair_polyspace_claims_and_signature_shield.sql))**:
+    - Resolved the critical claim failure preventing players (including Poss) from claiming finished expeditions ("Expedition already claimed or not found" / "Expedition was already claimed in another tab/window!").
+    - Decommissioned the fragile MD5 `serverSig` verification branch inside `claim_polyspace_expedition`. Because expeditions in `users.space_state->'expeditions'` are strictly server-managed (direct client injection is permanently blocked by `trg_prevent_direct_balance_mutation`), HMAC signature verification was redundant and caused false-positive rejections whenever player identity strings or formatting differed between expedition launch and claim.
+    - Preserved all physical authoritative anti-cheat controls: real-time completion check (`now >= endTime`), minimum flight duration elapsed check (`now - startTime >= min_duration`), destination Warp Drive requirements, registration backdating prevention, fleet slot capacity clamp (3 to 5 slots), and 3,500 PGT payout ceiling.
+    - Clarified the empty claim response to return `'No completed expeditions ready to claim or expedition not found'`.
+  - **✨ UI Feedback & Toast Precision ([`space.js`](space.js))**:
+    - Refined `claimExpeditionLoot()` to surface the server's authoritative response directly rather than erroneously diagnosing all rejected claims as "already claimed in another tab/window!".
+    - Updated `start_polyspace_expedition` to stamp a streamlined `'server_verified'` flag on newly launched fleet missions.
+
+- **Cyberpunk Grand Progressive Jackpot Celebration, Audio Fanfare & Retroactive Sync (`v1.5.470`)**:
+  - **👑 Cyberpunk Grand Jackpot Celebration Modal ([`src/js/utils/confetti.js`](src/js/utils/confetti.js))**:
+    - Created a full-screen, high-z-index Celebration Modal for the Global Progressive Jackpot featuring golden glassmorphism borders, glowing radial flare animations, and an animated pulsating crown header.
+    - Features a 7-tone brass synthesizer fanfare via the native Web Audio API (C4-E4-G4-C5-E5-G5-C6) and a 3-wave multi-stage confetti explosion (240 + 160 + 120 particles in gold, neon cyan, purple, and green).
+    - Includes interactive "🏆 CLAIM GLORY & CELEBRATE" action button and touch/click backdrop dismiss.
+  - **🔄 Retroactive Jackpot Victory Sync ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Resolved the missing celebration issue for Poss (`0xpgt8312e02d37185b5983e6922d1dae1cce`), whose 54,545.39 PGT jackpot win on Plinko was credited to database balance but lacked frontend celebratory feedback.
+    - Implemented retroactive victory inspection in `syncJackpotData()`: on initial load or profile sync, PolyGame verifies whether the current player is the most recent jackpot winner within the last 72 hours, triggering the Grand Celebration sequence once per win timestamp via idempotent `localStorage` tracking.
+  - **🛡️ Casino Loss Sound & Toast Clashing Immunity ([`src/js/features/plinko.js`](src/js/features/plinko.js), [`src/js/features/spinner.js`](src/js/features/spinner.js), [`src/js/features/roshambo.js`](src/js/features/roshambo.js), [`src/js/features/crash.js`](src/js/features/crash.js))**:
+    - Suppressed error sound effects (`sfx.playError()`) and loss/warning toasts whenever `serverResult.jackpot_won` is true, ensuring jackpot victories are never overwritten by sub-1.0x round outcomes or crash events.
+    - In Cyber-Crash, synchronized `handleServerJackpotWin` to trigger triumphantly upon flight conclusion rather than before launch.
+  - **📢 Enhanced Discord Jackpot Webhook ([`src/js/utils/discord.js`](src/js/utils/discord.js))**:
+    - Enhanced `sendDiscordJackpotWin(winAmount, gameName, winnerName)` with game name, sanitized winner display name, and gold embed styling.
+
+- **Seal PolySpace Outpost Poke Cooldown Loophole & Sanitize Dobby (`v1.5.469`)**:
+  - **🛡️ Server Cooldown Immutability Shield ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`supabase/seal_outpost_poke_exploit_and_sanitize_dobby.sql`](supabase/seal_outpost_poke_exploit_and_sanitize_dobby.sql))**:
+    - Dissected and neutralized the automated outpost poke exploit script where clients repeatedly invoked `save_polyspace_state` with `{ lastPokeDate: null }` every 90ms to wipe the 1/day cooldown timestamp and immediately call `poke_allied_outpost` for rapid 20 PGT + 180 iron payouts.
+    - Locked `lastPokeDate`, `lastRaidDate`, `lastAnomalyScanTime`, and `lastOpDate` in `save_polyspace_state` to be strictly preserved from server state (`v_current_state`). Direct client payloads can never nullify or roll back server cooldowns.
+    - Added automated tamper detection logging security warnings to `bot_security_logs` whenever a payload attempts to wipe cooldown fields.
+  - **🧹 Dobby Account Liquidation & Permanent Ban ([`supabase/seal_outpost_poke_exploit_and_sanitize_dobby.sql`](supabase/seal_outpost_poke_exploit_and_sanitize_dobby.sql))**:
+    - Liquidated Dobby's (`0xpgt003e7625` / `0x602bec371e2a99f679c73a5930a590cebf8e7696`) 40,430.62 illicit PGT balance to `0.00 PGT`.
+    - Wiped inflated iron (`206,454 -> 50`), reset `mineralsMinedTotal = 0`, `pgtMinedTotal = 0`, and cleared active expeditions.
+    - Enforced permanent suspension (`is_banned = true`, `bot_warning = 99`).
+
+- **Relax Auto-Ban Threshold to 20 Warnings & Fix Claim Expedition SQL Syntax (`v1.5.468`)**:
+  - **🛡️ 20-Warning Bot Threshold Calibration ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`supabase/disable_automatic_bans.sql`](supabase/disable_automatic_bans.sql))**:
+    - Calibrated `record_bot_warning` auto-ban threshold to 20 warnings (`v_count >= 20`), providing generous buffer to ensure legitimate, paying players are never auto-suspended due to temporary signature mismatches or network glitches, while preserving an automated backstop against runaway bot attacks.
+    - Security events continue logging to `public.bot_security_logs` for forensic review.
+  - **🔧 Fix PL/pgSQL Syntax in claim_polyspace_expedition ([`supabase/disable_automatic_bans.sql`](supabase/disable_automatic_bans.sql))**:
+    - Corrected PostgreSQL grammar error (`ERROR: 42601: syntax error at or near "IF" LINE 400: END IF;`) caused by a misplaced `END IF;` instead of `END;` in the exception block.
+    - Synchronized `claim_polyspace_expedition` in the migration file with authoritative `supabase/rpcs/06_polyspace_fleet.sql` returns and dual-identity cryptographic signature checks.
+  - **🧹 Troubs Account Recovery & Expedition Clearing ([`supabase/disable_automatic_bans.sql`](supabase/disable_automatic_bans.sql))**:
+    - Guaranteed Troubs (`0xpgt1315acc40000000000000000000000000000`) is unbanned (`is_banned = false`, `bot_warning = 0`).
+    - Purged false-positive signature audit logs and reset stuck expeditions to free up all fleet slots.
+
+- **Permanently Disable Automatic Bans & Protect Legitimate Players (`v1.5.467`)**:
+  - **🛡️ Decommission Automated Account Suspensions ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`supabase/disable_automatic_bans.sql`](supabase/disable_automatic_bans.sql))**:
+    - Completely removed the automated `is_banned = true` trigger from `record_bot_warning`.
+    - Automated bans are permanently disabled across the platform, eliminating false-positive suspensions on real, paying players caused by network fluctuations, latency spikes, or signature transitions.
+    - Security violations continue to be logged into `public.bot_security_logs` for administrative visibility and audit tracking.
+    - Account suspensions are now strictly human-reviewed and administered exclusively by the Master Admin Wallet (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`) via `admin_set_user_ban` in the Admin Panel.
+  - **🚀 PolySpace Signature Verification Hardening ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - Upgraded `claim_polyspace_expedition` to validate server signatures against both canonical `player_id` and `linked_wallet_address`.
+    - Invalid or mismatched signatures are now discarded safely without calling `record_bot_warning`, preventing repeated warning cascades on batch claims.
+  - **🧹 Troubs Account Audit & Restoration ([`supabase/disable_automatic_bans.sql`](supabase/disable_automatic_bans.sql))**:
+    - Purged false-positive `forged_expedition_signature` audit logs from Troubs's account (`0xpgt1315acc40000000000000000000000000000` / `0x5416216beb51f3327c37a5303f69280e51de9918`).
+    - Reset `bot_warning = 0` and confirmed `is_banned = false`.
+    - Cleared stuck invalid nebula expeditions so all fleet slots are freed for active mining.
+
+- **Seamless Hybrid Web3 & Google Auth Dual-Linking Architecture (`v1.5.466`)**:
+  - **🔗 Dual-Identity Authentication Engine ([`supabase/fix_hybrid_web3_google_auth_linking.sql`](supabase/fix_hybrid_web3_google_auth_linking.sql), [`supabase/rpcs/00_schema_guarantees.sql`](supabase/rpcs/00_schema_guarantees.sql), [`supabase/master_schema.sql`](supabase/master_schema.sql))**:
+    - Added `web3_auth_id UUID` column and index to `public.users` to maintain dual authentication identities for players who utilize both Google OAuth and MetaMask/Web3 wallets on the same account profile.
+    - Updated Row Level Security (RLS) policies on `public.users` (`Allow authenticated insert users`, `Allow authenticated update users`) to grant full access when `user_id = auth.uid() OR web3_auth_id = auth.uid()`, preserving the strict Zero Anon Writes security invariant.
+  - **🛡️ Upgraded bind_web3_user_session ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql))**:
+    - Eliminated false-positive `WALLET_CONFLICT` errors for hybrid accounts where `linked_wallet_address` is bound to a Google account (`user_id`).
+    - Now binds `web3_auth_id = auth.uid()` while preserving the primary Google `user_id`, allowing players to log in seamlessly with either Google OAuth or MetaMask without identity clobbering.
+    - Added cryptographic identity verification ensuring caller `auth.uid()` matches the wallet address in JWT metadata or `auth.users` before allowing binding.
+  - **⚡ Robust assert_caller_player_id & get_caller_player_id ([`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql))**:
+    - Fixed the issue where hybrid accounts logging in via Web3 encountered `⚠️ PROFILE_NOT_FOUND: User profile does not exist for this session.` when attempting to play games or claim faucets.
+    - `assert_caller_player_id` now validates callers against both `user_id` and `web3_auth_id`, with automatic profile resolution and auto-healing via cryptographic wallet claims in `auth.jwt()` and `auth.users`.
+  - **🌐 Frontend Hybrid Sync ([`src/js/core/db-sync.js`](src/js/core/db-sync.js), [`src/js/core/state.js`](src/js/core/state.js))**:
+    - Updated `syncProfileWithDb` to query by `web3_auth_id` and automatically call `bind_web3_user_session` if `web3_auth_id` is missing or needs synchronization.
+    - Updated `_executeSaveToDB` to prioritize canonical `player_id` updates, allowing seamless cross-device state saves for both Google and Web3 authenticated sessions.
+
+- **Unban Theo, Repair PolySpace Expedition Claims & Fix 403 Forbidden Fallback (`v1.5.465`)**:
+  - **🔓 Unban Theo & Clear False-Positive Security Incident Logs ([`supabase/fix_unban_theo_and_repair_polyspace_claims.sql`](supabase/fix_unban_theo_and_repair_polyspace_claims.sql))**:
+    - Instantly restored Theo's account (`0xpgt461a068f0bd48378c8f93a4eadb77152`), reset `is_banned = false`, cleared `bot_warning = 0`, and purged false-positive `forged_backdated_expedition` audit logs.
+  - **🚀 Repair PolySpace Expedition Claim Age Check ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - Removed over-aggressive 8-day age clamp in `claim_polyspace_expedition` which erroneously assumed any mission older than 8 days was forged. Real players who launch 7-day Odyssey missions and return 2 weeks later can now claim all loot without false bot warnings or auto-suspensions.
+  - **🛡️ Resilient save_polyspace_state ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`space.js`](space.js))**:
+    - Upgraded `save_polyspace_state` to safely persist client non-sensitive state (`missionLogs`, scan timestamps) while strictly preserving server `expeditions`, minerals, and module levels.
+    - Removed redundant direct table update fallback in `space.js`, eliminating browser console 403 (Forbidden) network errors.
+
+- **Neutralize PolySpace ULTRA Exploit, Cryptographic Fleet Signatures & Deprecate save_polyspace_state (`v1.5.464`)**:
+  - **🛡️ Exploit Analysis ("PolySpace ULTRA — pipelined + parallel")**:
+    - Dissected Dobby's automated exploit script which forged 3 completed 7-Day Galactic Odyssey expeditions (`startTime = now - 8 days`, `endTime = now - 1s`), injected them into the database by invoking `save_polyspace_state`, and parallel-pipelined non-blocking `claim_polyspace_expedition` calls across cycles at 15+ cycles/sec, mining thousands of PGT per minute.
+  - **🔒 Deprecate & Disable save_polyspace_state ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - Permanently disabled `public.save_polyspace_state` and revoked all execution permissions (`REVOKE ALL`). PolySpace fleet expeditions can strictly only be launched via `start_polyspace_expedition`.
+  - **🔐 Cryptographic Fleet Server Signatures ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - Added HMAC cryptographic server signature (`serverSig = MD5(pid + start + end + dest + salt)`) generated strictly on the server during `start_polyspace_expedition`.
+    - Added signature verification in `claim_polyspace_expedition`. Any forged, missing, or mismatched expedition signature triggers automatic rejection, bot warning logging, and zero payout.
+    - Added anti-backdating duration clamps preventing expeditions from being backdated prior to account creation or beyond 8 days.
+  - **🧹 Dobby Account Liquidation & Re-Ban ([`supabase/seal_polyspace_ultra_exploit_and_reban_dobby.sql`](supabase/seal_polyspace_ultra_exploit_and_reban_dobby.sql))**:
+    - Liquidated Dobby's remaining 36,416.49 PGT balance and staked balance to `0.00 PGT`.
+    - Wiped all fake mined minerals (`pgtMinedTotal = 0`, `quantum = 0`, `iron = 50`, `titanium = 10`, `expeditions = []`).
+    - Purged all 488 fraudulent bets and mines records from today.
+    - Enforced permanent ban (`is_banned = true`, `bot_warning = 99`).
+
+- **Fix Staking APY NFT Boost Synchronization & Active Stakes Backfill (`v1.5.463`)**:
+  - **🌾 Server-Side Staking APY NFT Boost Fix ([`supabase/rpcs/07_vault_staking.sql`](supabase/rpcs/07_vault_staking.sql), [`supabase/fix_staking_apy_nft_boost_and_backfill.sql`](supabase/fix_staking_apy_nft_boost_and_backfill.sql))**:
+    - Resolved a defect where `deposit_stake` checked `v_user.owned_nfts` using `@> '[{"id":"..."}]'` (legacy object format), whereas `owned_nfts` is stored as an array of string IDs (`'["..."]'`).
+    - This caused server-side APY calculations to ignore all Yield Vault NFTs (`nft_yield_vault` +15%, `nft_yield_vault_rare` +50%, `nft_yield_vault_epic` +100%) and Epic Yield (`nft_epic_yield` +5%), improperly defaulting NFT boost to `1.0x` and setting APY to `2.20%` in the database.
+    - Updated `deposit_stake` to support both JSONB string arrays (`?` and `@> '["..."]'`) and object arrays, matching the client calculation (`7.97%` for 1-day with full boosts).
+    - Added backfill migration script to recalculate and update `apy` across all active positions in `public.user_stakes`.
+  - **⚡ Client Staking APY Consistency ([`src/js/features/staking.js`](src/js/features/staking.js))**:
+    - Updated `deposit_stake` handler in `staking.js` to assign `res.apy` directly to `newStake.apy`, guaranteeing 100% synchronization between frontend ledger rendering and persisted database values before and after page refresh.
+
+- **Seal PolySpace Fleet Expedition Injection, Re-Ban Dobby & Cyber Mines Wager Cap (`v1.5.462`)**:
+  - **🛡️ Seal PolySpace Expedition Injection Exploit ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`supabase/seal_polyspace_expedition_injection_and_reban_dobby.sql`](supabase/seal_polyspace_expedition_injection_and_reban_dobby.sql))**:
+    - Discovered an automated attack where Dobby injected pre-completed Galactic Odyssey expeditions directly into `space_state->'expeditions'` via client-side PostgREST updates and immediately triggered `claim_polyspace_expedition('ALL')` every 200 milliseconds, minting +78,642 PGT in seconds.
+    - Updated `prevent_direct_balance_mutation` trigger to make `space_state->'expeditions'` completely immutable to direct client updates (`anon`, `authenticated`), ensuring expeditions can strictly only be launched via `start_polyspace_expedition` and claimed via server procedures.
+  - **🛡️ Authenticated User Ban Enforcement ([`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql))**:
+    - Hardened `assert_caller_player_id` to enforce `is_banned` verification on authenticated Supabase sessions (Google OAuth), preventing suspended accounts from invoking server RPCs.
+  - **💣 Cyber Mines Maximum Bet Cap & Ban Shield ([`supabase/rpcs/05_casino_minigames.sql`](supabase/rpcs/05_casino_minigames.sql), [`src/js/features/mines.js`](src/js/features/mines.js))**:
+    - Added an authoritative 5,000 PGT maximum wager limit to `start_mines_game` on both server RPC and client frontend, preventing massive wagers (e.g. 94k or 49 quadrillion PGT) and 1-tile cashout abuse.
+    - Added account suspension check (`is_banned`) to `start_mines_game`.
+  - **🧹 Dobby Sanitization & Fraudulent Wins Cleanup**:
+    - Reset Dobby's exploited balance (104,400.89 PGT) back to 0.00 PGT and wiped all illicit space minerals in [`supabase/seal_polyspace_expedition_injection_and_reban_dobby.sql`](supabase/seal_polyspace_expedition_injection_and_reban_dobby.sql).
+    - Enforced permanent ban (`is_banned = true`, `bot_warning = 99`).
+    - Purged fraudulent Cyber Mines entries from `public.bet_wins` and `public.mines_sessions`.
+
+- **Quantum Relics Anti-Cheat Calibration & Universal Mythic Drops (`v1.5.461`)**:
+  - **🏺 Universal Mythic Apex Relic Drops ([`supabase/rpcs/03_quantum_relics.sql`](supabase/rpcs/03_quantum_relics.sql), [`supabase/calibrate_quantum_relics_anti_cheat.sql`](supabase/calibrate_quantum_relics_anti_cheat.sql))**:
+    - Unlocked Mythic Apex Relics (*Quantum Singularity Core* and *Genesis Matrix*) across all mini-games (Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, PolySpace).
+    - Removed the obsolete constraint that artificially restricted Apex relics exclusively to PolySpace Deep Void internal calls.
+  - **🛡️ Anti-Cheat False Alarm Elimination**:
+    - Removed the 15-second survival duration gate (`unauthorized_relic_probe_premature_duration`) that falsely flagged legitimate players who caught relics spawned early in runs.
+    - Removed the 45-second drop cooldown (`unauthorized_relic_probe_cooldown_active`) that falsely rejected consecutive drops from Quantum Relic Seeker NFT holders.
+    - Updated [`src/js/utils/confetti.js`](src/js/utils/confetti.js) to verify `activeSessionId` before invoking `grant_relic_drop`, preventing offline or unauthenticated sessions from sending null session IDs (`unauthorized_relic_probe_missing_session`).
+    - Maintained all core security invariants: caller identity verification, active session validation, single-relic quantity checks (`amount > 1` rejected), 3 relics per session cap, and strict whitelist validation.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.461"` with updated script cache busters.
+
+- **Multi-Device Daily Quests Synchronization & Server-Side Aggregation (`v1.5.460`)**:
+  - **📱 Multi-Device Daily Quests Real-Time Synchronization ([`src/js/features/quests.js`](src/js/features/quests.js), [`src/js/core/db-sync.js`](src/js/core/db-sync.js), [`src/js/app.js`](src/js/app.js))**:
+    - Resolved a multi-device synchronization defect where quest progression (`games`, `mining`, `wins`) was confined to local browser storage (`localStorage`) and failed to synchronize between Mobile and Desktop browsers.
+    - Implemented `syncDailyQuests(forceImmediate = false)` with debouncing, querying the newly introduced `sync_daily_quests` RPC.
+    - Registered automatic synchronization listeners on tab focus (`focus`) and visibility changes (`visibilitychange`), ensuring that switching between desktop and mobile devices immediately updates and renders authoritative quest progression.
+    - Wired `syncDailyQuests()` directly into `trackQuestProgress()`, `loadUserData()`, dashboard tab navigation, and profile tab rendering.
+  - **🛡️ Authoritative Server-Side Activity Aggregation ([`supabase/rpcs/10_quests_progression.sql`](supabase/rpcs/10_quests_progression.sql), [`supabase/fix_daily_quests_multi_device_sync.sql`](supabase/fix_daily_quests_multi_device_sync.sql))**:
+    - Created `public.sync_daily_quests(p_wallet TEXT, p_client_quests JSONB DEFAULT NULL)` (`SECURITY DEFINER`):
+      - Authoritatively counts completed arcade games for today (UTC) directly from `public.arcade_sessions`.
+      - Authoritatively counts winning wagers for today (UTC) directly from `public.bet_wins`.
+      - Incorporates verified client PolySpace mining progress without regressing existing counts (`GREATEST`).
+      - Preserves all claim statuses (`games_claimed`, `mining_claimed`, `wins_claimed`, `master_claimed`) so rewards cannot be double-claimed.
+    - Upgraded `public.claim_daily_quest` to remove restrictive server-count checks, allowing server activity to count directly towards claims across all login mechanisms.
+    - Added automatic streak tracking on Master Quest claims and backfilled active players' today counts.
+  - **🎰 Global Jackpot Reset to 50k PGT & Leaderboard Test Bet Cleanup ([`supabase/reset_jackpot_to_50k_and_clean_test_wins.sql`](supabase/reset_jackpot_to_50k_and_clean_test_wins.sql))**:
+    - Re-calibrated `public.global_jackpot` back to `50,000.00 PGT`.
+    - Pruned inflated test entries from `public.bet_wins` where payout exceeded 1,000,000 PGT.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.460"` with updated script cache busters.
+
+- **Fix MetaMask & WalletConnect Web3 Authentication on Chrome Mobile (`v1.5.459`)**:
+  - **📱 Chrome Mobile Web3 Wallet Authentication Fix ([`src/js/core/auth-web3.js`](src/js/core/auth-web3.js), [`src/js/core/ui.js`](src/js/core/ui.js))**:
+    - Resolved critical issue where connecting MetaMask on Chrome Mobile failed with `@supabase/auth-js: No compatible Ethereum wallet interface on the window object (window.ethereum) detected`.
+    - Implemented `createSupabaseWalletAdapter(provider, address, signer)`:
+      - Intercepts `eth_requestAccounts` and immediately returns the verified account address without prompting redundant modals.
+      - Returns Polygon chain ID (`0x89` / 137) and explicitly specifies `options: { signInWithEthereum: { chainId: 137 } }`.
+      - Handles `personal_sign` for SIWE challenges seamlessly via WalletConnect (`provider.request`), with deep-link redirection to the connected wallet app (MetaMask, Trust, etc.) on mobile so the signature prompt appears immediately in the foreground.
+      - Includes robust fallback to `signer.signMessage()` if the direct provider request is unavailable.
+    - Updated `authenticateWeb3Wallet(address, signer, isAutoConnect, providerToUse)` to accept and forward the active EIP-1193 provider (`providerToUse` / `window.globalWCProvider`).
+    - Handled user-cancellation gracefully to prevent unhandled exception popups when a signature is declined.
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.459"` with updated script cache busters.
+
+- **Enforce Authenticated Referral Harvesting & Eliminate Client Cheat Fallback (`v1.5.458`)**:
+  - **🌾 Referral Harvest Exploit Sealed ([`src/js/features/referrals.js`](src/js/features/referrals.js))**:
+    - Discovered and eliminated a dangerous legacy client fallback in the referral harvest handler that credited PGT locally in browser memory whenever the database call returned an error (such as HTTP 401).
+    - Because the database was never touched, navigating away and returning reloaded the untouched `unclaimed_referral_pgt` from the cloud, enabling infinite repeated local claims.
+    - Completely purged the fake offline fallback. Client balance and unclaimed rewards now update strictly upon authoritative database confirmation (`claimed > 0`).
+  - **🔒 Strict Supabase Authentication Enforcement**:
+    - `harvest_referral_rewards` remains strictly locked to `authenticated` and `service_role` (execution explicitly revoked from `anon` and `public`).
+    - The harvest button now verifies that the player has an active Supabase Auth session (`authUserId`). If a Web3 player connected on boot without signing in, clicking Harvest prompts an interactive wallet authentication (`signInWithWeb3`) so Supabase issues a verified session.
+    - Added exception raising in `harvest_referral_rewards` if `assert_caller_player_id` fails, and generated forward-only migration [`supabase/harden_referral_harvest_authentication.sql`](supabase/harden_referral_harvest_authentication.sql).
+  - **🚀 Version Bump (`src/js/core/config.js`, `index.html`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.458"` with updated script cache busters.
+
+- **Clean Up Deprecated Client Call to Restricted sync_user_dex_liquidity RPC (`v1.5.457`)**:
+  - **🧹 Faucet Tab 401 Error Resolved ([`src/js/features/faucet.js`](src/js/features/faucet.js))**:
+    - In release `v1.5.453`, `sync_user_dex_liquidity` was locked to `service_role` to prevent client-side DEX LP spoofing.
+    - When users opened the Faucet tab, `syncUserLiquidity()` previously attempted to call `supabase.rpc('sync_user_dex_liquidity')`, which PostgREST correctly rejected with HTTP 401 Unauthorized.
+    - Removed the deprecated client-side RPC invocation from `faucet.js`. Client continues to scan on-chain liquidity positions directly from QuickSwap and Uniswap for UI display and multiplier calculation, without triggering 401 network errors.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.457"`.
+
+- **Deploy On-Chain Deposit Edge Function, Add Polygon Fallback RPCs, and Add Transaction Hash Verifier (`v1.5.456`)**:
+  - **⚡ Deploy `deposit-pgt` Edge Function & Seal On-Chain Deposits**:
+    - Discovered that the `deposit-pgt` Edge Function had not been deployed to Supabase, which caused client CORS/preflight 404 errors when players submitted deposits.
+    - Successfully deployed `deposit-pgt` and `sync-assets` with `--no-verify-jwt` so preflight `OPTIONS` requests succeed and client invocations connect directly.
+    - Removed unnecessary Cloudflare Turnstile token check on on-chain deposits (on-chain deposits are already cryptographically signed and paid on Polygon mainnet, with full log parsing and `processed_deposits` replay protection).
+    - Upgraded Polygon RPC endpoints in both Edge Functions to high-speed, zero-downtime Bor RPCs (`https://polygon-bor-rpc.publicnode.com`, `https://polygon.drpc.org`, `https://polygon.gateway.tenderly.co`), replacing defunct endpoints that returned 401/402.
+  - **💳 User Transaction Hash Verifier ([`src/js/features/staking.js`](src/js/features/staking.js), [`index.html`](index.html))**:
+    - Added `verifyDepositByTxHash()` and an accordion in the Deposit modal allowing players whose wallet already transferred PGT to easily paste their Polygon transaction hash (`0x...`) and verify/credit the deposit immediately.
+    - Added automatic `localStorage` pending deposit transaction caching so failed invocations can be re-verified with 1 click.
+  - **🛡️ Anti-Regression Invariant Suite ([`scripts/verify_security_invariants.py`](scripts/verify_security_invariants.py), [`.agents/AGENTS.md`](.agents/AGENTS.md))**:
+    - Created automated security invariant audit script that checks all SQL schemas, triggers, and RPC grants to prevent accidental security regressions during bug fixes.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.456"`.
+
+- **Enforce Supabase Web3 Auth, Deprecate Guest DB Accounts, and Lock Down public.users RLS (`v1.5.455`)**:
+  - **🛡️ Enforce Supabase Web3 Auth & Deprecate Guest DB Accounts ([`supabase/enforce_supabase_web3_auth_and_deprecate_guests.sql`](supabase/enforce_supabase_web3_auth_and_deprecate_guests.sql), `supabase/master_rpcs.sql`)**:
+    - **Deprecate Unauthenticated Guest Accounts in Supabase**: Unauthenticated guest sessions (`!authUserId`) are now local-only and strictly prohibited from writing or inserting rows into `public.users`.
+    - **Enforce Supabase Native Web3 Auth (EIP-4361)**: Updated `authenticateWeb3Wallet` in `src/js/core/auth-web3.js` to require `supabase.auth.signInWithWeb3({ chain: 'ethereum', ... })`. Web3 players sign a standard SIWE message without gas, Supabase authenticates the wallet server-side, issues a verified session (`auth.uid()`), and securely binds the user record via `bind_web3_user_session`.
+    - **Strict RLS on `public.users`**: Revoked `INSERT`, `UPDATE`, `DELETE`, and `TRUNCATE` privileges on `public.users` from `anon` and `public`. Created strict RLS policies requiring `auth.uid() IS NOT NULL AND user_id = auth.uid()` for all insertions and updates.
+    - **Client-Side Sync Hardening (`src/js/core/db-sync.js`, `src/js/core/state.js`)**: Updated `syncProfileWithDb` and `saveToDB` to abort database persistence if `!currentState.authUserId`, eliminating unauthenticated or bot row creation attempts.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.455"`.
+
+- **Restore Guest & Web3 Account Registration, Harden On-Chain Asset Sync, & Lockdown Leaderboards (`v1.5.454`)**:
+  - **🛡️ Open Guest & Web3 Registration Restored ([`supabase/restore_registration_and_harden_assets.sql`](supabase/restore_registration_and_harden_assets.sql), `supabase/master_rpcs.sql`)**:
+    - Identified that `enforce_authenticated_database_access.sql` previously revoked `INSERT` from `anon` on `public.users` with `WITH CHECK (auth.uid() IS NOT NULL)`, which blocked all visitors without Google Auth (MetaMask, Coinbase Wallet, and Guest players) from creating accounts.
+    - Restored `GRANT SELECT, INSERT, UPDATE ON TABLE public.users TO anon, authenticated, service_role` and updated RLS policies (`Allow public insert users` and `Allow public update users`).
+    - Full anti-cheat security is maintained by `public.prevent_direct_balance_mutation()` (SECURITY INVOKER), which intercepts all `anon` insertions, validates player IDs, rejects test fixtures/bots, and forces all balances, VIP status, highscores, relics, and admin flags to 0/empty/NULL.
+  - **🛡️ On-Chain Asset Sync Hardening (`sync_onchain_nfts`, `sync_onchain_relics`, `supabase/functions/sync-assets/index.ts`)**:
+    - Revoked execution of `sync_onchain_nfts` and `sync_onchain_relics` from `PUBLIC, anon, authenticated` and restricted strictly to `service_role`.
+    - Deployed `sync-assets` Edge Function that queries Polygon Bor RPC directly to verify actual token ownership on the NFT (`0x45D80Ea3...`) and Relics (`0xdc7B10e6...`) smart contracts before updating the database.
+    - Updated `src/js/features/nft.js` and `src/js/core/db-sync.js` to route on-chain asset verification through `sync-assets`.
+  - **🛡️ Leaderboard Lockdown (`submit_arcade_highscore`)**:
+    - Revoked execution of `submit_arcade_highscore` from `PUBLIC, anon, authenticated` and restricted to `service_role`.
+    - High scores can now only be legitimately recorded through time-verified, velocity-clamped arcade gameplay sessions via `end_arcade_session`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.454"`.
+
+- **Proactive Security Hardening: Seal Referral Minting, Voucher Double-Spending, Wallet Hijacking & DEX LP Spoofing (`v1.5.453`)**:
+  - **🛡️ Proactive Security Hardening ([`supabase/proactive_security_hardening.sql`](supabase/proactive_security_hardening.sql), `supabase/master_rpcs.sql`)**:
+    - **Vector 1 — Unearned Referral Rewards Minting (`process_referral_commissions` & `harvest_referral_rewards`)**:
+      - `process_referral_commissions` was previously exposed to `anon, authenticated` with arbitrary `claim_amount`. An attacker could spoof claims and credit arbitrary referral PGT to uplines.
+      - Revoked execution from `PUBLIC, anon, authenticated` and restricted strictly to `service_role`.
+      - Guarded `harvest_referral_rewards` with caller identity verification (`assert_caller_player_id`) and revoked from `anon`.
+    - **Vector 2 — Withdrawal Voucher Double-Spending (`refund_failed_withdrawal`)**:
+      - Identified a double-spend hazard where a client holding a signed, on-chain bearer withdrawal voucher could call `refund_failed_withdrawal` to restore off-chain balance, and subsequently broadcast the signed voucher on Polygon to mint real PGT on-chain.
+      - Revoked `refund_failed_withdrawal` from `PUBLIC, anon, authenticated` and granted strictly to `service_role` (for admin/service reconciliation only).
+    - **Vector 3 — Synthetic Player ID Account Hijacking (`link_wallet_to_account`)**:
+      - Prevented attackers from passing arbitrary synthetic player IDs (`0xpgt...`) into `p_wallet` to merge and wipe victim accounts.
+      - Enforced strict 42-character regex (`^0x[a-f0-9]{40}$`) on `p_wallet`.
+      - Enforced that authenticated callers can only link wallets to their own `user_id` (`auth.uid() = p_user_id`).
+      - Restricted wallet lookup strictly to `linked_wallet_address` (disallowing synthetic ID matching) and revoked execution from `anon`.
+    - **Vector 4 — DEX Liquidity Multiplier Spoofing (`sync_user_dex_liquidity`)**:
+      - `sync_user_dex_liquidity` allowed unverified clients to report up to \$250 in DEX LP, unlocking maximum tier 3 +30% VIP faucet yields.
+      - Restricted setting `dex_liquidity_usd` strictly to verified admin passkey or `service_role`.
+      - Revoked execution from `PUBLIC, anon, authenticated`.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.453"`.
+
+- **Purge Fake VIP Passes, Seal Unverified POL Referral Commission RPC & Reconcile Balances (`v1.5.452`)**:
+  - **🛡️ Exploit Sealing & Remediation ([`supabase/remediate_fake_vip_and_purge_fake_pol_referral.sql`](supabase/remediate_fake_vip_and_purge_fake_pol_referral.sql), `supabase/rpcs/04_faucets_vip_yields.sql`, `supabase/master_rpcs.sql`)**:
+    - Discovered that `credit_nft_referral_commission` was callable by authenticated clients with arbitrary `p_tx_hash` values, and contained an unintended code block that directly appended NFTs/VIP passes into the caller's `crate_nfts` or `owned_nfts`.
+    - Dobby exploited this to inject 11 Yearly VIP Access Passes into `crate_nfts` while generating 990.5000 fake POL referral commissions for CRiMiNeL (`0xpgt25c12fd2`), which led to an unauthorized 990.5 POL pending payout request.
+    - Purged Dobby's exploited `crate_nfts` back to `[]`.
+    - Cancelled the fraudulent 990.5 POL payout request in `public.pol_payout_requests`.
+    - Deleted all 12 fake commission rows from `public.pol_referral_commissions` and reset CRiMiNeL's referral POL balance (`total_referral_pol = 0.0`, `unclaimed_referral_pol = 0.0`) while filtering Dobby's entries from `referrals_list`.
+    - Completely removed client-side inventory grants from `credit_nft_referral_commission` and restricted execute permissions strictly to `service_role`.
+  - **⚡ Secure Polygon Edge Function (`supabase/functions/nft-referral/index.ts`)**:
+    - Created an Edge Function that cryptographically verifies on-chain Polygon transaction receipts for NFT purchases before triggering referral commissions via `service_role`.
+  - **💻 Client Integration (`src/js/features/nft.js`)**:
+    - Updated `purchaseNft` to route referral commissions through `supabase.functions.invoke('nft-referral')` with valid on-chain transaction receipts.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.452"`.
+
+- **Seal Infinite Token Deposit Exploit & Enforce On-Chain Verification (`v1.5.451`)**:
+  - **🛡️ Exploit Sealing & Revocation ([`supabase/seal_infinite_deposit_exploit.sql`](supabase/seal_infinite_deposit_exploit.sql), `supabase/rpcs/07_vault_staking.sql`, `supabase/master_rpcs.sql`)**:
+    - Identified critical exploit where an ad-hoc scratch procedure `deposit_pgt_onchain` was exposed to unauthenticated/untrusted clients (`anon`, `authenticated`) with `SECURITY DEFINER`.
+    - Because the procedure accepted `p_amount` directly from the client without verifying the transaction on the Polygon blockchain, an attacker could supply random transaction hashes and mint arbitrary millions of PGT into their database balance.
+    - Permanently dropped and revoked `deposit_pgt_onchain(TEXT, NUMERIC, TEXT, TEXT)` from all public/anon/authenticated roles.
+    - Replaced with `credit_verified_deposit` RPC restricted strictly to `service_role` (used only by trusted backend Edge Functions).
+    - Enforced atomic replay defense via `processed_deposits` (`tx_hash TEXT PRIMARY KEY`) to prevent any duplicate claim of on-chain transactions.
+  - **⚡ Secure Polygon Edge Function (`supabase/functions/deposit-pgt/index.ts`)**:
+    - Created a secure Deno Edge Function that queries Polygon Mainnet JSON-RPC nodes directly to fetch transaction receipts.
+    - Cryptographically validates that the transaction succeeded (`status === 1`), was emitted by the official PGT token contract (`0x701100D19b1a93672cfe7291EA455b4220631209`), and transferred tokens to the official PolyGame Treasury Vault (`0x10B9993990c9EF8a212c9557cB02aD94da9a654d`).
+    - Extracts the exact transfer amount from on-chain event logs (`Transfer`), preventing any client-side amount spoofing.
+  - **💻 Client Integration (`src/js/features/staking.js`)**:
+    - Updated `executePgtDeposit` to route through `supabase.functions.invoke('deposit-pgt')`, removing all references to the deprecated `deposit_pgt_onchain` RPC.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.451"`.
+
+- **Fix Account Registration Shield to Support All Web3 Providers & EVM Player IDs (`v1.5.450`)**:
+  - **🛡️ Registration Shield Compatibility Upgrade ([`supabase/systemic_quest_and_account_security.sql`](supabase/systemic_quest_and_account_security.sql), `supabase/rpcs/12_anticheat_triggers.sql`)**:
+    - Discovered that the previous `INSERT` anti-bot trigger was overly restrictive (`auth_provider IN ('google', 'wallet', 'guest')`), inadvertently rejecting legitimate Web3 wallet players (`auth_provider = 'web3'`) with `REGISTRATION_REJECTED: Invalid auth provider.`.
+    - Also found that regex `(0xpgt|0xg|0xguest)` rejected standard EVM 42-char addresses (`0x[a-fA-F0-9]{40}`) with `REGISTRATION_REJECTED: Invalid player ID format.`.
+    - Upgraded `prevent_direct_balance_mutation` trigger on `INSERT` to allow all legitimate providers (`'web3'`, `'google'`, `'wallet'`, `'guest'`, `'email'`, and `NULL`), and accept any valid `player_id` starting with `0x` with valid length (supporting `0xpgt...`, `0xg...`, `0xguest...`, and raw 42-character EVM wallet addresses).
+    - Explicitly set `auth_provider: isWeb3Address ? 'web3' : ...` on initial user records in `src/js/core/db-sync.js`.
+    - Retained strict anti-bot protections: rejects fake test fixture providers (`%fixture%`), test accounts (`test_%`), test usernames (`__test__`), and dummy zero addresses.
+  - **🚀 Version Bump (`src/js/core/config.js`, `.agents/AGENTS.md`)**:
+    - Bumped application release version to `APP_VERSION = "1.5.450"`.
+
 
 - **Systemic Quest Protection, Immutability Trigger & Generic Anti-Cheat (`v1.5.449`)**:
   - **🛡️ Universal Security Architecture ([`supabase/systemic_quest_and_account_security.sql`](supabase/systemic_quest_and_account_security.sql))**:
