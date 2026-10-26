@@ -273,6 +273,13 @@ export function triggerRelicCelebration(relicMeta) {
     const pId = window.appState.state.playerId || window.appState.state.walletAddress;
     const activeSessionId = relicMeta.sessionId || window.currentArcadeSessionId || null;
     if (pId && activeSessionId) {
+      // Client-Side Session Anti-Cheat Guard: Enforce strictly 1 relic drop RPC call per session
+      if (!window._relicClaimedSessions) window._relicClaimedSessions = new Set();
+      if (window._relicClaimedSessions.has(activeSessionId)) {
+        console.warn("[triggerRelicCelebration] Session already claimed maximum 1 relic:", activeSessionId);
+        return;
+      }
+      window._relicClaimedSessions.add(activeSessionId);
       sbClient.rpc('grant_relic_drop', {
         p_player_id: pId,
         p_relic_id: relicMeta.id,

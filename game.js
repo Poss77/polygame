@@ -527,6 +527,7 @@ class NeonAstroDodge {
     if (boostLabel) boostLabel.innerText = `${initialPlayerMult.toFixed(1)}x`;
     this.bonusTokensCollected = 0;
     this.sessionId = null;
+    this.sessionRelicsDroppedCount = 0;
 
     // Reset Mouse & Touch Controls
     this.mouseActive = false;
@@ -1685,10 +1686,12 @@ class NeonAstroDodge {
       // 99.55%: Standard PGT Energy Shard (+100 pts)
       const relicMult = (typeof window !== 'undefined' && typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
       const relicChance = 0.0010 * relicMult;
-      const isRelic = rand < relicChance;
+      // Anti-Cheat Hard Cap: Strictly max 1 relic drop per game session across all modes
+      const isRelic = (this.sessionRelicsDroppedCount || 0) < 1 && (rand < relicChance);
       const isRareCrystal = !isRelic && rand < (relicChance + 0.0035);
 
       if (isRelic) {
+        this.sessionRelicsDroppedCount = (this.sessionRelicsDroppedCount || 0) + 1;
         // Weighted Relic Rarity: 2% Mythic (Singularity/Genesis), 13% Legendary (Compass), 35% Epic (Deflector), 50% Rare (Prism)
         const relicRand = Math.random();
         let pickedRelic = { id: 'relic_astrododge_prism', name: 'Quantum Prism', rarity: 'rare', color: '#00f0ff' };

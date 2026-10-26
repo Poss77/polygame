@@ -363,6 +363,7 @@ class CyberStackerGame {
 
     // Start Server-Side Anti-Cheat Session Handshake
     this.sessionId = null;
+    this.sessionRelicsDroppedCount = 0;
     if (window.startArcadeSession) {
       try {
         this.sessionId = await window.startArcadeSession('Cyber Stacker');
@@ -563,10 +564,12 @@ class CyberStackerGame {
     }
 
     // Quantum Relic Drop Check (2% from Golden Core, 0.10% standard placement - doubled with Relic Seeker)
+    // Anti-Cheat Hard Cap: Strictly max 1 relic drop per game session across all modes
     const relicMult = (typeof window !== 'undefined' && typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
     const baseRelicChance = block.isGold ? 0.02 : 0.0010;
     const relicChance = baseRelicChance * relicMult;
-    if (Math.random() < relicChance) {
+    if ((this.sessionRelicsDroppedCount || 0) < 1 && Math.random() < relicChance) {
+      this.sessionRelicsDroppedCount = (this.sessionRelicsDroppedCount || 0) + 1;
       // 2% Mythic (Singularity/Genesis), 13% Legendary (Monolith), 35% Epic (Keystone), 50% Rare (Foundation)
       const relicRand = Math.random();
       let pickedRelic = { id: 'relic_stacker_foundation', name: 'Titanium Bedrock', rarity: 'rare', color: '#00f0ff' };

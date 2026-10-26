@@ -337,6 +337,7 @@ class CyberDriftGame {
 
     this.bonusTokensCollected = 0;
     this.sessionId = null;
+    this.sessionRelicsDroppedCount = 0;
     if (window.startArcadeSession) {
       window.startArcadeSession('Cyber Drift').then(sid => {
         this.sessionId = sid;
@@ -494,7 +495,9 @@ class CyberDriftGame {
       let relicMeta = null;
 
       const relicMult = (typeof window !== 'undefined' && typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
-      if (rand < (0.0010 * relicMult)) {
+      // Anti-Cheat Hard Cap: Strictly max 1 relic drop per game session across all modes
+      if ((this.sessionRelicsDroppedCount || 0) < 1 && rand < (0.0010 * relicMult)) {
+        this.sessionRelicsDroppedCount = (this.sessionRelicsDroppedCount || 0) + 1;
         // Quantum Relic Drop (~0.10% base / doubled with Relic Seeker)
         type = 'quantum_relic';
         const relicRand = Math.random();

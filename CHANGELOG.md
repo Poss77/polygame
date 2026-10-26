@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Security: Hard Cap Relic Drops to 1 Max Per Game Session with Anti-Cheat Trigger on 2nd (`v1.5.716`)**:
+  - **🛡️ Strict 1 Relic Per Session Hard Cap ([`invaders.js`](invaders.js), [`game.js`](game.js), [`drift.js`](drift.js), [`stacker.js`](stacker.js), [`src/js/utils/confetti.js`](src/js/utils/confetti.js))**:
+    - Initialized `this.sessionRelicsDroppedCount = 0` on session start across all arcade titles.
+    - Restricted quantum relic spawn checks strictly to `(this.sessionRelicsDroppedCount || 0) < 1`, guaranteeing that legitimate gameplay will never spawn more than 1 relic per session regardless of game duration or score.
+    - Added a client-side session set in `src/js/utils/confetti.js` to ensure duplicate RPC triggers cannot occur for the same active session ID.
+  - **🔒 Anti-Cheat Trigger Calibrated ([`supabase/rpcs/03_quantum_relics.sql`](supabase/rpcs/03_quantum_relics.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Updated `grant_relic_drop` RPC: any attempt to claim $\ge 2$ relics within the same session ID is strictly recognized as an illegitimate duplicate exploit probe and triggers `unauthorized_relic_probe_capacity_exceeded`.
+    - Created migration and remediation script [`supabase/remediate_relic_capacity_and_paulv_false_positive.sql`](supabase/remediate_relic_capacity_and_paulv_false_positive.sql).
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.716"` and refreshed asset queries.
+
 - **Fix: Remove duplicate ARCADE_GAMES export in games.js (`v1.5.715`)**:
   - **🚀 Release Changes**:
     - Fix: Remove duplicate ARCADE_GAMES export in games.js.

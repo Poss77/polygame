@@ -237,6 +237,7 @@ class CyberInvaders {
 
     this.bonusTokensCollected = 0;
     this.sessionId = null;
+    this.sessionRelicsDroppedCount = 0;
     if (window.startArcadeSession) {
       window.startArcadeSession('Cyber Invaders').then(sid => {
         this.sessionId = sid;
@@ -1110,10 +1111,12 @@ class CyberInvaders {
     const lifeCooldownMs = 5 * 60 * 1000;
 
     // 0. Quantum Relic Drop check (~0.10% from standard aliens, 1% Boss, 2% Golden UFO - doubled with Relic Seeker)
+    // Anti-Cheat Hard Cap: Strictly max 1 relic drop per game session across all modes
     const relicMult = (typeof window !== 'undefined' && typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
     const baseRelicChance = isGoldenUfo ? 0.02 : (isBossOrUfo ? 0.01 : 0.0010);
     const relicChance = baseRelicChance * relicMult;
-    if (Math.random() < relicChance) {
+    if ((this.sessionRelicsDroppedCount || 0) < 1 && Math.random() < relicChance) {
+      this.sessionRelicsDroppedCount = (this.sessionRelicsDroppedCount || 0) + 1;
       const relicRand = Math.random();
       let pickedRelic = { id: 'relic_invaders_core', name: 'Pulsar Core', rarity: 'rare', color: '#00f0ff' };
       if (relicRand < 0.02) {
