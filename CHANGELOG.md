@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Dynamic Warp-Scaling Anti-Cheat Duration for High Warp Players (`v1.5.717`)**:
+  - **🚀 Dynamic Flight Duration Anti-Cheat ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Replaced rigid static minimum duration floors in `claim_polyspace_expedition` (e.g. fixed 28h for Odyssey) with dynamic calculation based on player's actual `v_warp_level` (`v_warp_speed_mult = 1.0 + (v_warp_level - 1) * 0.05`).
+    - Accommodates legitimate stacking of Warp Drive speed boosts, Hyperdrive mini-game calibration (-30%), and Deep Space Anomaly Temporal Wormholes (-25%) without false-positive claim blocks.
+    - Preserves 100% anti-cheat protection against forged timestamps, backdating, and speedhackers.
+    - Created migration file [`supabase/fix_polyspace_expedition_dynamic_warp_duration.sql`](supabase/fix_polyspace_expedition_dynamic_warp_duration.sql).
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.717"` and refreshed asset queries.
+
 - **Security: Hard Cap Relic Drops to 1 Max Per Game Session with Anti-Cheat Trigger on 2nd (`v1.5.716`)**:
   - **🛡️ Strict 1 Relic Per Session Hard Cap ([`invaders.js`](invaders.js), [`game.js`](game.js), [`drift.js`](drift.js), [`stacker.js`](stacker.js), [`src/js/utils/confetti.js`](src/js/utils/confetti.js))**:
     - Initialized `this.sessionRelicsDroppedCount = 0` on session start across all arcade titles.
