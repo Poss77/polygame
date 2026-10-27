@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Rebalance ROI with L35-50 Cost Taper, L21-50 Laser Scaling & +25% Long Missions (`v1.5.719`)**:
+  - **🚀 Level 35–50 Module Cost Tapering ([`space.js`](space.js), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - Tapered exponential module upgrade cost scaling from 1.22 down to 1.15 for Levels 36–50, cutting Level 50 upgrade costs by up to 59% (from 852k PGT down to 351k PGT).
+  - **⚡ Enhanced Mining Laser Yield Scaling ([`space.js`](space.js), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - Boosted Mining Laser yield scaling from +0.18 to +0.25 per level for Levels 21–50 (reaching 9.42x at L40 and 11.92x at L50).
+  - **🌌 Deep Space & Odyssey Base PGT Buff (+25%) ([`space.js`](space.js), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - Increased Deep Space (3-Day) base PGT from 13.7 to 17.125 PGT (+25%).
+    - Increased Odyssey (7-Day) base PGT from 24.5 to 30.625 PGT (+25%).
+    - Rebalanced long-duration expeditions to cap payback strictly under 2 years up to Level 43 (Level 40 Deep Space payback drops to 1.31 years).
+    - Created migration script [`supabase/rebalance_polyspace_roi_l35_taper_and_yields.sql`](supabase/rebalance_polyspace_roi_l35_taper_and_yields.sql).
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.719"` and refreshed asset queries.
+
 - **VIP Faucet: Custom & Full Balance POL Payout Requests (`v1.5.718`)**:
   - **💎 Dynamic POL Payout Amount Selector ([`index.html`](index.html), [`src/js/features/faucet.js`](src/js/features/faucet.js))**:
     - Added an interactive Payout Amount input field with quick-preset `[ 5 POL ]` and `[ MAX ]` buttons in `#vip-faucet-payout-section`.

@@ -779,6 +779,31 @@ class PolySpaceEngine {
     };
   }
 
+  getModuleUpgradeCost(lvl) {
+    const currentLvl = Math.max(1, lvl || 1);
+    if (currentLvl <= 35) {
+      return {
+        iron: Math.floor(40 * Math.pow(1.22, currentLvl - 1)),
+        tit: Math.floor(10 * Math.pow(1.22, currentLvl - 1)),
+        pgt: Math.floor(50 * Math.pow(1.22, currentLvl - 1))
+      };
+    }
+    const taper = Math.pow(1.15, currentLvl - 35);
+    return {
+      iron: Math.floor((40 * Math.pow(1.22, 34)) * taper),
+      tit: Math.floor((10 * Math.pow(1.22, 34)) * taper),
+      pgt: Math.floor((50 * Math.pow(1.22, 34)) * taper)
+    };
+  }
+
+  getLaserMultiplier(lvl) {
+    const l = Math.max(1, lvl || 1);
+    if (l <= 20) {
+      return 1.0 + (l - 1) * 0.18;
+    }
+    return 4.42 + (l - 20) * 0.25;
+  }
+
   // --- VISUAL ENHANCEMENTS: AAA SCI-FI HANGAR BAY & TACTICAL MAP ---
 
   drawHangarBulkheadArchitecture(w, h, divX) {
@@ -1328,16 +1353,16 @@ class PolySpaceEngine {
         warpCost.innerText = "⭐ MAX LEVEL 50 REACHED";
         warpCost.style.color = "var(--color-success)";
       } else {
-        const cWarpIron = Math.floor(40 * Math.pow(1.22, this.state.warpLevel - 1));
-        const cWarpTit = Math.floor(10 * Math.pow(1.22, this.state.warpLevel - 1));
-        const cWarpPgt = Math.floor(50 * Math.pow(1.22, this.state.warpLevel - 1));
-        warpCost.innerText = `Cost: ${cWarpIron.toLocaleString()} Iron | ${cWarpTit.toLocaleString()} Tit | ${cWarpPgt.toLocaleString()} PGT`;
+        const c = this.getModuleUpgradeCost(this.state.warpLevel);
+        warpCost.innerText = `Cost: ${c.iron.toLocaleString()} Iron | ${c.tit.toLocaleString()} Tit | ${c.pgt.toLocaleString()} PGT`;
       }
     }
 
     if (laserBonus) {
-      const curLaser = Math.round((this.state.laserLevel - 1) * 18);
-      const nextLaser = Math.round(this.state.laserLevel * 18);
+      const curMult = this.getLaserMultiplier(this.state.laserLevel);
+      const nextMult = this.getLaserMultiplier(this.state.laserLevel + 1);
+      const curLaser = Math.round((curMult - 1) * 100);
+      const nextLaser = Math.round((nextMult - 1) * 100);
       const pgtOreStatus = this.state.laserLevel >= 35
         ? `<span style="color:#ffd700; font-size:0.7rem; font-weight:800; display:block; margin-top:2px;">✨ Rare PGT Ore Extraction Active (Lvl 35+)</span>`
         : `<span style="color:var(--text-muted); font-size:0.7rem; display:block; margin-top:2px;">🔒 Unlocks Rare PGT Ore Extraction at Lvl 35 (${this.state.laserLevel}/35)</span>`;
@@ -1348,10 +1373,8 @@ class PolySpaceEngine {
         laserCost.innerText = "⭐ MAX LEVEL 50 REACHED";
         laserCost.style.color = "var(--color-success)";
       } else {
-        const cLaserIron = Math.floor(40 * Math.pow(1.22, this.state.laserLevel - 1));
-        const cLaserTit = Math.floor(10 * Math.pow(1.22, this.state.laserLevel - 1));
-        const cLaserPgt = Math.floor(50 * Math.pow(1.22, this.state.laserLevel - 1));
-        laserCost.innerText = `Cost: ${cLaserIron.toLocaleString()} Iron | ${cLaserTit.toLocaleString()} Tit | ${cLaserPgt.toLocaleString()} PGT`;
+        const c = this.getModuleUpgradeCost(this.state.laserLevel);
+        laserCost.innerText = `Cost: ${c.iron.toLocaleString()} Iron | ${c.tit.toLocaleString()} Tit | ${c.pgt.toLocaleString()} PGT`;
       }
     }
 
@@ -1365,10 +1388,8 @@ class PolySpaceEngine {
         cargoCost.innerText = "⭐ MAX LEVEL 50 REACHED";
         cargoCost.style.color = "var(--color-success)";
       } else {
-        const cCargoIron = Math.floor(40 * Math.pow(1.22, this.state.cargoLevel - 1));
-        const cCargoTit = Math.floor(10 * Math.pow(1.22, this.state.cargoLevel - 1));
-        const cCargoPgt = Math.floor(50 * Math.pow(1.22, this.state.cargoLevel - 1));
-        cargoCost.innerText = `Cost: ${cCargoIron.toLocaleString()} Iron | ${cCargoTit.toLocaleString()} Tit | ${cCargoPgt.toLocaleString()} PGT`;
+        const c = this.getModuleUpgradeCost(this.state.cargoLevel);
+        cargoCost.innerText = `Cost: ${c.iron.toLocaleString()} Iron | ${c.tit.toLocaleString()} Tit | ${c.pgt.toLocaleString()} PGT`;
       }
     }
 
@@ -1553,7 +1574,7 @@ class PolySpaceEngine {
     // If slots available, show destination picker
     if (activeCount < maxSlots) {
       const cargoMult = (1 + (this.state.cargoLevel - 1) * 0.25);
-      const laserMult = (1 + (this.state.laserLevel - 1) * 0.18);
+      const laserMult = this.getLaserMultiplier(this.state.laserLevel);
       const shipInfo = this.getEquippedStarshipMultiplier();
       const starshipMult = shipInfo.mult || 1.0;
 
@@ -1574,11 +1595,11 @@ class PolySpaceEngine {
       const ironSec = Math.floor(550 * cargoMult);
       const pgtSecStr = `~${(basePgtSec * 0.8).toFixed(2)}-${(basePgtSec * 1.2).toFixed(2)}`;
 
-      const basePgtDeep = 13.7 * laserMult * starshipMult;
+      const basePgtDeep = 17.125 * laserMult * starshipMult;
       const ironDeep = Math.floor(1100 * cargoMult);
       const pgtDeepStr = `~${(basePgtDeep * 0.8).toFixed(2)}-${(basePgtDeep * 1.2).toFixed(2)}`;
 
-      const basePgtOdyssey = 24.5 * laserMult * starshipMult;
+      const basePgtOdyssey = 30.625 * laserMult * starshipMult;
       const ironOdyssey = Math.floor(2200 * cargoMult);
       const pgtOdysseyStr = `~${(basePgtOdyssey * 0.8).toFixed(2)}-${(basePgtOdyssey * 1.2).toFixed(2)}`;
 
@@ -2074,7 +2095,7 @@ class PolySpaceEngine {
     let basePgt = 0.5;
 
     const cargoMult = (1 + (this.state.cargoLevel - 1) * 0.25);
-    const laserMult = (1 + (this.state.laserLevel - 1) * 0.18);
+    const laserMult = this.getLaserMultiplier(this.state.laserLevel);
 
     if (exp.type === 'asteroids') {
       earnedIron = Math.floor(40 * cargoMult);
@@ -2097,12 +2118,12 @@ class PolySpaceEngine {
       earnedIron = Math.floor(1100 * cargoMult);
       earnedTit = Math.floor(380 * cargoMult);
       earnedQuant = Math.floor(100 * cargoMult);
-      basePgt = 13.7;
+      basePgt = 17.125;
     } else if (exp.type === 'odyssey') { // 7-Day Odyssey Expedition
       earnedIron = Math.floor(2200 * cargoMult);
       earnedTit = Math.floor(850 * cargoMult);
       earnedQuant = Math.floor(250 * cargoMult);
-      basePgt = 24.5;
+      basePgt = 30.625;
     }
 
     const shipInfo = this.getEquippedStarshipMultiplier();
@@ -2947,9 +2968,10 @@ class PolySpaceEngine {
       return;
     }
 
-    const costIron = Math.floor(40 * Math.pow(1.22, currentLvl - 1));
-    const costTit = Math.floor(10 * Math.pow(1.22, currentLvl - 1));
-    const costPgt = Math.floor(50 * Math.pow(1.22, currentLvl - 1));
+    const costs = this.getModuleUpgradeCost(currentLvl);
+    const costIron = costs.iron;
+    const costTit = costs.tit;
+    const costPgt = costs.pgt;
 
     const currentPgt = (window.appState && window.appState.state) ? (window.appState.state.balancePgt || 0) : 0;
 
