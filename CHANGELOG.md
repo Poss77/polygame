@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **VIP Faucet: Custom & Full Balance POL Payout Requests (`v1.5.718`)**:
+  - **💎 Dynamic POL Payout Amount Selector ([`index.html`](index.html), [`src/js/features/faucet.js`](src/js/features/faucet.js))**:
+    - Added an interactive Payout Amount input field with quick-preset `[ 5 POL ]` and `[ MAX ]` buttons in `#vip-faucet-payout-section`.
+    - Allowed eligible players to request any custom amount from the 5.00 POL minimum up to their entire accumulated balance (e.g. 7.3156 POL).
+    - Defaults automatically to the player's full balance (`MAX`) for instant 1-click full balance withdrawals.
+    - Updated confirmation prompt, server RPC payload (`p_amount`), success toasts, player activity log, and Master Admin Discord alerts to reflect the exact requested amount.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.718"` and refreshed asset queries.
+
 - **PolySpace: Dynamic Warp-Scaling Anti-Cheat Duration for High Warp Players (`v1.5.717`)**:
   - **🚀 Dynamic Flight Duration Anti-Cheat ([`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
     - Replaced rigid static minimum duration floors in `claim_polyspace_expedition` (e.g. fixed 28h for Odyssey) with dynamic calculation based on player's actual `v_warp_level` (`v_warp_speed_mult = 1.0 + (v_warp_level - 1) * 0.05`).

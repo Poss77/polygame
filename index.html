@@ -372,7 +372,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.717">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.718">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -1065,8 +1065,24 @@
                   </div>
                 </div>
 
-                <div id="vip-faucet-payout-destination" style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 1rem; word-break: break-all;">
+                <div id="vip-faucet-payout-destination" style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.75rem; word-break: break-all;">
                   Destination Wallet: <span style="color:var(--text-muted);">Checking linked wallet...</span>
+                </div>
+
+                <!-- Payout Amount Selector (Visible when balance >= 5.00 POL) -->
+                <div id="vip-faucet-amount-container" style="display: none; margin-bottom: 0.85rem;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; font-size: 0.75rem; color: var(--text-dim);">
+                    <span style="font-weight: 700;">Payout Amount</span>
+                    <span style="font-size: 0.72rem; color: #ffd700;">Min 5.00 POL</span>
+                  </div>
+                  <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <div style="position: relative; flex: 1;">
+                      <input type="number" id="vip-faucet-payout-amount-input" step="0.0001" min="5" style="width: 100%; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 6px; padding: 0.5rem 2.8rem 0.5rem 0.75rem; color: #ffd700; font-weight: 700; font-size: 0.95rem; outline: none; box-sizing: border-box;" placeholder="5.0000">
+                      <span style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); font-size: 0.75rem; font-weight: 700; color: var(--text-muted);">POL</span>
+                    </div>
+                    <button type="button" id="btn-vip-payout-min" class="btn-secondary" style="padding: 0.5rem 0.75rem; font-size: 0.75rem; font-weight: 700; border-radius: 6px; border: 1px solid rgba(255, 215, 0, 0.3); background: rgba(255, 215, 0, 0.1); color: #ffd700; cursor: pointer; white-space: nowrap;">5 POL</button>
+                    <button type="button" id="btn-vip-payout-max" class="btn-secondary" style="padding: 0.5rem 0.75rem; font-size: 0.75rem; font-weight: 700; border-radius: 6px; border: 1px solid rgba(255, 215, 0, 0.3); background: rgba(255, 215, 0, 0.1); color: #ffd700; cursor: pointer; white-space: nowrap;">MAX</button>
+                  </div>
                 </div>
 
                 <button class="btn-primary" id="btn-request-vip-payout" style="width: 100%; padding: 0.75rem; font-size: 0.85rem; font-weight: 800; border-radius: 6px; border: none; cursor: pointer; transition: all 0.2s;" disabled>
@@ -4826,17 +4842,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.717"></script>
-  <script src="invaders.js?v=1.5.717"></script>
-  <script src="drift.js?v=1.5.717"></script>
-  <script src="stacker.js?v=1.5.717"></script>
-  <script src="space.js?v=1.5.717"></script>
-  <script type="module" src="skeet.js?v=1.5.717"></script>
-  <script type="module" src="defense.js?v=1.5.717"></script>
-  <script type="module" src="runner.js?v=1.5.717"></script>
-  <script type="module" src="q2048.js?v=1.5.717"></script>
-  <script src="tetris.js?v=1.5.717"></script>
-  <script type="module" src="src/js/app.js?v=1.5.717"></script>
+  <script src="game.js?v=1.5.718"></script>
+  <script src="invaders.js?v=1.5.718"></script>
+  <script src="drift.js?v=1.5.718"></script>
+  <script src="stacker.js?v=1.5.718"></script>
+  <script src="space.js?v=1.5.718"></script>
+  <script type="module" src="skeet.js?v=1.5.718"></script>
+  <script type="module" src="defense.js?v=1.5.718"></script>
+  <script type="module" src="runner.js?v=1.5.718"></script>
+  <script type="module" src="q2048.js?v=1.5.718"></script>
+  <script src="tetris.js?v=1.5.718"></script>
+  <script type="module" src="src/js/app.js?v=1.5.718"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

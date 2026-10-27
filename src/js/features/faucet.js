@@ -953,18 +953,28 @@ export function renderVipFaucetUI() {
     }
   }
 
-  // Payout button state
+  // Payout amount selector & button state
+  const amountContainer = document.getElementById('vip-faucet-amount-container');
+  const amountInput = document.getElementById('vip-faucet-payout-amount-input');
   const btnPayout = document.getElementById('btn-request-vip-payout');
-  if (btnPayout) {
-    const canPayout = unclaimedPol >= minPayout && isValidEvm;
-    btnPayout.disabled = !canPayout;
-    if (unclaimedPol >= minPayout) {
-      btnPayout.innerText = `💎 Request ${minPayout.toFixed(2)} POL Payout`;
-      btnPayout.style.background = 'linear-gradient(135deg, #ffd700, #ff8800)';
-      btnPayout.style.color = '#000';
-      btnPayout.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.4)';
-      btnPayout.style.cursor = isValidEvm ? 'pointer' : 'not-allowed';
-    } else {
+
+  if (unclaimedPol >= minPayout && isValidEvm) {
+    if (amountContainer) amountContainer.style.display = 'block';
+    if (amountInput) {
+      if (document.activeElement !== amountInput) {
+        const curVal = parseFloat(amountInput.value);
+        if (isNaN(curVal) || curVal <= 0 || curVal > unclaimedPol || curVal < minPayout) {
+          amountInput.value = unclaimedPol.toFixed(4);
+        }
+      }
+      amountInput.max = unclaimedPol.toFixed(4);
+      amountInput.min = minPayout.toFixed(4);
+    }
+    updateVipPayoutButtonState(unclaimedPol, minPayout, isValidEvm);
+  } else {
+    if (amountContainer) amountContainer.style.display = 'none';
+    if (btnPayout) {
+      btnPayout.disabled = true;
       btnPayout.innerText = `Request Payout (Need ${minPayout.toFixed(2)} POL)`;
       btnPayout.style.background = 'rgba(255, 255, 255, 0.08)';
       btnPayout.style.color = 'var(--text-muted)';
@@ -1089,6 +1099,54 @@ export async function executeVipFaucetClaim() {
   }
 }
 
+export function getSelectedVipPayoutAmount(unclaimedPol, minPayout) {
+  const amountInput = document.getElementById('vip-faucet-payout-amount-input');
+  if (amountInput && amountInput.value) {
+    const val = parseFloat(amountInput.value);
+    if (!isNaN(val) && val > 0) return val;
+  }
+  return unclaimedPol >= minPayout ? unclaimedPol : minPayout;
+}
+
+export function updateVipPayoutButtonState(unclaimedPol, minPayout, isValidEvm) {
+  const btnPayout = document.getElementById('btn-request-vip-payout');
+  if (!btnPayout) return;
+
+  if (!isValidEvm) {
+    btnPayout.disabled = true;
+    btnPayout.innerText = "Link Web3 EVM Wallet in Profile to Request Payout";
+    btnPayout.style.background = 'rgba(255, 255, 255, 0.08)';
+    btnPayout.style.color = 'var(--text-muted)';
+    btnPayout.style.boxShadow = 'none';
+    btnPayout.style.cursor = 'not-allowed';
+    return;
+  }
+
+  const requestedAmount = getSelectedVipPayoutAmount(unclaimedPol, minPayout);
+  if (requestedAmount < minPayout) {
+    btnPayout.disabled = true;
+    btnPayout.innerText = `Min Payout is ${minPayout.toFixed(2)} POL`;
+    btnPayout.style.background = 'rgba(255, 255, 255, 0.08)';
+    btnPayout.style.color = 'var(--text-muted)';
+    btnPayout.style.boxShadow = 'none';
+    btnPayout.style.cursor = 'not-allowed';
+  } else if (requestedAmount > unclaimedPol + 0.00001) {
+    btnPayout.disabled = true;
+    btnPayout.innerText = `Exceeds Balance (${unclaimedPol.toFixed(4)} POL)`;
+    btnPayout.style.background = 'rgba(255, 255, 255, 0.08)';
+    btnPayout.style.color = 'var(--text-muted)';
+    btnPayout.style.boxShadow = 'none';
+    btnPayout.style.cursor = 'not-allowed';
+  } else {
+    btnPayout.disabled = false;
+    btnPayout.innerText = `💎 Request ${requestedAmount.toFixed(4)} POL Payout`;
+    btnPayout.style.background = 'linear-gradient(135deg, #ffd700, #ff8800)';
+    btnPayout.style.color = '#000';
+    btnPayout.style.boxShadow = '0 0 15px rgba(255, 215, 0, 0.4)';
+    btnPayout.style.cursor = 'pointer';
+  }
+}
+
 export async function requestVipFaucetPayout() {
   if (isVipPayoutInProgress) return;
   const stateObj = getFaucetAppState();
@@ -1105,12 +1163,23 @@ export async function requestVipFaucetPayout() {
   }
 
   const destWallet = (stateObj.state.linkedWalletAddress || stateObj.state.walletAddress || '').toLowerCase();
-  if (!destWallet || destWallet.startsWith('0xpgt') || destWallet.startsWith('0xguest') || destWallet.length < 42) {
+  const isValidEvm = destWallet && !destWallet.startsWith('0xpgt') && !destWallet.startsWith('0xguest') && destWallet.length >= 42;
+  if (!isValidEvm) {
     triggerToast("No valid Web3 EVM wallet linked to your account! Please link a wallet in Profile.", "error");
     return;
   }
 
-  const confirmed = window.confirm(`Request ${minPayout.toFixed(2)} POL on-chain payout to wallet ${destWallet}?\n\nMaster Admin will review and execute the transfer directly to your wallet on Polygon (Admin pays gas fee).`);
+  const requestedAmount = getSelectedVipPayoutAmount(unclaimed, minPayout);
+  if (requestedAmount < minPayout) {
+    triggerToast(`Minimum payout request is ${minPayout.toFixed(2)} POL.`, "warning");
+    return;
+  }
+  if (requestedAmount > unclaimed + 0.00001) {
+    triggerToast(`Amount exceeds your accumulated balance of ${unclaimed.toFixed(4)} POL.`, "warning");
+    return;
+  }
+
+  const confirmed = window.confirm(`Request ${requestedAmount.toFixed(4)} POL on-chain payout to wallet ${destWallet}?\n\nMaster Admin will review and execute the transfer directly to your wallet on Polygon (Admin pays gas fee).`);
   if (!confirmed) return;
 
   isVipPayoutInProgress = true;
@@ -1125,7 +1194,7 @@ export async function requestVipFaucetPayout() {
   try {
     let { data: res, error } = await executeAuthenticatedRpc('request_vip_faucet_pol_payout', {
       p_player_id: playerId,
-      p_amount: minPayout
+      p_amount: requestedAmount
     });
 
     if (Array.isArray(res)) res = res[0];
@@ -1140,10 +1209,10 @@ export async function requestVipFaucetPayout() {
     });
 
     sfx.playSuccess();
-    triggerToast(`✅ Payout request for ${minPayout.toFixed(2)} POL submitted! Master Admin will process on Polygon.`, "success");
+    triggerToast(`✅ Payout request for ${requestedAmount.toFixed(4)} POL submitted! Master Admin will process on Polygon.`, "success");
 
     if (typeof stateObj.addActivity === 'function') {
-      stateObj.addActivity('You', 'requested VIP POL payout', `${minPayout.toFixed(2)} POL`);
+      stateObj.addActivity('You', 'requested VIP POL payout', `${requestedAmount.toFixed(4)} POL`);
     }
 
     // Dispatch urgent alert to Master Admin private Discord channel
@@ -1151,12 +1220,12 @@ export async function requestVipFaucetPayout() {
       const isVipNow = typeof stateObj.isVipActive === 'function' && stateObj.isVipActive();
       sendAdminAlert({
         title: "New VIP Faucet POL Payout Request",
-        description: `${isVipNow ? '👑 VIP Member' : 'Player (VIP Expired)'} **${stateObj.state.username || playerId.substring(0, 8)}** requested a VIP Faucet payout of **${minPayout.toFixed(2)} POL**!`,
+        description: `${isVipNow ? '👑 VIP Member' : 'Player (VIP Expired)'} **${stateObj.state.username || playerId.substring(0, 8)}** requested a VIP Faucet payout of **${requestedAmount.toFixed(4)} POL**!`,
         category: "PAYOUT",
         color: 0xFFD700,
         fields: [
           { name: "Player Account", value: playerId, inline: true },
-          { name: "Amount", value: `${minPayout.toFixed(2)} POL`, inline: true }
+          { name: "Amount", value: `${requestedAmount.toFixed(4)} POL`, inline: true }
         ]
       }).catch(() => {});
     }).catch(() => {});
@@ -1167,13 +1236,7 @@ export async function requestVipFaucetPayout() {
     triggerToast("Failed to submit payout request: " + (err.message || err), "error");
   } finally {
     isVipPayoutInProgress = false;
-    if (btn) {
-      const currentUnclaimed = parseFloat(stateObj.state.unclaimedVipFaucetPol || 0);
-      btn.disabled = currentUnclaimed < minPayout;
-      btn.innerText = currentUnclaimed >= minPayout
-        ? `💎 Request ${minPayout.toFixed(2)} POL Payout`
-        : `Request Payout (Need ${minPayout.toFixed(2)} POL)`;
-    }
+    renderVipFaucetUI();
   }
 }
 
@@ -1189,6 +1252,44 @@ const btnPayoutVip = document.getElementById('btn-request-vip-payout');
 if (btnPayoutVip) {
   btnPayoutVip.addEventListener('click', () => {
     requestVipFaucetPayout();
+  });
+}
+
+const inputPayoutVip = document.getElementById('vip-faucet-payout-amount-input');
+if (inputPayoutVip) {
+  inputPayoutVip.addEventListener('input', () => {
+    const stateObj = getFaucetAppState();
+    const unclaimed = parseFloat(stateObj?.state?.unclaimedVipFaucetPol || 0);
+    const minPayout = (typeof stateObj?.state?.vipFaucetMinPayoutPol === 'number' && stateObj.state.vipFaucetMinPayoutPol > 0)
+      ? stateObj.state.vipFaucetMinPayoutPol
+      : 5.0;
+    const destWallet = (stateObj?.state?.linkedWalletAddress || stateObj?.state?.walletAddress || '').toLowerCase();
+    const isValidEvm = destWallet && !destWallet.startsWith('0xpgt') && !destWallet.startsWith('0xguest') && destWallet.length >= 42;
+    updateVipPayoutButtonState(unclaimed, minPayout, isValidEvm);
+  });
+}
+
+const btnVipMin = document.getElementById('btn-vip-payout-min');
+if (btnVipMin) {
+  btnVipMin.addEventListener('click', () => {
+    const input = document.getElementById('vip-faucet-payout-amount-input');
+    if (input) {
+      input.value = (5.0).toFixed(4);
+      input.dispatchEvent(new Event('input'));
+    }
+  });
+}
+
+const btnVipMax = document.getElementById('btn-vip-payout-max');
+if (btnVipMax) {
+  btnVipMax.addEventListener('click', () => {
+    const stateObj = getFaucetAppState();
+    const unclaimed = parseFloat(stateObj?.state?.unclaimedVipFaucetPol || 0);
+    const input = document.getElementById('vip-faucet-payout-amount-input');
+    if (input) {
+      input.value = unclaimed.toFixed(4);
+      input.dispatchEvent(new Event('input'));
+    }
   });
 }
 
