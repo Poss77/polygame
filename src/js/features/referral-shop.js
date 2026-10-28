@@ -8,7 +8,7 @@ import { supabase, SUPABASE_URL, SUPABASE_KEY, ADMIN_WALLET_ADDRESS } from '../c
 import { triggerToast, openModal, closeModal } from '../core/ui.js';
 import { appState } from '../core/state.js';
 
-// Configuration of the 7 Referral Adoption Categories with baseline & max 10x boost yield
+// Configuration of the 7 Referral Adoption Categories with baseline & max boost yield
 export const REFERRAL_TIERS = [
   {
     level: 5,
@@ -21,7 +21,7 @@ export const REFERRAL_TIERS = [
     desc: 'Ultra-active downline player with peak daily faucet and arcade engagement. Maximum commission yield.',
     fictivePriceUSD: 8.00,
     estWeeklyPgt: '150 - 400 PGT/wk',
-    maxWeeklyPgt: 'Up to 4,000 PGT/wk (10x Boost)',
+    maxWeeklyPgt: 'Up to 4,000 PGT/wk (Max Boost)',
     basePgtYield: 150,
     icon: '👑'
   },
@@ -36,7 +36,7 @@ export const REFERRAL_TIERS = [
     desc: 'High-frequency weekly player. Consistent daily earner across arcade leaderboards and faucet claims.',
     fictivePriceUSD: 5.00,
     estWeeklyPgt: '80 - 200 PGT/wk',
-    maxWeeklyPgt: 'Up to 2,000 PGT/wk (10x Boost)',
+    maxWeeklyPgt: 'Up to 2,000 PGT/wk (Max Boost)',
     basePgtYield: 80,
     icon: '💎'
   },
@@ -51,7 +51,7 @@ export const REFERRAL_TIERS = [
     desc: 'Steady weekly participant with recurring claims and regular arcade sessions.',
     fictivePriceUSD: 2.50,
     estWeeklyPgt: '40 - 100 PGT/wk',
-    maxWeeklyPgt: 'Up to 1,000 PGT/wk (10x Boost)',
+    maxWeeklyPgt: 'Up to 1,000 PGT/wk (Max Boost)',
     basePgtYield: 40,
     icon: '🥇'
   },
@@ -66,7 +66,7 @@ export const REFERRAL_TIERS = [
     desc: 'Casual active player checking in multiple times per week.',
     fictivePriceUSD: 1.25,
     estWeeklyPgt: '20 - 50 PGT/wk',
-    maxWeeklyPgt: 'Up to 500 PGT/wk (10x Boost)',
+    maxWeeklyPgt: 'Up to 500 PGT/wk (Max Boost)',
     basePgtYield: 20,
     icon: '🥈'
   },
@@ -81,7 +81,7 @@ export const REFERRAL_TIERS = [
     desc: 'Proven active player with verified weekly faucet claims or arcade sessions. Consistent baseline earner.',
     fictivePriceUSD: 0.60,
     estWeeklyPgt: '10 - 25 PGT/wk',
-    maxWeeklyPgt: 'Up to 250 PGT/wk (10x Boost)',
+    maxWeeklyPgt: 'Up to 250 PGT/wk (Max Boost)',
     basePgtYield: 10,
     icon: '🥉'
   },
@@ -96,7 +96,7 @@ export const REFERRAL_TIERS = [
     desc: 'Brand new unreferred player registered within the last 7 days. High discovery upside with potential to scale to L3–L5.',
     fictivePriceUSD: 0.60,
     estWeeklyPgt: '10 - 25 PGT/wk',
-    maxWeeklyPgt: 'Up to 250 PGT/wk (10x Boost)',
+    maxWeeklyPgt: 'Up to 250 PGT/wk (Max Boost)',
     basePgtYield: 10,
     icon: '🌱'
   },
@@ -540,7 +540,7 @@ export function updateOrderSummary() {
               </div>
             ` : `
               <div style="font-size: 0.68rem; color: #00ff88; font-weight: 600; margin-top: 3px; text-align: right;">
-                🚀 Up to ~${(projectedBaseYield * 10).toLocaleString()} PGT/wk with 10x Boosts
+                🚀 Up to ~${(projectedBaseYield * 10).toLocaleString()} PGT/wk with Max Boosts
               </div>
             `}
           </div>

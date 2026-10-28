@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Referral Marketplace: Replace "10x Boost" with "Max Boost" Terminology (`v1.5.744`)**:
+  - **⚡ Label & Copy Streamlining ([`src/js/features/referral-shop.js`](src/js/features/referral-shop.js))**:
+    - Replaced all occurrences of `(10x Boost)` with `(Max Boost)` across each referral tier card (`⚡ Up to X PGT/wk (Max Boost)`).
+    - Updated Order Summary yield projection to display `🚀 Up to ~X PGT/wk with Max Boosts`.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.744"` and refreshed script cache busters.
+
 - **Referral Marketplace: Split Scout & Recruit Pools + 10x Boost Yield Display (`v1.5.743`)**:
   - **🌱 Dedicated Scout vs. Recruit Pools ([`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/split_scout_and_recruit_pools.sql`](supabase/split_scout_and_recruit_pools.sql))**:
     - Disaggregated Level 1 into two clear, distinct adoption categories:
