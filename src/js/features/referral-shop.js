@@ -64,26 +64,26 @@ export const REFERRAL_TIERS = [
   },
   {
     level: 1,
-    name: 'Scout',
-    badge: '🥉 L1 Scout',
+    name: 'Scout / Recruit',
+    badge: '🥉 L1 Scout / Recruit',
     color: '#38bdf8',
     border: 'rgba(56, 189, 248, 0.4)',
     bg: 'linear-gradient(135deg, rgba(56, 189, 248, 0.08), rgba(56, 189, 248, 0.02))',
-    reqText: '1+ Faucet / week',
-    desc: 'Entry active player claiming weekly faucet drops with steady growth potential.',
+    reqText: '1+ Faucet / week OR New User (<7d)',
+    desc: 'Entry active player or fresh signup from the last 7 days. High growth potential as they discover games.',
     fictivePriceUSD: 0.60,
     estWeeklyPgt: '10 - 25 PGT/wk',
     icon: '🥉'
   },
   {
     level: 0,
-    name: 'Dormant',
-    badge: '⚪ L0 Dormant',
+    name: 'Dormant (>7d)',
+    badge: '⚪ L0 Dormant (>7d)',
     color: '#94a3b8',
     border: 'rgba(148, 163, 184, 0.25)',
     bg: 'linear-gradient(135deg, rgba(148, 163, 184, 0.05), rgba(148, 163, 184, 0.01))',
-    reqText: 'Registered • 0 claims this week',
-    desc: 'Registered unreferred player currently idle. Budget adoption cost with reactivation upside.',
+    reqText: 'Registered >7d ago • 0 weekly claims',
+    desc: 'Registered unreferred player idle for over a week. Budget adoption cost with reactivation upside.',
     fictivePriceUSD: 0.15,
     estWeeklyPgt: 'Reactivation Upside',
     icon: '⚪'
@@ -197,7 +197,7 @@ export async function fetchUnreferredCensus(forceRefresh = false) {
     if (!fetchedViaRpc) {
       const { data, error } = await client
         .from('users')
-        .select('weekly_active_tier, last_weekly_active_tier, is_banned')
+        .select('player_id, weekly_active_tier, last_weekly_active_tier, is_banned, created_at')
         .or('referred_by_l1.is.null,referred_by_l1.eq.');
 
       if (error) {
@@ -205,8 +205,10 @@ export async function fetchUnreferredCensus(forceRefresh = false) {
       }
 
       if (Array.isArray(data)) {
+        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
         data.forEach(row => {
           if (row.is_banned) return;
+          if (row.player_id && row.player_id.toLowerCase().startsWith('test_')) return;
           // Highest (best) tier achieved across the last 2 weeks (current active week vs prior completed week)
           let lvl = Math.max(
             parseInt(row.weekly_active_tier || 0, 10),
@@ -215,6 +217,15 @@ export async function fetchUnreferredCensus(forceRefresh = false) {
           lvl = parseInt(lvl, 10);
           if (isNaN(lvl) || lvl < 0) lvl = 0;
           if (lvl > 5) lvl = 5;
+
+          // Option A: If tier is 0, but user registered within last 7 days, treat as L1 (New Recruit)
+          if (lvl === 0 && row.created_at) {
+            const createdAtMs = new Date(row.created_at).getTime();
+            if (!isNaN(createdAtMs) && createdAtMs >= sevenDaysAgo) {
+              lvl = 1;
+            }
+          }
+
           counts[lvl] = (counts[lvl] || 0) + 1;
         });
       }

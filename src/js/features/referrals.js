@@ -328,7 +328,14 @@ export async function loadMyDownlineNetwork() {
       if (isL1) {
         countL1++;
         // Downline Activity Level Census strictly tallies direct Level 1 (L1) referrals
-        const activeTier = Math.max(parseInt(u.weekly_active_tier || 0, 10), parseInt(u.last_weekly_active_tier || 0, 10));
+        let activeTier = Math.max(parseInt(u.weekly_active_tier || 0, 10), parseInt(u.last_weekly_active_tier || 0, 10));
+        // Option A: Fresh signups in the last 7 days are categorized as L1 (Recruit)
+        if (activeTier === 0 && u.created_at) {
+          const createdAtMs = new Date(u.created_at).getTime();
+          if (!isNaN(createdAtMs) && createdAtMs >= Date.now() - 7 * 24 * 60 * 60 * 1000) {
+            activeTier = 1;
+          }
+        }
         if (activeTier === 5) tierL5++;
         else if (activeTier === 4) tierL4++;
         else if (activeTier === 3) tierL3++;

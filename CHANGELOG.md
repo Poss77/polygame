@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Referral Marketplace: Option A — 7-Day New Recruits Priced as Level 1 (`v1.5.742`)**:
+  - **🌱 New User Recruits as Level 1 ([`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/update_referral_option_a_7day_new_recruits.sql`](supabase/update_referral_option_a_7day_new_recruits.sql))**:
+    - Resolved cold-start dormant classification for fresh accounts: newly registered players with 0 weekly faucets/games default to activity tier 0, but represent high-potential new participants discovering the ecosystem rather than long-term dormant accounts.
+    - Updated `get_unreferred_census()` and `adopt_referrals()` to categorize all unreferred users registered within the last 7 days (`created_at >= NOW() - INTERVAL '7 days'`) with 0 weekly activity as **Level 1 (Bronze Cadet / New Recruit)**.
+    - Restricted **Level 0 (Dormant)** exclusively to inactive unreferred accounts registered over 7 days ago (`created_at < NOW() - INTERVAL '7 days'`).
+    - Ordered recruit adoptions by newest first (`ORDER BY created_at DESC`) so buyers receive the freshest signups.
+  - **🏷️ Referral UI & Shop Alignment ([`src/js/features/referral-shop.js`](src/js/features/referral-shop.js), [`src/js/features/referrals.js`](src/js/features/referrals.js), [`index.html`](index.html))**:
+    - Updated tier definitions, badges, and requirement texts: Level 1 is now displayed as **🥉 L1 Scout / Recruit** (`1+ Faucet / week OR New User (<7d)`), and Level 0 as **⚪ L0 Dormant (>7d)** (`Registered >7d ago • 0 weekly claims`).
+    - Updated the direct table-scan fallback in `referral-shop.js` and the downline census tally in `referrals.js` to ensure 7-day recruits with tier 0 are consistently recognized and displayed across the entire interface.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.742"` and refreshed script cache busters.
+
 - **Affiliates & Referral Marketplace: Top Referrers Direct Action (`v1.5.741`)**:
   - **🛒 Direct Marketplace Shortcut ([`index.html`](index.html))**:
     - Added high-visibility **"🛒 Purchase Referrals"** CTA button directly inside the header of the "Top Referrers" card on `#referrals`, giving players instant access to the Referral Adoption Marketplace.
