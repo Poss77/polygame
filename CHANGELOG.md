@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PLAN-020: Consolidated Daily Games Schema from 9 Tables to 2 Polymorphic Tables (`v1.5.725`)**:
+  - **🏛️ Streamlined Database Schema ([`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/consolidate_daily_games_schema.sql`](supabase/consolidate_daily_games_schema.sql))**:
+    - Dropped 7 redundant tables (`daily_wordle_sessions`, `daily_wordle_claims`, `daily_wordle_stats`, `daily_sudoku_sessions`, `daily_sudoku_claims`, `daily_sudoku_stats`, `daily_logic_streaks`).
+    - Consolidated all daily session tracking and claims into `public.daily_game_sessions` (`player_id, game_id, day_date`).
+    - Consolidated all career stats, guess distributions, and logic streaks into `public.daily_game_stats` with flexible JSONB storage.
+    - Updated all 4 authoritative daily RPCs (`get_daily_games_hub_status`, `submit_wordle_guess`, `start_daily_sudoku`, `claim_daily_sudoku_reward`) to operate on the unified schema with identical external API interfaces.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.725"` and refreshed asset queries.
+
 - **PLAN-020: Rebalance Cyber Sudoku Difficulty Tier Base Rewards (`v1.5.724`)**:
   - **💰 Rebalanced Difficulty Tier Rewards ([`index.html`](index.html), [`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/easier_sudoku_puzzles.sql`](supabase/easier_sudoku_puzzles.sql))**:
     - Rebalanced base rewards across Sudoku difficulty cards and authoritative Supabase RPCs:
