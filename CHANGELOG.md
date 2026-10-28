@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PLAN-020: Calibrate Sudoku Difficulty Tiers (Easy: 52, Med: 40, Hard: 32) (`v1.5.733`)**:
+  - **🧩 3-Tier Sudoku Calibration ([`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/calibrate_sudoku_tiers_52_40_32.sql`](supabase/calibrate_sudoku_tiers_52_40_32.sql), [`index.html`](index.html))**:
+    - Calibrated all 75 puzzles (25 per tier) to the exact player difficulty targets:
+      - **Easy Tier**: **52 clues** (~3 missing per box, 29 empty cells) — relaxing, engaging, balanced.
+      - **Medium Tier**: **40 clues** (~4.5 missing per box, 41 empty cells) — balanced, accessible challenge.
+      - **Hard Tier**: **32 clues** (~5.5 missing per box, 49 empty cells) — strategic, multi-step deduction.
+    - Updated difficulty card labels in `index.html`.
+    - Generated standalone migration script `supabase/calibrate_sudoku_tiers_52_40_32.sql`.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.733"` and refreshed asset queries.
+
 - **PLAN-020: Fix Sudoku Clue Rendering (Zero Suppression) & Add Restart Control (`v1.5.732`)**:
   - **🧩 Sudoku Grid Rendering & Local Draft Synchronization ([`src/js/features/sudoku.js`](src/js/features/sudoku.js), [`index.html`](index.html))**:
     - Fixed zero rendering bug where pre-filled clue cells rendered as cyan `0`s when restored from stale browser drafts; clue cells now strictly display authoritative digits from `cluesMask`.
