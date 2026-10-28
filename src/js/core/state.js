@@ -1,1615 +1,1619 @@
-export let appState = null;
-
-import { supabase, APP_VERSION } from './config.js';
-import { NFT_REGISTRY } from '../features/nft.js';
-import { cyb53, CHECKSUM_SALT } from '../utils/crypto.js';
-import { triggerToast, escapeHtml } from './ui.js';
-import { renderStakingLedger, activeStakingTier, activeStakingPool, updateStakingLockCountdownUI } from '../features/staking.js';
-import { syncProfileView } from '../features/profile.js';
-import { updateRoshamboWagerLabels } from '../features/roshambo.js';
-import { isSeason1ApexUnlocked, getSeason1Progress, normalizeRelicsObject } from '../features/relics.js';
-import { getActiveSeasonalEvent } from '../features/seasonal-events.js';
-
-// --- Guest Session Address Generator ---
-export function getOrCreateGuestAddress(forceNew = false) {
-  try {
-    if (forceNew) {
-      localStorage.removeItem('polygame_guest_address');
-    }
-    let guestAddr = localStorage.getItem('polygame_guest_address');
-    if (!guestAddr || !guestAddr.startsWith('0xguest') || guestAddr.length !== 42) {
-      const randomHex = Array.from({length: 35}, () => Math.floor(Math.random() * 16).toString(16)).join('');
-      guestAddr = ('0xguest' + randomHex).substring(0, 42).toLowerCase();
-      localStorage.setItem('polygame_guest_address', guestAddr);
-    }
-    return guestAddr;
-  } catch (e) {
-    return '0xguest' + Math.random().toString(16).substring(2, 10).padEnd(35, '0').substring(0, 35);
-  }
-}
-
-// --- Persistent Application State Management ---
-
-export class PolyState {
-  constructor() {
-    if (typeof window !== 'undefined') {
-      window.appState = this;
-    }
-    this.defaultState = {
-      balancePgt: 0.0,  // Initial balance is 0.0 (no fake sandbox credit)
-      onchainBalancePgt: 0.0, // Real wallet balance
-      onchainBalance1flr: 0.0, // Real wallet balance
-      pendingPayoutPgt: 0.0, // Weekly pending rewards pool
-      unclaimedReferralPgt: 0.0,
-      unclaimedReferralPol: 0.0,
-      totalReferralPol: 0.0, // Unclaimed 4-tier referral pool
-      balanceMatic: 0.0,
-      walletConnected: false,
-      walletProvider: null,
-      playerId: '',
-      walletAddress: '',
-      linkedWalletAddress: '',
-      username: '',
-      
-      totalClaims: 0,
-      totalArcadePlays: 0,
-      lastClaimTime: null,
-      claimStreak: 0,
-      
-      unclaimedVipFaucetPol: 0.0,
-      totalVipFaucetPol: 0.0,
-      lastVipFaucetClaim: null,
-      vipFaucetStreak: 0,
-      
-      gameHighScore: 0,
-      invadersHighScore: 0,
-      alltimeGameHighScore: 0,
-      alltimeInvadersHighScore: 0,
-      alltimeDriftHighScore: 0,
-      driftHighScore: 0,
-      stackerHighScore: 0,
-      catcherHighScore: 0,
-      skeetHighScore: 0,
-      defenseHighScore: 0,
-      runnerHighScore: 0,
-      q2048HighScore: 0,
-      tetrisHighScore: 0,
-      alltimeStackerHighScore: 0,
-      alltimeCatcherHighScore: 0,
-      alltimeSkeetHighScore: 0,
-      alltimeDefenseHighScore: 0,
-      alltimeRunnerHighScore: 0,
-      alltimeQ2048HighScore: 0,
-      alltimeTetrisHighScore: 0,
-      spaceState: {
-        warpLevel: 1,
-        laserLevel: 1,
-        cargoLevel: 1,
-        shieldLevel: 1,
-        turretLevel: 1,
-        fleetPower: 100,
-        iron: 50,
-        titanium: 10,
-        quantum: 0,
-        pgtOre: 0,
-        pokesToday: 0,
-        lastPokeDate: null,
-        lastRaidDate: null,
-        lastOpDate: null,
-        raidsWon: 0,
-        mineralsMinedTotal: 0,
-        pgtMinedTotal: 0
-      },
-      
-      globalEarnMultiplier: 1.0, // Pulled from global_settings on load
-      faucetBasePgt: 50.0, // Pulled from global_settings on load
-      vipFaucetBasePol: 0.01, // Pulled from global_settings on load
-      vipFaucetMinPayoutPol: 5.0, // Pulled from global_settings on load
-      minWithdrawPgt: 10,
-      maxWithdrawPgt: 100000,
-      maxWeeklyWithdrawals: 5,
-      maxDailyPlaysPerGame: 25,
-      
-      ownedNfts: [],
-      crateNfts: [],
-      relics: {},
-      equippedNft: null,
-      equippedStarship: null,
-      stakedBalancePgt: 0.0,
-      totalStakingYield: 0.0,
-      totalEarned: 0.0,
-      stakes: [],
-      activities: [],
-      referralsCount: 0,
-      referralsL1: 0,
-      referralsL2: 0,
-      referralsL3: 0,
-      referralsL4: 0,
-      totalReferralCommission: 0.0,
-      referralCode: '',
-      referredBy: null,
-      referralsList: [],
-      dailyQuests: {
-        date: new Date().toISOString().split('T')[0],
-        games: 0,
-        mining: 0,
-        wins: 0,
-        games_claimed: false,
-        mining_claimed: false,
-        wins_claimed: false,
-        master_claimed: false,
-        streak_days: 0,
-        last_streak_date: ''
-      },
-      vipUntil: null,
-      vipLevel: 0,
-      authUserId: null,
-      authUserEmail: null,
-      authProvider: null,
-      isAmbassador: false,
-      liquidityPgtAmount: 0.0,
-      liquidityUsdAmount: 0.0,
-      liquidityMultiplier: 1.0,
-      dexLiquidityUsd: 0.0,
-      
-      // Weekly Active Parameter & Activity Tiers (Levels 0 to 5)
-      weeklyFaucetClaims: 0,
-      weeklyGamesPlayed: 0,
-      weeklyActiveTier: 0,       // Live projected tier this week (0-5)
-      lastWeeklyActiveTier: 0,   // Official active level earned last week (0-5)
-      
-      createdAt: null,
-      accountQuarantineDays: 7,
-      minWithdrawPgt: 10,
-      maxWithdrawPgt: 100000,
-      maxWeeklyWithdrawals: 5,
-
-      // Cloudflare Turnstile Arcade Anti-Bot Shield (PLAN-010)
-      turnstileArcadeEnabled: true,
-      turnstileArcadeFrequency: 3,
-      turnstileArcadeVipBypass: false
-    };
-
-    this._dbSaveTimer = null;
-    this._spaceStateLoaded = false;
-    this._spaceStateDirty = false;
-    this.isSyncingWithDB = false;
-    this.init();
-  }
-
-  init() {
-    const raw = localStorage.getItem('polygame_state');
-    const checksum = localStorage.getItem('polygame_state_checksum');
-    
-    if (raw) {
-      try {
-        // Anti-hacking validation check
-        const computed = cyb53(raw + CHECKSUM_SALT);
-        if (checksum !== computed) {
-          console.warn("State checksum verification failed! Resetting modified state.");
-          
-          if (typeof window.sendAdminAlert === 'function') {
-            window.sendAdminAlert({
-              category: 'SECURITY CHECKSUM',
-              title: '⚠️ Local State Modification Detected',
-              description: 'A player modified local storage state. Anti-cheat triggered and default state restored.',
-              color: 0xFF0033
-            });
-          }
-
-          // Trigger secure warning toast on next frame
-          setTimeout(() => {
-            triggerToast("⚠️ Local state modification detected! Restoring verified ledger.", "error");
-          }, 500);
-
-          this.state = Object.assign({}, this.defaultState);
-          this.save();
-          return;
-        }
-
-        const parsed = JSON.parse(raw);
-
-        // CRITICAL: Weekly tournament high scores (gameHighScore, invadersHighScore, driftHighScore, stackerHighScore, catcherHighScore, skeetHighScore, defenseHighScore)
-        // and weekly activity counters are transient weekly stats strictly managed server-side and reset weekly.
-        // They must NEVER be restored from browser cache (localStorage) across sessions or weekly resets.
-        parsed.gameHighScore = 0;
-        parsed.invadersHighScore = 0;
-        parsed.driftHighScore = 0;
-        parsed.stackerHighScore = 0;
-        parsed.catcherHighScore = 0;
-        parsed.skeetHighScore = 0;
-        parsed.defenseHighScore = 0;
-        parsed.runnerHighScore = 0;
-        parsed.q2048HighScore = 0;
-        parsed.tetrisHighScore = 0;
-        parsed.weeklyFaucetClaims = 0;
-        parsed.weeklyGamesPlayed = 0;
-        parsed.weeklyActiveTier = 0;
-
-        this.state = Object.assign(JSON.parse(JSON.stringify(this.defaultState)), parsed);
-        if (this.state.walletConnected) {
-          this.isSyncingWithDB = true; // Lock DB saves until autoConnectWeb3 fetches fresh DB data
-        }
-      } catch (e) {
-        console.error("Failed to load local storage state", e);
-        this.state = JSON.parse(JSON.stringify(this.defaultState));
-      }
-    } else {
-      this.state = JSON.parse(JSON.stringify(this.defaultState));
-    }
-
-    // Auto-assign persistent unique 0xguest... address for Guests if walletAddress is missing, dummy, or legacy Google ID
-    if (!this.state.walletAddress || this.state.walletAddress.trim() === '' || this.state.walletAddress === '0x0000000000000000000000000000000000000000' || (!this.state.walletConnected && !this.state.authUserId && !this.state.walletAddress.startsWith('0xguest'))) {
-      this.state.walletAddress = getOrCreateGuestAddress();
-      this.save();
-    }
-  }
-
-  resetToDefault(newAddress = '') {
-    this.state = JSON.parse(JSON.stringify(this.defaultState));
-    if (newAddress && newAddress.trim() !== '') {
-      this.state.walletAddress = newAddress.toLowerCase();
-      this.state.linkedWalletAddress = newAddress.toLowerCase();
-    } else {
-      this.state.walletAddress = getOrCreateGuestAddress(true);
-    }
-    this.save();
-  }
-
-  save() {
-    // Clone state and zero out transient weekly tournament scores & activity counters before persisting to localStorage.
-    // This strictly guarantees that browser storage NEVER preserves previous week scores or stale counters across restarts.
-    const storageState = Object.assign({}, this.state, {
-      gameHighScore: 0,
-      invadersHighScore: 0,
-      driftHighScore: 0,
-      stackerHighScore: 0,
-      catcherHighScore: 0,
-      skeetHighScore: 0,
-      defenseHighScore: 0,
-      runnerHighScore: 0,
-      q2048HighScore: 0,
-      tetrisHighScore: 0,
-      weeklyFaucetClaims: 0,
-      weeklyGamesPlayed: 0,
-      weeklyActiveTier: 0
-    });
-    const raw = JSON.stringify(storageState);
-    const computed = cyb53(raw + CHECKSUM_SALT);
-    localStorage.setItem('polygame_state', raw);
-    localStorage.setItem('polygame_state_checksum', computed);
-    this.syncUI();
-  }
-
-  getPlayerId() {
-    return this.state.playerId || this.state.walletAddress || '';
-  }
-
-  isPlayerConnected() {
-    const hasAuth = !!(this.state.authUserEmail || this.state.authUserId);
-    const hasWeb3 = !!(this.state.walletConnected || (this.state.linkedWalletAddress && !this.state.linkedWalletAddress.startsWith('0xpgt') && !this.state.linkedWalletAddress.startsWith('0xg')));
-    return hasAuth || hasWeb3;
-  }
-
-  // Debounced / Throttled DB save to prevent spamming Supabase with rapid REST updates
-  saveToDB(forceImmediate = false) {
-    if (!this.isPlayerConnected() || !supabase || this.isSyncingWithDB) return;
-    
-    if (this._dbSaveTimer) {
-      clearTimeout(this._dbSaveTimer);
-      this._dbSaveTimer = null;
-    }
-
-    if (forceImmediate) {
-      return this._executeSaveToDB();
-    }
-
-    this._dbSaveTimer = setTimeout(async () => {
-      this._executeSaveToDB();
-    }, 2000); // 2 second batching window
-  }
-
-  async _executeSaveToDB() {
-    if (!this.isPlayerConnected() || !supabase || this.isSyncingWithDB) return;
-
-    try {
-      const currentStakedPgt = (this.state.stakes || []).reduce((sum, s) => {
-        if (!s.pool || s.pool.toLowerCase() === 'pgt') {
-          const amt = parseFloat(s.amount || 0);
-          return sum + (isNaN(amt) ? 0 : amt);
-        }
-        return sum;
-      }, 0);
-
-      const canonicalId = (this.state.playerId || this.state.walletAddress || '').toLowerCase();
-      const walletAddr = canonicalId;
-
-      const dbPayload = {
-        player_id: canonicalId,
-        // balance_pgt is intentionally omitted to prevent client DevTools tampering.
-        // Balance is strictly managed server-side via Supabase RPCs.
-        staked_balance_pgt: currentStakedPgt,
-        equipped_nft: this.state.equippedNft,
-        // NOTE: Referral stats (referrals_count, referrals_l1..l4, referrals_list) are strictly server-authoritative
-        // and calculated directly from registered downline rows in Supabase. Omitted to prevent tampering.
-        total_staking_yield: this.state.totalStakingYield || 0.0,
-        // NOTE: Daily quests claim status and progression are strictly server-authoritative
-        // and managed via claim_daily_quest RPC. Omitted from saveToDB to prevent client tampering.
-        app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.016',
-        last_active_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-
-      // Persist activities array to DB
-      if (Array.isArray(this.state.activities) && this.state.activities.length > 0) {
-        dbPayload.activities = this.state.activities.slice(0, 20);
-      }
-
-      if (this.state.username && typeof this.state.username === 'string' && this.state.username.trim() !== '') {
-        const cleanName = this.state.username.trim().replace(/[<>&"'\x00-\x1F\x7F]/g, '').substring(0, 30);
-        if (cleanName) dbPayload.username = cleanName;
-      }
-
-      // Only include space_state if explicitly marked dirty by PolySpace actions
-      // This guarantees that routine background saves (arcade sessions, quests, highscores) never overwrite cloud fleet expeditions
-      if (this.state.spaceState && typeof this.state.spaceState === 'object' && Object.keys(this.state.spaceState).length > 0) {
-        const sp = this.state.spaceState;
-        const hasRealProgress = ((sp.warpLevel || 1) > 1 || (sp.laserLevel || 1) > 1 || (sp.cargoLevel || 1) > 1 || (sp.iron || 0) > 50 || (sp.titanium || 0) > 10 || (sp.quantum || 0) > 0 || (Array.isArray(sp.expeditions) && sp.expeditions.length > 0));
-        if ((this._spaceStateLoaded || hasRealProgress) && this._spaceStateDirty) {
-          dbPayload.space_state = this.state.spaceState;
-          this._spaceStateDirty = false;
-        }
-      }
-
-      // Only include relics if populated to prevent overwriting existing DB relics with empty default object during multi-device sync
-      if (this.state.relics && typeof this.state.relics === 'object' && Object.keys(this.state.relics).length > 0) {
-        const norm = normalizeRelicsObject(this.state.relics);
-        if (Object.keys(norm).length > 0) {
-          dbPayload.relics = norm;
-        }
-      }
-
-      // Only include crate_nfts if populated to prevent wiping off-chain inventory during early sync
-      if (Array.isArray(this.state.crateNfts) && this.state.crateNfts.length > 0) {
-        dbPayload.crate_nfts = this.state.crateNfts;
-      }
-
-      // Only include owned_nfts if populated to prevent wiping on-chain inventory during early sync
-      if (Array.isArray(this.state.ownedNfts) && this.state.ownedNfts.length > 0) {
-        dbPayload.owned_nfts = this.state.ownedNfts;
-      }
-
-      // Dedicated equipped_starship column (decoupled from space_state)
-      const candShip = (this.state.equippedStarship && typeof this.state.equippedStarship === 'object' && Object.keys(this.state.equippedStarship).length > 0)
-        ? this.state.equippedStarship
-        : (this.state.spaceState && this.state.spaceState.equippedStarship ? this.state.spaceState.equippedStarship : null);
-      if (candShip && !candShip.isDemo && candShip.tokenId && candShip.tokenId > 0 && !String(candShip.name || '').toLowerCase().includes('demo')) {
-        dbPayload.equipped_starship = candShip;
-      } else {
-        if (this.state.spaceState && this.state.spaceState.equippedStarship) {
-          delete this.state.spaceState.equippedStarship;
-        }
-      }
-
-      // NOTE: Weekly tournament high scores (game_highscore, invaders_highscore, drift_highscore, stacker_highscore, skeet_highscore, defense_highscore)
-      // are STRICTLY managed server-side via end_arcade_session RPC to prevent client tampering and to prevent stale local storage
-      // from resurrecting old tournament scores after weekly resets.
-
-      if (this.state.alltimeGameHighScore > 0) dbPayload.alltime_game_highscore = this.state.alltimeGameHighScore;
-      if (this.state.alltimeInvadersHighScore > 0) dbPayload.alltime_invaders_highscore = this.state.alltimeInvadersHighScore;
-      if (this.state.alltimeDriftHighScore > 0) dbPayload.alltime_drift_highscore = this.state.alltimeDriftHighScore;
-      const alltimeStackVal = Math.max(this.state.alltimeStackerHighScore || 0, this.state.alltimeCatcherHighScore || 0);
-      if (alltimeStackVal > 0) dbPayload.alltime_stacker_highscore = alltimeStackVal;
-      if (this.state.alltimeSkeetHighScore > 0) dbPayload.alltime_skeet_highscore = this.state.alltimeSkeetHighScore;
-      if (this.state.alltimeDefenseHighScore > 0) dbPayload.defense_alltime_best = this.state.alltimeDefenseHighScore;
-      if (this.state.alltimeRunnerHighScore > 0) dbPayload.alltime_runner_highscore = this.state.alltimeRunnerHighScore;
-      if (this.state.alltimeQ2048HighScore > 0) dbPayload.alltime_q2048_highscore = this.state.alltimeQ2048HighScore;
-      if (this.state.alltimeTetrisHighScore > 0) dbPayload.alltime_tetris_highscore = this.state.alltimeTetrisHighScore;
-
-      // Only include referral_code if it is a valid non-empty string to avoid Postgres UNIQUE constraint collision on ""
-      if (this.state.referralCode && typeof this.state.referralCode === 'string' && this.state.referralCode.trim() !== '') {
-        dbPayload.referral_code = this.state.referralCode.trim();
-      }
-
-      if (this.state.referredBy && this.state.referredBy !== 'EMPTY') {
-        dbPayload.referred_by_l1 = this.state.referredBy.toLowerCase();
-      }
-
-      if (this.state.linkedWalletAddress) {
-        dbPayload.linked_wallet_address = this.state.linkedWalletAddress.toLowerCase();
-      }
-
-      if (this.state.lastClaimTime) {
-        dbPayload.last_faucet_claim = new Date(this.state.lastClaimTime).toISOString();
-      }
-
-      // Verify active Supabase Auth session before attempting direct table write (zero anon writes on users table)
-      let activeAuthUid = null;
-      if (supabase && supabase.auth && typeof supabase.auth.getSession === 'function') {
-        try {
-          const { data: sData } = await supabase.auth.getSession();
-          activeAuthUid = sData?.session?.user?.id || null;
-        } catch (e) {}
-      }
-
-      if (!activeAuthUid) {
-        // Player is unauthenticated in Supabase Auth (e.g. Web3-only wallet or guest).
-        // Database mutations for Web3 players are strictly executed via authoritative RPCs.
-        // Direct table PATCH would be sent with anon key and rejected with 401 Unauthorized.
-        if (window.POLY_DEBUG) console.log("[saveToDB] Skipping direct table write: No active Supabase Auth session.");
-        return;
-      }
-
-      let saveRes;
-      if (canonicalId) {
-        saveRes = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId).select('player_id');
-      } else {
-        saveRes = await supabase.from('users').update(dbPayload).eq('user_id', activeAuthUid).select('player_id');
-      }
-      if (!saveRes.error && (!saveRes.data || saveRes.data.length === 0)) {
-        // Guard: Verify if linked_wallet_address or canonicalId is already registered to an existing account before blindly inserting
-        const targetWallet = this.state.linkedWalletAddress || (canonicalId.startsWith('0x') && canonicalId.length === 42 && !canonicalId.startsWith('0xpgt') && !canonicalId.startsWith('0xg') ? canonicalId : null);
-        if (targetWallet) {
-          const { data: existingUser } = await supabase
-            .from('users')
-            .select('player_id')
-            .or(`linked_wallet_address.ilike.${targetWallet},player_id.ilike.${targetWallet}`)
-            .order('created_at', { ascending: true })
-            .limit(1);
-          if (existingUser && existingUser.length > 0) {
-            const realPid = existingUser[0].player_id;
-            this.state.playerId = realPid;
-            dbPayload.player_id = realPid;
-            saveRes = await supabase.from('users').update(dbPayload).eq('player_id', realPid).select('player_id');
-            return;
-          }
-        }
-        saveRes = await supabase.from('users').insert(dbPayload);
-      }
-      let error = saveRes ? saveRes.error : null;
-
-      // Auto-retry fallback if payload contains missing columns or unique key collisions
-      if (error && (error.code === 'PGRST204' || (error.message && (
-        error.message.includes('skeet_highscore') ||
-        error.message.includes('alltime_skeet_highscore') ||
-        error.message.includes('equipped_starship') ||
-        error.message.includes('space_state') || 
-        error.message.includes('drift_highscore') || 
-        error.message.includes('users_referral_code_key') || 
-        error.message.includes('users_wallet_address_unique') || 
-        error.message.includes('referral_code') || 
-        error.message.includes('wallet_address') || 
-        error.code === '23505'
-      )))) {
-        // Strip missing columns dynamically if PostgREST reports schema cache mismatch
-        const missingMatch = error.message ? error.message.match(/Could not find the '([^']+)' column/i) : null;
-        if (missingMatch && missingMatch[1]) {
-          delete dbPayload[missingMatch[1]];
-        }
-        if (error.message && (error.message.includes('skeet_highscore') || error.message.includes('alltime_skeet_highscore'))) {
-          delete dbPayload.skeet_highscore;
-          delete dbPayload.alltime_skeet_highscore;
-        }
-        if (error.message && error.message.includes('equipped_starship')) delete dbPayload.equipped_starship;
-        if (error.message && error.message.includes('space_state')) delete dbPayload.space_state;
-        if (error.message && error.message.includes('drift_highscore')) delete dbPayload.drift_highscore;
-        if (error.message && (error.message.includes('users_referral_code_key') || error.message.includes('referral_code'))) delete dbPayload.referral_code;
-        if (error.message && (error.message.includes('users_wallet_address_unique') || error.message.includes('wallet_address'))) {
-          delete dbPayload.wallet_address;
-        }
-        
-        let res2;
-        if (canonicalId) {
-          res2 = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId);
-        } else {
-          res2 = await supabase.from('users').update(dbPayload).eq('user_id', activeAuthUid);
-        }
-        error = res2 ? res2.error : null;
-        
-        // Secondary fallback if another missing column remains
-        if (error && error.code === 'PGRST204') {
-          const secondMatch = error.message ? error.message.match(/Could not find the '([^']+)' column/i) : null;
-          if (secondMatch && secondMatch[1]) {
-            delete dbPayload[secondMatch[1]];
-            delete dbPayload.skeet_highscore;
-            delete dbPayload.alltime_skeet_highscore;
-            if (canonicalId) {
-              const res3 = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId);
-              error = res3 ? res3.error : null;
-            } else {
-              const res3 = await supabase.from('users').update(dbPayload).eq('user_id', activeAuthUid);
-              error = res3 ? res3.error : null;
-            }
-          }
-        }
-      }
-      if (error) {
-        console.error("Supabase Save Error:", error);
-      }
-    } catch (err) {
-      console.error("Failed to save to DB:", err);
-      if (typeof window.triggerToast === 'function') {
-        window.triggerToast("DB Exception: " + (err.message || err), "error");
-      }
-    }
-  }
-
-  // Modify state and immediately save/sync
-  update(keyValObj) {
-    const isExplicitReset = keyValObj.walletConnected === false || keyValObj.authUserEmail === null || keyValObj.authUserId === null;
-
-    if (!isExplicitReset) {
-      if (this.state.authUserEmail && !('authUserEmail' in keyValObj)) {
-        keyValObj.authUserEmail = this.state.authUserEmail;
-      }
-      if (this.state.authUserId && !('authUserId' in keyValObj)) {
-        keyValObj.authUserId = this.state.authUserId;
-      }
-      if (this.state.authProvider && !('authProvider' in keyValObj)) {
-        keyValObj.authProvider = this.state.authProvider;
-      }
-      if (this.state.walletAddress && this.state.walletAddress.startsWith('0xg') && keyValObj.walletAddress && !keyValObj.walletAddress.startsWith('0xg')) {
-        keyValObj.linkedWalletAddress = keyValObj.walletAddress;
-        keyValObj.walletAddress = this.state.walletAddress;
-      }
-    }
-
-    Object.keys(keyValObj).forEach(key => {
-      if (typeof keyValObj[key] === 'number' && isNaN(keyValObj[key])) {
-        console.error(`[PolyState Anti-Corruption] Attempted to set ${key} to NaN! Ignoring update.`);
-        return; // Skip corrupted value
-      }
-      this.state[key] = keyValObj[key];
-    });
-    this.save();
-    
-    // Asynchronously push to database if connected
-    this.saveToDB();
-    this.syncUI();
-  }
-
-  addActivity(user, action, reward) {
-    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    const log = { user, action, reward, time };
-    this.state.activities.unshift(log);
-    if (this.state.activities.length > 20) {
-      this.state.activities.pop();
-    }
-    this.save();
-    this.saveToDB();
-    this.syncUI();
-  }
-
-  // --- VIP Checks ---
-  getActiveWeb3Address() {
-    const isEvm = (addr) => addr && typeof addr === 'string' && !addr.startsWith('0xpgt') && !addr.startsWith('0xg') && /^0x[a-fA-F0-9]{40}$/i.test(addr);
-    const linked = this.state.linkedWalletAddress;
-    const primary = this.state.walletAddress;
-    if (isEvm(linked)) return linked.toLowerCase();
-    if (isEvm(primary)) return primary.toLowerCase();
-    if (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' && isEvm(window.ethereum.selectedAddress)) {
-      return window.ethereum.selectedAddress.toLowerCase();
-    }
-    return null;
-  }
-
-  getStakedPgtTotal() {
-    let total = parseFloat(this.state.stakedBalancePgt || 0);
-    if (Array.isArray(this.state.stakes)) {
-      let sumStakes = 0;
-      this.state.stakes.forEach(s => {
-        sumStakes += parseFloat(s.amount || 0);
-      });
-      total = Math.max(total, sumStakes);
-    }
-    return total;
-  }
-
-  getStakedPgt1YearTotal() {
-    if (!Array.isArray(this.state.stakes)) return 0;
-    let sum1Y = 0;
-    this.state.stakes.forEach(s => {
-      const pool = String(s.pool || 'pgt').toLowerCase();
-      const tier = String(s.tier || '').toLowerCase();
-      if (pool === 'pgt' && tier === 'year' && s.active !== false) {
-        sum1Y += parseFloat(s.amount || 0);
-      }
-    });
-    return sum1Y;
-  }
-
-  getStakedPgtMultiplier() {
-    const staked1Y = this.getStakedPgt1YearTotal();
-    if (staked1Y >= 2500000) return 1.30;
-    if (staked1Y >= 2000000) return 1.25;
-    if (staked1Y >= 1500000) return 1.20;
-    if (staked1Y >= 1000000) return 1.15;
-    if (staked1Y >= 500000) return 1.10;
-    return 1.0;
-  }
-
-  isVipActive() {
-    const expectedAdmin = "0x10b9993990c9ef8a212c9557cb02ad94da9a654d";
-    const primary = (this.state.walletAddress || '').toLowerCase();
-    const linked = (this.state.linkedWalletAddress || '').toLowerCase();
-    const pid = (this.state.playerId || '').toLowerCase();
-    if (primary === expectedAdmin || linked === expectedAdmin || pid === expectedAdmin || this.state.isAdmin) {
-      return true;
-    }
-    if (!this.state.vipUntil) return false;
-    const expiry = new Date(this.state.vipUntil).getTime();
-    return Date.now() < expiry;
-  }
-
-  getVipLevel() {
-    if (!this.isVipActive()) return 0;
-    const raw = this.state.vipLevel;
-    if (raw !== null && raw !== undefined) {
-      const num = Number(raw);
-      if (num === 1) return 1;
-      if (num >= 2) return 2;
-    }
-    return 2;
-  }
-
-  isUserAuthenticated() {
-    if (!this.state) return false;
-    const hasGoogleAuth = !!(this.state.authUserEmail || this.state.authProvider === 'google');
-    const hasWeb3Auth = !!(this.state.authProvider === 'web3' || (this.state.walletConnected && (this.state.walletAddress || this.state.linkedWalletAddress)));
-    const hasGuestAuth = !!(this.state.playerId && !this.state.playerId.startsWith('0xguest_temp'));
-    return hasGoogleAuth || hasWeb3Auth || hasGuestAuth;
-  }
-
-  getVipTimeRemainingStr() {
-    if (!this.state.vipUntil) return null;
-    const expiry = new Date(this.state.vipUntil).getTime();
-    const diff = expiry - Date.now();
-    if (diff <= 0) return null;
-
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (days > 0) return `${days}d ${hours}h ${mins}m left`;
-    if (hours > 0) return `${hours}h ${mins}m left`;
-    return `${mins}m left`;
-  }
-
-  getMaxDailyPlaysPerGame() {
-    const base = Number(this.state.maxDailyPlaysPerGame || 25);
-    if (!this.isVipActive()) return base;
-    const level = this.getVipLevel();
-    return level >= 2 ? Math.round(base * 2.0) : Math.round(base * 1.5);
-  }
-
-  // Calculate current multipliers based on state
-  getMultipliers() {
-    let nftFaucetBoost = 0;
-    let nftGameMultiplier = 0;
-    let nftStakingBoost = 1.0;
-    let rawNftReferralMultiplier = 1.0;
-    let rawNftLeaderboardMultiplier = 1.0;
-
-    // Combine all unique owned NFT type bonuses (base passive multiplier applied once per unique core type)
-    const normalizeId = id => (id === 'nft_quantum_core' ? 'nft_gold_turbine' : (id === 'nft_hyper_drive' ? 'nft_pulse_blaster' : id));
-    const uniqueNftIds = Array.from(new Set([...(this.state.ownedNfts || []).map(normalizeId), ...(this.state.crateNfts || []).map(normalizeId)]));
-    uniqueNftIds.forEach(nftId => {
-      const activeNft = NFT_REGISTRY.find(n => n.id === nftId);
-      if (activeNft) {
-        nftFaucetBoost += activeNft.faucetBoost || 0;
-        nftGameMultiplier += activeNft.gameMultiplier || 0;
-        if (activeNft.stakingBoost) {
-          nftStakingBoost *= (1 + (activeNft.stakingBoost / 100));
-        }
-        rawNftReferralMultiplier *= activeNft.referralMultiplier || 1.0;
-        if (activeNft.leaderboardMultiplier && activeNft.leaderboardMultiplier > 1.0) {
-          rawNftLeaderboardMultiplier *= activeNft.leaderboardMultiplier;
-        }
-      }
-    });
-
-    // Streak bonus: +2% per day up to 10%
-    const streakBoost = Math.min(this.state.claimStreak * 2, 10);
-    
-    // Referral bonus: +1% per direct (L1) referred account up to 20%, with a final milestone at 100 L1 referrals unlocking 30%
-    const refCount = Math.max(0, parseInt(this.state.referralsL1 || 0, 10));
-    let referralBoost = Math.min(refCount * 1, 20);
-    if (refCount >= 100) {
-      referralBoost = 30;
-    }
-
-    const isAmb = !!this.state.isAmbassador;
-    const ambFaucetBoost = isAmb ? 100 : 0;
-    const ambGameMultiplier = isAmb ? 100 : 0;
-    const ambassadorStakingBoost = isAmb ? 1.10 : 1.0;
-    const ambReferralMultiplier = isAmb ? 1.5 : 1.0;
-
-    // Serie 1 Apex Multiplier (Owning >= 1 of all 17 Serie 1 Relics grants permanent 1.5x)
-    const isApexUnlocked = isSeason1ApexUnlocked(this.state.relics || {});
-    const apexMultiplier = isApexUnlocked ? 1.5 : 1.0;
-
-    // Quantum Relic Seeker NFT (Doubles Relic spawn probability)
-    const hasRelicSeeker = uniqueNftIds.includes('nft_relic_seeker');
-    const relicSpawnMultiplier = hasRelicSeeker ? 2.0 : 1.0;
-
-    // VIP Status & Multipliers (Silver: 1.5x Arcade, 1.25x Staking, 1.25x Leaderboard / Gold: 2.0x Arcade, 2.0x Staking, 2.0x Leaderboard)
-    const isVip = this.isVipActive();
-    const vipLevel = this.getVipLevel();
-    const vipMultiplier = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
-    const vipStakingBoost = isVip ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0;
-    const vipLeaderboardMultiplier = isVip ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0;
-
-    const totalReferralMultiplier = rawNftReferralMultiplier * ambReferralMultiplier;
-    const totalFaucetBoostPercent = (nftFaucetBoost + streakBoost + referralBoost);
-    const totalLeaderboardMultiplier = parseFloat((rawNftLeaderboardMultiplier * vipLeaderboardMultiplier).toFixed(2));
-
-    return {
-      nftFaucetBoost,
-      nftGameMultiplier,
-      nftStakingBoost,
-      vipStakingBoost,
-      ambassadorStakingBoost,
-      rawNftReferralMultiplier,
-      ambReferralMultiplier,
-      nftReferralMultiplier: rawNftReferralMultiplier, // Pure NFT referral multiplier
-      totalReferralMultiplier,
-      streakBoost,
-      referralBoost,
-      ambFaucetBoost,
-      ambGameMultiplier,
-      totalFaucetBoostPercent,
-      isApexUnlocked,
-      apexMultiplier,
-      hasRelicSeeker,
-      relicSpawnMultiplier,
-      isVip,
-      vipLevel,
-      vipMultiplier,
-      nftLeaderboardMultiplier: rawNftLeaderboardMultiplier,
-      vipLeaderboardMultiplier,
-      totalLeaderboardMultiplier,
-      halloweenBoost: this.isHalloweenActive() ? 10 : 0,
-      seasonalEvent: this.getActiveSeasonalEvent(),
-      seasonalBoost: this.getActiveSeasonalEvent()?.bonusPercent || 0
-    };
-  }
-
-  getActiveSeasonalEvent() {
-    return getActiveSeasonalEvent();
-  }
-
-  isHalloweenActive() {
-    const active = this.getActiveSeasonalEvent();
-    return !!active && active.id === 'halloween';
-  }
-
-  hasRelicSeeker() {
-    const normalizeId = id => (id === 'nft_quantum_core' ? 'nft_gold_turbine' : (id === 'nft_hyper_drive' ? 'nft_pulse_blaster' : id));
-    const combined = [...(this.state.ownedNfts || []).map(normalizeId), ...(this.state.crateNfts || []).map(normalizeId)];
-    return combined.includes('nft_relic_seeker');
-  }
-
-  getRelicSpawnMultiplier() {
-    return this.hasRelicSeeker() ? 2.0 : 1.0;
-  }
-
-  // --- Weekly Active Tier System (Levels 0 to 5) ---
-  computeWeeklyActiveTier(faucets, games) {
-    const f = Math.max(0, parseInt(faucets || 0, 10));
-    const g = Math.max(0, parseInt(games || 0, 10));
-    if (f >= 6 && g >= 50) return 5;
-    if (f >= 5 && g >= 25) return 4;
-    if (f >= 3 && g >= 5) return 3;
-    if (f >= 2 && g >= 1) return 2;
-    if (f >= 1) return 1;
-    return 0;
-  }
-
-  getActiveTierInfo(level = 0) {
-    const lvl = parseInt(level || 0, 10);
-    switch (lvl) {
-      case 5:
-        return {
-          level: 5,
-          title: 'Apex Legend',
-          badge: '👑',
-          badgeHtml: '👑 Level 5: Apex Legend',
-          color: '#ffd700',
-          bgGradient: 'linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 170, 0, 0.05))',
-          borderColor: 'rgba(255, 215, 0, 0.4)',
-          reqText: '6+ Faucets & 50+ Games',
-          desc: 'Ultimate weekly mastery: Near-daily login mastery and high-volume arcade play.'
-        };
-      case 4:
-        return {
-          level: 4,
-          title: 'Elite Champion',
-          badge: '💎',
-          badgeHtml: '💎 Level 4: Elite Champion',
-          color: '#00ff88',
-          bgGradient: 'linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 240, 255, 0.05))',
-          borderColor: 'rgba(0, 255, 136, 0.4)',
-          reqText: '5+ Faucets & 25+ Games',
-          desc: 'Hardcore champion dominating weekly gameplay and faucet logins.'
-        };
-      case 3:
-        return {
-          level: 3,
-          title: 'Veteran',
-          badge: '🥇',
-          badgeHtml: '🥇 Level 3: Veteran',
-          color: '#ffaa00',
-          bgGradient: 'linear-gradient(135deg, rgba(255, 170, 0, 0.15), rgba(255, 0, 255, 0.05))',
-          borderColor: 'rgba(255, 170, 0, 0.4)',
-          reqText: '3+ Faucets & 5+ Games',
-          desc: 'Dedicated player regularly playing and claiming faucet drops.'
-        };
-      case 2:
-        return {
-          level: 2,
-          title: 'Contender',
-          badge: '🥈',
-          badgeHtml: '🥈 Level 2: Contender',
-          color: '#c084fc',
-          bgGradient: 'linear-gradient(135deg, rgba(192, 132, 252, 0.15), rgba(0, 240, 255, 0.05))',
-          borderColor: 'rgba(192, 132, 252, 0.4)',
-          reqText: '2+ Faucets & 1+ Game',
-          desc: 'Active player participating in both faucet and arcade games.'
-        };
-      case 1:
-        return {
-          level: 1,
-          title: 'Scout',
-          badge: '🥉',
-          badgeHtml: '🥉 Level 1: Scout',
-          color: '#38bdf8',
-          bgGradient: 'linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(0, 255, 136, 0.05))',
-          borderColor: 'rgba(56, 189, 248, 0.4)',
-          reqText: '1+ Faucet Claim',
-          desc: 'Casual starter who claimed at least 1 daily faucet this week.'
-        };
-      case 0:
-      default:
-        return {
-          level: 0,
-          title: 'Dormant',
-          badge: '⚪',
-          badgeHtml: '⚪ Level 0: Dormant',
-          color: '#94a3b8',
-          bgGradient: 'linear-gradient(135deg, rgba(148, 163, 184, 0.08), rgba(255, 255, 255, 0.02))',
-          borderColor: 'rgba(148, 163, 184, 0.25)',
-          reqText: '0 Faucets, 0 Games',
-          desc: 'Inactive player with no recorded weekly activity.'
-        };
-    }
-  }
-
-  getCurrentWeekProgression() {
-    const faucets = Math.max(0, parseInt(this.state.weeklyFaucetClaims || 0, 10));
-    const games = Math.max(0, parseInt(this.state.weeklyGamesPlayed || 0, 10));
-    const currentTier = this.computeWeeklyActiveTier(faucets, games);
-    
-    let nextTier = currentTier + 1;
-    let targetFaucets = 1;
-    let targetGames = 0;
-
-    if (currentTier === 0) {
-      targetFaucets = 1;
-      targetGames = 0;
-    } else if (currentTier === 1) {
-      targetFaucets = 2;
-      targetGames = 1;
-    } else if (currentTier === 2) {
-      targetFaucets = 3;
-      targetGames = 5;
-    } else if (currentTier === 3) {
-      targetFaucets = 5;
-      targetGames = 25;
-    } else if (currentTier === 4) {
-      targetFaucets = 6;
-      targetGames = 50;
-    } else {
-      nextTier = 5;
-      targetFaucets = 6;
-      targetGames = 50;
-    }
-
-    const faucetProgress = Math.min(100, Math.round((faucets / targetFaucets) * 100));
-    const gamesProgress = targetGames > 0 ? Math.min(100, Math.round((games / targetGames) * 100)) : 100;
-    const overallProgress = currentTier === 5 ? 100 : Math.round((faucetProgress + gamesProgress) / 2);
-
-    const neededFaucets = Math.max(0, targetFaucets - faucets);
-    const neededGames = Math.max(0, targetGames - games);
-
-    return {
-      faucets,
-      games,
-      currentTier,
-      nextTier,
-      targetFaucets,
-      targetGames,
-      faucetProgress,
-      gamesProgress,
-      overallProgress,
-      neededFaucets,
-      neededGames,
-      currentTierInfo: this.getActiveTierInfo(currentTier),
-      nextTierInfo: this.getActiveTierInfo(nextTier),
-      isMaxTier: currentTier >= 5
-    };
-  }
-
-  syncUI() {
-    if (typeof window !== 'undefined') {
-      window.appState = this;
-    }
-    // If not on main portal (e.g. standalone admin.html or contact.html), skip game dashboard DOM sync
-    if (typeof document !== 'undefined' && !document.getElementById('view-dashboard')) {
-      return;
-    }
-    // Balances
-    const balPgt = document.getElementById('balance-pgt');
-    if (balPgt) balPgt.innerText = parseFloat(this.state.balancePgt || 0).toFixed(2);
-    const balMatic = document.getElementById('balance-matic');
-    if (balMatic) balMatic.innerText = parseFloat(this.state.balanceMatic || 0).toFixed(2);
-    
-    const onchainPill = document.getElementById('token-pill-pgt-onchain');
-    const onchainLabel = document.getElementById('balance-pgt-onchain');
-    if (onchainPill && onchainLabel) {
-      if (this.state.walletConnected) {
-        onchainPill.style.display = 'flex';
-        onchainLabel.innerText = (this.state.onchainBalancePgt || 0).toFixed(2);
-      } else {
-        onchainPill.style.display = 'none';
-      }
-    }
-    
-    const onchainFlrPill = document.getElementById('token-pill-1flr-onchain');
-    const onchainFlrLabel = document.getElementById('balance-1flr-onchain');
-    if (onchainFlrPill && onchainFlrLabel) {
-      if (this.state.walletConnected) {
-        onchainFlrPill.style.display = 'flex';
-        onchainFlrLabel.innerText = (this.state.onchainBalance1flr || 0).toFixed(2);
-      } else {
-        onchainFlrPill.style.display = 'none';
-      }
-    }
-    
-    // Header address & wallet toggle
-    const addrDisplay = document.getElementById('wallet-address-display');
-    const connectBtn = document.getElementById('btn-wallet-connect');
-    const headerVip = document.getElementById('header-vip-badge');
-    const joinVipBtn = document.getElementById('btn-header-join-vip');
-    const headerLogout = document.getElementById('btn-header-logout');
-    
-    if (this.isUserAuthenticated()) {
-      if (addrDisplay) addrDisplay.style.display = 'inline-block';
-      if (headerLogout) headerLogout.style.display = 'inline-block';
-      if (headerVip) headerVip.style.display = 'none';
-      if (joinVipBtn) {
-        joinVipBtn.style.display = 'inline-block';
-        const remStr = this.getVipTimeRemainingStr();
-        const level = this.getVipLevel();
-        const prefix = level === 1 ? '🥈 SILVER' : '👑 GOLD';
-        joinVipBtn.innerText = this.isVipActive() ? (remStr ? `${prefix} (${remStr})` : `${prefix} ACTIVE`) : '💎 Join VIP';
-        if (this.isVipActive()) {
-          joinVipBtn.title = 'Click to view VIP remaining time details in My Profile';
-          joinVipBtn.style.background = level === 1 ? 'linear-gradient(135deg, #a8a8a8, #d4d4d4)' : '';
-          joinVipBtn.style.color = level === 1 ? '#000' : '';
-        } else {
-          joinVipBtn.style.background = '';
-          joinVipBtn.style.color = '';
-        }
-      }
-      const linked = this.state.linkedWalletAddress;
-      const primary = this.state.walletAddress;
-      if (addrDisplay) {
-        if (this.state.username && this.state.username.trim() !== '') {
-          addrDisplay.innerText = this.state.username;
-        } else {
-          const isInternal = (addr) => !addr || addr.startsWith('0xpgt') || addr.startsWith('0xg');
-          const realWeb3 = (linked && linked.length >= 42 && !isInternal(linked)) ? linked : (!isInternal(primary) ? primary : null);
-          if (realWeb3 && realWeb3.length >= 42) {
-            addrDisplay.innerText = 'Player_' + realWeb3.substring(0, 6) + '...' + realWeb3.substring(realWeb3.length - 4);
-          } else if (this.state.authUserEmail) {
-            addrDisplay.innerText = this.state.authUserEmail.split('@')[0];
-          } else {
-            const tag = (primary && primary.length >= 4) ? primary.substring(primary.length - 4) : 'User';
-            addrDisplay.innerText = 'Player_' + tag;
-          }
-        }
-      }
-      if (connectBtn) connectBtn.style.display = 'none';
-    } else {
-      if (addrDisplay) addrDisplay.style.display = 'none';
-      if (headerLogout) headerLogout.style.display = 'none';
-      if (headerVip) headerVip.style.display = 'none';
-      if (joinVipBtn) {
-        joinVipBtn.style.display = 'inline-block';
-        const remStr = this.getVipTimeRemainingStr();
-        const level = this.getVipLevel();
-        const prefix = level === 1 ? '🥈 SILVER' : '👑 GOLD';
-        joinVipBtn.innerText = this.isVipActive() ? (remStr ? `${prefix} (${remStr})` : `${prefix} ACTIVE`) : '💎 Join VIP';
-        if (this.isVipActive()) {
-          joinVipBtn.style.background = level === 1 ? 'linear-gradient(135deg, #a8a8a8, #d4d4d4)' : '';
-          joinVipBtn.style.color = level === 1 ? '#000' : '';
-        } else {
-          joinVipBtn.style.background = '';
-          joinVipBtn.style.color = '';
-        }
-      }
-      if (connectBtn) connectBtn.style.display = 'flex';
-    }
-
-    // VIP Profile Card UI
-    const vipStatusBadge = document.getElementById('vip-status-badge');
-    const vipExpiryText = document.getElementById('vip-expiry-text');
-    const vipExpiryDate = document.getElementById('vip-expiry-date');
-    const btnBuyVip = document.getElementById('btn-buy-vip');
-    
-    if (vipStatusBadge && btnBuyVip) {
-      if (this.isVipActive()) {
-        const remStr = this.getVipTimeRemainingStr();
-        const level = this.getVipLevel();
-        const tierName = level === 1 ? 'SILVER VIP' : 'GOLD VIP';
-        vipStatusBadge.innerText = remStr ? `${tierName} (${remStr})` : `${tierName} ACTIVE`;
-        vipStatusBadge.style.color = '#000';
-        vipStatusBadge.style.background = level === 1 ? '#c0c0c0' : 'var(--color-warning)';
-        
-        btnBuyVip.innerText = `${tierName} ACTIVE`;
-        btnBuyVip.style.background = level === 1 ? '#c0c0c0' : 'var(--color-warning)';
-        
-        if (vipExpiryText && vipExpiryDate) {
-          vipExpiryText.style.display = 'block';
-          const expDateStr = new Date(this.state.vipUntil).toLocaleDateString() + ' ' + new Date(this.state.vipUntil).toLocaleTimeString();
-          vipExpiryDate.innerText = remStr ? `${expDateStr} (${remStr})` : expDateStr;
-        }
-      } else {
-        vipStatusBadge.innerText = 'INACTIVE';
-        vipStatusBadge.style.color = 'var(--text-muted)';
-        vipStatusBadge.style.background = 'rgba(255,255,255,0.1)';
-        
-        btnBuyVip.innerText = 'BUY 30-DAY VIP PASS NFT';
-        btnBuyVip.style.background = 'var(--color-warning)';
-        
-        if (vipExpiryText) {
-          vipExpiryText.style.display = 'none';
-        }
-      }
-    }
-
-    // Feature-specific VIP badges
-    const faucetBadge = document.getElementById('faucet-vip-badge');
-    if (faucetBadge) faucetBadge.style.display = this.isVipActive() ? 'block' : 'none';
-    
-    const stakingBadge = document.getElementById('staking-vip-badge');
-    if (stakingBadge) stakingBadge.style.display = this.isVipActive() ? 'block' : 'none';
-
-    const stakingAmbBadge = document.getElementById('staking-ambassador-badge');
-    if (stakingAmbBadge) stakingAmbBadge.style.display = !!this.state.isAmbassador ? 'block' : 'none';
-    
-    const refBadge = document.getElementById('referral-vip-badge');
-    if (refBadge) refBadge.style.display = this.isVipActive() ? 'block' : 'none';
-
-    // Dashboard quick stats (safe null guards for replaced hero pills)
-    const multis = this.getMultipliers();
-    const elClaims = document.getElementById('stats-total-claims');
-    if (elClaims) elClaims.innerText = this.state.totalClaims;
-    const elBoost = document.getElementById('stats-active-boost');
-    if (elBoost) elBoost.innerText = `+${multis.totalFaucetBoostPercent}%`;
-    const elHighScore = document.getElementById('stats-game-highscore');
-    if (elHighScore) elHighScore.innerText = this.state.gameHighScore;
-    const elRefs = document.getElementById('stats-referrals-count');
-    if (elRefs) elRefs.innerText = this.state.referralsCount;
-    
-
-
-    // Faucet UI stats
-    const elNftBoost = document.getElementById('faucet-multiplier-nft');
-    if (elNftBoost) elNftBoost.innerText = `+${multis.nftFaucetBoost}%`;
-    const elRefBoost = document.getElementById('faucet-multiplier-referral');
-    if (elRefBoost) elRefBoost.innerText = `+${multis.referralBoost}%`;
-    const elStreakBoost = document.getElementById('faucet-multiplier-streak');
-    if (elStreakBoost) elStreakBoost.innerText = `+${multis.streakBoost}%`;
-
-    // Faucet Referral Bonus Progress Bar & Milestone Subtext (Strictly Level 1 / Direct Referrals)
-    const refFill = document.getElementById('faucet-ref-progress-fill');
-    const refCountEl = document.getElementById('faucet-ref-progress-count');
-    const refNextEl = document.getElementById('faucet-ref-progress-next');
-
-    if (refFill && refCountEl && refNextEl) {
-      const refCount = Math.max(0, parseInt(this.state.referralsL1 || 0, 10));
-      if (refCount < 20) {
-        const pct = Math.min(100, Math.max(0, (refCount / 20) * 100));
-        refFill.style.width = `${pct}%`;
-        refFill.style.background = 'linear-gradient(90deg, #00f2fe, #4facfe)';
-        refCountEl.innerText = `${refCount} / 20 L1 Referrals`;
-        refNextEl.innerText = `Next: +${refCount + 1}% (+1%/L1 ref)`;
-      } else if (refCount < 100) {
-        const pct = Math.min(100, Math.max(20, (refCount / 100) * 100));
-        refFill.style.width = `${pct}%`;
-        refFill.style.background = 'linear-gradient(90deg, #4facfe, #a855f7)';
-        refCountEl.innerText = `${refCount} / 100 L1 Referrals`;
-        refNextEl.innerText = `${100 - refCount} more for Final Step (+30%)`;
-      } else {
-        refFill.style.width = '100%';
-        refFill.style.background = 'linear-gradient(90deg, #ffd700, #f59e0b)';
-        refCountEl.innerText = `${refCount} L1 Referrals`;
-        refNextEl.innerText = '🏆 Final Step Unlocked: +30% MAX';
-      }
-    }
-    
-    const isVip = this.isVipActive();
-    const faucetVipVal = document.getElementById('faucet-multiplier-vip');
-    if (faucetVipVal) {
-      if (isVip) {
-        const vLvl = this.getVipLevel();
-        if (vLvl >= 2) {
-          faucetVipVal.innerHTML = `<span style="color: #ffd700; font-weight: 800;">👑 x2.5 (+150%)</span>`;
-        } else {
-          faucetVipVal.innerHTML = `<span style="color: #c0c0c0; font-weight: 800;">🥈 x1.5 (+50%)</span>`;
-        }
-      } else {
-        faucetVipVal.innerHTML = `<span style="color: var(--text-muted); font-weight: 600;">+0% <span style="font-size: 0.8em; opacity: 0.75;">(x1.5 / x2.5 VIP)</span></span>`;
-      }
-    }
-    const faucetVipRow = document.getElementById('faucet-multiplier-vip-row');
-    if (faucetVipRow) faucetVipRow.style.display = 'flex';
-
-    const isAmb = !!this.state.isAmbassador;
-    const faucetAmbVal = document.getElementById('faucet-multiplier-ambassador');
-    if (faucetAmbVal) {
-      if (isAmb) {
-        faucetAmbVal.innerHTML = `<span style="color: var(--color-warning); font-weight: 800;">x2 (+100%)</span>`;
-      } else {
-        faucetAmbVal.innerHTML = `<span style="color: var(--text-muted); font-weight: 600;">+0% <span style="font-size: 0.8em; opacity: 0.75;">(x2 possible)</span></span>`;
-      }
-    }
-    const faucetAmbRow = document.getElementById('faucet-multiplier-ambassador-row');
-    if (faucetAmbRow) faucetAmbRow.style.display = 'flex';
-    
-    const basePayout = (typeof this.state.faucetBasePgt === 'number' && this.state.faucetBasePgt >= 0)
-      ? this.state.faucetBasePgt
-      : 50.0;
-    
-    const basePol = (typeof this.state.vipFaucetBasePol === 'number' && this.state.vipFaucetBasePol > 0)
-      ? this.state.vipFaucetBasePol
-      : 0.01;
-    
-    const basePayoutEl = document.getElementById('faucet-base-payout-display');
-    if (basePayoutEl) {
-      basePayoutEl.innerHTML = `<span style="color: var(--color-primary); font-weight: 700;">${basePayout} PGT</span> <span style="color: var(--text-dim); margin: 0 4px;">|</span> <span style="color: #ffd700; font-weight: 700;">${basePol.toFixed(4)} POL</span>`;
-    }
-
-    let totalEst = basePayout * (1 + multis.totalFaucetBoostPercent / 100);
-    let totalEstPol = basePol * (1 + multis.totalFaucetBoostPercent / 100);
-    
-    // Tiered DEX Liquidity Provider Bonus ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
-    const lpUsd = parseFloat(this.state.liquidityUsdAmount || this.state.dexLiquidityUsd || 0);
-    
-    let lpMult = 1.0;
-    if (lpUsd >= 150) {
-      lpMult = 1.30;
-    } else if (lpUsd >= 100) {
-      lpMult = 1.20;
-    } else if (lpUsd >= 50) {
-      lpMult = 1.10;
-    }
-    this.state.liquidityMultiplier = lpMult;
-
-    const elLp = document.getElementById('faucet-multiplier-lp');
-    if (elLp) {
-      if (lpMult > 1.0) {
-        elLp.innerText = `+${Math.round((lpMult - 1.0) * 100)}% (${lpMult.toFixed(1)}x)`;
-        elLp.style.color = (lpMult >= 1.3) ? '#ffd700' : (lpMult >= 1.2 ? '#38bdf8' : 'var(--color-primary)');
-      } else {
-        elLp.innerText = '+0% (1.1x–1.3x)';
-        elLp.style.color = 'var(--text-muted)';
-      }
-    }
-
-    // Faucet DEX Liquidity Progress Bar & Milestone Subtext
-    const lpFill = document.getElementById('faucet-lp-progress-fill');
-    const lpCountEl = document.getElementById('faucet-lp-progress-count');
-    const lpNextEl = document.getElementById('faucet-lp-progress-next');
-
-    if (lpFill && lpCountEl && lpNextEl) {
-      const displayUsd = lpUsd;
-      const pct = Math.min(100, Math.max(0, (displayUsd / 150) * 100));
-      lpFill.style.width = `${pct}%`;
-
-      if (displayUsd < 50) {
-        lpFill.style.background = 'linear-gradient(90deg, #00f2fe, #38bdf8)';
-        lpCountEl.innerText = `$${displayUsd.toFixed(2)} / $150 Liquidity`;
-        lpNextEl.innerText = `Next: +10% (1.1x at $50)`;
-      } else if (displayUsd < 100) {
-        lpFill.style.background = 'linear-gradient(90deg, #38bdf8, #818cf8)';
-        lpCountEl.innerText = `$${displayUsd.toFixed(2)} / $150 Liquidity`;
-        lpNextEl.innerText = `Next: +20% (1.2x at $100)`;
-      } else if (displayUsd < 150) {
-        lpFill.style.background = 'linear-gradient(90deg, #818cf8, #c084fc)';
-        lpCountEl.innerText = `$${displayUsd.toFixed(2)} / $150 Liquidity`;
-        lpNextEl.innerText = `Next: +30% (1.3x at $150)`;
-      } else {
-        lpFill.style.background = 'linear-gradient(90deg, #ffd700, #f59e0b)';
-        lpCountEl.innerText = `$${displayUsd.toFixed(2)} / $150 Liquidity`;
-        lpNextEl.innerText = '🏆 Max Tier Unlocked: +30% (1.3x)';
-      }
-    }
-
-    const staked1Y = this.getStakedPgt1YearTotal();
-    const pgtStakerMult = this.getStakedPgtMultiplier();
-    const isPgtOnchainWhale = (this.state.onchainBalancePgt || 0) >= 1000000;
-
-    const elPgt = document.getElementById('faucet-multiplier-pgt');
-    if (elPgt) {
-      if (pgtStakerMult > 1.0) {
-        const pctBoost = Math.round((pgtStakerMult - 1.0) * 100);
-        elPgt.innerText = `+${pctBoost}% (${Number(pgtStakerMult.toFixed(2))}x)`;
-        elPgt.style.color = (pgtStakerMult >= 1.30) ? '#ffd700' : (pgtStakerMult >= 1.20 ? '#38bdf8' : 'var(--color-success)');
-      } else {
-        elPgt.innerText = '+0% (1.1x–1.3x)';
-        elPgt.style.color = 'var(--text-muted)';
-      }
-    }
-
-    // Faucet 1Y PGT Staker Progress Bar & Milestone Subtext (5% steps per 500k from 500k to 2.5M)
-    const pgtFill = document.getElementById('faucet-pgt-progress-fill');
-    const pgtCountEl = document.getElementById('faucet-pgt-progress-count');
-    const pgtNextEl = document.getElementById('faucet-pgt-progress-next');
-
-    if (pgtFill && pgtCountEl && pgtNextEl) {
-      const pct = Math.min(100, Math.max(0, (staked1Y / 2500000) * 100));
-      pgtFill.style.width = `${pct}%`;
-      const fmt1Y = Math.floor(staked1Y).toLocaleString();
-
-      if (staked1Y < 500000) {
-        pgtFill.style.background = 'linear-gradient(90deg, #00f2fe, #38bdf8)';
-        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
-        pgtNextEl.innerText = 'Next: +10% (1.1x at 500k)';
-      } else if (staked1Y < 1000000) {
-        pgtFill.style.background = 'linear-gradient(90deg, #38bdf8, #60a5fa)';
-        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
-        pgtNextEl.innerText = 'Next: +15% (1.15x at 1M)';
-      } else if (staked1Y < 1500000) {
-        pgtFill.style.background = 'linear-gradient(90deg, #60a5fa, #818cf8)';
-        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
-        pgtNextEl.innerText = 'Next: +20% (1.2x at 1.5M)';
-      } else if (staked1Y < 2000000) {
-        pgtFill.style.background = 'linear-gradient(90deg, #818cf8, #c084fc)';
-        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
-        pgtNextEl.innerText = 'Next: +25% (1.25x at 2M)';
-      } else if (staked1Y < 2500000) {
-        pgtFill.style.background = 'linear-gradient(90deg, #c084fc, #f59e0b)';
-        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
-        pgtNextEl.innerText = 'Next: +30% (1.3x at 2.5M)';
-      } else {
-        pgtFill.style.background = 'linear-gradient(90deg, #ffd700, #f59e0b)';
-        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
-        pgtNextEl.innerText = '🏆 Max Tier Unlocked: +30% (1.3x)';
-      }
-    }
-
-    const elPgtOnchain = document.getElementById('faucet-multiplier-pgt-onchain');
-    if (elPgtOnchain) {
-      elPgtOnchain.innerText = isPgtOnchainWhale ? '+10%' : '+0%';
-      elPgtOnchain.style.color = isPgtOnchainWhale ? 'var(--color-success)' : 'var(--text-muted)';
-    }
-
-    const elRelics = document.getElementById('faucet-multiplier-relics');
-    if (elRelics) {
-      const s1Prog = getSeason1Progress(this.state.relics || {});
-      if (s1Prog.isComplete) {
-        elRelics.innerText = `x1.5 (+50%) (${s1Prog.ownedCount}/17)`;
-        elRelics.style.color = '#ffd700';
-      } else {
-        elRelics.innerText = `+0% (${s1Prog.ownedCount}/17)`;
-        elRelics.style.color = 'var(--text-muted)';
-      }
-    }
-
-    if (lpMult > 1.0) {
-      totalEst *= lpMult;
-      totalEstPol *= lpMult;
-    }
-    if (pgtStakerMult > 1.0) {
-      totalEst *= pgtStakerMult;
-      totalEstPol *= pgtStakerMult;
-    }
-    if (isPgtOnchainWhale) {
-      totalEst *= 1.10;
-      totalEstPol *= 1.10;
-    }
-    if (multis.isApexUnlocked) {
-      totalEst *= 1.5;
-      totalEstPol *= 1.5;
-    }
-
-    // Dynamic Seasonal Event Bonus (Halloween, Christmas, Easter, etc.)
-    const seasonalEvent = this.getActiveSeasonalEvent();
-    if (seasonalEvent && seasonalEvent.bonusPercent > 0) {
-      totalEst *= (1.0 + seasonalEvent.bonusPercent / 100);
-      totalEstPol *= (1.0 + seasonalEvent.bonusPercent / 100);
-    }
-
-    const vipFaucetMult = this.isVipActive() ? (this.getVipLevel() >= 2 ? 2.5 : 1.5) : 1.0;
-    const vipPolMult = this.isVipActive() ? (this.getVipLevel() >= 2 ? 2.5 : 1.0) : 1.0;
-    totalEst *= vipFaucetMult;
-    totalEstPol *= vipPolMult;
-    if (!!this.state.isAmbassador) {
-      totalEst *= 2;
-      totalEstPol *= 2;
-    }
-
-    totalEst = Math.min(totalEst, 2500.0);
-    totalEstPol = Math.min(totalEstPol, 0.500000);
-    
-    // Toggle Seasonal Theme & Skin on Faucet View
-    const faucetView = document.getElementById('view-faucet');
-    if (faucetView) {
-      // Clean previous seasonal skins, then add current active skin if any
-      faucetView.classList.remove('halloween-skin', 'christmas-skin', 'easter-skin');
-      if (seasonalEvent && seasonalEvent.skinClass) {
-        faucetView.classList.add(seasonalEvent.skinClass);
-      }
-    }
-
-    // Dynamic Multiplier Row
-    const elSeasonalRow = document.getElementById('faucet-multiplier-seasonal-row') || document.getElementById('faucet-multiplier-halloween-row');
-    const elSeasonalName = document.getElementById('faucet-multiplier-seasonal-name');
-    const elSeasonalVal = document.getElementById('faucet-multiplier-seasonal-val') || document.getElementById('faucet-multiplier-halloween');
-    if (elSeasonalRow) {
-      elSeasonalRow.style.display = seasonalEvent ? 'flex' : 'none';
-      if (seasonalEvent) {
-        if (elSeasonalName) elSeasonalName.innerHTML = `${seasonalEvent.icon} ${seasonalEvent.name} Bonus`;
-        if (elSeasonalVal) elSeasonalVal.innerText = `+${seasonalEvent.bonusPercent}%`;
-      }
-    }
-
-    // Seasonal Badge on PGT Card
-    const elSeasonalBadge = document.getElementById('faucet-seasonal-badge') || document.getElementById('faucet-halloween-badge');
-    if (elSeasonalBadge) {
-      elSeasonalBadge.style.display = seasonalEvent ? 'inline-block' : 'none';
-      if (seasonalEvent) {
-        elSeasonalBadge.innerText = seasonalEvent.badgeText || `${seasonalEvent.icon} +${seasonalEvent.bonusPercent}% Bonus Active!`;
-      }
-    }
-
-    // Seasonal Event Top Banner
-    const elSeasonalBanner = document.getElementById('faucet-seasonal-banner') || document.getElementById('faucet-halloween-banner');
-    if (elSeasonalBanner) {
-      elSeasonalBanner.style.display = seasonalEvent ? 'block' : 'none';
-      if (seasonalEvent) {
-        const titleEl = document.getElementById('seasonal-banner-title');
-        const subEl = document.getElementById('seasonal-banner-sub');
-        const iconLeftEl = document.getElementById('seasonal-banner-icon-left');
-        const iconRightEl = document.getElementById('seasonal-banner-icon-right');
-        if (titleEl) titleEl.innerHTML = `${seasonalEvent.icon} ${seasonalEvent.bannerTitle} ${seasonalEvent.icon}`;
-        if (subEl) subEl.innerHTML = seasonalEvent.bannerSubtitle;
-        if (iconLeftEl) iconLeftEl.innerText = seasonalEvent.bannerIconsLeft || seasonalEvent.icon;
-        if (iconRightEl) iconRightEl.innerText = seasonalEvent.bannerIconsRight || seasonalEvent.icon;
-      }
-    }
-
-    const estText = `${totalEst.toFixed(2)} PGT`;
-    const estElem = document.getElementById('faucet-estimated-claim');
-    if (estElem) estElem.innerText = estText;
-
-    const estPolElem = document.getElementById('faucet-estimated-claim-pol');
-    if (estPolElem) estPolElem.innerText = `👑 ${totalEstPol.toFixed(4)} POL`;
-
-    const btnClaim = document.getElementById('btn-claim-faucet');
-    if (btnClaim && !btnClaim.disabled) {
-      btnClaim.innerText = seasonalEvent ? `${seasonalEvent.icon} Claim ${estText}` : `Claim ${estText}`;
-    }
-
-    const btnClaimVip = document.getElementById('btn-claim-vip-faucet');
-    if (btnClaimVip && !btnClaimVip.disabled) {
-      btnClaimVip.innerText = `👑 Claim ${totalEstPol.toFixed(4)} POL`;
-    }
-
-    // Activity Feed render
-    const feed = document.getElementById('activity-feed');
-    if (feed) {
-      feed.innerHTML = '';
-      
-      // Fill up activity stream (if empty, populate some default logs)
-      const logsToDraw = this.state.activities.length > 0 ? this.state.activities : this.getMockActivities();
-      logsToDraw.forEach(log => {
-        const item = document.createElement('div');
-        item.className = 'activity-item';
-        const safeUser = typeof escapeHtml === 'function' ? escapeHtml(log.user) : (log.user || '');
-        const safeAction = typeof escapeHtml === 'function' ? escapeHtml(log.action) : (log.action || '');
-        const safeReward = typeof escapeHtml === 'function' ? escapeHtml(log.reward) : (log.reward || '');
-        const safeTime = typeof escapeHtml === 'function' ? escapeHtml(log.time) : (log.time || '');
-        item.innerHTML = `
-          <div>
-            <span class="activity-user">${safeUser}</span>
-            <span class="activity-action">${safeAction}</span>
-            <span class="activity-reward">${safeReward}</span>
-          </div>
-          <span class="activity-time">${safeTime}</span>
-        `;
-        feed.appendChild(item);
-      });
-    }
-
-    // Staking UI Stats (PGT Pool)
-    let stakedVal = 0;
-    (this.state.stakes || []).forEach(stake => {
-      stakedVal += (stake.amount || 0);
-    });
-
-    let walletMax = this.state.balancePgt || 0;
-    const tokenName = 'PGT';
-
-    // Determine APY based on active lock tier
-    const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
-    const vipLevel = this.getVipLevel();
-    const vipStakingMult = (multis.vipStakingBoost !== undefined) ? multis.vipStakingBoost : (this.isVipActive() ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0);
-    let finalApy = baseApy * multis.nftStakingBoost * (multis.ambassadorStakingBoost || 1.0) * vipStakingMult;
-
-    document.getElementById('staking-balance-staked').innerText = `${parseFloat(stakedVal || 0).toFixed(2)} ${tokenName}`;
-    
-    const activeApyLabel = document.getElementById('staking-active-apy');
-    if (activeApyLabel) activeApyLabel.innerText = `${parseFloat(finalApy || 0).toFixed(2)}%`;
-    
-    // Update APY breakdown UI
-    const baseEl = document.getElementById('staking-breakdown-base');
-    const nftEl = document.getElementById('staking-breakdown-nft');
-    const stakingVipRow = document.getElementById('staking-breakdown-vip-row');
-    const stakingVipLabel = document.getElementById('staking-breakdown-vip-label');
-    const stakingVipVal = document.getElementById('staking-breakdown-vip-val');
-    const finalEl = document.getElementById('staking-breakdown-final');
-    
-    if (baseEl) baseEl.innerText = `${parseFloat(baseApy || 0).toFixed(1)}%`;
-    if (nftEl) {
-      const nftBonusAbsolute = baseApy * (multis.nftStakingBoost - 1.0);
-      nftEl.innerText = `+${parseFloat(nftBonusAbsolute || 0).toFixed(2)}%`;
-      nftEl.style.color = multis.nftStakingBoost > 1.0 ? 'var(--color-success)' : 'var(--text-muted)';
-    }
-    const stakingAmbRow = document.getElementById('staking-breakdown-ambassador-row');
-    if (stakingAmbRow) stakingAmbRow.style.display = !!this.state.isAmbassador ? 'flex' : 'none';
-    if (stakingVipRow) stakingVipRow.style.display = this.isVipActive() ? 'flex' : 'none';
-    if (stakingVipLabel) stakingVipLabel.innerText = vipLevel >= 2 ? '👑 Gold VIP Multiplier' : '🥈 Silver VIP Multiplier';
-    if (stakingVipVal) stakingVipVal.innerText = vipLevel >= 2 ? 'x2.0 (+100%)' : 'x1.25 (+25%)';
-    if (finalEl) finalEl.innerText = `${parseFloat(finalApy || 0).toFixed(2)}%`;
-    document.getElementById('staking-wallet-max').innerText = `${parseFloat(walletMax || 0).toFixed(2)} ${tokenName}`;
-    document.getElementById('staking-input-token-label').innerText = tokenName;
-    
-    const yieldHarvestedEl = document.getElementById('staking-total-harvested');
-    if (yieldHarvestedEl) {
-      yieldHarvestedEl.innerText = `${parseFloat(this.state.totalStakingYield || 0).toFixed(6)} PGT`;
-    }
-    
-    // Update live lock box display and the list ledger
-    updateStakingLockCountdownUI();
-    if (typeof renderStakingLedger === 'function') {
-      renderStakingLedger();
-    }
-
-    // Referral stats (Multi-Level Tiers)
-    const origin = window.location.origin;
-    let path = window.location.pathname.replace(/\/index\.html$/i, '/').replace(/\/[^\/]+\.html$/i, '/');
-    if (!path.endsWith('/')) path += '/';
-    const cleanBaseUrl = origin + path;
-    if (!this.state.referralCode || this.state.referralCode === 'EMPTY') {
-      this.state.referralCode = Math.random().toString(16).substring(2, 10);
-    }
-    const refInput = document.getElementById('ref-invite-link');
-    if (refInput) {
-      refInput.value = `${cleanBaseUrl}?ref=${this.state.referralCode}`;
-    }
-    
-    const l1 = document.getElementById('ref-level-1-count');
-    const l2 = document.getElementById('ref-level-2-count');
-    const l3 = document.getElementById('ref-level-3-count');
-    const l4 = document.getElementById('ref-level-4-count');
-    if (l1 && l2 && l3 && l4) {
-      l1.innerText = this.state.referralsL1 || 0;
-      l2.innerText = this.state.referralsL2 || 0;
-      l3.innerText = this.state.referralsL3 || 0;
-      l4.innerText = this.state.referralsL4 || 0;
-    }
-
-    const refUnclaimedEl = document.getElementById('ref-stat-unclaimed');
-    if (refUnclaimedEl) {
-      refUnclaimedEl.innerText = `${parseFloat(this.state.unclaimedReferralPgt || 0).toFixed(2)} PGT`;
-    }
-    const refCommissionEl = document.getElementById('ref-stat-commission');
-    if (refCommissionEl) {
-      refCommissionEl.innerText = `${parseFloat(this.state.totalReferralCommission || 0).toFixed(2)} PGT`;
-    }
-
-    // Render Referred Downline Ledger list via feature module
-    if (typeof window.renderReferralLedger === 'function') {
-      try {
-        window.renderReferralLedger();
-      } catch (err) {
-        console.warn("Failed to render referral ledger:", err);
-      }
-    }
-    
-    // Inventory Badge
-    const totalInventoryCount = ((this.state.ownedNfts || []).length) + ((this.state.crateNfts || []).length);
-    const invBadge = document.getElementById('inventory-count-badge');
-    if (invBadge) invBadge.innerText = totalInventoryCount;
-
-    // Profile updates sync
-    syncProfileView();
-
-    // Roshambo sync
-    updateRoshamboWagerLabels();
-
-    // Live Arcade HUD boost labels sync
-    const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-    const vipMult = this.isVipActive() ? 2.0 : 1.0;
-    const ambMult = !!this.state.isAmbassador ? 2.0 : 1.0;
-    const apexMult = multis.isApexUnlocked ? 1.5 : 1.0;
-    const totalBoostStr = `${(nftMult * vipMult * ambMult * apexMult).toFixed(1)}x`;
-
-    ['game-nft-boost-label', 'invaders-nft-boost-label', 'drift-nft-boost-label', 'stacker-nft-boost-label'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.innerText = totalBoostStr;
-    });
-
-    // Faucet Navigation Ready Badge Sync
-    if (typeof window !== 'undefined' && typeof window.checkFaucetCooldown === 'function') {
-      try {
-        window.checkFaucetCooldown();
-      } catch (err) {
-        console.warn('[PolyState.syncUI] checkFaucetCooldown notice:', err);
-      }
-    }
-
-    // VIP POL Faucet UI & Timer Sync
-    if (typeof window !== 'undefined') {
-      if (typeof window.checkVipFaucetCooldown === 'function') {
-        try {
-          window.checkVipFaucetCooldown();
-        } catch (err) {
-          console.warn('[PolyState.syncUI] checkVipFaucetCooldown notice:', err);
-        }
-      }
-      if (typeof window.renderVipFaucetUI === 'function') {
-        try {
-          window.renderVipFaucetUI();
-        } catch (err) {
-          console.warn('[PolyState.syncUI] renderVipFaucetUI notice:', err);
-        }
-      }
-    }
-  }
-
-  getMockActivities() {
-    return [
-      { user: 'RocketRacer', action: 'claimed faucet', reward: '+55.00 PGT', time: '12:04:12 PM' },
-      { user: 'OxQuantum', action: 'harvested yield', reward: '+142.12 PGT', time: '12:02:45 PM' },
-      { user: 'SolGamer', action: 'scored 4,820 on Astro-Dodge', reward: '+96.40 PGT', time: '12:00:19 PM' },
-      { user: 'SatoshiKid', action: 'bought Apex Matrix NFT', reward: '-800 PGT', time: '11:58:33 AM' }
-    ];
-  }
-}
-
-appState = new PolyState();
-if (typeof window !== 'undefined') {
-  window.appState = appState;
-  window.PolyState = PolyState;
-  window.getRelicSpawnMultiplier = () => {
-    if (window.appState && typeof window.appState.getRelicSpawnMultiplier === 'function') {
-      return window.appState.getRelicSpawnMultiplier();
-    }
-    const combined = [...(window.appState?.state?.ownedNfts || []), ...(window.appState?.state?.crateNfts || [])];
-    return combined.includes('nft_relic_seeker') ? 2.0 : 1.0;
-  };
-
-  // Flush any pending throttled DB saves if the user closes or refreshes the page
-  window.addEventListener('beforeunload', () => {
-    if (appState && appState._dbSaveTimer) {
-      clearTimeout(appState._dbSaveTimer);
-      appState._dbSaveTimer = null;
-      appState._executeSaveToDB();
-    }
-  });
-}
-
+export let appState = null;
+
+import { supabase, APP_VERSION } from './config.js';
+import { NFT_REGISTRY } from '../features/nft.js';
+import { cyb53, CHECKSUM_SALT } from '../utils/crypto.js';
+import { triggerToast, escapeHtml } from './ui.js';
+import { renderStakingLedger, activeStakingTier, activeStakingPool, updateStakingLockCountdownUI } from '../features/staking.js';
+import { syncProfileView } from '../features/profile.js';
+import { updateRoshamboWagerLabels } from '../features/roshambo.js';
+import { isSeason1ApexUnlocked, getSeason1Progress, normalizeRelicsObject } from '../features/relics.js';
+import { getActiveSeasonalEvent } from '../features/seasonal-events.js';
+
+// --- Guest Session Address Generator ---
+export function getOrCreateGuestAddress(forceNew = false) {
+  try {
+    if (forceNew) {
+      localStorage.removeItem('polygame_guest_address');
+    }
+    let guestAddr = localStorage.getItem('polygame_guest_address');
+    if (!guestAddr || !guestAddr.startsWith('0xguest') || guestAddr.length !== 42) {
+      const randomHex = Array.from({length: 35}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+      guestAddr = ('0xguest' + randomHex).substring(0, 42).toLowerCase();
+      localStorage.setItem('polygame_guest_address', guestAddr);
+    }
+    return guestAddr;
+  } catch (e) {
+    return '0xguest' + Math.random().toString(16).substring(2, 10).padEnd(35, '0').substring(0, 35);
+  }
+}
+
+// --- Persistent Application State Management ---
+
+export class PolyState {
+  constructor() {
+    if (typeof window !== 'undefined') {
+      window.appState = this;
+    }
+    this.defaultState = {
+      balancePgt: 0.0,  // Initial balance is 0.0 (no fake sandbox credit)
+      onchainBalancePgt: 0.0, // Real wallet balance
+      onchainBalance1flr: 0.0, // Real wallet balance
+      pendingPayoutPgt: 0.0, // Weekly pending rewards pool
+      unclaimedReferralPgt: 0.0,
+      unclaimedReferralPol: 0.0,
+      totalReferralPol: 0.0, // Unclaimed 4-tier referral pool
+      balanceMatic: 0.0,
+      walletConnected: false,
+      walletProvider: null,
+      playerId: '',
+      walletAddress: '',
+      linkedWalletAddress: '',
+      username: '',
+      
+      totalClaims: 0,
+      totalArcadePlays: 0,
+      lastClaimTime: null,
+      claimStreak: 0,
+      
+      unclaimedVipFaucetPol: 0.0,
+      totalVipFaucetPol: 0.0,
+      lastVipFaucetClaim: null,
+      vipFaucetStreak: 0,
+      
+      gameHighScore: 0,
+      invadersHighScore: 0,
+      alltimeGameHighScore: 0,
+      alltimeInvadersHighScore: 0,
+      alltimeDriftHighScore: 0,
+      driftHighScore: 0,
+      stackerHighScore: 0,
+      catcherHighScore: 0,
+      skeetHighScore: 0,
+      defenseHighScore: 0,
+      runnerHighScore: 0,
+      q2048HighScore: 0,
+      tetrisHighScore: 0,
+      alltimeStackerHighScore: 0,
+      alltimeCatcherHighScore: 0,
+      alltimeSkeetHighScore: 0,
+      alltimeDefenseHighScore: 0,
+      alltimeRunnerHighScore: 0,
+      alltimeQ2048HighScore: 0,
+      alltimeTetrisHighScore: 0,
+      spaceState: {
+        warpLevel: 1,
+        laserLevel: 1,
+        cargoLevel: 1,
+        shieldLevel: 1,
+        turretLevel: 1,
+        fleetPower: 100,
+        iron: 50,
+        titanium: 10,
+        quantum: 0,
+        pgtOre: 0,
+        pokesToday: 0,
+        lastPokeDate: null,
+        lastRaidDate: null,
+        lastOpDate: null,
+        raidsWon: 0,
+        mineralsMinedTotal: 0,
+        pgtMinedTotal: 0
+      },
+      
+      globalEarnMultiplier: 1.0, // Pulled from global_settings on load
+      faucetBasePgt: 50.0, // Pulled from global_settings on load
+      vipFaucetBasePol: 0.01, // Pulled from global_settings on load
+      vipFaucetMinPayoutPol: 5.0, // Pulled from global_settings on load
+      minWithdrawPgt: 10,
+      maxWithdrawPgt: 100000,
+      maxWeeklyWithdrawals: 5,
+      maxDailyPlaysPerGame: 25,
+      
+      ownedNfts: [],
+      crateNfts: [],
+      relics: {},
+      equippedNft: null,
+      equippedStarship: null,
+      stakedBalancePgt: 0.0,
+      totalStakingYield: 0.0,
+      totalEarned: 0.0,
+      stakes: [],
+      activities: [],
+      referralsCount: 0,
+      referralsL1: 0,
+      referralsL2: 0,
+      referralsL3: 0,
+      referralsL4: 0,
+      totalReferralCommission: 0.0,
+      referralCode: '',
+      referredBy: null,
+      referralsList: [],
+      dailyQuests: {
+        date: new Date().toISOString().split('T')[0],
+        games: 0,
+        mining: 0,
+        wins: 0,
+        games_claimed: false,
+        mining_claimed: false,
+        wins_claimed: false,
+        master_claimed: false,
+        streak_days: 0,
+        last_streak_date: ''
+      },
+      vipUntil: null,
+      vipLevel: 0,
+      authUserId: null,
+      authUserEmail: null,
+      authProvider: null,
+      isAmbassador: false,
+      liquidityPgtAmount: 0.0,
+      liquidityUsdAmount: 0.0,
+      liquidityMultiplier: 1.0,
+      dexLiquidityUsd: 0.0,
+      
+      // Weekly Active Parameter & Activity Tiers (Levels 0 to 5)
+      weeklyFaucetClaims: 0,
+      weeklyGamesPlayed: 0,
+      weeklyActiveTier: 0,       // Live projected tier this week (0-5)
+      lastWeeklyActiveTier: 0,   // Official active level earned last week (0-5)
+      
+      createdAt: null,
+      accountQuarantineDays: 7,
+      minWithdrawPgt: 10,
+      maxWithdrawPgt: 100000,
+      maxWeeklyWithdrawals: 5,
+
+      // Cloudflare Turnstile Arcade Anti-Bot Shield (PLAN-010)
+      turnstileArcadeEnabled: true,
+      turnstileArcadeFrequency: 3,
+      turnstileArcadeVipBypass: false
+    };
+
+    this._dbSaveTimer = null;
+    this._spaceStateLoaded = false;
+    this._spaceStateDirty = false;
+    this.isSyncingWithDB = false;
+    this.init();
+  }
+
+  init() {
+    const raw = localStorage.getItem('polygame_state');
+    const checksum = localStorage.getItem('polygame_state_checksum');
+    
+    if (raw) {
+      try {
+        // Anti-hacking validation check
+        const computed = cyb53(raw + CHECKSUM_SALT);
+        if (checksum !== computed) {
+          console.warn("State checksum verification failed! Resetting modified state.");
+          
+          if (typeof window.sendAdminAlert === 'function') {
+            window.sendAdminAlert({
+              category: 'SECURITY CHECKSUM',
+              title: '⚠️ Local State Modification Detected',
+              description: 'A player modified local storage state. Anti-cheat triggered and default state restored.',
+              color: 0xFF0033
+            });
+          }
+
+          // Trigger secure warning toast on next frame
+          setTimeout(() => {
+            triggerToast("⚠️ Local state modification detected! Restoring verified ledger.", "error");
+          }, 500);
+
+          this.state = Object.assign({}, this.defaultState);
+          this.save();
+          return;
+        }
+
+        const parsed = JSON.parse(raw);
+
+        // CRITICAL: Weekly tournament high scores (gameHighScore, invadersHighScore, driftHighScore, stackerHighScore, catcherHighScore, skeetHighScore, defenseHighScore)
+        // and weekly activity counters are transient weekly stats strictly managed server-side and reset weekly.
+        // They must NEVER be restored from browser cache (localStorage) across sessions or weekly resets.
+        parsed.gameHighScore = 0;
+        parsed.invadersHighScore = 0;
+        parsed.driftHighScore = 0;
+        parsed.stackerHighScore = 0;
+        parsed.catcherHighScore = 0;
+        parsed.skeetHighScore = 0;
+        parsed.defenseHighScore = 0;
+        parsed.runnerHighScore = 0;
+        parsed.q2048HighScore = 0;
+        parsed.tetrisHighScore = 0;
+        parsed.weeklyFaucetClaims = 0;
+        parsed.weeklyGamesPlayed = 0;
+        parsed.weeklyActiveTier = 0;
+
+        this.state = Object.assign(JSON.parse(JSON.stringify(this.defaultState)), parsed);
+        if (this.state.walletConnected) {
+          this.isSyncingWithDB = true; // Lock DB saves until autoConnectWeb3 fetches fresh DB data
+        }
+      } catch (e) {
+        console.error("Failed to load local storage state", e);
+        this.state = JSON.parse(JSON.stringify(this.defaultState));
+      }
+    } else {
+      this.state = JSON.parse(JSON.stringify(this.defaultState));
+    }
+
+    // Auto-assign persistent unique 0xguest... address for Guests if walletAddress is missing, dummy, or legacy Google ID
+    if (!this.state.walletAddress || this.state.walletAddress.trim() === '' || this.state.walletAddress === '0x0000000000000000000000000000000000000000' || (!this.state.walletConnected && !this.state.authUserId && !this.state.walletAddress.startsWith('0xguest'))) {
+      this.state.walletAddress = getOrCreateGuestAddress();
+      this.save();
+    }
+  }
+
+  resetToDefault(newAddress = '') {
+    this.state = JSON.parse(JSON.stringify(this.defaultState));
+    if (newAddress && newAddress.trim() !== '') {
+      this.state.walletAddress = newAddress.toLowerCase();
+      this.state.linkedWalletAddress = newAddress.toLowerCase();
+    } else {
+      this.state.walletAddress = getOrCreateGuestAddress(true);
+    }
+    this.save();
+  }
+
+  save() {
+    // Clone state and zero out transient weekly tournament scores & activity counters before persisting to localStorage.
+    // This strictly guarantees that browser storage NEVER preserves previous week scores or stale counters across restarts.
+    const storageState = Object.assign({}, this.state, {
+      gameHighScore: 0,
+      invadersHighScore: 0,
+      driftHighScore: 0,
+      stackerHighScore: 0,
+      catcherHighScore: 0,
+      skeetHighScore: 0,
+      defenseHighScore: 0,
+      runnerHighScore: 0,
+      q2048HighScore: 0,
+      tetrisHighScore: 0,
+      weeklyFaucetClaims: 0,
+      weeklyGamesPlayed: 0,
+      weeklyActiveTier: 0
+    });
+    const raw = JSON.stringify(storageState);
+    const computed = cyb53(raw + CHECKSUM_SALT);
+    localStorage.setItem('polygame_state', raw);
+    localStorage.setItem('polygame_state_checksum', computed);
+    this.syncUI();
+  }
+
+  getPlayerId() {
+    return this.state.playerId || this.state.walletAddress || '';
+  }
+
+  isPlayerConnected() {
+    const hasAuth = !!(this.state.authUserEmail || this.state.authUserId);
+    const hasWeb3 = !!(this.state.walletConnected || (this.state.linkedWalletAddress && !this.state.linkedWalletAddress.startsWith('0xpgt') && !this.state.linkedWalletAddress.startsWith('0xg')));
+    return hasAuth || hasWeb3;
+  }
+
+  // Debounced / Throttled DB save to prevent spamming Supabase with rapid REST updates
+  saveToDB(forceImmediate = false) {
+    if (!this.isPlayerConnected() || !supabase || this.isSyncingWithDB) return;
+    
+    if (this._dbSaveTimer) {
+      clearTimeout(this._dbSaveTimer);
+      this._dbSaveTimer = null;
+    }
+
+    if (forceImmediate) {
+      return this._executeSaveToDB();
+    }
+
+    this._dbSaveTimer = setTimeout(async () => {
+      this._executeSaveToDB();
+    }, 2000); // 2 second batching window
+  }
+
+  async _executeSaveToDB() {
+    if (!this.isPlayerConnected() || !supabase || this.isSyncingWithDB) return;
+
+    try {
+      const currentStakedPgt = (this.state.stakes || []).reduce((sum, s) => {
+        if (!s.pool || s.pool.toLowerCase() === 'pgt') {
+          const amt = parseFloat(s.amount || 0);
+          return sum + (isNaN(amt) ? 0 : amt);
+        }
+        return sum;
+      }, 0);
+
+      const canonicalId = (this.state.playerId || this.state.walletAddress || '').toLowerCase();
+      const walletAddr = canonicalId;
+
+      const dbPayload = {
+        player_id: canonicalId,
+        // balance_pgt is intentionally omitted to prevent client DevTools tampering.
+        // Balance is strictly managed server-side via Supabase RPCs.
+        staked_balance_pgt: currentStakedPgt,
+        equipped_nft: this.state.equippedNft,
+        // NOTE: Referral stats (referrals_count, referrals_l1..l4, referrals_list) are strictly server-authoritative
+        // and calculated directly from registered downline rows in Supabase. Omitted to prevent tampering.
+        total_staking_yield: this.state.totalStakingYield || 0.0,
+        // NOTE: Daily quests claim status and progression are strictly server-authoritative
+        // and managed via claim_daily_quest RPC. Omitted from saveToDB to prevent client tampering.
+        app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.016',
+        last_active_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      // Persist activities array to DB
+      if (Array.isArray(this.state.activities) && this.state.activities.length > 0) {
+        dbPayload.activities = this.state.activities.slice(0, 20);
+      }
+
+      if (this.state.username && typeof this.state.username === 'string' && this.state.username.trim() !== '') {
+        const cleanName = this.state.username.trim().replace(/[<>&"'\x00-\x1F\x7F]/g, '').substring(0, 30);
+        if (cleanName) dbPayload.username = cleanName;
+      }
+
+      // Only include space_state if explicitly marked dirty by PolySpace actions
+      // This guarantees that routine background saves (arcade sessions, quests, highscores) never overwrite cloud fleet expeditions
+      if (this.state.spaceState && typeof this.state.spaceState === 'object' && Object.keys(this.state.spaceState).length > 0) {
+        const sp = this.state.spaceState;
+        const hasRealProgress = ((sp.warpLevel || 1) > 1 || (sp.laserLevel || 1) > 1 || (sp.cargoLevel || 1) > 1 || (sp.iron || 0) > 50 || (sp.titanium || 0) > 10 || (sp.quantum || 0) > 0 || (Array.isArray(sp.expeditions) && sp.expeditions.length > 0));
+        if ((this._spaceStateLoaded || hasRealProgress) && this._spaceStateDirty) {
+          dbPayload.space_state = this.state.spaceState;
+          this._spaceStateDirty = false;
+        }
+      }
+
+      // Only include relics if populated to prevent overwriting existing DB relics with empty default object during multi-device sync
+      if (this.state.relics && typeof this.state.relics === 'object' && Object.keys(this.state.relics).length > 0) {
+        const norm = normalizeRelicsObject(this.state.relics);
+        if (Object.keys(norm).length > 0) {
+          dbPayload.relics = norm;
+        }
+      }
+
+      // Only include crate_nfts if populated to prevent wiping off-chain inventory during early sync
+      if (Array.isArray(this.state.crateNfts) && this.state.crateNfts.length > 0) {
+        dbPayload.crate_nfts = this.state.crateNfts;
+      }
+
+      // Only include owned_nfts if populated to prevent wiping on-chain inventory during early sync
+      if (Array.isArray(this.state.ownedNfts) && this.state.ownedNfts.length > 0) {
+        dbPayload.owned_nfts = this.state.ownedNfts;
+      }
+
+      // Dedicated equipped_starship column (decoupled from space_state)
+      const candShip = (this.state.equippedStarship && typeof this.state.equippedStarship === 'object' && Object.keys(this.state.equippedStarship).length > 0)
+        ? this.state.equippedStarship
+        : (this.state.spaceState && this.state.spaceState.equippedStarship ? this.state.spaceState.equippedStarship : null);
+      if (candShip && !candShip.isDemo && candShip.tokenId && candShip.tokenId > 0 && !String(candShip.name || '').toLowerCase().includes('demo')) {
+        dbPayload.equipped_starship = candShip;
+      } else {
+        if (this.state.spaceState && this.state.spaceState.equippedStarship) {
+          delete this.state.spaceState.equippedStarship;
+        }
+      }
+
+      // NOTE: Weekly tournament high scores (game_highscore, invaders_highscore, drift_highscore, stacker_highscore, skeet_highscore, defense_highscore)
+      // are STRICTLY managed server-side via end_arcade_session RPC to prevent client tampering and to prevent stale local storage
+      // from resurrecting old tournament scores after weekly resets.
+
+      if (this.state.alltimeGameHighScore > 0) dbPayload.alltime_game_highscore = this.state.alltimeGameHighScore;
+      if (this.state.alltimeInvadersHighScore > 0) dbPayload.alltime_invaders_highscore = this.state.alltimeInvadersHighScore;
+      if (this.state.alltimeDriftHighScore > 0) dbPayload.alltime_drift_highscore = this.state.alltimeDriftHighScore;
+      const alltimeStackVal = Math.max(this.state.alltimeStackerHighScore || 0, this.state.alltimeCatcherHighScore || 0);
+      if (alltimeStackVal > 0) dbPayload.alltime_stacker_highscore = alltimeStackVal;
+      if (this.state.alltimeSkeetHighScore > 0) dbPayload.alltime_skeet_highscore = this.state.alltimeSkeetHighScore;
+      if (this.state.alltimeDefenseHighScore > 0) dbPayload.defense_alltime_best = this.state.alltimeDefenseHighScore;
+      if (this.state.alltimeRunnerHighScore > 0) dbPayload.alltime_runner_highscore = this.state.alltimeRunnerHighScore;
+      if (this.state.alltimeQ2048HighScore > 0) dbPayload.alltime_q2048_highscore = this.state.alltimeQ2048HighScore;
+      if (this.state.alltimeTetrisHighScore > 0) dbPayload.alltime_tetris_highscore = this.state.alltimeTetrisHighScore;
+
+      // Only include referral_code if it is a valid non-empty string to avoid Postgres UNIQUE constraint collision on ""
+      if (this.state.referralCode && typeof this.state.referralCode === 'string' && this.state.referralCode.trim() !== '') {
+        dbPayload.referral_code = this.state.referralCode.trim();
+      }
+
+      if (this.state.referredBy && this.state.referredBy !== 'EMPTY') {
+        dbPayload.referred_by_l1 = this.state.referredBy.toLowerCase();
+      }
+
+      if (this.state.linkedWalletAddress) {
+        dbPayload.linked_wallet_address = this.state.linkedWalletAddress.toLowerCase();
+      }
+
+      if (this.state.lastClaimTime) {
+        dbPayload.last_faucet_claim = new Date(this.state.lastClaimTime).toISOString();
+      }
+
+      // Verify active Supabase Auth session before attempting direct table write (zero anon writes on users table)
+      let activeAuthUid = null;
+      if (supabase && supabase.auth && typeof supabase.auth.getSession === 'function') {
+        try {
+          const { data: sData } = await supabase.auth.getSession();
+          activeAuthUid = sData?.session?.user?.id || null;
+        } catch (e) {}
+      }
+
+      if (!activeAuthUid) {
+        // Player is unauthenticated in Supabase Auth (e.g. Web3-only wallet or guest).
+        // Database mutations for Web3 players are strictly executed via authoritative RPCs.
+        // Direct table PATCH would be sent with anon key and rejected with 401 Unauthorized.
+        if (window.POLY_DEBUG) console.log("[saveToDB] Skipping direct table write: No active Supabase Auth session.");
+        return;
+      }
+
+      let saveRes;
+      if (canonicalId) {
+        saveRes = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId).select('player_id');
+      } else {
+        saveRes = await supabase.from('users').update(dbPayload).eq('user_id', activeAuthUid).select('player_id');
+      }
+      if (!saveRes.error && (!saveRes.data || saveRes.data.length === 0)) {
+        // Guard: Verify if linked_wallet_address or canonicalId is already registered to an existing account before blindly inserting
+        const targetWallet = this.state.linkedWalletAddress || (canonicalId.startsWith('0x') && canonicalId.length === 42 && !canonicalId.startsWith('0xpgt') && !canonicalId.startsWith('0xg') ? canonicalId : null);
+        if (targetWallet) {
+          const { data: existingUser } = await supabase
+            .from('users')
+            .select('player_id')
+            .or(`linked_wallet_address.ilike.${targetWallet},player_id.ilike.${targetWallet}`)
+            .order('created_at', { ascending: true })
+            .limit(1);
+          if (existingUser && existingUser.length > 0) {
+            const realPid = existingUser[0].player_id;
+            this.state.playerId = realPid;
+            dbPayload.player_id = realPid;
+            saveRes = await supabase.from('users').update(dbPayload).eq('player_id', realPid).select('player_id');
+            return;
+          }
+        }
+        saveRes = await supabase.from('users').insert(dbPayload);
+      }
+      let error = saveRes ? saveRes.error : null;
+
+      // Auto-retry fallback if payload contains missing columns or unique key collisions
+      if (error && (error.code === 'PGRST204' || (error.message && (
+        error.message.includes('skeet_highscore') ||
+        error.message.includes('alltime_skeet_highscore') ||
+        error.message.includes('equipped_starship') ||
+        error.message.includes('space_state') || 
+        error.message.includes('drift_highscore') || 
+        error.message.includes('users_referral_code_key') || 
+        error.message.includes('users_wallet_address_unique') || 
+        error.message.includes('referral_code') || 
+        error.message.includes('wallet_address') || 
+        error.code === '23505'
+      )))) {
+        // Strip missing columns dynamically if PostgREST reports schema cache mismatch
+        const missingMatch = error.message ? error.message.match(/Could not find the '([^']+)' column/i) : null;
+        if (missingMatch && missingMatch[1]) {
+          delete dbPayload[missingMatch[1]];
+        }
+        if (error.message && (error.message.includes('skeet_highscore') || error.message.includes('alltime_skeet_highscore'))) {
+          delete dbPayload.skeet_highscore;
+          delete dbPayload.alltime_skeet_highscore;
+        }
+        if (error.message && error.message.includes('equipped_starship')) delete dbPayload.equipped_starship;
+        if (error.message && error.message.includes('space_state')) delete dbPayload.space_state;
+        if (error.message && error.message.includes('drift_highscore')) delete dbPayload.drift_highscore;
+        if (error.message && (error.message.includes('users_referral_code_key') || error.message.includes('referral_code'))) delete dbPayload.referral_code;
+        if (error.message && (error.message.includes('users_wallet_address_unique') || error.message.includes('wallet_address'))) {
+          delete dbPayload.wallet_address;
+        }
+        
+        let res2;
+        if (canonicalId) {
+          res2 = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId);
+        } else {
+          res2 = await supabase.from('users').update(dbPayload).eq('user_id', activeAuthUid);
+        }
+        error = res2 ? res2.error : null;
+        
+        // Secondary fallback if another missing column remains
+        if (error && error.code === 'PGRST204') {
+          const secondMatch = error.message ? error.message.match(/Could not find the '([^']+)' column/i) : null;
+          if (secondMatch && secondMatch[1]) {
+            delete dbPayload[secondMatch[1]];
+            delete dbPayload.skeet_highscore;
+            delete dbPayload.alltime_skeet_highscore;
+            if (canonicalId) {
+              const res3 = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId);
+              error = res3 ? res3.error : null;
+            } else {
+              const res3 = await supabase.from('users').update(dbPayload).eq('user_id', activeAuthUid);
+              error = res3 ? res3.error : null;
+            }
+          }
+        }
+      }
+      if (error) {
+        console.error("Supabase Save Error:", error);
+      }
+    } catch (err) {
+      console.error("Failed to save to DB:", err);
+      if (typeof window.triggerToast === 'function') {
+        window.triggerToast("DB Exception: " + (err.message || err), "error");
+      }
+    }
+  }
+
+  // Modify state and immediately save/sync
+  update(keyValObj) {
+    const isExplicitReset = keyValObj.walletConnected === false || keyValObj.authUserEmail === null || keyValObj.authUserId === null;
+
+    if (!isExplicitReset) {
+      if (this.state.authUserEmail && !('authUserEmail' in keyValObj)) {
+        keyValObj.authUserEmail = this.state.authUserEmail;
+      }
+      if (this.state.authUserId && !('authUserId' in keyValObj)) {
+        keyValObj.authUserId = this.state.authUserId;
+      }
+      if (this.state.authProvider && !('authProvider' in keyValObj)) {
+        keyValObj.authProvider = this.state.authProvider;
+      }
+      if (this.state.walletAddress && this.state.walletAddress.startsWith('0xg') && keyValObj.walletAddress && !keyValObj.walletAddress.startsWith('0xg')) {
+        keyValObj.linkedWalletAddress = keyValObj.walletAddress;
+        keyValObj.walletAddress = this.state.walletAddress;
+      }
+    }
+
+    Object.keys(keyValObj).forEach(key => {
+      if (typeof keyValObj[key] === 'number' && isNaN(keyValObj[key])) {
+        console.error(`[PolyState Anti-Corruption] Attempted to set ${key} to NaN! Ignoring update.`);
+        return; // Skip corrupted value
+      }
+      this.state[key] = keyValObj[key];
+    });
+    this.save();
+    
+    // Asynchronously push to database if connected
+    this.saveToDB();
+    this.syncUI();
+  }
+
+  addActivity(user, action, reward) {
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const log = { user, action, reward, time };
+    this.state.activities.unshift(log);
+    if (this.state.activities.length > 20) {
+      this.state.activities.pop();
+    }
+    this.save();
+    this.saveToDB();
+    this.syncUI();
+  }
+
+  // --- VIP Checks ---
+  getActiveWeb3Address() {
+    const isEvm = (addr) => addr && typeof addr === 'string' && !addr.startsWith('0xpgt') && !addr.startsWith('0xg') && /^0x[a-fA-F0-9]{40}$/i.test(addr);
+    const linked = this.state.linkedWalletAddress;
+    const primary = this.state.walletAddress;
+    if (isEvm(linked)) return linked.toLowerCase();
+    if (isEvm(primary)) return primary.toLowerCase();
+    if (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' && isEvm(window.ethereum.selectedAddress)) {
+      return window.ethereum.selectedAddress.toLowerCase();
+    }
+    return null;
+  }
+
+  getStakedPgtTotal() {
+    let total = parseFloat(this.state.stakedBalancePgt || 0);
+    if (Array.isArray(this.state.stakes)) {
+      let sumStakes = 0;
+      this.state.stakes.forEach(s => {
+        sumStakes += parseFloat(s.amount || 0);
+      });
+      total = Math.max(total, sumStakes);
+    }
+    return total;
+  }
+
+  getStakedPgt1YearTotal() {
+    if (!Array.isArray(this.state.stakes)) return 0;
+    let sum1Y = 0;
+    this.state.stakes.forEach(s => {
+      const pool = String(s.pool || 'pgt').toLowerCase();
+      const tier = String(s.tier || '').toLowerCase();
+      if (pool === 'pgt' && tier === 'year' && s.active !== false) {
+        sum1Y += parseFloat(s.amount || 0);
+      }
+    });
+    return sum1Y;
+  }
+
+  getStakedPgtMultiplier() {
+    const staked1Y = this.getStakedPgt1YearTotal();
+    if (staked1Y >= 2500000) return 1.30;
+    if (staked1Y >= 2000000) return 1.25;
+    if (staked1Y >= 1500000) return 1.20;
+    if (staked1Y >= 1000000) return 1.15;
+    if (staked1Y >= 500000) return 1.10;
+    return 1.0;
+  }
+
+  isVipActive() {
+    const expectedAdmin = "0x10b9993990c9ef8a212c9557cb02ad94da9a654d";
+    const primary = (this.state.walletAddress || '').toLowerCase();
+    const linked = (this.state.linkedWalletAddress || '').toLowerCase();
+    const pid = (this.state.playerId || '').toLowerCase();
+    if (primary === expectedAdmin || linked === expectedAdmin || pid === expectedAdmin || this.state.isAdmin) {
+      return true;
+    }
+    if (!this.state.vipUntil) return false;
+    const expiry = new Date(this.state.vipUntil).getTime();
+    return Date.now() < expiry;
+  }
+
+  getVipLevel() {
+    if (!this.isVipActive()) return 0;
+    const raw = this.state.vipLevel;
+    if (raw !== null && raw !== undefined) {
+      const num = Number(raw);
+      if (num === 1) return 1;
+      if (num >= 2) return 2;
+    }
+    return 2;
+  }
+
+  isUserAuthenticated() {
+    if (!this.state) return false;
+    const hasGoogleAuth = !!(this.state.authUserEmail || this.state.authProvider === 'google');
+    const hasWeb3Auth = !!(this.state.authProvider === 'web3' || (this.state.walletConnected && (this.state.walletAddress || this.state.linkedWalletAddress)));
+    const hasGuestAuth = !!(this.state.playerId && !this.state.playerId.startsWith('0xguest_temp'));
+    return hasGoogleAuth || hasWeb3Auth || hasGuestAuth;
+  }
+
+  getVipTimeRemainingStr() {
+    if (!this.state.vipUntil) return null;
+    const expiry = new Date(this.state.vipUntil).getTime();
+    const diff = expiry - Date.now();
+    if (diff <= 0) return null;
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (days > 0) return `${days}d ${hours}h ${mins}m left`;
+    if (hours > 0) return `${hours}h ${mins}m left`;
+    return `${mins}m left`;
+  }
+
+  getMaxDailyPlaysPerGame() {
+    const base = Number(this.state.maxDailyPlaysPerGame || 25);
+    if (!this.isVipActive()) return base;
+    const level = this.getVipLevel();
+    return level >= 2 ? Math.round(base * 2.0) : Math.round(base * 1.5);
+  }
+
+  // Calculate current multipliers based on state
+  getMultipliers() {
+    let nftFaucetBoost = 0;
+    let nftGameMultiplier = 0;
+    let nftStakingBoost = 1.0;
+    let rawNftReferralMultiplier = 1.0;
+    let rawNftLeaderboardMultiplier = 1.0;
+
+    // Combine all unique owned NFT type bonuses (base passive multiplier applied once per unique core type)
+    const normalizeId = id => (id === 'nft_quantum_core' ? 'nft_gold_turbine' : (id === 'nft_hyper_drive' ? 'nft_pulse_blaster' : id));
+    const uniqueNftIds = Array.from(new Set([...(this.state.ownedNfts || []).map(normalizeId), ...(this.state.crateNfts || []).map(normalizeId)]));
+    uniqueNftIds.forEach(nftId => {
+      const activeNft = NFT_REGISTRY.find(n => n.id === nftId);
+      if (activeNft) {
+        nftFaucetBoost += activeNft.faucetBoost || 0;
+        nftGameMultiplier += activeNft.gameMultiplier || 0;
+        if (activeNft.stakingBoost) {
+          nftStakingBoost *= (1 + (activeNft.stakingBoost / 100));
+        }
+        rawNftReferralMultiplier *= activeNft.referralMultiplier || 1.0;
+        if (activeNft.leaderboardMultiplier && activeNft.leaderboardMultiplier > 1.0) {
+          rawNftLeaderboardMultiplier *= activeNft.leaderboardMultiplier;
+        }
+      }
+    });
+
+    // Streak bonus: +2% per day up to 10%
+    const streakBoost = Math.min(this.state.claimStreak * 2, 10);
+    
+    // Referral bonus: +1% per direct (L1) referred account up to 20%, with a final milestone at 100 L1 referrals unlocking 30%
+    const refCount = Math.max(0, parseInt(this.state.referralsL1 || 0, 10));
+    let referralBoost = Math.min(refCount * 1, 20);
+    if (refCount >= 100) {
+      referralBoost = 30;
+    }
+
+    const isAmb = !!this.state.isAmbassador;
+    const ambFaucetBoost = isAmb ? 100 : 0;
+    const ambGameMultiplier = isAmb ? 100 : 0;
+    const ambassadorStakingBoost = isAmb ? 1.10 : 1.0;
+    const ambReferralMultiplier = isAmb ? 1.5 : 1.0;
+
+    // Serie 1 Apex Multiplier (Owning >= 1 of all 17 Serie 1 Relics grants permanent 1.5x)
+    const isApexUnlocked = isSeason1ApexUnlocked(this.state.relics || {});
+    const apexMultiplier = isApexUnlocked ? 1.5 : 1.0;
+
+    // Quantum Relic Seeker NFT (Doubles Relic spawn probability)
+    const hasRelicSeeker = uniqueNftIds.includes('nft_relic_seeker');
+    const relicSpawnMultiplier = hasRelicSeeker ? 2.0 : 1.0;
+
+    // VIP Status & Multipliers (Silver: 1.5x Arcade, 1.25x Staking, 1.25x Leaderboard / Gold: 2.0x Arcade, 2.0x Staking, 2.0x Leaderboard)
+    const isVip = this.isVipActive();
+    const vipLevel = this.getVipLevel();
+    const vipMultiplier = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
+    const vipStakingBoost = isVip ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0;
+    const vipLeaderboardMultiplier = isVip ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0;
+
+    const totalReferralMultiplier = rawNftReferralMultiplier * ambReferralMultiplier;
+    const totalFaucetBoostPercent = (nftFaucetBoost + streakBoost + referralBoost);
+    const totalLeaderboardMultiplier = parseFloat((rawNftLeaderboardMultiplier * vipLeaderboardMultiplier).toFixed(2));
+
+    return {
+      nftFaucetBoost,
+      nftGameMultiplier,
+      nftStakingBoost,
+      vipStakingBoost,
+      ambassadorStakingBoost,
+      rawNftReferralMultiplier,
+      ambReferralMultiplier,
+      nftReferralMultiplier: rawNftReferralMultiplier, // Pure NFT referral multiplier
+      totalReferralMultiplier,
+      streakBoost,
+      referralBoost,
+      ambFaucetBoost,
+      ambGameMultiplier,
+      totalFaucetBoostPercent,
+      isApexUnlocked,
+      apexMultiplier,
+      hasRelicSeeker,
+      relicSpawnMultiplier,
+      isVip,
+      vipLevel,
+      vipMultiplier,
+      nftLeaderboardMultiplier: rawNftLeaderboardMultiplier,
+      vipLeaderboardMultiplier,
+      totalLeaderboardMultiplier,
+      halloweenBoost: this.isHalloweenActive() ? 10 : 0,
+      seasonalEvent: this.getActiveSeasonalEvent(),
+      seasonalBoost: this.getActiveSeasonalEvent()?.bonusPercent || 0
+    };
+  }
+
+  getActiveSeasonalEvent() {
+    return getActiveSeasonalEvent();
+  }
+
+  isHalloweenActive() {
+    const active = this.getActiveSeasonalEvent();
+    return !!active && active.id === 'halloween';
+  }
+
+  hasRelicSeeker() {
+    const normalizeId = id => (id === 'nft_quantum_core' ? 'nft_gold_turbine' : (id === 'nft_hyper_drive' ? 'nft_pulse_blaster' : id));
+    const combined = [...(this.state.ownedNfts || []).map(normalizeId), ...(this.state.crateNfts || []).map(normalizeId)];
+    return combined.includes('nft_relic_seeker');
+  }
+
+  getRelicSpawnMultiplier() {
+    return this.hasRelicSeeker() ? 2.0 : 1.0;
+  }
+
+  // --- Weekly Active Tier System (Levels 0 to 5) ---
+  computeWeeklyActiveTier(faucets, games) {
+    const f = Math.max(0, parseInt(faucets || 0, 10));
+    const g = Math.max(0, parseInt(games || 0, 10));
+    if (f >= 6 && g >= 50) return 5;
+    if (f >= 5 && g >= 25) return 4;
+    if (f >= 3 && g >= 5) return 3;
+    if (f >= 2 && g >= 1) return 2;
+    if (f >= 1) return 1;
+    return 0;
+  }
+
+  getActiveTierInfo(level = 0) {
+    const lvl = parseInt(level || 0, 10);
+    switch (lvl) {
+      case 5:
+        return {
+          level: 5,
+          title: 'Apex Legend',
+          badge: '👑',
+          badgeHtml: '👑 Level 5: Apex Legend',
+          color: '#ffd700',
+          bgGradient: 'linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 170, 0, 0.05))',
+          borderColor: 'rgba(255, 215, 0, 0.4)',
+          reqText: '6+ Faucets & 50+ Games',
+          desc: 'Ultimate weekly mastery: Near-daily login mastery and high-volume arcade play.'
+        };
+      case 4:
+        return {
+          level: 4,
+          title: 'Elite Champion',
+          badge: '💎',
+          badgeHtml: '💎 Level 4: Elite Champion',
+          color: '#00ff88',
+          bgGradient: 'linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 240, 255, 0.05))',
+          borderColor: 'rgba(0, 255, 136, 0.4)',
+          reqText: '5+ Faucets & 25+ Games',
+          desc: 'Hardcore champion dominating weekly gameplay and faucet logins.'
+        };
+      case 3:
+        return {
+          level: 3,
+          title: 'Veteran',
+          badge: '🥇',
+          badgeHtml: '🥇 Level 3: Veteran',
+          color: '#ffaa00',
+          bgGradient: 'linear-gradient(135deg, rgba(255, 170, 0, 0.15), rgba(255, 0, 255, 0.05))',
+          borderColor: 'rgba(255, 170, 0, 0.4)',
+          reqText: '3+ Faucets & 5+ Games',
+          desc: 'Dedicated player regularly playing and claiming faucet drops.'
+        };
+      case 2:
+        return {
+          level: 2,
+          title: 'Contender',
+          badge: '🥈',
+          badgeHtml: '🥈 Level 2: Contender',
+          color: '#c084fc',
+          bgGradient: 'linear-gradient(135deg, rgba(192, 132, 252, 0.15), rgba(0, 240, 255, 0.05))',
+          borderColor: 'rgba(192, 132, 252, 0.4)',
+          reqText: '2+ Faucets & 1+ Game',
+          desc: 'Active player participating in both faucet and arcade games.'
+        };
+      case 1:
+        return {
+          level: 1,
+          title: 'Scout',
+          badge: '🥉',
+          badgeHtml: '🥉 Level 1: Scout',
+          color: '#38bdf8',
+          bgGradient: 'linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(0, 255, 136, 0.05))',
+          borderColor: 'rgba(56, 189, 248, 0.4)',
+          reqText: '1+ Faucet Claim',
+          desc: 'Casual starter who claimed at least 1 daily faucet this week.'
+        };
+      case 0:
+      default:
+        return {
+          level: 0,
+          title: 'Dormant',
+          badge: '⚪',
+          badgeHtml: '⚪ Level 0: Dormant',
+          color: '#94a3b8',
+          bgGradient: 'linear-gradient(135deg, rgba(148, 163, 184, 0.08), rgba(255, 255, 255, 0.02))',
+          borderColor: 'rgba(148, 163, 184, 0.25)',
+          reqText: '0 Faucets, 0 Games',
+          desc: 'Inactive player with no recorded weekly activity.'
+        };
+    }
+  }
+
+  getCurrentWeekProgression() {
+    const faucets = Math.max(0, parseInt(this.state.weeklyFaucetClaims || 0, 10));
+    const games = Math.max(0, parseInt(this.state.weeklyGamesPlayed || 0, 10));
+    const currentTier = this.computeWeeklyActiveTier(faucets, games);
+    
+    let nextTier = currentTier + 1;
+    let targetFaucets = 1;
+    let targetGames = 0;
+
+    if (currentTier === 0) {
+      targetFaucets = 1;
+      targetGames = 0;
+    } else if (currentTier === 1) {
+      targetFaucets = 2;
+      targetGames = 1;
+    } else if (currentTier === 2) {
+      targetFaucets = 3;
+      targetGames = 5;
+    } else if (currentTier === 3) {
+      targetFaucets = 5;
+      targetGames = 25;
+    } else if (currentTier === 4) {
+      targetFaucets = 6;
+      targetGames = 50;
+    } else {
+      nextTier = 5;
+      targetFaucets = 6;
+      targetGames = 50;
+    }
+
+    const faucetProgress = Math.min(100, Math.round((faucets / targetFaucets) * 100));
+    const gamesProgress = targetGames > 0 ? Math.min(100, Math.round((games / targetGames) * 100)) : 100;
+    const overallProgress = currentTier === 5 ? 100 : Math.round((faucetProgress + gamesProgress) / 2);
+
+    const neededFaucets = Math.max(0, targetFaucets - faucets);
+    const neededGames = Math.max(0, targetGames - games);
+
+    return {
+      faucets,
+      games,
+      currentTier,
+      nextTier,
+      targetFaucets,
+      targetGames,
+      faucetProgress,
+      gamesProgress,
+      overallProgress,
+      neededFaucets,
+      neededGames,
+      currentTierInfo: this.getActiveTierInfo(currentTier),
+      nextTierInfo: this.getActiveTierInfo(nextTier),
+      isMaxTier: currentTier >= 5
+    };
+  }
+
+  syncUI() {
+    if (typeof window !== 'undefined') {
+      window.appState = this;
+    }
+    // If not on main portal (e.g. standalone admin.html or contact.html), skip game dashboard DOM sync
+    if (typeof document !== 'undefined' && !document.getElementById('view-dashboard')) {
+      return;
+    }
+    // Balances
+    const balPgt = document.getElementById('balance-pgt');
+    if (balPgt) balPgt.innerText = parseFloat(this.state.balancePgt || 0).toFixed(2);
+    const balMatic = document.getElementById('balance-matic');
+    if (balMatic) balMatic.innerText = parseFloat(this.state.balanceMatic || 0).toFixed(2);
+    
+    const onchainPill = document.getElementById('token-pill-pgt-onchain');
+    const onchainLabel = document.getElementById('balance-pgt-onchain');
+    if (onchainPill && onchainLabel) {
+      if (this.state.walletConnected) {
+        onchainPill.style.display = 'flex';
+        onchainLabel.innerText = (this.state.onchainBalancePgt || 0).toFixed(2);
+      } else {
+        onchainPill.style.display = 'none';
+      }
+    }
+    
+    const onchainFlrPill = document.getElementById('token-pill-1flr-onchain');
+    const onchainFlrLabel = document.getElementById('balance-1flr-onchain');
+    if (onchainFlrPill && onchainFlrLabel) {
+      if (this.state.walletConnected) {
+        onchainFlrPill.style.display = 'flex';
+        onchainFlrLabel.innerText = (this.state.onchainBalance1flr || 0).toFixed(2);
+      } else {
+        onchainFlrPill.style.display = 'none';
+      }
+    }
+    
+    // Header address & wallet toggle
+    const addrDisplay = document.getElementById('wallet-address-display');
+    const connectBtn = document.getElementById('btn-wallet-connect');
+    const headerVip = document.getElementById('header-vip-badge');
+    const joinVipBtn = document.getElementById('btn-header-join-vip');
+    const headerLogout = document.getElementById('btn-header-logout');
+    
+    if (this.isUserAuthenticated()) {
+      if (addrDisplay) addrDisplay.style.display = 'inline-block';
+      if (headerLogout) headerLogout.style.display = 'inline-block';
+      if (headerVip) headerVip.style.display = 'none';
+      if (joinVipBtn) {
+        joinVipBtn.style.display = 'inline-block';
+        const remStr = this.getVipTimeRemainingStr();
+        const level = this.getVipLevel();
+        const prefix = level === 1 ? '🥈 SILVER' : '👑 GOLD';
+        joinVipBtn.innerText = this.isVipActive() ? (remStr ? `${prefix} (${remStr})` : `${prefix} ACTIVE`) : '💎 Join VIP';
+        if (this.isVipActive()) {
+          joinVipBtn.title = 'Click to view VIP remaining time details in My Profile';
+          joinVipBtn.style.background = level === 1 ? 'linear-gradient(135deg, #a8a8a8, #d4d4d4)' : '';
+          joinVipBtn.style.color = level === 1 ? '#000' : '';
+        } else {
+          joinVipBtn.style.background = '';
+          joinVipBtn.style.color = '';
+        }
+      }
+      const linked = this.state.linkedWalletAddress;
+      const primary = this.state.walletAddress;
+      if (addrDisplay) {
+        if (this.state.username && this.state.username.trim() !== '') {
+          addrDisplay.innerText = this.state.username;
+        } else {
+          const isInternal = (addr) => !addr || addr.startsWith('0xpgt') || addr.startsWith('0xg');
+          const realWeb3 = (linked && linked.length >= 42 && !isInternal(linked)) ? linked : (!isInternal(primary) ? primary : null);
+          if (realWeb3 && realWeb3.length >= 42) {
+            addrDisplay.innerText = 'Player_' + realWeb3.substring(0, 6) + '...' + realWeb3.substring(realWeb3.length - 4);
+          } else if (this.state.authUserEmail) {
+            addrDisplay.innerText = this.state.authUserEmail.split('@')[0];
+          } else {
+            const tag = (primary && primary.length >= 4) ? primary.substring(primary.length - 4) : 'User';
+            addrDisplay.innerText = 'Player_' + tag;
+          }
+        }
+      }
+      if (connectBtn) connectBtn.style.display = 'none';
+    } else {
+      if (addrDisplay) addrDisplay.style.display = 'none';
+      if (headerLogout) headerLogout.style.display = 'none';
+      if (headerVip) headerVip.style.display = 'none';
+      if (joinVipBtn) {
+        joinVipBtn.style.display = 'inline-block';
+        const remStr = this.getVipTimeRemainingStr();
+        const level = this.getVipLevel();
+        const prefix = level === 1 ? '🥈 SILVER' : '👑 GOLD';
+        joinVipBtn.innerText = this.isVipActive() ? (remStr ? `${prefix} (${remStr})` : `${prefix} ACTIVE`) : '💎 Join VIP';
+        if (this.isVipActive()) {
+          joinVipBtn.style.background = level === 1 ? 'linear-gradient(135deg, #a8a8a8, #d4d4d4)' : '';
+          joinVipBtn.style.color = level === 1 ? '#000' : '';
+        } else {
+          joinVipBtn.style.background = '';
+          joinVipBtn.style.color = '';
+        }
+      }
+      if (connectBtn) connectBtn.style.display = 'flex';
+    }
+
+    // VIP Profile Card UI
+    const vipStatusBadge = document.getElementById('vip-status-badge');
+    const vipExpiryText = document.getElementById('vip-expiry-text');
+    const vipExpiryDate = document.getElementById('vip-expiry-date');
+    const btnBuyVip = document.getElementById('btn-buy-vip');
+    
+    if (vipStatusBadge && btnBuyVip) {
+      if (this.isVipActive()) {
+        const remStr = this.getVipTimeRemainingStr();
+        const level = this.getVipLevel();
+        const tierName = level === 1 ? 'SILVER VIP' : 'GOLD VIP';
+        vipStatusBadge.innerText = remStr ? `${tierName} (${remStr})` : `${tierName} ACTIVE`;
+        vipStatusBadge.style.color = '#000';
+        vipStatusBadge.style.background = level === 1 ? '#c0c0c0' : 'var(--color-warning)';
+        
+        btnBuyVip.innerText = `${tierName} ACTIVE`;
+        btnBuyVip.style.background = level === 1 ? '#c0c0c0' : 'var(--color-warning)';
+        
+        if (vipExpiryText && vipExpiryDate) {
+          vipExpiryText.style.display = 'block';
+          const expDateStr = new Date(this.state.vipUntil).toLocaleDateString() + ' ' + new Date(this.state.vipUntil).toLocaleTimeString();
+          vipExpiryDate.innerText = remStr ? `${expDateStr} (${remStr})` : expDateStr;
+        }
+      } else {
+        vipStatusBadge.innerText = 'INACTIVE';
+        vipStatusBadge.style.color = 'var(--text-muted)';
+        vipStatusBadge.style.background = 'rgba(255,255,255,0.1)';
+        
+        btnBuyVip.innerText = 'BUY 30-DAY VIP PASS NFT';
+        btnBuyVip.style.background = 'var(--color-warning)';
+        
+        if (vipExpiryText) {
+          vipExpiryText.style.display = 'none';
+        }
+      }
+    }
+
+    // Feature-specific VIP badges
+    const faucetBadge = document.getElementById('faucet-vip-badge');
+    if (faucetBadge) faucetBadge.style.display = this.isVipActive() ? 'block' : 'none';
+    
+    const stakingBadge = document.getElementById('staking-vip-badge');
+    if (stakingBadge) stakingBadge.style.display = this.isVipActive() ? 'block' : 'none';
+
+    const stakingAmbBadge = document.getElementById('staking-ambassador-badge');
+    if (stakingAmbBadge) stakingAmbBadge.style.display = !!this.state.isAmbassador ? 'block' : 'none';
+    
+    const refBadge = document.getElementById('referral-vip-badge');
+    if (refBadge) refBadge.style.display = this.isVipActive() ? 'block' : 'none';
+
+    // Dashboard quick stats (safe null guards for replaced hero pills)
+    const multis = this.getMultipliers();
+    const elClaims = document.getElementById('stats-total-claims');
+    if (elClaims) elClaims.innerText = this.state.totalClaims;
+    const elBoost = document.getElementById('stats-active-boost');
+    if (elBoost) elBoost.innerText = `+${multis.totalFaucetBoostPercent}%`;
+    const elHighScore = document.getElementById('stats-game-highscore');
+    if (elHighScore) elHighScore.innerText = this.state.gameHighScore;
+    const elRefs = document.getElementById('stats-referrals-count');
+    if (elRefs) elRefs.innerText = this.state.referralsCount;
+    
+
+
+    // Faucet UI stats
+    const elNftBoost = document.getElementById('faucet-multiplier-nft');
+    if (elNftBoost) elNftBoost.innerText = `+${multis.nftFaucetBoost}%`;
+    const elRefBoost = document.getElementById('faucet-multiplier-referral');
+    if (elRefBoost) elRefBoost.innerText = `+${multis.referralBoost}%`;
+    const elStreakBoost = document.getElementById('faucet-multiplier-streak');
+    if (elStreakBoost) elStreakBoost.innerText = `+${multis.streakBoost}%`;
+
+    // Faucet Referral Bonus Progress Bar & Milestone Subtext (Strictly Level 1 / Direct Referrals)
+    const refFill = document.getElementById('faucet-ref-progress-fill');
+    const refCountEl = document.getElementById('faucet-ref-progress-count');
+    const refNextEl = document.getElementById('faucet-ref-progress-next');
+
+    if (refFill && refCountEl && refNextEl) {
+      const refCount = Math.max(0, parseInt(this.state.referralsL1 || 0, 10));
+      if (refCount < 20) {
+        const pct = Math.min(100, Math.max(0, (refCount / 20) * 100));
+        refFill.style.width = `${pct}%`;
+        refFill.style.background = 'linear-gradient(90deg, #00f2fe, #4facfe)';
+        refCountEl.innerText = `${refCount} / 20 L1 Referrals`;
+        refNextEl.innerText = `Next: +${refCount + 1}% (+1%/L1 ref)`;
+      } else if (refCount < 100) {
+        const pct = Math.min(100, Math.max(20, (refCount / 100) * 100));
+        refFill.style.width = `${pct}%`;
+        refFill.style.background = 'linear-gradient(90deg, #4facfe, #a855f7)';
+        refCountEl.innerText = `${refCount} / 100 L1 Referrals`;
+        refNextEl.innerText = `${100 - refCount} more for Final Step (+30%)`;
+      } else {
+        refFill.style.width = '100%';
+        refFill.style.background = 'linear-gradient(90deg, #ffd700, #f59e0b)';
+        refCountEl.innerText = `${refCount} L1 Referrals`;
+        refNextEl.innerText = '🏆 Final Step Unlocked: +30% MAX';
+      }
+    }
+    
+    const isVip = this.isVipActive();
+    const faucetVipVal = document.getElementById('faucet-multiplier-vip');
+    if (faucetVipVal) {
+      if (isVip) {
+        const vLvl = this.getVipLevel();
+        if (vLvl >= 2) {
+          faucetVipVal.innerHTML = `<span style="color: #ffd700; font-weight: 800;">👑 x2.5 (+150%)</span>`;
+        } else {
+          faucetVipVal.innerHTML = `<span style="color: #c0c0c0; font-weight: 800;">🥈 x1.5 (+50%)</span>`;
+        }
+      } else {
+        faucetVipVal.innerHTML = `<span style="color: var(--text-muted); font-weight: 600;">+0% <span style="font-size: 0.8em; opacity: 0.75;">(x1.5 / x2.5 VIP)</span></span>`;
+      }
+    }
+    const faucetVipRow = document.getElementById('faucet-multiplier-vip-row');
+    if (faucetVipRow) faucetVipRow.style.display = 'flex';
+
+    const isAmb = !!this.state.isAmbassador;
+    const faucetAmbVal = document.getElementById('faucet-multiplier-ambassador');
+    if (faucetAmbVal) {
+      if (isAmb) {
+        faucetAmbVal.innerHTML = `<span style="color: var(--color-warning); font-weight: 800;">x2 (+100%)</span>`;
+      } else {
+        faucetAmbVal.innerHTML = `<span style="color: var(--text-muted); font-weight: 600;">+0% <span style="font-size: 0.8em; opacity: 0.75;">(x2 possible)</span></span>`;
+      }
+    }
+    const faucetAmbRow = document.getElementById('faucet-multiplier-ambassador-row');
+    if (faucetAmbRow) faucetAmbRow.style.display = 'flex';
+    
+    const basePayout = (typeof this.state.faucetBasePgt === 'number' && this.state.faucetBasePgt >= 0)
+      ? this.state.faucetBasePgt
+      : 50.0;
+    
+    const basePol = (typeof this.state.vipFaucetBasePol === 'number' && this.state.vipFaucetBasePol > 0)
+      ? this.state.vipFaucetBasePol
+      : 0.01;
+    
+    const basePayoutEl = document.getElementById('faucet-base-payout-display');
+    if (basePayoutEl) {
+      basePayoutEl.innerHTML = `<span style="color: var(--color-primary); font-weight: 700;">${basePayout} PGT</span> <span style="color: var(--text-dim); margin: 0 4px;">|</span> <span style="color: #ffd700; font-weight: 700;">${basePol.toFixed(4)} POL</span>`;
+    }
+
+    let totalEst = basePayout * (1 + multis.totalFaucetBoostPercent / 100);
+    let totalEstPol = basePol * (1 + multis.totalFaucetBoostPercent / 100);
+    
+    // Tiered DEX Liquidity Provider Bonus ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
+    const lpUsd = parseFloat(this.state.liquidityUsdAmount || this.state.dexLiquidityUsd || 0);
+    
+    let lpMult = 1.0;
+    if (lpUsd >= 150) {
+      lpMult = 1.30;
+    } else if (lpUsd >= 100) {
+      lpMult = 1.20;
+    } else if (lpUsd >= 50) {
+      lpMult = 1.10;
+    }
+    this.state.liquidityMultiplier = lpMult;
+
+    const elLp = document.getElementById('faucet-multiplier-lp');
+    if (elLp) {
+      if (lpMult > 1.0) {
+        elLp.innerText = `+${Math.round((lpMult - 1.0) * 100)}% (${lpMult.toFixed(1)}x)`;
+        elLp.style.color = (lpMult >= 1.3) ? '#ffd700' : (lpMult >= 1.2 ? '#38bdf8' : 'var(--color-primary)');
+      } else {
+        elLp.innerText = '+0% (1.1x–1.3x)';
+        elLp.style.color = 'var(--text-muted)';
+      }
+    }
+
+    // Faucet DEX Liquidity Progress Bar & Milestone Subtext
+    const lpFill = document.getElementById('faucet-lp-progress-fill');
+    const lpCountEl = document.getElementById('faucet-lp-progress-count');
+    const lpNextEl = document.getElementById('faucet-lp-progress-next');
+
+    if (lpFill && lpCountEl && lpNextEl) {
+      const displayUsd = lpUsd;
+      const pct = Math.min(100, Math.max(0, (displayUsd / 150) * 100));
+      lpFill.style.width = `${pct}%`;
+
+      if (displayUsd < 50) {
+        lpFill.style.background = 'linear-gradient(90deg, #00f2fe, #38bdf8)';
+        lpCountEl.innerText = `$${displayUsd.toFixed(2)} / $150 Liquidity`;
+        lpNextEl.innerText = `Next: +10% (1.1x at $50)`;
+      } else if (displayUsd < 100) {
+        lpFill.style.background = 'linear-gradient(90deg, #38bdf8, #818cf8)';
+        lpCountEl.innerText = `$${displayUsd.toFixed(2)} / $150 Liquidity`;
+        lpNextEl.innerText = `Next: +20% (1.2x at $100)`;
+      } else if (displayUsd < 150) {
+        lpFill.style.background = 'linear-gradient(90deg, #818cf8, #c084fc)';
+        lpCountEl.innerText = `$${displayUsd.toFixed(2)} / $150 Liquidity`;
+        lpNextEl.innerText = `Next: +30% (1.3x at $150)`;
+      } else {
+        lpFill.style.background = 'linear-gradient(90deg, #ffd700, #f59e0b)';
+        lpCountEl.innerText = `$${displayUsd.toFixed(2)} / $150 Liquidity`;
+        lpNextEl.innerText = '🏆 Max Tier Unlocked: +30% (1.3x)';
+      }
+    }
+
+    const staked1Y = this.getStakedPgt1YearTotal();
+    const pgtStakerMult = this.getStakedPgtMultiplier();
+    const isPgtOnchainWhale = (this.state.onchainBalancePgt || 0) >= 1000000;
+
+    const elPgt = document.getElementById('faucet-multiplier-pgt');
+    if (elPgt) {
+      if (pgtStakerMult > 1.0) {
+        const pctBoost = Math.round((pgtStakerMult - 1.0) * 100);
+        elPgt.innerText = `+${pctBoost}% (${Number(pgtStakerMult.toFixed(2))}x)`;
+        elPgt.style.color = (pgtStakerMult >= 1.30) ? '#ffd700' : (pgtStakerMult >= 1.20 ? '#38bdf8' : 'var(--color-success)');
+      } else {
+        elPgt.innerText = '+0% (1.1x–1.3x)';
+        elPgt.style.color = 'var(--text-muted)';
+      }
+    }
+
+    // Faucet 1Y PGT Staker Progress Bar & Milestone Subtext (5% steps per 500k from 500k to 2.5M)
+    const pgtFill = document.getElementById('faucet-pgt-progress-fill');
+    const pgtCountEl = document.getElementById('faucet-pgt-progress-count');
+    const pgtNextEl = document.getElementById('faucet-pgt-progress-next');
+
+    if (pgtFill && pgtCountEl && pgtNextEl) {
+      const pct = Math.min(100, Math.max(0, (staked1Y / 2500000) * 100));
+      pgtFill.style.width = `${pct}%`;
+      const fmt1Y = Math.floor(staked1Y).toLocaleString();
+
+      if (staked1Y < 500000) {
+        pgtFill.style.background = 'linear-gradient(90deg, #00f2fe, #38bdf8)';
+        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
+        pgtNextEl.innerText = 'Next: +10% (1.1x at 500k)';
+      } else if (staked1Y < 1000000) {
+        pgtFill.style.background = 'linear-gradient(90deg, #38bdf8, #60a5fa)';
+        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
+        pgtNextEl.innerText = 'Next: +15% (1.15x at 1M)';
+      } else if (staked1Y < 1500000) {
+        pgtFill.style.background = 'linear-gradient(90deg, #60a5fa, #818cf8)';
+        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
+        pgtNextEl.innerText = 'Next: +20% (1.2x at 1.5M)';
+      } else if (staked1Y < 2000000) {
+        pgtFill.style.background = 'linear-gradient(90deg, #818cf8, #c084fc)';
+        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
+        pgtNextEl.innerText = 'Next: +25% (1.25x at 2M)';
+      } else if (staked1Y < 2500000) {
+        pgtFill.style.background = 'linear-gradient(90deg, #c084fc, #f59e0b)';
+        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
+        pgtNextEl.innerText = 'Next: +30% (1.3x at 2.5M)';
+      } else {
+        pgtFill.style.background = 'linear-gradient(90deg, #ffd700, #f59e0b)';
+        pgtCountEl.innerText = `${fmt1Y} / 2,500,000 PGT (1Y)`;
+        pgtNextEl.innerText = '🏆 Max Tier Unlocked: +30% (1.3x)';
+      }
+    }
+
+    const elPgtOnchain = document.getElementById('faucet-multiplier-pgt-onchain');
+    if (elPgtOnchain) {
+      elPgtOnchain.innerText = isPgtOnchainWhale ? '+10%' : '+0%';
+      elPgtOnchain.style.color = isPgtOnchainWhale ? 'var(--color-success)' : 'var(--text-muted)';
+    }
+
+    const elRelics = document.getElementById('faucet-multiplier-relics');
+    if (elRelics) {
+      const s1Prog = getSeason1Progress(this.state.relics || {});
+      if (s1Prog.isComplete) {
+        elRelics.innerText = `x1.5 (+50%) (${s1Prog.ownedCount}/17)`;
+        elRelics.style.color = '#ffd700';
+      } else {
+        elRelics.innerText = `+0% (${s1Prog.ownedCount}/17)`;
+        elRelics.style.color = 'var(--text-muted)';
+      }
+    }
+
+    if (lpMult > 1.0) {
+      totalEst *= lpMult;
+      totalEstPol *= lpMult;
+    }
+    if (pgtStakerMult > 1.0) {
+      totalEst *= pgtStakerMult;
+      totalEstPol *= pgtStakerMult;
+    }
+    if (isPgtOnchainWhale) {
+      totalEst *= 1.10;
+      totalEstPol *= 1.10;
+    }
+    if (multis.isApexUnlocked) {
+      totalEst *= 1.5;
+      totalEstPol *= 1.5;
+    }
+
+    // Dynamic Seasonal Event Bonus (Halloween, Christmas, Easter, etc.)
+    const seasonalEvent = this.getActiveSeasonalEvent();
+    if (seasonalEvent && seasonalEvent.bonusPercent > 0) {
+      totalEst *= (1.0 + seasonalEvent.bonusPercent / 100);
+      totalEstPol *= (1.0 + seasonalEvent.bonusPercent / 100);
+    }
+
+    const vipFaucetMult = this.isVipActive() ? (this.getVipLevel() >= 2 ? 2.5 : 1.5) : 1.0;
+    const vipPolMult = this.isVipActive() ? (this.getVipLevel() >= 2 ? 2.5 : 1.0) : 1.0;
+    totalEst *= vipFaucetMult;
+    totalEstPol *= vipPolMult;
+    if (!!this.state.isAmbassador) {
+      totalEst *= 2;
+      totalEstPol *= 2;
+    }
+
+    totalEst = Math.min(totalEst, 2500.0);
+    totalEstPol = Math.min(totalEstPol, 0.500000);
+    
+    // Toggle Seasonal Theme & Skin on Faucet View
+    const faucetView = document.getElementById('view-faucet');
+    if (faucetView) {
+      // Clean previous seasonal skins, then add current active skin if any
+      faucetView.classList.remove('halloween-skin', 'christmas-skin', 'easter-skin');
+      if (seasonalEvent && seasonalEvent.skinClass) {
+        faucetView.classList.add(seasonalEvent.skinClass);
+      }
+    }
+
+    // Dynamic Multiplier Row
+    const elSeasonalRow = document.getElementById('faucet-multiplier-seasonal-row') || document.getElementById('faucet-multiplier-halloween-row');
+    const elSeasonalName = document.getElementById('faucet-multiplier-seasonal-name');
+    const elSeasonalVal = document.getElementById('faucet-multiplier-seasonal-val') || document.getElementById('faucet-multiplier-halloween');
+    if (elSeasonalRow) {
+      elSeasonalRow.style.display = seasonalEvent ? 'flex' : 'none';
+      if (seasonalEvent) {
+        if (elSeasonalName) elSeasonalName.innerHTML = `${seasonalEvent.icon} ${seasonalEvent.name} Bonus`;
+        if (elSeasonalVal) elSeasonalVal.innerText = `+${seasonalEvent.bonusPercent}%`;
+      }
+    }
+
+    // Seasonal Badge on PGT Card
+    const elSeasonalBadge = document.getElementById('faucet-seasonal-badge') || document.getElementById('faucet-halloween-badge');
+    if (elSeasonalBadge) {
+      elSeasonalBadge.style.display = seasonalEvent ? 'inline-block' : 'none';
+      if (seasonalEvent) {
+        elSeasonalBadge.innerText = seasonalEvent.badgeText || `${seasonalEvent.icon} +${seasonalEvent.bonusPercent}% Bonus Active!`;
+      }
+    }
+
+    // Seasonal Event Top Banner
+    const elSeasonalBanner = document.getElementById('faucet-seasonal-banner') || document.getElementById('faucet-halloween-banner');
+    if (elSeasonalBanner) {
+      elSeasonalBanner.style.display = seasonalEvent ? 'block' : 'none';
+      if (seasonalEvent) {
+        const titleEl = document.getElementById('seasonal-banner-title');
+        const subEl = document.getElementById('seasonal-banner-sub');
+        const iconLeftEl = document.getElementById('seasonal-banner-icon-left');
+        const iconRightEl = document.getElementById('seasonal-banner-icon-right');
+        if (titleEl) titleEl.innerHTML = `${seasonalEvent.icon} ${seasonalEvent.bannerTitle} ${seasonalEvent.icon}`;
+        if (subEl) subEl.innerHTML = seasonalEvent.bannerSubtitle;
+        if (iconLeftEl) iconLeftEl.innerText = seasonalEvent.bannerIconsLeft || seasonalEvent.icon;
+        if (iconRightEl) iconRightEl.innerText = seasonalEvent.bannerIconsRight || seasonalEvent.icon;
+      }
+    }
+
+    const estText = `${totalEst.toFixed(2)} PGT`;
+    const estElem = document.getElementById('faucet-estimated-claim');
+    if (estElem) estElem.innerText = estText;
+
+    const estPolElem = document.getElementById('faucet-estimated-claim-pol');
+    if (estPolElem) estPolElem.innerText = `👑 ${totalEstPol.toFixed(4)} POL`;
+
+    const btnClaim = document.getElementById('btn-claim-faucet');
+    if (btnClaim && !btnClaim.disabled) {
+      btnClaim.innerText = seasonalEvent ? `${seasonalEvent.icon} Claim ${estText}` : `Claim ${estText}`;
+    }
+
+    const btnClaimVip = document.getElementById('btn-claim-vip-faucet');
+    if (btnClaimVip && !btnClaimVip.disabled) {
+      btnClaimVip.innerText = `👑 Claim ${totalEstPol.toFixed(4)} POL`;
+    }
+
+    // Activity Feed render
+    const feed = document.getElementById('activity-feed');
+    if (feed) {
+      feed.innerHTML = '';
+      
+      // Fill up activity stream (if empty, populate some default logs)
+      const logsToDraw = this.state.activities.length > 0 ? this.state.activities : this.getMockActivities();
+      logsToDraw.forEach(log => {
+        const item = document.createElement('div');
+        item.className = 'activity-item';
+        const safeUser = typeof escapeHtml === 'function' ? escapeHtml(log.user) : (log.user || '');
+        const safeAction = typeof escapeHtml === 'function' ? escapeHtml(log.action) : (log.action || '');
+        const safeReward = typeof escapeHtml === 'function' ? escapeHtml(log.reward) : (log.reward || '');
+        const safeTime = typeof escapeHtml === 'function' ? escapeHtml(log.time) : (log.time || '');
+        item.innerHTML = `
+          <div>
+            <span class="activity-user">${safeUser}</span>
+            <span class="activity-action">${safeAction}</span>
+            <span class="activity-reward">${safeReward}</span>
+          </div>
+          <span class="activity-time">${safeTime}</span>
+        `;
+        feed.appendChild(item);
+      });
+    }
+
+    // Staking UI Stats (PGT Pool)
+    let stakedVal = 0;
+    (this.state.stakes || []).forEach(stake => {
+      stakedVal += (stake.amount || 0);
+    });
+
+    let walletMax = this.state.balancePgt || 0;
+    const tokenName = 'PGT';
+
+    // Determine APY based on active lock tier
+    const baseApy = activeStakingTier === 'day' ? 1.0 : (activeStakingTier === 'month' ? 2.0 : 3.0);
+    const vipLevel = this.getVipLevel();
+    const vipStakingMult = (multis.vipStakingBoost !== undefined) ? multis.vipStakingBoost : (this.isVipActive() ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0);
+    let finalApy = baseApy * multis.nftStakingBoost * (multis.ambassadorStakingBoost || 1.0) * vipStakingMult;
+
+    document.getElementById('staking-balance-staked').innerText = `${parseFloat(stakedVal || 0).toFixed(2)} ${tokenName}`;
+    
+    const activeApyLabel = document.getElementById('staking-active-apy');
+    if (activeApyLabel) activeApyLabel.innerText = `${parseFloat(finalApy || 0).toFixed(2)}%`;
+    
+    // Update APY breakdown UI
+    const baseEl = document.getElementById('staking-breakdown-base');
+    const nftEl = document.getElementById('staking-breakdown-nft');
+    const stakingVipRow = document.getElementById('staking-breakdown-vip-row');
+    const stakingVipLabel = document.getElementById('staking-breakdown-vip-label');
+    const stakingVipVal = document.getElementById('staking-breakdown-vip-val');
+    const finalEl = document.getElementById('staking-breakdown-final');
+    
+    if (baseEl) baseEl.innerText = `${parseFloat(baseApy || 0).toFixed(1)}%`;
+    if (nftEl) {
+      const nftBonusAbsolute = baseApy * (multis.nftStakingBoost - 1.0);
+      nftEl.innerText = `+${parseFloat(nftBonusAbsolute || 0).toFixed(2)}%`;
+      nftEl.style.color = multis.nftStakingBoost > 1.0 ? 'var(--color-success)' : 'var(--text-muted)';
+    }
+    const stakingAmbRow = document.getElementById('staking-breakdown-ambassador-row');
+    if (stakingAmbRow) stakingAmbRow.style.display = !!this.state.isAmbassador ? 'flex' : 'none';
+    if (stakingVipRow) stakingVipRow.style.display = this.isVipActive() ? 'flex' : 'none';
+    if (stakingVipLabel) stakingVipLabel.innerText = vipLevel >= 2 ? '👑 Gold VIP Multiplier' : '🥈 Silver VIP Multiplier';
+    if (stakingVipVal) stakingVipVal.innerText = vipLevel >= 2 ? 'x2.0 (+100%)' : 'x1.25 (+25%)';
+    if (finalEl) finalEl.innerText = `${parseFloat(finalApy || 0).toFixed(2)}%`;
+    document.getElementById('staking-wallet-max').innerText = `${parseFloat(walletMax || 0).toFixed(2)} ${tokenName}`;
+    document.getElementById('staking-input-token-label').innerText = tokenName;
+    
+    const yieldHarvestedEl = document.getElementById('staking-total-harvested');
+    if (yieldHarvestedEl) {
+      yieldHarvestedEl.innerText = `${parseFloat(this.state.totalStakingYield || 0).toFixed(6)} PGT`;
+    }
+    
+    // Update live lock box display and the list ledger
+    updateStakingLockCountdownUI();
+    if (typeof renderStakingLedger === 'function') {
+      renderStakingLedger();
+    }
+
+    // Referral stats (Multi-Level Tiers)
+    const origin = window.location.origin;
+    let path = window.location.pathname.replace(/\/index\.html$/i, '/').replace(/\/[^\/]+\.html$/i, '/');
+    if (!path.endsWith('/')) path += '/';
+    const cleanBaseUrl = origin + path;
+    if (!this.state.referralCode || this.state.referralCode === 'EMPTY') {
+      this.state.referralCode = Math.random().toString(16).substring(2, 10);
+    }
+    const refInput = document.getElementById('ref-invite-link');
+    if (refInput) {
+      refInput.value = `${cleanBaseUrl}?ref=${this.state.referralCode}`;
+    }
+    const dashRef = document.getElementById('dashboard-ref-link');
+    if (dashRef) {
+      dashRef.value = `${cleanBaseUrl}?ref=${this.state.referralCode}`;
+    }
+    
+    const l1 = document.getElementById('ref-level-1-count');
+    const l2 = document.getElementById('ref-level-2-count');
+    const l3 = document.getElementById('ref-level-3-count');
+    const l4 = document.getElementById('ref-level-4-count');
+    if (l1 && l2 && l3 && l4) {
+      l1.innerText = this.state.referralsL1 || 0;
+      l2.innerText = this.state.referralsL2 || 0;
+      l3.innerText = this.state.referralsL3 || 0;
+      l4.innerText = this.state.referralsL4 || 0;
+    }
+
+    const refUnclaimedEl = document.getElementById('ref-stat-unclaimed');
+    if (refUnclaimedEl) {
+      refUnclaimedEl.innerText = `${parseFloat(this.state.unclaimedReferralPgt || 0).toFixed(2)} PGT`;
+    }
+    const refCommissionEl = document.getElementById('ref-stat-commission');
+    if (refCommissionEl) {
+      refCommissionEl.innerText = `${parseFloat(this.state.totalReferralCommission || 0).toFixed(2)} PGT`;
+    }
+
+    // Render Referred Downline Ledger list via feature module
+    if (typeof window.renderReferralLedger === 'function') {
+      try {
+        window.renderReferralLedger();
+      } catch (err) {
+        console.warn("Failed to render referral ledger:", err);
+      }
+    }
+    
+    // Inventory Badge
+    const totalInventoryCount = ((this.state.ownedNfts || []).length) + ((this.state.crateNfts || []).length);
+    const invBadge = document.getElementById('inventory-count-badge');
+    if (invBadge) invBadge.innerText = totalInventoryCount;
+
+    // Profile updates sync
+    syncProfileView();
+
+    // Roshambo sync
+    updateRoshamboWagerLabels();
+
+    // Live Arcade HUD boost labels sync
+    const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
+    const vipMult = this.isVipActive() ? 2.0 : 1.0;
+    const ambMult = !!this.state.isAmbassador ? 2.0 : 1.0;
+    const apexMult = multis.isApexUnlocked ? 1.5 : 1.0;
+    const totalBoostStr = `${(nftMult * vipMult * ambMult * apexMult).toFixed(1)}x`;
+
+    ['game-nft-boost-label', 'invaders-nft-boost-label', 'drift-nft-boost-label', 'stacker-nft-boost-label'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerText = totalBoostStr;
+    });
+
+    // Faucet Navigation Ready Badge Sync
+    if (typeof window !== 'undefined' && typeof window.checkFaucetCooldown === 'function') {
+      try {
+        window.checkFaucetCooldown();
+      } catch (err) {
+        console.warn('[PolyState.syncUI] checkFaucetCooldown notice:', err);
+      }
+    }
+
+    // VIP POL Faucet UI & Timer Sync
+    if (typeof window !== 'undefined') {
+      if (typeof window.checkVipFaucetCooldown === 'function') {
+        try {
+          window.checkVipFaucetCooldown();
+        } catch (err) {
+          console.warn('[PolyState.syncUI] checkVipFaucetCooldown notice:', err);
+        }
+      }
+      if (typeof window.renderVipFaucetUI === 'function') {
+        try {
+          window.renderVipFaucetUI();
+        } catch (err) {
+          console.warn('[PolyState.syncUI] renderVipFaucetUI notice:', err);
+        }
+      }
+    }
+  }
+
+  getMockActivities() {
+    return [
+      { user: 'RocketRacer', action: 'claimed faucet', reward: '+55.00 PGT', time: '12:04:12 PM' },
+      { user: 'OxQuantum', action: 'harvested yield', reward: '+142.12 PGT', time: '12:02:45 PM' },
+      { user: 'SolGamer', action: 'scored 4,820 on Astro-Dodge', reward: '+96.40 PGT', time: '12:00:19 PM' },
+      { user: 'SatoshiKid', action: 'bought Apex Matrix NFT', reward: '-800 PGT', time: '11:58:33 AM' }
+    ];
+  }
+}
+
+appState = new PolyState();
+if (typeof window !== 'undefined') {
+  window.appState = appState;
+  window.PolyState = PolyState;
+  window.getRelicSpawnMultiplier = () => {
+    if (window.appState && typeof window.appState.getRelicSpawnMultiplier === 'function') {
+      return window.appState.getRelicSpawnMultiplier();
+    }
+    const combined = [...(window.appState?.state?.ownedNfts || []), ...(window.appState?.state?.crateNfts || [])];
+    return combined.includes('nft_relic_seeker') ? 2.0 : 1.0;
+  };
+
+  // Flush any pending throttled DB saves if the user closes or refreshes the page
+  window.addEventListener('beforeunload', () => {
+    if (appState && appState._dbSaveTimer) {
+      clearTimeout(appState._dbSaveTimer);
+      appState._dbSaveTimer = null;
+      appState._executeSaveToDB();
+    }
+  });
+}
+

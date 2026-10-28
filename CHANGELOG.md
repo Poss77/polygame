@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Viral Acquisition Engine, 1-Click Social Sharing & Gameplay Quick Replay (`v1.5.747`)**:
+  - **🚀 Viral Player Acquisition Engine ([`src/js/utils/social-share.js`](src/js/utils/social-share.js), [`index.html`](index.html), [`src/js/app.js`](src/js/app.js))**:
+    - Built comprehensive viral attribution and social sharing module with automated referral link generation (`https://polygongaming.io/?ref={player_id}`).
+    - Added dedicated **"Invite Players & Earn 4-Tier Rewards"** spotlight banner on the main Dashboard (`#view-dashboard`) featuring a 1-click **`📋 Copy Link`**, **`𝕏 Tweet Invite`**, and **`✈️ Telegram`** share button to maximize organic user acquisition.
+  - **🎮 1-Click High-Score & Payout Sharing Across ALL Arcade Games ([`index.html`](index.html), [`drift.js`](drift.js), [`game.js`](game.js), [`invaders.js`](invaders.js))**:
+    - Embedded 1-click **`𝕏 Share Score`** and **`✈️ Telegram`** buttons into the Game Over screens for Cyber Drift, Astro-Dodge, Cyber Invaders, Cyber Stacker, Cyber Runner, Quantum 2048, and Cyber Tetris.
+    - Captures game score, PGT token earnings, and player referral links into pre-formatted, high-converting social posts.
+  - **🧩 Daily Cyber Games (Wordle & Sudoku) Social Share Upgrade ([`src/js/features/wordle.js`](src/js/features/wordle.js), [`src/js/features/sudoku.js`](src/js/features/sudoku.js), [`index.html`](index.html))**:
+    - Upgraded daily result sharing with distinct 1-click **`𝕏 Tweet Result`**, **`✈️ Telegram`**, and **`📋 Copy`** buttons in both statistics modals.
+  - **⌨️ Arcade Gaming Quality-of-Life: Keyboard Instant Replay ([`src/js/app.js`](src/js/app.js))**:
+    - Added global `Space` / `Enter` keyboard hotkey listener that automatically triggers "Play Again" / "Relaunch" whenever a game over screen is open, streamlining arcade gameplay flow.
+  - **🚀 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.747"` and updated script cache busters across all assets.
+
 - **Referral Marketplace: Fix New Recruit Filter & Pool Accounting (`v1.5.746`)**:
   - **🌱 Accurate New Recruit Recognition ([`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/split_scout_and_recruit_pools.sql`](supabase/split_scout_and_recruit_pools.sql), [`src/js/features/referral-shop.js`](src/js/features/referral-shop.js), [`src/js/features/referrals.js`](src/js/features/referrals.js))**:
     - Identified reason New Recruit previously showed 0 available: the previous filter required `weekly_active_tier = 0`, but newly registered players who claimed a faucet or played a game on day 1 were automatically promoted to Tier 1, inadvertently transferring them into the L1 Scout pool.

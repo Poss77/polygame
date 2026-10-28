@@ -1,759 +1,832 @@
-import { initArcadeLeaderboardCards } from './core/games-registry.js';
-import { renderDailyQuestsUI, trackQuestProgress, syncDailyQuests } from './features/quests.js';
-import { sfx } from './core/audio.js';
-import { renderNftMarketplace, renderMysteryCrates, renderNftInventory } from './features/nft.js';
-import { checkFaucetCooldown } from './features/faucet.js';
-import { appState } from './core/state.js';
-import { openModal } from './core/ui.js';
-import { initStakingCycle, calculateStakingReward } from './features/staking.js';
-import { syncProfileView, loadReferralLeaderboard, loadAstroDodgeLeaderboard, loadInvadersLeaderboard, autoConnectWeb3, loadHoldersLeaderboard, loadWeeklyWinsLeaderboard } from './features/profile.js';
-import { triggerToast } from './core/ui.js';
-import { syncJackpotData, recordGameMetrics, syncGlobalSettings, loadSitewideStats } from './core/db-sync.js';
-import { APP_VERSION, ADMIN_WALLET_ADDRESS, supabase } from './core/config.js';
-
-import { initPWA } from './utils/pwa.js';
-
-// Import new games and utilities
-import './utils/discord.js';
-import './features/games.js';
-import './features/spinner.js';
-import './features/roshambo.js';
-import './features/crash.js';
-import './features/plinko.js';
-import './features/mines.js';
-import './features/withdraw.js';
-import './features/referrals.js';
-import './features/referral-shop.js';
-import './features/relics.js';
-import './features/hangar.js';
-import './utils/confetti.js';
-import './core/anti-bot.js';
-import './features/arcade-security.js';
-import './features/messages.js';
-import './features/daily-hub.js';
-import './features/wordle.js';
-import './features/sudoku.js';
-// Note: Arcade game modules (skeet.js, defense.js, runner.js, q2048.js, tetris.js) are loaded via versioned script tags in index.html
-
-// Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
-window.appState = appState;
-window.triggerToast = triggerToast;
-window.recordGameMetrics = recordGameMetrics;
-window.launchPolySpace = launchPolySpace;
-window.supabaseClient = supabase;
-initArcadeLeaderboardCards();
-
-// --- Master View Switcher (Router) ---
-
-export function launchPolySpace() {
-  switchTab('space');
-}
-window.launchPolySpace = launchPolySpace;
-
-export function switchTab(tabId) {
-  // Always remove fullscreen lock on tab switch so bottom nav is guaranteed visible
-  document.body.classList.remove('game-fullscreen-open');
-  const sidebarEl = document.querySelector('.sidebar');
-  if (sidebarEl) sidebarEl.style.display = '';
-
-  const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'buy-referrals', 'referral-shop', 'profile', 'holders', 'links', 'contact', 'admin'];
-  
-  let cleanTab = (typeof tabId === 'string' ? tabId.replace(/^#/, '').toLowerCase().trim() : '');
-  if (cleanTab === 'vault') cleanTab = 'staking';
-  if (cleanTab === 'arcade') cleanTab = 'games';
-  if (cleanTab === 'referral-shop') cleanTab = 'buy-referrals';
-  if (!cleanTab || cleanTab.includes('=') || cleanTab.includes('&') || !VALID_TABS.includes(cleanTab)) {
-    cleanTab = 'dashboard';
-  }
-  tabId = cleanTab;
-
-  const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
-  const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
-  const stateWallet = (
-    (typeof appState !== 'undefined' && appState.state ? (appState.state.linkedWalletAddress || appState.state.walletAddress) : '') ||
-    (typeof window !== 'undefined' && window.appState && window.appState.state ? (window.appState.state.linkedWalletAddress || window.appState.state.walletAddress) : '')
-  ).toLowerCase();
-  const activeAdminWallet = injected || stateWallet;
-  const isAdmin = (activeAdminWallet && activeAdminWallet === expectedAdmin);
-
-  if (tabId === 'admin') {
-    if (!isAdmin) {
-      triggerToast("Access Denied: Master Admin wallet required.", "error");
-      tabId = 'dashboard';
-    } else {
-      // Debounce window opening to prevent duplicate tabs when clicked or bubbled
-      const now = Date.now();
-      if (window._lastAdminNavClick && (now - window._lastAdminNavClick < 2000)) {
-        return;
-      }
-      window._lastAdminNavClick = now;
-
-      const isLocal = typeof window !== 'undefined' && (
-        window.location.hostname === 'localhost' ||
-        window.location.hostname === '127.0.0.1' ||
-        window.location.protocol === 'file:'
-      );
-      if (isLocal) {
-        window.location.href = 'tools/admin/admin.html';
-      } else {
-        triggerToast("🔒 Admin Portal is hosted locally. Opening http://localhost:8080/tools/admin/admin.html...", "info");
-        window.open('http://localhost:8080/tools/admin/admin.html', '_blank');
-      }
-      return;
-    }
-  }
-
-  if (tabId !== 'games' && typeof window.closeGameView === 'function') {
-    window.closeGameView();
-  }
-
-  // Initialize audio only if user has interacted, complying with browser Autoplay policy
-  try {
-    if (window._userHasInteracted && sfx && typeof sfx.init === 'function') sfx.init();
-  } catch (e) {}
-  
-  // Deactivate current tabs
-  document.querySelectorAll('.nav-link').forEach(link => {
-    link.classList.remove('active');
-  });
-  document.querySelectorAll('.view-panel').forEach(panel => {
-    if (panel.id !== 'view-admin' || !isAdmin || tabId !== 'admin') {
-      panel.classList.remove('active');
-    }
-  });
-
-  // Activate target panel with guaranteed fallback to view-dashboard
-  let targetPanel = document.getElementById(`view-${tabId}`);
-  let targetLink = document.querySelector(`.nav-link[data-tab="${tabId}"]`);
-
-  if (!targetPanel) {
-    tabId = 'dashboard';
-    targetPanel = document.getElementById('view-dashboard');
-    targetLink = document.querySelector('.nav-link[data-tab="dashboard"]');
-  }
-
-  if (targetLink) targetLink.classList.add('active');
-  if (targetPanel) {
-    targetPanel.classList.add('active');
-    if (tabId === 'admin' && isAdmin) {
-      targetPanel.style.display = '';
-    }
-  }
-
-  // Update header text
-  const viewTitle = document.getElementById('view-title');
-  if (viewTitle) {
-    viewTitle.innerText = targetLink ? targetLink.innerText.trim() : (tabId === 'contact' ? 'Contact & Support' : (tabId === 'faq' ? 'FAQ' : (tabId === 'links' ? 'Links' : (tabId === 'buy-referrals' ? 'Referral Marketplace' : 'Dashboard'))));
-  }
-
-  // Update document title & meta description dynamically for SEO
-  const seoMetadata = {
-    dashboard: {
-      title: "Polygon Gaming | #1 Web3 Arcade, PolySpace Mining & PGT Faucet",
-      desc: "Polygon Gaming (polygongaming.io) is the ultimate Web3 Play-to-Earn gaming portal on Polygon. Play 60 FPS arcade games, command PolySpace space mining fleets, claim free daily PGT faucets, stake tokens, and earn 4-tier referral commissions."
-    },
-    faucet: {
-      title: "Free Crypto Faucet | Claim Daily PGT Tokens - Polygon Gaming",
-      desc: "Claim free Polygon Gaming Tokens (PGT) daily on Polygon network. Upgrade with VIP Supporter Subscription for 2x payouts and 10% faster 21.6h cooldowns."
-    },
-    games: {
-      title: "Web3 Arcade Games | Play Astro-Dodge & Win PGT - Polygon Gaming",
-      desc: "Play 60 FPS retro Web3 arcade games on Polygon including Astro-Dodge, Cyber Invaders, and Cyber Drift. Convert high scores into PGT token rewards."
-    },
-    space: {
-      title: "PolySpace Space Mining Operations | Passive PGT Yield - Polygon Gaming",
-      desc: "Command your Starship fleet in PolySpace. Upgrade plasma mining drills, launch space expeditions across distant exoplanets, and harvest raw PGT loot."
-    },
-    nft: {
-      title: "Utility NFT Marketplace | Passive PGT Multipliers & VIP Pass - Polygon Gaming",
-      desc: "Collect Utility NFTs on Polygon to unlock permanent passive multipliers on Faucet claims, Arcade payouts, and 4-tier referral commissions."
-    },
-    vault: {
-      title: "PGT Staking Vault | High Yield APY Staking Pools - Polygon Gaming",
-      desc: "Stake your Polygon Gaming Tokens (PGT) in high-yield vault pools. Earn passive APY interest with flexible and locked staking options."
-    },
-    'buy-referrals': {
-      title: "Referral Adoption Marketplace | Expand Downline - Polygon Gaming",
-      desc: "Adopt active unreferred players sorted by weekly activity tiers to expand your 4-tier affiliate network and earn passive lifetime commissions."
-    },
-    referrals: {
-      title: "4-Tier Referral Program | Earn Downline PGT Commissions - Polygon Gaming",
-      desc: "Invite friends to Polygon Gaming and earn up to 20% downline commissions across 4 tiers on all faucet claims, arcade earnings, and staking harvests."
-    },
-    holders: {
-      title: "Top PGT Token Holders & Leaderboard - Polygon Gaming",
-      desc: "View top PGT token holders, arcade high score leaderboards, and top referral earners on Polygon Gaming."
-    },
-    profile: {
-      title: "Player Profile & Account Stats - Polygon Gaming",
-      desc: "Manage your Web3 wallet address, track PGT balance, view owned Utility NFTs, and review activity history on Polygon Gaming."
-    },
-    links: {
-      title: "Official Ecosystem Links, Smart Contracts & QuickSwap DEX - Polygon Gaming",
-      desc: "Verified Polygon smart contracts for PGT token, QuickSwap DEX swap, OpenSea NFT collections, Quantum Relics, and official community links."
-    },
-    contact: {
-      title: "Contact Us & Official Support - Polygon Gaming",
-      desc: "Get in touch with the Polygon Gaming team. Reach out via our official Discord community (discord.gg/bdeK7Kv8Y2) or direct email at posscrypto@gmail.com."
-    }
-  };
-
-  const currentSeo = seoMetadata[tabId] || seoMetadata.dashboard;
-  document.title = currentSeo.title;
-  const metaDesc = document.querySelector('meta[name="description"]');
-  if (metaDesc) metaDesc.setAttribute('content', currentSeo.desc);
-
-  // Custom view initializers
-  if (tabId === 'faucet') {
-    if (typeof window.checkFaucetCooldown === 'function') window.checkFaucetCooldown();
-    if (typeof window.checkVipFaucetCooldown === 'function') window.checkVipFaucetCooldown();
-    if (typeof window.renderVipFaucetUI === 'function') window.renderVipFaucetUI();
-  }
-  if (tabId === 'nft') {
-    renderNftMarketplace();
-    renderMysteryCrates();
-    renderNftInventory();
-  }
-  if (tabId === 'profile') {
-    if (typeof syncDailyQuests === 'function') syncDailyQuests();
-    syncProfileView();
-    if (typeof window.loadPlayerMessages === 'function') {
-      window.loadPlayerMessages().then(() => {
-        if (typeof window.renderPlayerMessageCenter === 'function') {
-          window.renderPlayerMessageCenter();
-        }
-      });
-    }
-    if (typeof window.hydrateAndRenderRelicsVault === 'function') {
-      window.hydrateAndRenderRelicsVault();
-    } else if (typeof window.renderRelicsVault === 'function') {
-      window.renderRelicsVault();
-    }
-  }
-  if (tabId === 'faucet') {
-    if (typeof window.syncUserLiquidity === 'function') {
-      window.syncUserLiquidity();
-    }
-  }
-  if (tabId === 'space') {
-    if (window.polySpaceEngine) {
-      setTimeout(() => window.polySpaceEngine.init(), 50);
-    } else if (window.initPolySpace) {
-      window.initPolySpace();
-    }
-    if (window.polySpace && typeof window.polySpace.syncCloudSpaceState === 'function') {
-      window.polySpace.syncCloudSpaceState(true);
-    }
-  }
-  if (tabId === 'dashboard') {
-    if (typeof syncDailyQuests === 'function') syncDailyQuests();
-    if (typeof renderDailyQuestsUI === 'function') renderDailyQuestsUI();
-    if (typeof loadSitewideStats === 'function') loadSitewideStats();
-  }
-  if (tabId === 'games') {
-    if (typeof syncDailyQuests === 'function') syncDailyQuests();
-    if (typeof renderDailyQuestsUI === 'function') renderDailyQuestsUI();
-    loadAstroDodgeLeaderboard();
-    loadInvadersLeaderboard();
-    loadWeeklyWinsLeaderboard();
-    if (typeof window.loadSkeetLeaderboard === 'function') window.loadSkeetLeaderboard();
-    if (typeof window.loadDefenseLeaderboard === 'function') window.loadDefenseLeaderboard();
-    if (typeof window.loadTopWeeklyArcadePlayers === 'function') window.loadTopWeeklyArcadePlayers();
-    if (typeof window.updateGameTileBadges === 'function') window.updateGameTileBadges();
-    if (typeof window.refreshDailyGamesHubStatus === 'function') window.refreshDailyGamesHubStatus();
-  }
-  if (tabId === 'buy-referrals') {
-    if (typeof window.initReferralShop === 'function') window.initReferralShop();
-  }
-  if (tabId === 'referrals') {
-    if (typeof window.loadTopReferrersLeaderboard === 'function') window.loadTopReferrersLeaderboard();
-    if (typeof window.updateReferralUiStats === 'function') window.updateReferralUiStats();
-    if (typeof window.loadMyDownlineNetwork === 'function') window.loadMyDownlineNetwork();
-    if (window.syncReferralData) window.syncReferralData();
-  }
-  if (tabId === 'profile') {
-    if (typeof window.syncAmbassadorProfileBadge === 'function') window.syncAmbassadorProfileBadge();
-  }
-  if (tabId === 'holders') {
-    loadHoldersLeaderboard();
-  }
-}
-window.switchTab = switchTab;
-
-export function navigateToQuests() {
-  switchTab('dashboard');
-  setTimeout(() => {
-    const card = document.getElementById('dashboard-quests-card');
-    if (card) {
-      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      card.style.transition = 'box-shadow 0.4s ease';
-      card.style.boxShadow = '0 0 30px rgba(0, 240, 255, 0.6)';
-      setTimeout(() => {
-        card.style.boxShadow = '';
-      }, 2000);
-    }
-  }, 100);
-}
-window.navigateToQuests = navigateToQuests;
-
-// --- Initialization / Routing binds ---
-
-document.querySelectorAll('.nav-link').forEach(link => {
-  link.addEventListener('click', (e) => {
-    // If element already has an inline onclick (e.g. onclick="switchTab(...)"), avoid duplicate trigger
-    if (link.hasAttribute('onclick')) return;
-    const tab = link.getAttribute('data-tab');
-    if (tab) switchTab(tab);
-  });
-});
-
-window.addEventListener('hashchange', () => {
-  if (window.location.hash) {
-    const rawHash = window.location.hash.replace(/^#/, '').toLowerCase().trim();
-    const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'buy-referrals', 'referral-shop', 'profile', 'holders', 'links', 'admin'];
-    if (rawHash && VALID_TABS.includes(rawHash)) {
-      switchTab(rawHash);
-    }
-  }
-});
-
-// Sound toggler
-const soundBtn = document.getElementById('sound-toggle-btn');
-if (soundBtn) {
-  soundBtn.addEventListener('click', () => {
-    sfx.toggle();
-  });
-}
-
-// Header Wallet buttons
-const walletBtn = document.getElementById('btn-wallet-connect');
-if (walletBtn) {
-  walletBtn.addEventListener('click', () => {
-    openModal('wallet');
-  });
-}
-
-const walletDisp = document.getElementById('wallet-address-display');
-if (walletDisp) {
-  walletDisp.addEventListener('click', () => {
-    openModal('wallet');
-  });
-}
-
-export async function forcePurgeAppCache() {
-  triggerToast("Updating app to latest version...", "info");
-  try {
-    if ('caches' in window) {
-      const keys = await caches.keys();
-      await Promise.all(keys.map(k => caches.delete(k)));
-    }
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (let reg of registrations) {
-        await reg.unregister();
-      }
-    }
-  } catch (e) {
-    console.warn("[PWA] Cache purge notice:", e);
-  }
-  localStorage.setItem('polygame_last_seen_version', APP_VERSION);
-  window.location.reload(true);
-}
-window.forcePurgeAppCache = forcePurgeAppCache;
-
-export function checkNewUpdateBadge() {
-  const versionDisplay = document.getElementById('app-version-display');
-  if (versionDisplay) {
-    versionDisplay.innerHTML = `v${APP_VERSION} 🔄`;
-  }
-
-  const lastSeenVersion = localStorage.getItem('polygame_last_seen_version');
-  if (lastSeenVersion !== APP_VERSION) {
-    // Automatically purge old cache versions on mobile WebViews & PWA
-    if ('caches' in window) {
-      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {});
-    }
-
-    const badgeDesktop = document.getElementById('new-update-badge');
-    const badgeMobile = document.getElementById('new-update-badge-mobile');
-
-    [badgeDesktop, badgeMobile].forEach(badge => {
-      if (badge) {
-        badge.style.display = 'block';
-        setTimeout(() => {
-          badge.style.opacity = '1';
-        }, 50);
-
-        // Auto fade out after 5 seconds (5000 ms)
-        setTimeout(() => {
-          badge.style.opacity = '0';
-          setTimeout(() => {
-            badge.style.display = 'none';
-          }, 500); // 500ms smooth fade out transition
-        }, 5000);
-      }
-    });
-
-    // Save current version in localStorage so it only appears on first login/visit after update
-    localStorage.setItem('polygame_last_seen_version', APP_VERSION);
-  }
-}
-
-// Window startup
-export function initializeApp() {
-  // Enforce strict initial Admin Panel DOM lockdown
-  const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
-  const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
-  const isAdmin = (injected && injected === expectedAdmin);
-
-  const adminPanelEl = document.getElementById('view-admin');
-  const adminNavEl = document.getElementById('nav-item-admin');
-  const adminCardEl = document.getElementById('profile-admin-card');
-
-  if (!isAdmin) {
-    if (adminPanelEl) {
-      adminPanelEl.classList.remove('active');
-      adminPanelEl.classList.remove('admin-authorized');
-      adminPanelEl.style.setProperty('display', 'none', 'important');
-    }
-    if (adminNavEl) {
-      adminNavEl.classList.remove('admin-unlocked');
-      adminNavEl.style.setProperty('display', 'none', 'important');
-    }
-    if (adminCardEl) {
-      adminCardEl.style.setProperty('display', 'none', 'important');
-    }
-  }
-
-  // Handle OAuth error return gracefully (e.g. ?error=invalid_request&error_code=bad_oauth_state)
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.has('error') || urlParams.has('error_code') || urlParams.has('error_description')) {
-    const errCode = urlParams.get('error_code') || urlParams.get('error') || '';
-    const errDesc = urlParams.get('error_description') || '';
-    console.warn("[OAuth Auth Callback Warning]", errCode, errDesc);
-    if (errCode.includes('bad_oauth_state') || errDesc.includes('OAuth state not found') || errCode.includes('invalid_request')) {
-      setTimeout(() => {
-        if (typeof window.triggerToast === 'function') {
-          window.triggerToast("⚠️ Google Sign-In session expired or was cancelled. Please try again.", "warning");
-        }
-      }, 500);
-    }
-    // Clean URL query parameters so messy error strings don't persist
-    try {
-      const cleanUrl = window.location.origin + window.location.pathname + (window.location.hash || '');
-      window.history.replaceState({}, document.title, cleanUrl);
-    } catch (e) {}
-  }
-
-  // Ensure all inactive modals are completely hidden and cannot intercept clicks
-  document.querySelectorAll('.modal-overlay:not(.active)').forEach(el => {
-    el.style.display = 'none';
-    el.style.pointerEvents = 'none';
-  });
-
-  appState.syncUI();
-  try {
-    checkFaucetCooldown();
-  } catch (err) {
-    console.warn('[initializeApp] checkFaucetCooldown notice:', err);
-  }
-  initStakingCycle();
-  calculateStakingReward();
-  checkNewUpdateBadge();
-  initPWA();
-  
-  // Set up initial leaderboard data
-  loadAstroDodgeLeaderboard();
-  loadInvadersLeaderboard();
-
-  // Load initial jackpot data
-  syncJackpotData();
-  syncGlobalSettings();
-  loadSitewideStats();
-
-  // Auto connect real wallet on load if already logged in
-  autoConnectWeb3();
-
-  // Background pre-hydration of Quantum Relics Vault from DB
-  if (typeof window.hydrateAndRenderRelicsVault === 'function') {
-    window.hydrateAndRenderRelicsVault();
-  }
-
-  // Pre-fetch player messages & unread notification badges (if already authenticated)
-  if (typeof window.loadPlayerMessages === 'function' && appState.isPlayerConnected()) {
-    window.loadPlayerMessages();
-  }
-
-  // Initialize Daily Cyber Games Hub status & live UTC countdown (PLAN-020)
-  if (typeof window.startDailyHubCountdown === 'function') {
-    window.startDailyHubCountdown();
-  }
-  if (typeof window.refreshDailyGamesHubStatus === 'function' && appState.isPlayerConnected()) {
-    window.refreshDailyGamesHubStatus();
-  }
-
-  startLeaderboardResetTimer();
-
-  // Handle URL hash navigation on load (e.g. #admin, #faucet, #space, #nft)
-  if (window.location.hash) {
-    const rawHash = window.location.hash.replace(/^#/, '').toLowerCase().trim();
-    const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'buy-referrals', 'referral-shop', 'profile', 'holders', 'links', 'admin'];
-    
-    // Check if hash is an OAuth token fragment (e.g. #access_token=...&refresh_token=...)
-    if (rawHash.includes('access_token') || rawHash.includes('refresh_token') || rawHash.includes('token_type') || rawHash.includes('error=')) {
-      try {
-        const cleanUrl = window.location.origin + window.location.pathname;
-        window.history.replaceState({}, document.title, cleanUrl);
-      } catch (e) {}
-      setTimeout(() => switchTab('dashboard'), 100);
-    } else if (VALID_TABS.includes(rawHash)) {
-      setTimeout(() => switchTab(rawHash), 100);
-    } else {
-      setTimeout(() => switchTab('dashboard'), 100);
-    }
-  } else {
-    setTimeout(() => switchTab('dashboard'), 50);
-  }
-}
-
-function startLeaderboardResetTimer() {
-  let lastCheckedWeek = null;
-
-  function getUtcWeekIdentifier() {
-    const now = new Date();
-    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-    return `${d.getUTCFullYear()}-W${weekNo}`;
-  }
-
-  function updateTimers() {
-    const now = new Date();
-    const currentWeek = getUtcWeekIdentifier();
-
-    // If UTC week rolled over while the browser tab was kept open, purge stale weekly tournament scores & counters
-    if (lastCheckedWeek && lastCheckedWeek !== currentWeek) {
-      if (window.appState && window.appState.state) {
-        window.appState.update({
-          gameHighScore: 0,
-          invadersHighScore: 0,
-          driftHighScore: 0,
-          stackerHighScore: 0,
-          catcherHighScore: 0,
-          skeetHighScore: 0,
-          defenseHighScore: 0,
-          weeklyFaucetClaims: 0,
-          weeklyGamesPlayed: 0,
-          weeklyActiveTier: 0
-        });
-        if (typeof window.syncProfileWithDb === 'function') {
-          window.syncProfileWithDb();
-        }
-      }
-    }
-    lastCheckedWeek = currentWeek;
-
-    const nextSunday = new Date(now.getTime());
-    const daysUntilSunday = (7 - now.getUTCDay()) % 7;
-    
-    nextSunday.setUTCDate(now.getUTCDate() + daysUntilSunday);
-    nextSunday.setUTCHours(23, 59, 59, 999);
-
-    const diff = nextSunday.getTime() - now.getTime();
-    if (diff > 0) {
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-      const mins = Math.floor((diff / 1000 / 60) % 60);
-
-      const dStr = days + 'd';
-      const hStr = hours.toString().padStart(2, '0') + 'h';
-      const mStr = mins.toString().padStart(2, '0') + 'm';
-      const timeStr = `Resets: ${dStr} ${hStr} ${mStr}`;
-      
-      document.querySelectorAll('.leaderboard-reset-timer').forEach(el => {
-        el.innerText = timeStr;
-      });
-    }
-  }
-
-  updateTimers();
-  setInterval(updateTimers, 60000);
-}
-
-// Fullscreen Mobile Game Canvas Helpers
-window.openMobileGameFullscreen = function() {
-  const container = document.getElementById('game-window-container');
-  if (!container) return;
-
-  container.classList.add('fullscreen-active');
-  document.body.classList.add('game-fullscreen-open');
-
-  // On mobile touch devices (Android & iOS), do NOT call native container.requestFullscreen():
-  // Android Chrome displays an unskippable system toast ("domain.com - to exit full screen...")
-  // that obscures bottom buttons and HUD controls.
-  // The CSS 'fullscreen-active' class already provides an immersive 100vw/100vh viewport takeover
-  // with zero OS popups and clean touch targets!
-  const isMobile = (window.innerWidth <= 768 || window.innerHeight <= 500 || ('ontouchstart' in window));
-  if (!isMobile) {
-    if (container.requestFullscreen) {
-      container.requestFullscreen().catch(() => {});
-    } else if (container.webkitRequestFullscreen) {
-      container.webkitRequestFullscreen();
-    }
-  }
-
-  setTimeout(() => window.dispatchEvent(new Event('resize')), 80);
-};
-
-window.toggleGameFullscreen = function() {
-  const container = document.getElementById('game-window-container');
-  if (!container) return;
-
-  const isFullscreen = container.classList.contains('fullscreen-active');
-  if (isFullscreen) {
-    window.exitGameFullscreen();
-  } else {
-    window.openMobileGameFullscreen();
-  }
-};
-
-window.exitGameFullscreen = function() {
-  const container = document.getElementById('game-window-container');
-  if (container) container.classList.remove('fullscreen-active');
-  document.body.classList.remove('game-fullscreen-open');
-
-  document.body.style.overflow = '';
-  document.body.style.touchAction = '';
-
-  if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement) {
-    if (document.exitFullscreen) {
-      document.exitFullscreen().catch(() => {});
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    } else if (document.mozCancelFullScreen) {
-      document.mozCancelFullScreen();
-    }
-  }
-
-  // Trigger game resize handlers immediately and after transition
-  const triggerResizes = () => {
-    if (window.cyberStacker && typeof window.cyberStacker.resize === 'function') window.cyberStacker.resize();
-    if (window.skeetEngine && typeof window.skeetEngine.resizeCanvas === 'function') window.skeetEngine.resizeCanvas();
-    if (window.cyberDrift && typeof window.cyberDrift.resize === 'function') window.cyberDrift.resize();
-    if (window.defenseEngine && typeof window.defenseEngine.resizeCanvas === 'function') window.defenseEngine.resizeCanvas();
-    if (window.cyberTetrisGame && typeof window.cyberTetrisGame.resizeCanvases === 'function') window.cyberTetrisGame.resizeCanvases();
-    window.dispatchEvent(new Event('resize'));
-  };
-
-  triggerResizes();
-  setTimeout(triggerResizes, 100);
-};
-
-['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
-  document.addEventListener(evt, () => {
-    const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
-    if (!isFS) {
-      const container = document.getElementById('game-window-container');
-      if (container) container.classList.remove('fullscreen-active');
-      document.body.classList.remove('game-fullscreen-open');
-      document.body.style.overflow = '';
-      document.body.style.touchAction = '';
-
-      if (window.cyberStacker && typeof window.cyberStacker.resize === 'function') window.cyberStacker.resize();
-      if (window.skeetEngine && typeof window.skeetEngine.resizeCanvas === 'function') window.skeetEngine.resizeCanvas();
-      if (window.cyberDrift && typeof window.cyberDrift.resize === 'function') window.cyberDrift.resize();
-      if (window.defenseEngine && typeof window.defenseEngine.resizeCanvas === 'function') window.defenseEngine.resizeCanvas();
-      if (window.cyberTetrisGame && typeof window.cyberTetrisGame.resizeCanvases === 'function') window.cyberTetrisGame.resizeCanvases();
-      setTimeout(() => window.dispatchEvent(new Event('resize')), 80);
-    }
-  });
-});
-
-// --- Global Security & Runtime Anomaly Monitor ---
-window.addEventListener('error', (e) => {
-  if (typeof window.sendAdminAlert === 'function' && e.message) {
-    const filename = (e.filename || '').toLowerCase();
-    const msg = (e.message || '').toLowerCase();
-    
-    // Filter out third-party browser extension noise, mobile browser injections (e.g. Chrome iOS __gCrWeb), & cancelled OAuth states
-    if (
-      msg.includes('script error') ||
-      (e.lineno === 0 && e.colno === 0 && !e.filename) ||
-      filename.includes('inject') || 
-      filename.includes('extension') || 
-      filename.includes('contentscript') ||
-      filename.includes('core.mjs') ||
-      msg.includes('__gcrweb') ||
-      msg.includes('gcrweb') ||
-      msg.includes('bad_oauth_state') ||
-      msg.includes('oauth state not found') ||
-      msg.includes('user rejected') ||
-      msg.includes('user denied') ||
-      msg.includes('terminate is not a function') ||
-      msg.includes('invalid or unexpected token')
-    ) {
-      return;
-    }
-
-    if (window._lastLoggedError === e.message) return; // Prevent spamming duplicate errors
-    window._lastLoggedError = e.message;
-    
-    window.sendAdminAlert({
-      category: 'RUNTIME ERROR',
-      title: '❌ Client-Side Exception Caught',
-      description: `\`\`\`js\n${e.message.substring(0, 300)}\n\`\`\``,
-      color: 0xFF9900,
-      fields: [
-        { name: "Source", value: `${(e.filename || 'app.js').split('/').pop()}:${e.lineno}:${e.colno}`, inline: true }
-      ]
-    });
-  }
-});
-
-// --- Unhandled Promise Rejection Sentinel ---
-window.addEventListener('unhandledrejection', (event) => {
-  const reason = event.reason;
-  const reasonStr = (typeof reason === 'object' && reason !== null)
-    ? (reason.message || reason.details || reason.stack || JSON.stringify(reason) || '')
-    : String(reason || '');
-  const lowerMsg = reasonStr.toLowerCase();
-
-  // 1. Suppress browser extension message channel / port disconnect noise (MetaMask, Coinbase, Phantom, etc.)
-  // e.g. "A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received"
-  if (
-    lowerMsg.includes('message channel closed') ||
-    lowerMsg.includes('listener indicated an asynchronous response') ||
-    lowerMsg.includes('message port closed') ||
-    lowerMsg.includes('could not establish connection') ||
-    lowerMsg.includes('user rejected') ||
-    lowerMsg.includes('user denied') ||
-    lowerMsg.includes('chrome-extension://') ||
-    lowerMsg.includes('moz-extension://')
-  ) {
-    event.preventDefault(); // Prevents "Uncaught (in promise)" in browser console
-    return;
-  }
-
-  // 2. Suppress transient network connectivity / connection timeouts
-  if (
-    lowerMsg.includes('err_connection_timed_out') ||
-    lowerMsg.includes('connection timed out') ||
-    lowerMsg.includes('failed to fetch') ||
-    lowerMsg.includes('network request failed') ||
-    lowerMsg.includes('networkerror') ||
-    lowerMsg.includes('load failed')
-  ) {
-    event.preventDefault();
-    console.warn('[PolyGame Network Notice] Handled background network timeout gracefully:', reasonStr.substring(0, 150));
-    return;
-  }
-});
-
-if (document.readyState === 'loading') {
-  window.addEventListener('DOMContentLoaded', initializeApp);
-} else {
-  initializeApp();
-}
-
+import { initArcadeLeaderboardCards } from './core/games-registry.js';
+import { renderDailyQuestsUI, trackQuestProgress, syncDailyQuests } from './features/quests.js';
+import { sfx } from './core/audio.js';
+import { renderNftMarketplace, renderMysteryCrates, renderNftInventory } from './features/nft.js';
+import { checkFaucetCooldown } from './features/faucet.js';
+import { appState } from './core/state.js';
+import { openModal } from './core/ui.js';
+import { initStakingCycle, calculateStakingReward } from './features/staking.js';
+import { syncProfileView, loadReferralLeaderboard, loadAstroDodgeLeaderboard, loadInvadersLeaderboard, autoConnectWeb3, loadHoldersLeaderboard, loadWeeklyWinsLeaderboard } from './features/profile.js';
+import { triggerToast } from './core/ui.js';
+import { syncJackpotData, recordGameMetrics, syncGlobalSettings, loadSitewideStats } from './core/db-sync.js';
+import { APP_VERSION, ADMIN_WALLET_ADDRESS, supabase } from './core/config.js';
+
+import { initPWA } from './utils/pwa.js';
+
+// Import new games and utilities
+import './utils/discord.js';
+import './features/games.js';
+import './features/spinner.js';
+import './features/roshambo.js';
+import './features/crash.js';
+import './features/plinko.js';
+import './features/mines.js';
+import './features/withdraw.js';
+import './features/referrals.js';
+import './features/referral-shop.js';
+import './features/relics.js';
+import './features/hangar.js';
+import './utils/confetti.js';
+import './core/anti-bot.js';
+import './features/arcade-security.js';
+import './features/messages.js';
+import './features/daily-hub.js';
+import './features/wordle.js';
+import './features/sudoku.js';
+import './utils/social-share.js';
+// Note: Arcade game modules (skeet.js, defense.js, runner.js, q2048.js, tetris.js) are loaded via versioned script tags in index.html
+
+// Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
+window.appState = appState;
+window.triggerToast = triggerToast;
+window.recordGameMetrics = recordGameMetrics;
+window.launchPolySpace = launchPolySpace;
+window.supabaseClient = supabase;
+initArcadeLeaderboardCards();
+
+// --- Master View Switcher (Router) ---
+
+export function launchPolySpace() {
+  switchTab('space');
+}
+window.launchPolySpace = launchPolySpace;
+
+export function switchTab(tabId) {
+  // Always remove fullscreen lock on tab switch so bottom nav is guaranteed visible
+  document.body.classList.remove('game-fullscreen-open');
+  const sidebarEl = document.querySelector('.sidebar');
+  if (sidebarEl) sidebarEl.style.display = '';
+
+  const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'buy-referrals', 'referral-shop', 'profile', 'holders', 'links', 'contact', 'admin'];
+  
+  let cleanTab = (typeof tabId === 'string' ? tabId.replace(/^#/, '').toLowerCase().trim() : '');
+  if (cleanTab === 'vault') cleanTab = 'staking';
+  if (cleanTab === 'arcade') cleanTab = 'games';
+  if (cleanTab === 'referral-shop') cleanTab = 'buy-referrals';
+  if (!cleanTab || cleanTab.includes('=') || cleanTab.includes('&') || !VALID_TABS.includes(cleanTab)) {
+    cleanTab = 'dashboard';
+  }
+  tabId = cleanTab;
+
+  const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
+  const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
+  const stateWallet = (
+    (typeof appState !== 'undefined' && appState.state ? (appState.state.linkedWalletAddress || appState.state.walletAddress) : '') ||
+    (typeof window !== 'undefined' && window.appState && window.appState.state ? (window.appState.state.linkedWalletAddress || window.appState.state.walletAddress) : '')
+  ).toLowerCase();
+  const activeAdminWallet = injected || stateWallet;
+  const isAdmin = (activeAdminWallet && activeAdminWallet === expectedAdmin);
+
+  if (tabId === 'admin') {
+    if (!isAdmin) {
+      triggerToast("Access Denied: Master Admin wallet required.", "error");
+      tabId = 'dashboard';
+    } else {
+      // Debounce window opening to prevent duplicate tabs when clicked or bubbled
+      const now = Date.now();
+      if (window._lastAdminNavClick && (now - window._lastAdminNavClick < 2000)) {
+        return;
+      }
+      window._lastAdminNavClick = now;
+
+      const isLocal = typeof window !== 'undefined' && (
+        window.location.hostname === 'localhost' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.protocol === 'file:'
+      );
+      if (isLocal) {
+        window.location.href = 'tools/admin/admin.html';
+      } else {
+        triggerToast("🔒 Admin Portal is hosted locally. Opening http://localhost:8080/tools/admin/admin.html...", "info");
+        window.open('http://localhost:8080/tools/admin/admin.html', '_blank');
+      }
+      return;
+    }
+  }
+
+  if (tabId !== 'games' && typeof window.closeGameView === 'function') {
+    window.closeGameView();
+  }
+
+  // Initialize audio only if user has interacted, complying with browser Autoplay policy
+  try {
+    if (window._userHasInteracted && sfx && typeof sfx.init === 'function') sfx.init();
+  } catch (e) {}
+  
+  // Deactivate current tabs
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.classList.remove('active');
+  });
+  document.querySelectorAll('.view-panel').forEach(panel => {
+    if (panel.id !== 'view-admin' || !isAdmin || tabId !== 'admin') {
+      panel.classList.remove('active');
+    }
+  });
+
+  // Activate target panel with guaranteed fallback to view-dashboard
+  let targetPanel = document.getElementById(`view-${tabId}`);
+  let targetLink = document.querySelector(`.nav-link[data-tab="${tabId}"]`);
+
+  if (!targetPanel) {
+    tabId = 'dashboard';
+    targetPanel = document.getElementById('view-dashboard');
+    targetLink = document.querySelector('.nav-link[data-tab="dashboard"]');
+  }
+
+  if (targetLink) targetLink.classList.add('active');
+  if (targetPanel) {
+    targetPanel.classList.add('active');
+    if (tabId === 'admin' && isAdmin) {
+      targetPanel.style.display = '';
+    }
+  }
+
+  // Update header text
+  const viewTitle = document.getElementById('view-title');
+  if (viewTitle) {
+    viewTitle.innerText = targetLink ? targetLink.innerText.trim() : (tabId === 'contact' ? 'Contact & Support' : (tabId === 'faq' ? 'FAQ' : (tabId === 'links' ? 'Links' : (tabId === 'buy-referrals' ? 'Referral Marketplace' : 'Dashboard'))));
+  }
+
+  // Update document title & meta description dynamically for SEO
+  const seoMetadata = {
+    dashboard: {
+      title: "Polygon Gaming | #1 Web3 Arcade, PolySpace Mining & PGT Faucet",
+      desc: "Polygon Gaming (polygongaming.io) is the ultimate Web3 Play-to-Earn gaming portal on Polygon. Play 60 FPS arcade games, command PolySpace space mining fleets, claim free daily PGT faucets, stake tokens, and earn 4-tier referral commissions."
+    },
+    faucet: {
+      title: "Free Crypto Faucet | Claim Daily PGT Tokens - Polygon Gaming",
+      desc: "Claim free Polygon Gaming Tokens (PGT) daily on Polygon network. Upgrade with VIP Supporter Subscription for 2x payouts and 10% faster 21.6h cooldowns."
+    },
+    games: {
+      title: "Web3 Arcade Games | Play Astro-Dodge & Win PGT - Polygon Gaming",
+      desc: "Play 60 FPS retro Web3 arcade games on Polygon including Astro-Dodge, Cyber Invaders, and Cyber Drift. Convert high scores into PGT token rewards."
+    },
+    space: {
+      title: "PolySpace Space Mining Operations | Passive PGT Yield - Polygon Gaming",
+      desc: "Command your Starship fleet in PolySpace. Upgrade plasma mining drills, launch space expeditions across distant exoplanets, and harvest raw PGT loot."
+    },
+    nft: {
+      title: "Utility NFT Marketplace | Passive PGT Multipliers & VIP Pass - Polygon Gaming",
+      desc: "Collect Utility NFTs on Polygon to unlock permanent passive multipliers on Faucet claims, Arcade payouts, and 4-tier referral commissions."
+    },
+    vault: {
+      title: "PGT Staking Vault | High Yield APY Staking Pools - Polygon Gaming",
+      desc: "Stake your Polygon Gaming Tokens (PGT) in high-yield vault pools. Earn passive APY interest with flexible and locked staking options."
+    },
+    'buy-referrals': {
+      title: "Referral Adoption Marketplace | Expand Downline - Polygon Gaming",
+      desc: "Adopt active unreferred players sorted by weekly activity tiers to expand your 4-tier affiliate network and earn passive lifetime commissions."
+    },
+    referrals: {
+      title: "4-Tier Referral Program | Earn Downline PGT Commissions - Polygon Gaming",
+      desc: "Invite friends to Polygon Gaming and earn up to 20% downline commissions across 4 tiers on all faucet claims, arcade earnings, and staking harvests."
+    },
+    holders: {
+      title: "Top PGT Token Holders & Leaderboard - Polygon Gaming",
+      desc: "View top PGT token holders, arcade high score leaderboards, and top referral earners on Polygon Gaming."
+    },
+    profile: {
+      title: "Player Profile & Account Stats - Polygon Gaming",
+      desc: "Manage your Web3 wallet address, track PGT balance, view owned Utility NFTs, and review activity history on Polygon Gaming."
+    },
+    links: {
+      title: "Official Ecosystem Links, Smart Contracts & QuickSwap DEX - Polygon Gaming",
+      desc: "Verified Polygon smart contracts for PGT token, QuickSwap DEX swap, OpenSea NFT collections, Quantum Relics, and official community links."
+    },
+    contact: {
+      title: "Contact Us & Official Support - Polygon Gaming",
+      desc: "Get in touch with the Polygon Gaming team. Reach out via our official Discord community (discord.gg/bdeK7Kv8Y2) or direct email at posscrypto@gmail.com."
+    }
+  };
+
+  const currentSeo = seoMetadata[tabId] || seoMetadata.dashboard;
+  document.title = currentSeo.title;
+  const metaDesc = document.querySelector('meta[name="description"]');
+  if (metaDesc) metaDesc.setAttribute('content', currentSeo.desc);
+
+  // Custom view initializers
+  if (tabId === 'faucet') {
+    if (typeof window.checkFaucetCooldown === 'function') window.checkFaucetCooldown();
+    if (typeof window.checkVipFaucetCooldown === 'function') window.checkVipFaucetCooldown();
+    if (typeof window.renderVipFaucetUI === 'function') window.renderVipFaucetUI();
+  }
+  if (tabId === 'nft') {
+    renderNftMarketplace();
+    renderMysteryCrates();
+    renderNftInventory();
+  }
+  if (tabId === 'profile') {
+    if (typeof syncDailyQuests === 'function') syncDailyQuests();
+    syncProfileView();
+    if (typeof window.loadPlayerMessages === 'function') {
+      window.loadPlayerMessages().then(() => {
+        if (typeof window.renderPlayerMessageCenter === 'function') {
+          window.renderPlayerMessageCenter();
+        }
+      });
+    }
+    if (typeof window.hydrateAndRenderRelicsVault === 'function') {
+      window.hydrateAndRenderRelicsVault();
+    } else if (typeof window.renderRelicsVault === 'function') {
+      window.renderRelicsVault();
+    }
+  }
+  if (tabId === 'faucet') {
+    if (typeof window.syncUserLiquidity === 'function') {
+      window.syncUserLiquidity();
+    }
+  }
+  if (tabId === 'space') {
+    if (window.polySpaceEngine) {
+      setTimeout(() => window.polySpaceEngine.init(), 50);
+    } else if (window.initPolySpace) {
+      window.initPolySpace();
+    }
+    if (window.polySpace && typeof window.polySpace.syncCloudSpaceState === 'function') {
+      window.polySpace.syncCloudSpaceState(true);
+    }
+  }
+  if (tabId === 'dashboard') {
+    if (typeof syncDailyQuests === 'function') syncDailyQuests();
+    if (typeof renderDailyQuestsUI === 'function') renderDailyQuestsUI();
+    if (typeof loadSitewideStats === 'function') loadSitewideStats();
+  }
+  if (tabId === 'games') {
+    if (typeof syncDailyQuests === 'function') syncDailyQuests();
+    if (typeof renderDailyQuestsUI === 'function') renderDailyQuestsUI();
+    loadAstroDodgeLeaderboard();
+    loadInvadersLeaderboard();
+    loadWeeklyWinsLeaderboard();
+    if (typeof window.loadSkeetLeaderboard === 'function') window.loadSkeetLeaderboard();
+    if (typeof window.loadDefenseLeaderboard === 'function') window.loadDefenseLeaderboard();
+    if (typeof window.loadTopWeeklyArcadePlayers === 'function') window.loadTopWeeklyArcadePlayers();
+    if (typeof window.updateGameTileBadges === 'function') window.updateGameTileBadges();
+    if (typeof window.refreshDailyGamesHubStatus === 'function') window.refreshDailyGamesHubStatus();
+  }
+  if (tabId === 'buy-referrals') {
+    if (typeof window.initReferralShop === 'function') window.initReferralShop();
+  }
+  if (tabId === 'referrals') {
+    if (typeof window.loadTopReferrersLeaderboard === 'function') window.loadTopReferrersLeaderboard();
+    if (typeof window.updateReferralUiStats === 'function') window.updateReferralUiStats();
+    if (typeof window.loadMyDownlineNetwork === 'function') window.loadMyDownlineNetwork();
+    if (window.syncReferralData) window.syncReferralData();
+  }
+  if (tabId === 'profile') {
+    if (typeof window.syncAmbassadorProfileBadge === 'function') window.syncAmbassadorProfileBadge();
+  }
+  if (tabId === 'holders') {
+    loadHoldersLeaderboard();
+  }
+}
+window.switchTab = switchTab;
+
+export function navigateToQuests() {
+  switchTab('dashboard');
+  setTimeout(() => {
+    const card = document.getElementById('dashboard-quests-card');
+    if (card) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.style.transition = 'box-shadow 0.4s ease';
+      card.style.boxShadow = '0 0 30px rgba(0, 240, 255, 0.6)';
+      setTimeout(() => {
+        card.style.boxShadow = '';
+      }, 2000);
+    }
+  }, 100);
+}
+window.navigateToQuests = navigateToQuests;
+
+// --- Initialization / Routing binds ---
+
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', (e) => {
+    // If element already has an inline onclick (e.g. onclick="switchTab(...)"), avoid duplicate trigger
+    if (link.hasAttribute('onclick')) return;
+    const tab = link.getAttribute('data-tab');
+    if (tab) switchTab(tab);
+  });
+});
+
+window.addEventListener('hashchange', () => {
+  if (window.location.hash) {
+    const rawHash = window.location.hash.replace(/^#/, '').toLowerCase().trim();
+    const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'buy-referrals', 'referral-shop', 'profile', 'holders', 'links', 'admin'];
+    if (rawHash && VALID_TABS.includes(rawHash)) {
+      switchTab(rawHash);
+    }
+  }
+});
+
+// Sound toggler
+const soundBtn = document.getElementById('sound-toggle-btn');
+if (soundBtn) {
+  soundBtn.addEventListener('click', () => {
+    sfx.toggle();
+  });
+}
+
+// Header Wallet buttons
+const walletBtn = document.getElementById('btn-wallet-connect');
+if (walletBtn) {
+  walletBtn.addEventListener('click', () => {
+    openModal('wallet');
+  });
+}
+
+const walletDisp = document.getElementById('wallet-address-display');
+if (walletDisp) {
+  walletDisp.addEventListener('click', () => {
+    openModal('wallet');
+  });
+}
+
+export async function forcePurgeAppCache() {
+  triggerToast("Updating app to latest version...", "info");
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k)));
+    }
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (let reg of registrations) {
+        await reg.unregister();
+      }
+    }
+  } catch (e) {
+    console.warn("[PWA] Cache purge notice:", e);
+  }
+  localStorage.setItem('polygame_last_seen_version', APP_VERSION);
+  window.location.reload(true);
+}
+window.forcePurgeAppCache = forcePurgeAppCache;
+
+export function checkNewUpdateBadge() {
+  const versionDisplay = document.getElementById('app-version-display');
+  if (versionDisplay) {
+    versionDisplay.innerHTML = `v${APP_VERSION} 🔄`;
+  }
+
+  const lastSeenVersion = localStorage.getItem('polygame_last_seen_version');
+  if (lastSeenVersion !== APP_VERSION) {
+    // Automatically purge old cache versions on mobile WebViews & PWA
+    if ('caches' in window) {
+      caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {});
+    }
+
+    const badgeDesktop = document.getElementById('new-update-badge');
+    const badgeMobile = document.getElementById('new-update-badge-mobile');
+
+    [badgeDesktop, badgeMobile].forEach(badge => {
+      if (badge) {
+        badge.style.display = 'block';
+        setTimeout(() => {
+          badge.style.opacity = '1';
+        }, 50);
+
+        // Auto fade out after 5 seconds (5000 ms)
+        setTimeout(() => {
+          badge.style.opacity = '0';
+          setTimeout(() => {
+            badge.style.display = 'none';
+          }, 500); // 500ms smooth fade out transition
+        }, 5000);
+      }
+    });
+
+    // Save current version in localStorage so it only appears on first login/visit after update
+    localStorage.setItem('polygame_last_seen_version', APP_VERSION);
+  }
+}
+
+// Window startup
+export function initializeApp() {
+  // Enforce strict initial Admin Panel DOM lockdown
+  const expectedAdmin = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
+  const injected = (typeof window !== 'undefined' && window.ethereum && typeof window.ethereum.selectedAddress === 'string' ? window.ethereum.selectedAddress : '').toLowerCase();
+  const isAdmin = (injected && injected === expectedAdmin);
+
+  const adminPanelEl = document.getElementById('view-admin');
+  const adminNavEl = document.getElementById('nav-item-admin');
+  const adminCardEl = document.getElementById('profile-admin-card');
+
+  if (!isAdmin) {
+    if (adminPanelEl) {
+      adminPanelEl.classList.remove('active');
+      adminPanelEl.classList.remove('admin-authorized');
+      adminPanelEl.style.setProperty('display', 'none', 'important');
+    }
+    if (adminNavEl) {
+      adminNavEl.classList.remove('admin-unlocked');
+      adminNavEl.style.setProperty('display', 'none', 'important');
+    }
+    if (adminCardEl) {
+      adminCardEl.style.setProperty('display', 'none', 'important');
+    }
+  }
+
+  // Handle OAuth error return gracefully (e.g. ?error=invalid_request&error_code=bad_oauth_state)
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('error') || urlParams.has('error_code') || urlParams.has('error_description')) {
+    const errCode = urlParams.get('error_code') || urlParams.get('error') || '';
+    const errDesc = urlParams.get('error_description') || '';
+    console.warn("[OAuth Auth Callback Warning]", errCode, errDesc);
+    if (errCode.includes('bad_oauth_state') || errDesc.includes('OAuth state not found') || errCode.includes('invalid_request')) {
+      setTimeout(() => {
+        if (typeof window.triggerToast === 'function') {
+          window.triggerToast("⚠️ Google Sign-In session expired or was cancelled. Please try again.", "warning");
+        }
+      }, 500);
+    }
+    // Clean URL query parameters so messy error strings don't persist
+    try {
+      const cleanUrl = window.location.origin + window.location.pathname + (window.location.hash || '');
+      window.history.replaceState({}, document.title, cleanUrl);
+    } catch (e) {}
+  }
+
+  // Ensure all inactive modals are completely hidden and cannot intercept clicks
+  document.querySelectorAll('.modal-overlay:not(.active)').forEach(el => {
+    el.style.display = 'none';
+    el.style.pointerEvents = 'none';
+  });
+
+  appState.syncUI();
+  try {
+    const dashRef = document.getElementById('dashboard-ref-link');
+    if (dashRef && window.socialShare && typeof window.socialShare.getReferralShareUrl === 'function') {
+      dashRef.value = window.socialShare.getReferralShareUrl();
+    }
+  } catch (e) {}
+  try {
+    checkFaucetCooldown();
+  } catch (err) {
+    console.warn('[initializeApp] checkFaucetCooldown notice:', err);
+  }
+  initStakingCycle();
+  calculateStakingReward();
+  checkNewUpdateBadge();
+  initPWA();
+  
+  // Set up initial leaderboard data
+  loadAstroDodgeLeaderboard();
+  loadInvadersLeaderboard();
+
+  // Load initial jackpot data
+  syncJackpotData();
+  syncGlobalSettings();
+  loadSitewideStats();
+
+  // Auto connect real wallet on load if already logged in
+  autoConnectWeb3();
+
+  // Background pre-hydration of Quantum Relics Vault from DB
+  if (typeof window.hydrateAndRenderRelicsVault === 'function') {
+    window.hydrateAndRenderRelicsVault();
+  }
+
+  // Pre-fetch player messages & unread notification badges (if already authenticated)
+  if (typeof window.loadPlayerMessages === 'function' && appState.isPlayerConnected()) {
+    window.loadPlayerMessages();
+  }
+
+  // Initialize Daily Cyber Games Hub status & live UTC countdown (PLAN-020)
+  if (typeof window.startDailyHubCountdown === 'function') {
+    window.startDailyHubCountdown();
+  }
+  if (typeof window.refreshDailyGamesHubStatus === 'function' && appState.isPlayerConnected()) {
+    window.refreshDailyGamesHubStatus();
+  }
+
+  startLeaderboardResetTimer();
+
+  // Handle URL hash navigation on load (e.g. #admin, #faucet, #space, #nft)
+  if (window.location.hash) {
+    const rawHash = window.location.hash.replace(/^#/, '').toLowerCase().trim();
+    const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'buy-referrals', 'referral-shop', 'profile', 'holders', 'links', 'admin'];
+    
+    // Check if hash is an OAuth token fragment (e.g. #access_token=...&refresh_token=...)
+    if (rawHash.includes('access_token') || rawHash.includes('refresh_token') || rawHash.includes('token_type') || rawHash.includes('error=')) {
+      try {
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      } catch (e) {}
+      setTimeout(() => switchTab('dashboard'), 100);
+    } else if (VALID_TABS.includes(rawHash)) {
+      setTimeout(() => switchTab(rawHash), 100);
+    } else {
+      setTimeout(() => switchTab('dashboard'), 100);
+    }
+  } else {
+    setTimeout(() => switchTab('dashboard'), 50);
+  }
+}
+
+function startLeaderboardResetTimer() {
+  let lastCheckedWeek = null;
+
+  function getUtcWeekIdentifier() {
+    const now = new Date();
+    const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return `${d.getUTCFullYear()}-W${weekNo}`;
+  }
+
+  function updateTimers() {
+    const now = new Date();
+    const currentWeek = getUtcWeekIdentifier();
+
+    // If UTC week rolled over while the browser tab was kept open, purge stale weekly tournament scores & counters
+    if (lastCheckedWeek && lastCheckedWeek !== currentWeek) {
+      if (window.appState && window.appState.state) {
+        window.appState.update({
+          gameHighScore: 0,
+          invadersHighScore: 0,
+          driftHighScore: 0,
+          stackerHighScore: 0,
+          catcherHighScore: 0,
+          skeetHighScore: 0,
+          defenseHighScore: 0,
+          weeklyFaucetClaims: 0,
+          weeklyGamesPlayed: 0,
+          weeklyActiveTier: 0
+        });
+        if (typeof window.syncProfileWithDb === 'function') {
+          window.syncProfileWithDb();
+        }
+      }
+    }
+    lastCheckedWeek = currentWeek;
+
+    const nextSunday = new Date(now.getTime());
+    const daysUntilSunday = (7 - now.getUTCDay()) % 7;
+    
+    nextSunday.setUTCDate(now.getUTCDate() + daysUntilSunday);
+    nextSunday.setUTCHours(23, 59, 59, 999);
+
+    const diff = nextSunday.getTime() - now.getTime();
+    if (diff > 0) {
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const mins = Math.floor((diff / 1000 / 60) % 60);
+
+      const dStr = days + 'd';
+      const hStr = hours.toString().padStart(2, '0') + 'h';
+      const mStr = mins.toString().padStart(2, '0') + 'm';
+      const timeStr = `Resets: ${dStr} ${hStr} ${mStr}`;
+      
+      document.querySelectorAll('.leaderboard-reset-timer').forEach(el => {
+        el.innerText = timeStr;
+      });
+    }
+  }
+
+  updateTimers();
+  setInterval(updateTimers, 60000);
+}
+
+// Fullscreen Mobile Game Canvas Helpers
+window.openMobileGameFullscreen = function() {
+  const container = document.getElementById('game-window-container');
+  if (!container) return;
+
+  container.classList.add('fullscreen-active');
+  document.body.classList.add('game-fullscreen-open');
+
+  // On mobile touch devices (Android & iOS), do NOT call native container.requestFullscreen():
+  // Android Chrome displays an unskippable system toast ("domain.com - to exit full screen...")
+  // that obscures bottom buttons and HUD controls.
+  // The CSS 'fullscreen-active' class already provides an immersive 100vw/100vh viewport takeover
+  // with zero OS popups and clean touch targets!
+  const isMobile = (window.innerWidth <= 768 || window.innerHeight <= 500 || ('ontouchstart' in window));
+  if (!isMobile) {
+    if (container.requestFullscreen) {
+      container.requestFullscreen().catch(() => {});
+    } else if (container.webkitRequestFullscreen) {
+      container.webkitRequestFullscreen();
+    }
+  }
+
+  setTimeout(() => window.dispatchEvent(new Event('resize')), 80);
+};
+
+window.toggleGameFullscreen = function() {
+  const container = document.getElementById('game-window-container');
+  if (!container) return;
+
+  const isFullscreen = container.classList.contains('fullscreen-active');
+  if (isFullscreen) {
+    window.exitGameFullscreen();
+  } else {
+    window.openMobileGameFullscreen();
+  }
+};
+
+window.exitGameFullscreen = function() {
+  const container = document.getElementById('game-window-container');
+  if (container) container.classList.remove('fullscreen-active');
+  document.body.classList.remove('game-fullscreen-open');
+
+  document.body.style.overflow = '';
+  document.body.style.touchAction = '';
+
+  if (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement) {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    } else if (document.mozCancelFullScreen) {
+      document.mozCancelFullScreen();
+    }
+  }
+
+  // Trigger game resize handlers immediately and after transition
+  const triggerResizes = () => {
+    if (window.cyberStacker && typeof window.cyberStacker.resize === 'function') window.cyberStacker.resize();
+    if (window.skeetEngine && typeof window.skeetEngine.resizeCanvas === 'function') window.skeetEngine.resizeCanvas();
+    if (window.cyberDrift && typeof window.cyberDrift.resize === 'function') window.cyberDrift.resize();
+    if (window.defenseEngine && typeof window.defenseEngine.resizeCanvas === 'function') window.defenseEngine.resizeCanvas();
+    if (window.cyberTetrisGame && typeof window.cyberTetrisGame.resizeCanvases === 'function') window.cyberTetrisGame.resizeCanvases();
+    window.dispatchEvent(new Event('resize'));
+  };
+
+  triggerResizes();
+  setTimeout(triggerResizes, 100);
+};
+
+['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+  document.addEventListener(evt, () => {
+    const isFS = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
+    if (!isFS) {
+      const container = document.getElementById('game-window-container');
+      if (container) container.classList.remove('fullscreen-active');
+      document.body.classList.remove('game-fullscreen-open');
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+
+      if (window.cyberStacker && typeof window.cyberStacker.resize === 'function') window.cyberStacker.resize();
+      if (window.skeetEngine && typeof window.skeetEngine.resizeCanvas === 'function') window.skeetEngine.resizeCanvas();
+      if (window.cyberDrift && typeof window.cyberDrift.resize === 'function') window.cyberDrift.resize();
+      if (window.defenseEngine && typeof window.defenseEngine.resizeCanvas === 'function') window.defenseEngine.resizeCanvas();
+      if (window.cyberTetrisGame && typeof window.cyberTetrisGame.resizeCanvases === 'function') window.cyberTetrisGame.resizeCanvases();
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 80);
+    }
+  });
+});
+
+// --- Global Security & Runtime Anomaly Monitor ---
+window.addEventListener('error', (e) => {
+  if (typeof window.sendAdminAlert === 'function' && e.message) {
+    const filename = (e.filename || '').toLowerCase();
+    const msg = (e.message || '').toLowerCase();
+    
+    // Filter out third-party browser extension noise, mobile browser injections (e.g. Chrome iOS __gCrWeb), & cancelled OAuth states
+    if (
+      msg.includes('script error') ||
+      (e.lineno === 0 && e.colno === 0 && !e.filename) ||
+      filename.includes('inject') || 
+      filename.includes('extension') || 
+      filename.includes('contentscript') ||
+      filename.includes('core.mjs') ||
+      msg.includes('__gcrweb') ||
+      msg.includes('gcrweb') ||
+      msg.includes('bad_oauth_state') ||
+      msg.includes('oauth state not found') ||
+      msg.includes('user rejected') ||
+      msg.includes('user denied') ||
+      msg.includes('terminate is not a function') ||
+      msg.includes('invalid or unexpected token')
+    ) {
+      return;
+    }
+
+    if (window._lastLoggedError === e.message) return; // Prevent spamming duplicate errors
+    window._lastLoggedError = e.message;
+    
+    window.sendAdminAlert({
+      category: 'RUNTIME ERROR',
+      title: '❌ Client-Side Exception Caught',
+      description: `\`\`\`js\n${e.message.substring(0, 300)}\n\`\`\``,
+      color: 0xFF9900,
+      fields: [
+        { name: "Source", value: `${(e.filename || 'app.js').split('/').pop()}:${e.lineno}:${e.colno}`, inline: true }
+      ]
+    });
+  }
+});
+
+// --- Unhandled Promise Rejection Sentinel ---
+window.addEventListener('unhandledrejection', (event) => {
+  const reason = event.reason;
+  const reasonStr = (typeof reason === 'object' && reason !== null)
+    ? (reason.message || reason.details || reason.stack || JSON.stringify(reason) || '')
+    : String(reason || '');
+  const lowerMsg = reasonStr.toLowerCase();
+
+  // 1. Suppress browser extension message channel / port disconnect noise (MetaMask, Coinbase, Phantom, etc.)
+  // e.g. "A listener indicated an asynchronous response by returning true, but the message channel closed before a response was received"
+  if (
+    lowerMsg.includes('message channel closed') ||
+    lowerMsg.includes('listener indicated an asynchronous response') ||
+    lowerMsg.includes('message port closed') ||
+    lowerMsg.includes('could not establish connection') ||
+    lowerMsg.includes('user rejected') ||
+    lowerMsg.includes('user denied') ||
+    lowerMsg.includes('chrome-extension://') ||
+    lowerMsg.includes('moz-extension://')
+  ) {
+    event.preventDefault(); // Prevents "Uncaught (in promise)" in browser console
+    return;
+  }
+
+  // 2. Suppress transient network connectivity / connection timeouts
+  if (
+    lowerMsg.includes('err_connection_timed_out') ||
+    lowerMsg.includes('connection timed out') ||
+    lowerMsg.includes('failed to fetch') ||
+    lowerMsg.includes('network request failed') ||
+    lowerMsg.includes('networkerror') ||
+    lowerMsg.includes('load failed')
+  ) {
+    event.preventDefault();
+    console.warn('[PolyGame Network Notice] Handled background network timeout gracefully:', reasonStr.substring(0, 150));
+    return;
+  }
+});
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', initializeApp);
+} else {
+  initializeApp();
+}
+
+
+// --- Global Arcade Game Replay Keyboard Shortcut (Space / Enter on Game Over) ---
+window.addEventListener('keydown', (e) => {
+  if (e.code !== 'Space' && e.code !== 'Enter') return;
+  const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+  if (activeTag === 'input' || activeTag === 'textarea' || document.activeElement?.isContentEditable) return;
+
+  // 1. Cyber Drift
+  const driftOver = document.getElementById('drift-gameover-screen');
+  if (driftOver && driftOver.style.display !== 'none' && !driftOver.classList.contains('hidden')) {
+    e.preventDefault();
+    if (typeof window.startCyberDrift === 'function') window.startCyberDrift();
+    return;
+  }
+
+  // 2. Astro-Dodge
+  const astroOver = document.getElementById('game-ui-overlay');
+  const astroTitle = document.getElementById('game-overlay-title');
+  if (astroOver && astroOver.style.display !== 'none' && !astroOver.classList.contains('hidden') && astroTitle && astroTitle.innerText.includes('CRASHED')) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-start-game');
+    if (btn) btn.click();
+    return;
+  }
+
+  // 3. Cyber Invaders
+  const invadersOver = document.getElementById('invaders-ui-overlay');
+  const invadersTitle = document.getElementById('invaders-overlay-title');
+  if (invadersOver && invadersOver.style.display !== 'none' && !invadersOver.classList.contains('hidden') && invadersTitle && invadersTitle.innerText.includes('GAME OVER')) {
+    e.preventDefault();
+    if (typeof window.startInvadersGame === 'function') window.startInvadersGame();
+    return;
+  }
+
+  // 4. Cyber Stacker
+  const stackerOver = document.getElementById('stacker-gameover-screen');
+  if (stackerOver && stackerOver.style.display !== 'none' && !stackerOver.classList.contains('hidden')) {
+    e.preventDefault();
+    if (typeof window.launchCyberStackerGame === 'function') window.launchCyberStackerGame();
+    return;
+  }
+
+  // 5. Cyber Runner
+  const runnerOver = document.getElementById('runner-gameover-screen');
+  if (runnerOver && runnerOver.style.display !== 'none' && !runnerOver.classList.contains('hidden')) {
+    e.preventDefault();
+    if (typeof window.startCyberRunner === 'function') window.startCyberRunner();
+    return;
+  }
+
+  // 6. Quantum 2048
+  const q2048Over = document.getElementById('q2048-gameover-screen');
+  if (q2048Over && q2048Over.style.display !== 'none' && !q2048Over.classList.contains('hidden')) {
+    e.preventDefault();
+    if (typeof window.startCyber2048 === 'function') window.startCyber2048();
+    return;
+  }
+
+  // 7. Cyber Tetris
+  const tetrisOver = document.getElementById('tetris-gameover-screen');
+  if (tetrisOver && tetrisOver.style.display !== 'none' && !tetrisOver.classList.contains('hidden')) {
+    e.preventDefault();
+    if (typeof window.startCyberTetris === 'function') window.startCyberTetris();
+    return;
+  }
+});
