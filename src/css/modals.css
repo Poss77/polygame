@@ -10,7 +10,7 @@
   display: none;
   align-items: center;
   justify-content: center;
-  z-index: 1000000;
+  z-index: 100000000 !important; /* Higher than .game-window-container.fullscreen-active (99999999) */
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s ease;
@@ -18,8 +18,9 @@
 
 .modal-overlay.active {
   display: flex !important;
-  opacity: 1;
-  pointer-events: auto;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  z-index: 100000000 !important;
 }
 
 .modal-content {

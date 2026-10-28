@@ -243,10 +243,10 @@
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Modals & WalletConnect Popups */
+  /* Modals & WalletConnect Popups (Must sit above .game-window-container.fullscreen-active: 99999999) */
   .modal-overlay {
     align-items: center;
-    z-index: 1000000 !important;
+    z-index: 100000000 !important;
     padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important;
   }
 
@@ -259,17 +259,17 @@
   #w3m-container,
   [class*="w3m"],
   [class*="wcm"] {
-    z-index: 10000000 !important;
+    z-index: 100000000 !important;
   }
 
-  /* Notification Stack positioning above Mobile Bottom Nav */
+  /* Notification Stack positioning above Mobile Bottom Nav and Modals */
   .notification-container {
     bottom: calc(75px + env(safe-area-inset-bottom)) !important;
     right: 0.75rem !important;
     left: 0.75rem !important;
     width: calc(100vw - 1.5rem) !important;
     max-width: 400px !important;
-    z-index: 20000000 !important;
+    z-index: 100000005 !important;
   }
   
   .modal-content {

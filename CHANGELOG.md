@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PLAN-020: Fix Mobile Fullscreen Modal Stacking & Z-Index Hierarchy (`v1.5.730`)**:
+  - **📱 Modal Stacking Resolution ([`src/css/modals.css`](src/css/modals.css), [`src/css/mobile.css`](src/css/mobile.css), [`index.html`](index.html))**:
+    - Fixed stacking context conflict where `.game-window-container.fullscreen-active` (`z-index: 99999999 !important;`) eclipsed `.modal-overlay` on mobile devices (`z-index: 10000000 !important;`).
+    - Elevated `.modal-overlay` and `.modal-overlay.active` across desktop and responsive mobile stylesheets to `z-index: 100000000 !important;`.
+    - Maintained `.notification-container` at `z-index: 100000005 !important;` to ensure system notifications stay atop modal dialogs.
+    - Wordle and Sudoku statistics dialogs now render above the fullscreen game viewport on all mobile and desktop devices.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.730"` and refreshed asset queries.
+
 - **PLAN-020: Fix Ambassador Multiplier to Canonical 2.0x in Daily Games (`v1.5.729`)**:
   - **🛡️ Multiplier Alignment ([`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/fix_daily_games_payout_rpc.sql`](supabase/fix_daily_games_payout_rpc.sql))**:
     - Corrected Ambassador multiplier from `1.10x` to canonical `2.0x` across `submit_wordle_guess` and `claim_daily_sudoku_reward`.
