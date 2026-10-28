@@ -1,5 +1,5 @@
 /**
- * Polygon Gaming - Referral Adoption Marketplace (Private Hidden Preview)
+ * Polygon Gaming - Referral Adoption Marketplace
  * Allows players to inspect unreferred players by weekly activity tier and adopt them
  * using POL (Polygon Web3) or PGT Token balance, with volume and VIP tier discounts.
  */

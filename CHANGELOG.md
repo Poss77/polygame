@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Referral Adoption Marketplace: Production Launch & Full Security Audit (`v1.5.745`)**:
+  - **🚀 Official Production Launch ([`index.html`](index.html), [`src/js/app.js`](src/js/app.js), [`src/js/features/referral-shop.js`](src/js/features/referral-shop.js))**:
+    - Removed all "New Feature Preview", "Private Preview", and "Fictive Pricing" labels and banners across the Affiliate Network hub and marketplace view.
+    - Updated entry badge to **`🛒 Official Marketplace`** with polished solid borders and direct CTA (`Open Marketplace →`).
+    - Streamlined checkout modal title, hero badges, and navigation headers for production launch.
+  - **🛡️ Comprehensive Security Audit & Invariants Verification**:
+    - Validated anti-replay protection backed by unique database index `idx_nft_sales_tx_hash` on `LOWER(tx_hash)`.
+    - Verified strict 64-hex transaction hash regex validation and server-side settlement recording.
+    - Verified caller authentication guard (`assert_caller_player_id`) preventing identity spoofing.
+    - Verified circular adoption / self-adoption / ancestor-adoption prevention logic.
+    - Verified concurrency safety with row-level locks (`FOR UPDATE SKIP LOCKED`).
+    - Confirmed zero direct balance mutations and strict `SECURITY INVOKER` posture on anti-cheat trigger.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.745"` and refreshed script cache busters.
+
 - **Referral Marketplace: Replace "10x Boost" with "Max Boost" Terminology (`v1.5.744`)**:
   - **⚡ Label & Copy Streamlining ([`src/js/features/referral-shop.js`](src/js/features/referral-shop.js))**:
     - Replaced all occurrences of `(10x Boost)` with `(Max Boost)` across each referral tier card (`⚡ Up to X PGT/wk (Max Boost)`).
