@@ -2982,6 +2982,9 @@ async function syncAuthenticatedUser(user) {
       if (typeof window.loadPlayerMessages === 'function') {
         window.loadPlayerMessages();
       }
+      if (typeof window.refreshDailyGamesHubStatus === 'function') {
+        window.refreshDailyGamesHubStatus();
+      }
 
       // Ensure active view panel is rendered (guarantees Dashboard is populated)
       const currentActivePanel = document.querySelector('.view-panel.active');

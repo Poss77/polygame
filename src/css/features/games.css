@@ -2203,3 +2203,313 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
 
 
 
+
+
+/* ============================================================
+   DAILY CYBER GAMES HUB (PLAN-020): WORDLE & SUDOKU STYLES
+   ============================================================ */
+
+/* Wordle Container & Grid */
+.wordle-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.wordle-grid {
+  display: grid;
+  grid-template-rows: repeat(6, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 5 / 6;
+  margin: 0 auto;
+}
+
+.wordle-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.wordle-tile {
+  aspect-ratio: 1 / 1;
+  border: 2px solid rgba(0, 240, 255, 0.25);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #fff;
+  text-transform: uppercase;
+  background: rgba(8, 14, 28, 0.7);
+  box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.05);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+}
+
+.wordle-tile.pop {
+  transform: scale(1.1);
+  border-color: var(--color-primary);
+}
+
+.wordle-tile.green {
+  background: linear-gradient(135deg, #00c853, #009624);
+  border-color: #00e676;
+  box-shadow: 0 0 15px rgba(0, 230, 118, 0.5);
+  animation: flipTile 0.5s ease forwards;
+}
+
+.wordle-tile.yellow {
+  background: linear-gradient(135deg, #ffd600, #ff9100);
+  border-color: #ffea00;
+  box-shadow: 0 0 15px rgba(255, 214, 0, 0.5);
+  color: #000;
+  animation: flipTile 0.5s ease forwards;
+}
+
+.wordle-tile.gray {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--text-muted);
+  animation: flipTile 0.5s ease forwards;
+}
+
+@keyframes flipTile {
+  0% { transform: rotateX(0deg); }
+  50% { transform: rotateX(90deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+/* Wordle Keyboard */
+.wordle-keyboard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.wordle-kb-row {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.wordle-key {
+  height: 48px;
+  min-width: 32px;
+  flex: 1;
+  background: rgba(18, 26, 46, 0.9);
+  border: 1px solid var(--border-glass);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.1s ease;
+}
+
+.wordle-key:active {
+  transform: translateY(2px);
+  background: var(--color-primary);
+  color: #000;
+}
+
+.wordle-key.wide {
+  flex: 1.5;
+  font-size: 0.78rem;
+  background: rgba(30, 42, 70, 0.9);
+}
+
+.wordle-key.green {
+  background: #00c853 !important;
+  color: #fff !important;
+  border-color: #00e676 !important;
+}
+
+.wordle-key.yellow {
+  background: #ffab00 !important;
+  color: #000 !important;
+  border-color: #ffd600 !important;
+}
+
+.wordle-key.gray {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.25) !important;
+  border-color: transparent !important;
+}
+
+/* Sudoku 9x9 Board */
+.sudoku-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.sudoku-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(9, 1fr);
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 1 / 1;
+  background: rgba(6, 10, 22, 0.9);
+  border: 3px solid var(--border-cyan);
+  border-radius: 8px;
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.15);
+  margin: 0 auto;
+  user-select: none;
+}
+
+.sudoku-cell {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.12s ease;
+}
+
+/* 3x3 Box Thick Borders */
+.sudoku-cell:nth-child(3n) {
+  border-right: 2px solid var(--border-cyan);
+}
+.sudoku-cell:nth-child(9n) {
+  border-right: none;
+}
+.sudoku-cell:nth-child(n+19):nth-child(-n+27),
+.sudoku-cell:nth-child(n+46):nth-child(-n+54) {
+  border-bottom: 2px solid var(--border-cyan);
+}
+
+.sudoku-cell.clue {
+  color: var(--color-primary);
+  font-weight: 900;
+  cursor: default;
+}
+
+.sudoku-cell.selected {
+  background: rgba(0, 240, 255, 0.3) !important;
+  box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.6);
+}
+
+.sudoku-cell.crosshair {
+  background: rgba(0, 240, 255, 0.08);
+}
+
+.sudoku-cell.same-num {
+  background: rgba(255, 170, 0, 0.2);
+}
+
+.sudoku-cell.error {
+  color: var(--color-danger) !important;
+  background: rgba(255, 0, 85, 0.25) !important;
+  animation: shakeCell 0.3s ease;
+}
+
+@keyframes shakeCell {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+/* Sudoku Pencil Notes (Mini 3x3 inside cell) */
+.sudoku-notes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: 100%;
+  height: 100%;
+  padding: 2px;
+  box-sizing: border-box;
+}
+
+.sudoku-note-num {
+  font-size: 0.55rem;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Sudoku Controls & Keypad */
+.sudoku-controls {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 420px;
+  gap: 8px;
+}
+
+.sudoku-ctrl-btn {
+  flex: 1;
+  padding: 0.6rem 0.5rem;
+  background: rgba(18, 26, 46, 0.85);
+  border: 1px solid var(--border-glass);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.sudoku-ctrl-btn.active {
+  background: var(--color-accent);
+  color: #000;
+  border-color: var(--color-accent);
+}
+
+.sudoku-keypad {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 6px;
+  width: 100%;
+  max-width: 420px;
+}
+
+.sudoku-key {
+  aspect-ratio: 1 / 1;
+  background: rgba(18, 26, 46, 0.95);
+  border: 1px solid var(--border-glass);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 900;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s ease;
+  user-select: none;
+}
+
+.sudoku-key:active {
+  transform: scale(0.92);
+  background: var(--color-primary);
+  color: #000;
+}

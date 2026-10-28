@@ -372,7 +372,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.720">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.721">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -1244,6 +1244,7 @@
         <!-- Game Categories Tabs -->
         <div class="nft-view-tabs" id="games-category-tabs" style="margin-bottom: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.5rem;">
           <button class="nft-tab active" id="tab-category-earn" onclick="switchGameCategory('earn')">Mini-Games (Earn)</button>
+          <button class="nft-tab" id="tab-category-daily" onclick="switchGameCategory('daily')">📅 Daily Games</button>
           <button class="nft-tab" id="tab-category-bet" onclick="switchGameCategory('bet')">Win PGT (Bet)</button>
         </div>
 
@@ -1374,6 +1375,71 @@
             <h3 style="color:#d500f9; margin-bottom:0.3rem;">Cyber Tetris</h3>
             <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom: 0.4rem;">Neon falling-block matrix puzzle!</p>
             <span style="font-size:0.72rem; color:var(--color-primary); font-weight:700;">⚡ 7-Bag SRS • Exponential Gravity • 3-Min Surge</span>
+          </div>
+        </div>
+
+        <!-- Category Grid: Daily Cyber Games Hub (PLAN-020) -->
+        <div id="grid-category-daily" style="margin-bottom: 2rem; display: none;">
+          <!-- Top Cyber Hub Dashboard -->
+          <div class="daily-hub-banner card" style="background: linear-gradient(135deg, rgba(16, 24, 48, 0.95), rgba(8, 12, 28, 0.95)); border: 1px solid var(--border-cyan); border-radius: var(--border-radius-lg); padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 0 25px rgba(0, 242, 254, 0.12);">
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem;">
+              <div>
+                <div style="font-size: 0.8rem; font-weight: 800; color: var(--color-primary); letter-spacing: 2px; text-transform: uppercase;">
+                  📅 DAILY CYBER LOGIC MATRIX
+                </div>
+                <h2 style="font-size: 1.6rem; font-weight: 900; margin: 0.25rem 0; color: #fff; text-shadow: 0 0 10px rgba(0, 242, 254, 0.5);">
+                  Cryptographic Daily Challenges
+                </h2>
+                <div style="font-size: 0.85rem; color: var(--text-muted);">
+                  Solve today's unique puzzles to earn guaranteed PGT and build your Daily Logic Streak! Refreshes at 00:00 UTC.
+                </div>
+              </div>
+
+              <!-- Quick Status & Countdown Widget -->
+              <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+                <div class="daily-stat-badge" style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.5rem 1rem; text-align: center;">
+                  <span style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; display: block;">NEXT RESET (UTC)</span>
+                  <strong id="daily-hub-countdown" style="font-size: 1.15rem; color: var(--color-accent); font-family: monospace;">--:--:--</strong>
+                </div>
+
+                <div class="daily-stat-badge" style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.5rem 1rem; text-align: center;">
+                  <span style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; display: block;">DAILY STREAK</span>
+                  <strong id="daily-logic-streak-badge" style="font-size: 1.15rem; color: #ffb700;">🔥 0 Days</strong>
+                </div>
+
+                <div class="daily-stat-badge" style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.5rem 1rem; text-align: center;">
+                  <span style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; display: block;">TODAY'S MATRIX</span>
+                  <strong id="daily-matrix-progress-badge" style="font-size: 1.15rem; color: var(--color-success);">0 / 2 Done</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cards Grid for Wordle and Sudoku -->
+          <div class="nft-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+            <!-- Game 1: Cyber Wordle -->
+            <div class="card nft-card" data-game-key="wordle" id="game-card-wordle" onclick="switchGameModeView('wordle')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem; position: relative; border-color: var(--color-primary); box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);">
+              <div class="game-tile-badges" style="position:absolute; top: 12px; right: 12px; display:flex; flex-direction:column; align-items:flex-end; gap:4px; z-index:5;">
+                <span class="badge" id="badge-daily-wordle-status" style="background: rgba(0, 240, 255, 0.2); color: var(--color-primary); border: 1px solid var(--color-primary); font-size: 0.65rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 4px;">AVAILABLE</span>
+              </div>
+              <div style="width: 54px; height: 54px; background: rgba(0, 240, 255, 0.1); border: 1px solid var(--color-primary); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 1rem; text-shadow: 0 0 10px var(--color-primary);">🔠</div>
+              <h3 style="color:var(--color-primary); margin-bottom:0.3rem;">Cyber Wordle</h3>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom: 0.4rem;">5-Letter Cryptographic Cipher • 6 Attempts</p>
+              <span style="font-size:0.75rem; color:var(--color-success); font-weight:700;">💎 20 PGT Base • Up to 40 PGT Accuracy Bonus</span>
+              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.5rem;">Unique seeded word per player • 1 Play / Day</div>
+            </div>
+
+            <!-- Game 2: Cyber Sudoku -->
+            <div class="card nft-card" data-game-key="sudoku" id="game-card-sudoku" onclick="switchGameModeView('sudoku')" style="cursor:pointer; display:flex; flex-direction:column; align-items:center; text-align:center; padding: 2rem; position: relative; border-color: var(--color-warning); box-shadow: 0 0 15px rgba(255, 170, 0, 0.15);">
+              <div class="game-tile-badges" style="position:absolute; top: 12px; right: 12px; display:flex; flex-direction:column; align-items:flex-end; gap:4px; z-index:5;">
+                <span class="badge" id="badge-daily-sudoku-status" style="background: rgba(255, 170, 0, 0.2); color: #ffb700; border: 1px solid #ffb700; font-size: 0.65rem; font-weight: 800; padding: 0.2rem 0.5rem; border-radius: 4px;">AVAILABLE</span>
+              </div>
+              <div style="width: 54px; height: 54px; background: rgba(255, 170, 0, 0.1); border: 1px solid var(--color-warning); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin-bottom: 1rem; text-shadow: 0 0 10px var(--color-warning);">🔢</div>
+              <h3 style="color:var(--color-warning); margin-bottom:0.3rem;">Cyber Sudoku</h3>
+              <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom: 0.4rem;">Choose: 🟢 Easy | 🟡 Medium | 🔴 Hard</p>
+              <span style="font-size:0.75rem; color:var(--color-warning); font-weight:700;">💎 15–25 PGT Base • +20% Flawless Solver Bonus</span>
+              <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.5rem;">Unique seeded board per player • 1 Play / Day</div>
+            </div>
           </div>
         </div>
 
@@ -2324,6 +2390,7 @@
                 </button>
               </div>
             </div>
+
           </div>
 
           <!-- Leaderboard Column (Populated dynamically by initArcadeLeaderboardCards in games-registry.js) -->
@@ -4531,6 +4598,110 @@
         </div>
       </div>
     </div>
+  <!-- Modal: Cyber Wordle Statistics (PLAN-020) -->
+  <div class="modal-overlay" id="modal-wordle-stats" style="display: none; pointer-events: none;">
+    <div class="modal-content" style="max-width: 440px; text-align: center; border: 1px solid var(--border-cyan); box-shadow: 0 0 35px rgba(0, 240, 255, 0.25);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h3 style="margin: 0; color: var(--color-primary); font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span>🔠</span> Cyber Wordle Statistics
+        </h3>
+        <button type="button" class="btn-close" onclick="closeModal('wordle-stats')">&times;</button>
+      </div>
+
+      <!-- Quick Stats Counters -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1.5rem;">
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.6rem 0.2rem;">
+          <div id="wordle-stat-played" style="font-size: 1.3rem; font-weight: 900; color: #fff;">0</div>
+          <div style="font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase;">Played</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.6rem 0.2rem;">
+          <div id="wordle-stat-winpct" style="font-size: 1.3rem; font-weight: 900; color: var(--color-success);">0%</div>
+          <div style="font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase;">Win %</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.6rem 0.2rem;">
+          <div id="wordle-stat-streak" style="font-size: 1.3rem; font-weight: 900; color: var(--color-accent);">0</div>
+          <div style="font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase;">Current</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.6rem 0.2rem;">
+          <div id="wordle-stat-maxstreak" style="font-size: 1.3rem; font-weight: 900; color: #ffb700;">0</div>
+          <div style="font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase;">Max</div>
+        </div>
+      </div>
+
+      <!-- Guess Distribution Histogram -->
+      <div style="text-align: left; margin-bottom: 1.5rem;">
+        <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.75rem; letter-spacing: 1px;">
+          Guess Distribution
+        </div>
+        <div id="wordle-dist-container" style="display: flex; flex-direction: column; gap: 6px;"></div>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem;">
+        <button type="button" class="btn-primary" onclick="window.shareWordleResult()" style="flex: 1; padding: 0.75rem;">
+          📋 Share Result
+        </button>
+        <button type="button" class="btn-secondary" onclick="closeModal('wordle-stats')" style="flex: 1; padding: 0.75rem;">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Cyber Sudoku Statistics (PLAN-020) -->
+  <div class="modal-overlay" id="modal-sudoku-stats" style="display: none; pointer-events: none;">
+    <div class="modal-content" style="max-width: 440px; text-align: center; border: 1px solid var(--color-warning); box-shadow: 0 0 35px rgba(255, 170, 0, 0.25);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h3 style="margin: 0; color: var(--color-warning); font-size: 1.2rem; display: flex; align-items: center; gap: 0.5rem;">
+          <span>🔢</span> Cyber Sudoku Statistics
+        </h3>
+        <button type="button" class="btn-close" onclick="closeModal('sudoku-stats')">&times;</button>
+      </div>
+
+      <!-- Quick Stats Counters -->
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin-bottom: 1.5rem;">
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.6rem 0.2rem;">
+          <div id="sudoku-stat-played" style="font-size: 1.3rem; font-weight: 900; color: #fff;">0</div>
+          <div style="font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase;">Solved</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.6rem 0.2rem;">
+          <div id="sudoku-stat-streak" style="font-size: 1.3rem; font-weight: 900; color: var(--color-accent);">0</div>
+          <div style="font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase;">Streak</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.6rem 0.2rem;">
+          <div id="sudoku-stat-maxstreak" style="font-size: 1.3rem; font-weight: 900; color: #ffb700;">0</div>
+          <div style="font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase;">Max</div>
+        </div>
+        <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-glass); border-radius: 8px; padding: 0.6rem 0.2rem;">
+          <div id="sudoku-stat-flawless" style="font-size: 1.3rem; font-weight: 900; color: var(--color-success);">0</div>
+          <div style="font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase;">Flawless</div>
+        </div>
+      </div>
+
+      <!-- Tier Breakdown & Best Times -->
+      <div style="text-align: left; margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+        <div style="font-size: 0.8rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.25rem; letter-spacing: 1px;">
+          Difficulty Records
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.25); padding: 0.6rem 0.8rem; border-radius: 6px; border-left: 3px solid #00e676;">
+          <span style="font-size: 0.85rem; font-weight: 700; color: #00e676;">🟢 Easy</span>
+          <span id="sudoku-record-easy" style="font-size: 0.85rem; font-family: monospace; color: #fff;">0 wins • Best: --:--</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.25); padding: 0.6rem 0.8rem; border-radius: 6px; border-left: 3px solid var(--color-primary);">
+          <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-primary);">🟡 Medium</span>
+          <span id="sudoku-record-med" style="font-size: 0.85rem; font-family: monospace; color: #fff;">0 wins • Best: --:--</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.25); padding: 0.6rem 0.8rem; border-radius: 6px; border-left: 3px solid #ff3366;">
+          <span style="font-size: 0.85rem; font-weight: 700; color: #ff3366;">🔴 Hard</span>
+          <span id="sudoku-record-hard" style="font-size: 0.85rem; font-family: monospace; color: #fff;">0 wins • Best: --:--</span>
+        </div>
+      </div>
+
+      <button type="button" class="btn-secondary" onclick="closeModal('sudoku-stats')" style="width: 100%; padding: 0.75rem;">
+        Close
+      </button>
+    </div>
+  </div>
+
   <!-- Faucet Claim Success & Game Exploration Modal -->
   <div class="modal-overlay" id="modal-faucet-success" style="display: none; pointer-events: none;">
     <div class="modal-content" style="max-width: 500px; text-align: center; border: 1px solid rgba(0, 240, 255, 0.4); box-shadow: 0 0 35px rgba(0, 240, 255, 0.25);">
@@ -4842,17 +5013,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.720"></script>
-  <script src="invaders.js?v=1.5.720"></script>
-  <script src="drift.js?v=1.5.720"></script>
-  <script src="stacker.js?v=1.5.720"></script>
-  <script src="space.js?v=1.5.720"></script>
-  <script type="module" src="skeet.js?v=1.5.720"></script>
-  <script type="module" src="defense.js?v=1.5.720"></script>
-  <script type="module" src="runner.js?v=1.5.720"></script>
-  <script type="module" src="q2048.js?v=1.5.720"></script>
-  <script src="tetris.js?v=1.5.720"></script>
-  <script type="module" src="src/js/app.js?v=1.5.720"></script>
+  <script src="game.js?v=1.5.721"></script>
+  <script src="invaders.js?v=1.5.721"></script>
+  <script src="drift.js?v=1.5.721"></script>
+  <script src="stacker.js?v=1.5.721"></script>
+  <script src="space.js?v=1.5.721"></script>
+  <script type="module" src="skeet.js?v=1.5.721"></script>
+  <script type="module" src="defense.js?v=1.5.721"></script>
+  <script type="module" src="runner.js?v=1.5.721"></script>
+  <script type="module" src="q2048.js?v=1.5.721"></script>
+  <script src="tetris.js?v=1.5.721"></script>
+  <script type="module" src="src/js/app.js?v=1.5.721"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

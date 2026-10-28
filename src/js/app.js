@@ -30,6 +30,9 @@ import './utils/confetti.js';
 import './core/anti-bot.js';
 import './features/arcade-security.js';
 import './features/messages.js';
+import './features/daily-hub.js';
+import './features/wordle.js';
+import './features/sudoku.js';
 // Note: Arcade game modules (skeet.js, defense.js, runner.js, q2048.js, tetris.js) are loaded via versioned script tags in index.html
 
 // Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
@@ -478,6 +481,14 @@ export function initializeApp() {
   // Pre-fetch player messages & unread notification badges (if already authenticated)
   if (typeof window.loadPlayerMessages === 'function' && appState.isPlayerConnected()) {
     window.loadPlayerMessages();
+  }
+
+  // Initialize Daily Cyber Games Hub status & live UTC countdown (PLAN-020)
+  if (typeof window.startDailyHubCountdown === 'function') {
+    window.startDailyHubCountdown();
+  }
+  if (typeof window.refreshDailyGamesHubStatus === 'function' && appState.isPlayerConnected()) {
+    window.refreshDailyGamesHubStatus();
   }
 
   startLeaderboardResetTimer();

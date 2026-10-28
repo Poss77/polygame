@@ -19,15 +19,19 @@ if (typeof window !== 'undefined') {
 
 export function switchGameCategory(category) {
   const tabEarn = document.getElementById('tab-category-earn');
+  const tabDaily = document.getElementById('tab-category-daily');
   const tabBet = document.getElementById('tab-category-bet');
 
   const gridEarn = document.getElementById('grid-category-earn');
+  const gridDaily = document.getElementById('grid-category-daily');
   const gridBet = document.getElementById('grid-category-bet');
 
   if (tabEarn) tabEarn.classList.remove('active');
+  if (tabDaily) tabDaily.classList.remove('active');
   if (tabBet) tabBet.classList.remove('active');
 
   if (gridEarn) { gridEarn.style.display = 'none'; gridEarn.classList.remove('grid-category-hidden'); }
+  if (gridDaily) { gridDaily.style.display = 'none'; gridDaily.classList.remove('grid-category-hidden'); }
   if (gridBet) { gridBet.style.display = 'none'; gridBet.classList.remove('grid-category-hidden'); }
 
   if (category === 'earn' && tabEarn && gridEarn) {
@@ -35,6 +39,12 @@ export function switchGameCategory(category) {
     gridEarn.style.display = 'grid';
     if (typeof loadTopWeeklyArcadePlayers === 'function') {
       loadTopWeeklyArcadePlayers();
+    }
+  } else if (category === 'daily' && tabDaily && gridDaily) {
+    tabDaily.classList.add('active');
+    gridDaily.style.display = 'block';
+    if (typeof window.refreshDailyGamesHubStatus === 'function') {
+      window.refreshDailyGamesHubStatus();
     }
   } else if (category === 'bet' && tabBet && gridBet) {
     tabBet.classList.add('active');
@@ -112,7 +122,8 @@ export function closeGameView() {
     const panelIds = [
       'panel-game-arcade', 'panel-game-invaders', 'panel-game-drift', 'panel-game-stacker', 'panel-game-skeet', 'panel-game-defense',
       'panel-game-runner', 'panel-game-q2048', 'panel-game-tetris',
-      'panel-game-roshambo', 'panel-game-spinner', 'panel-game-crash', 'panel-game-plinko', 'panel-game-mines'
+      'panel-game-roshambo', 'panel-game-spinner', 'panel-game-crash', 'panel-game-plinko', 'panel-game-mines',
+      'panel-game-wordle', 'panel-game-sudoku'
     ];
     panelIds.forEach(id => {
       const el = document.getElementById(id);
@@ -258,7 +269,7 @@ export function switchGameModeView(mode) {
   const isAdmin = window.appState && window.appState.state && window.appState.state.isAdmin;
 
   const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
-  const gameKeyMap = { 'arcade': 'astrododge', 'invaders': 'invaders', 'drift': 'drift', 'catcher': 'stacker', 'stacker': 'stacker', 'skeet': 'skeet', 'defense': 'defense', 'runner': 'runner', 'q2048': 'q2048', 'tetris': 'tetris', 'roshambo': 'roshambo', 'spinner': 'spinner', 'plinko': 'plinko', 'crash': 'crash', 'mines': 'mines' };
+  const gameKeyMap = { 'arcade': 'astrododge', 'invaders': 'invaders', 'drift': 'drift', 'catcher': 'stacker', 'stacker': 'stacker', 'skeet': 'skeet', 'defense': 'defense', 'runner': 'runner', 'q2048': 'q2048', 'tetris': 'tetris', 'roshambo': 'roshambo', 'spinner': 'spinner', 'plinko': 'plinko', 'crash': 'crash', 'mines': 'mines', 'wordle': 'wordle', 'sudoku': 'sudoku' };
   const gKey = gameKeyMap[mode] || mode;
 
   // Test Mode Whitelist Guard (Blocks non-testers from launching test_mode games)
@@ -288,6 +299,7 @@ export function switchGameModeView(mode) {
   const tabsContainer = document.getElementById('games-category-tabs');
   
   const gridEarn = document.getElementById('grid-category-earn');
+  const gridDaily = document.getElementById('grid-category-daily');
   const gridBet = document.getElementById('grid-category-bet');
 
   if (activeContainer) {
@@ -298,6 +310,7 @@ export function switchGameModeView(mode) {
   if (tabsContainer) tabsContainer.style.display = 'flex';
   
   if (gridEarn) { gridEarn.style.display = 'none'; gridEarn.classList.add('grid-category-hidden'); }
+  if (gridDaily) { gridDaily.style.display = 'none'; gridDaily.classList.add('grid-category-hidden'); }
   if (gridBet) { gridBet.style.display = 'none'; gridBet.classList.add('grid-category-hidden'); }
 
   const panelArcade = document.getElementById('panel-game-arcade');
@@ -314,6 +327,8 @@ export function switchGameModeView(mode) {
   const panelCrash = document.getElementById('panel-game-crash');
   const panelPlinko = document.getElementById('panel-game-plinko');
   const panelMines = document.getElementById('panel-game-mines');
+  const panelWordle = document.getElementById('panel-game-wordle');
+  const panelSudoku = document.getElementById('panel-game-sudoku');
 
   const lbArcade = document.getElementById('leaderboard-col-arcade');
   const lbInvaders = document.getElementById('leaderboard-col-invaders');
@@ -339,7 +354,9 @@ export function switchGameModeView(mode) {
     { el: panelSpinner, key: 'spinner' },
     { el: panelCrash, key: 'crash' },
     { el: panelPlinko, key: 'plinko' },
-    { el: panelMines, key: 'mines' }
+    { el: panelMines, key: 'mines' },
+    { el: panelWordle, key: 'wordle' },
+    { el: panelSudoku, key: 'sudoku' }
   ];
 
   allPanels.forEach(({ el }) => {
@@ -561,6 +578,18 @@ export function switchGameModeView(mode) {
     }
     if (window.updateMinesWagerLabels) window.updateMinesWagerLabels();
     if (window.renderMinesBoard) window.renderMinesBoard();
+  } else if (mode === 'wordle') {
+    if (panelWordle) {
+      panelWordle.style.removeProperty('display');
+      panelWordle.style.display = 'flex';
+    }
+    if (typeof window.initWordleGame === 'function') window.initWordleGame();
+  } else if (mode === 'sudoku') {
+    if (panelSudoku) {
+      panelSudoku.style.removeProperty('display');
+      panelSudoku.style.display = 'flex';
+    }
+    if (typeof window.initSudokuGame === 'function') window.initSudokuGame();
   }
 
   // Automatically trigger full screen mode on mobile screens (≤768px width or landscape mobile ≤500px height)

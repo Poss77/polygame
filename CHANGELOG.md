@@ -5,6 +5,26 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PLAN-020: Daily Cyber Games Hub (Wordle & Sudoku) with Dedicated Daily Tab & Salted Seed Anti-Cheat (`v1.5.721`)**:
+  - **📅 Dedicated Daily Games Tab & Matrix Hub ([`index.html`](index.html), [`src/js/features/games.js`](src/js/features/games.js), [`src/js/features/daily-hub.js`](src/js/features/daily-hub.js))**:
+    - Added a dedicated top-level `[ 📅 Daily Games ]` category tab alongside `[ ⚡ Mini-Games (Earn) ]` and `[ 🎲 Win PGT (Bet) ]`.
+    - Integrated the Daily Cyber Logic Matrix dashboard featuring a live 00:00 UTC countdown timer, persistent Daily Logic Streak badge, and today's completion matrix (0/2, 1/2, 2/2 Double Mastery).
+  - **🔠 Cyber Wordle (5-Letter Cipher) ([`src/js/features/wordle.js`](src/js/features/wordle.js), [`src/js/features/wordle-words.js`](src/js/features/wordle-words.js))**:
+    - 5-letter cryptographic daily cipher with compact 5×6 tile grid, neon animations, virtual keyboard with color memory, and physical keyboard support.
+    - 20 PGT baseline reward + row precision accuracy bonuses (Row 1: +100% / Row 2: +50% / Row 3: +25%).
+    - Guess distribution histogram modal and spoiler-free emoji share copy for Discord & X.
+  - **🔢 Cyber Sudoku with Difficulty Choice ([`src/js/features/sudoku.js`](src/js/features/sudoku.js))**:
+    - 1 daily Sudoku puzzle per 24h cycle with player difficulty choice before start (🟢 Easy: 15 PGT, 🟡 Medium: 20 PGT, 🔴 Hard: 25 PGT).
+    - +20% Flawless Solver bonus for completing with 0 mistakes.
+    - 9×9 cyber grid with cell crosshair highlights, same-number highlighting, pencil candidate notes mode, undo, erase, mistake counter (max 3), and career stats modal.
+  - **🛡️ Server-Side Salted Seed Anti-Cheat ([`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Target secret words and Sudoku boards are uniquely derived per player ID via deterministic salted hash `Hash(player_id + salt + CURRENT_DATE)` to render Discord/alt answer sharing completely useless.
+    - Solutions are RLS locked and never exposed in browser DevTools.
+    - Strict velocity floors and maximum mistake limits enforced server-side.
+    - Assembled migration script [`supabase/daily_games_hub_phase2.sql`](supabase/daily_games_hub_phase2.sql).
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.721"` and refreshed asset queries.
+
 - **PolySpace: Rebalance Module Upgrade Mineral Costs (Option 1) (`v1.5.720`)**:
   - **⛏️ Rebalanced Iron & Titanium Base Costs ([`space.js`](space.js), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
     - Increased Base Iron upgrade cost from 40 to 80 (2.0x base).
