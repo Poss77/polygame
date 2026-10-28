@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PLAN-020: Fix Sudoku Clue Rendering (Zero Suppression) & Add Restart Control (`v1.5.732`)**:
+  - **🧩 Sudoku Grid Rendering & Local Draft Synchronization ([`src/js/features/sudoku.js`](src/js/features/sudoku.js), [`index.html`](index.html))**:
+    - Fixed zero rendering bug where pre-filled clue cells rendered as cyan `0`s when restored from stale browser drafts; clue cells now strictly display authoritative digits from `cluesMask`.
+    - Added stale draft invalidation in `restoreLocalDraft()` when puzzle `cluesMask` has changed.
+    - Added one-click `🔄 Restart` control to the Sudoku controls bar, allowing players to reset their board, mistake count, and timer to the clean starting grid anytime.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.732"` and refreshed asset queries.
+
 - **PLAN-020: Increase Easy Sudoku Clues to 60 Numbers (`v1.5.731`)**:
   - **🧩 Casual Easy Sudoku Calibration ([`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/update_easy_sudoku_60_clues.sql`](supabase/update_easy_sudoku_60_clues.sql), [`index.html`](index.html))**:
     - Upgraded all 25 Easy daily Sudoku puzzles from 50 clues to 60 pre-filled numbers (~58-62 clues), leaving only ~21 empty cells to solve.

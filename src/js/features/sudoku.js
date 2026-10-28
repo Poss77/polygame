@@ -145,8 +145,8 @@ function renderSudokuGrid() {
 
     if (isClue) {
       cellEl.classList.add('clue');
-      cellEl.innerText = val;
-    } else if (val > 0) {
+      cellEl.innerText = cluesMask[i]; // Always render clue digit from mask, never 0!
+    } else if (val > 0 && val <= 9) {
       cellEl.innerText = val;
     } else {
       // Render candidate notes if present
@@ -523,6 +523,7 @@ function saveLocalDraft() {
     const draft = {
       date: today,
       difficulty: activeDifficulty,
+      cluesMask,
       board: playerBoard,
       notes: notesBoard.map(s => Array.from(s)),
       timer: timerSeconds,
@@ -539,8 +540,21 @@ function restoreLocalDraft() {
     const draft = JSON.parse(raw);
     const today = new Date().toISOString().split('T')[0];
 
+    // If mask or puzzle has changed, discard stale draft
+    if (draft.cluesMask && draft.cluesMask !== cluesMask) {
+      localStorage.removeItem('polygame_sudoku_draft');
+      return;
+    }
+
     if (draft.date === today && draft.difficulty === activeDifficulty && Array.isArray(draft.board)) {
-      playerBoard = draft.board;
+      playerBoard = draft.board.map(v => parseInt(v, 10) || 0);
+      // Authoritatively ensure clues are never overwritten by 0s from a draft
+      for (let i = 0; i < 81; i++) {
+        const c = cluesMask[i];
+        if (c !== '0' && c !== '.' && c !== undefined) {
+          playerBoard[i] = parseInt(c, 10);
+        }
+      }
       if (Array.isArray(draft.notes)) {
         notesBoard = draft.notes.map(arr => new Set(arr));
       }
@@ -549,6 +563,27 @@ function restoreLocalDraft() {
     }
   } catch (e) {}
 }
+
+export function restartSudokuPuzzle() {
+  localStorage.removeItem('polygame_sudoku_draft');
+  mistakes = 0;
+  timerSeconds = 0;
+  playerBoard = new Array(81).fill(0);
+  notesBoard = Array.from({ length: 81 }, () => new Set());
+  moveHistory = [];
+  selectedCellIndex = null;
+  for (let i = 0; i < 81; i++) {
+    const char = cluesMask[i] || '0';
+    if (char !== '0' && char !== '.') {
+      playerBoard[i] = parseInt(char, 10);
+    }
+  }
+  renderSudokuGrid();
+  updateSudokuHud();
+  updateSudokuKeypadCounters();
+  if (triggerToast) triggerToast('Puzzle restarted fresh!', 'info');
+}
+window.restartSudokuPuzzle = restartSudokuPuzzle;
 
 /**
  * Attaches physical keyboard listener
