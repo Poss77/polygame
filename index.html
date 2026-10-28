@@ -372,7 +372,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.722">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.723">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -2449,7 +2449,7 @@
                   <div class="card" onclick="window.startDailySudokuGame('easy')" style="cursor: pointer; padding: 1rem 1.25rem; border: 1px solid rgba(0, 230, 118, 0.4); display: flex; justify-content: space-between; align-items: center; transition: transform 0.15s, box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 0 15px rgba(0,230,118,0.3)'" onmouseout="this.style.boxShadow='none'">
                     <div>
                       <div style="font-size: 1.1rem; font-weight: 800; color: #00e676;">🟢 EASY TIER</div>
-                      <div style="font-size: 0.8rem; color: var(--text-dim);">40-45 clues revealed • Beginner friendly</div>
+                      <div style="font-size: 0.8rem; color: var(--text-dim);">48-52 clues revealed • 5 mistakes buffer • Relaxed friendly</div>
                     </div>
                     <div style="text-align: right;">
                       <div style="font-size: 1.2rem; font-weight: 900; color: #00e676;">+50 PGT</div>
@@ -2521,7 +2521,7 @@
                   </div>
                 </div>
 
-                <!-- Control Buttons: Undo, Erase, Notes Mode -->
+                <!-- Control Buttons: Undo, Erase, Notes Mode, Hint -->
                 <div class="sudoku-controls">
                   <button type="button" class="sudoku-ctrl-btn" onclick="window.undoSudokuMove()">
                     <span style="font-size: 1.1rem;">↩️</span>
@@ -2535,19 +2535,23 @@
                     <span style="font-size: 1.1rem;">✏️</span>
                     <span id="label-sudoku-notes">Notes: OFF</span>
                   </button>
+                  <button type="button" class="sudoku-ctrl-btn" id="btn-sudoku-hint" onclick="window.useSudokuHint()" title="Reveal 1 correct cell (3 hints available)">
+                    <span style="font-size: 1.1rem;">💡</span>
+                    <span id="label-sudoku-hint">Hint (3)</span>
+                  </button>
                 </div>
 
                 <!-- 1-9 Number Input Keypad -->
                 <div class="sudoku-keypad">
-                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(1)">1</button>
-                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(2)">2</button>
-                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(3)">3</button>
-                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(4)">4</button>
-                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(5)">5</button>
-                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(6)">6</button>
-                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(7)">7</button>
-                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(8)">8</button>
-                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(9)">9</button>
+                  <button type="button" class="sudoku-key" id="sudoku-key-1" onclick="window.inputSudokuNumber(1)">1</button>
+                  <button type="button" class="sudoku-key" id="sudoku-key-2" onclick="window.inputSudokuNumber(2)">2</button>
+                  <button type="button" class="sudoku-key" id="sudoku-key-3" onclick="window.inputSudokuNumber(3)">3</button>
+                  <button type="button" class="sudoku-key" id="sudoku-key-4" onclick="window.inputSudokuNumber(4)">4</button>
+                  <button type="button" class="sudoku-key" id="sudoku-key-5" onclick="window.inputSudokuNumber(5)">5</button>
+                  <button type="button" class="sudoku-key" id="sudoku-key-6" onclick="window.inputSudokuNumber(6)">6</button>
+                  <button type="button" class="sudoku-key" id="sudoku-key-7" onclick="window.inputSudokuNumber(7)">7</button>
+                  <button type="button" class="sudoku-key" id="sudoku-key-8" onclick="window.inputSudokuNumber(8)">8</button>
+                  <button type="button" class="sudoku-key" id="sudoku-key-9" onclick="window.inputSudokuNumber(9)">9</button>
                 </div>
               </div>
 
@@ -5180,17 +5184,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.722"></script>
-  <script src="invaders.js?v=1.5.722"></script>
-  <script src="drift.js?v=1.5.722"></script>
-  <script src="stacker.js?v=1.5.722"></script>
-  <script src="space.js?v=1.5.722"></script>
-  <script type="module" src="skeet.js?v=1.5.722"></script>
-  <script type="module" src="defense.js?v=1.5.722"></script>
-  <script type="module" src="runner.js?v=1.5.722"></script>
-  <script type="module" src="q2048.js?v=1.5.722"></script>
-  <script src="tetris.js?v=1.5.722"></script>
-  <script type="module" src="src/js/app.js?v=1.5.722"></script>
+  <script src="game.js?v=1.5.723"></script>
+  <script src="invaders.js?v=1.5.723"></script>
+  <script src="drift.js?v=1.5.723"></script>
+  <script src="stacker.js?v=1.5.723"></script>
+  <script src="space.js?v=1.5.723"></script>
+  <script type="module" src="skeet.js?v=1.5.723"></script>
+  <script type="module" src="defense.js?v=1.5.723"></script>
+  <script type="module" src="runner.js?v=1.5.723"></script>
+  <script type="module" src="q2048.js?v=1.5.723"></script>
+  <script src="tetris.js?v=1.5.723"></script>
+  <script type="module" src="src/js/app.js?v=1.5.723"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

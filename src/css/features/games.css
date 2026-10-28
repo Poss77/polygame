@@ -2498,14 +2498,29 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
   border: 1px solid var(--border-glass);
   border-radius: 8px;
   color: #fff;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 900;
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  line-height: 1;
   transition: all 0.1s ease;
   user-select: none;
+}
+
+.sudoku-key-badge {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.sudoku-key.completed {
+  opacity: 0.45;
+  border-color: rgba(0, 230, 118, 0.4);
+  background: rgba(0, 230, 118, 0.08);
 }
 
 .sudoku-key:active {

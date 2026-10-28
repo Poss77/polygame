@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PLAN-020: Quality-of-Life Sudoku Polish (Easy Clues, Hints, 5 Mistakes Buffer & Keypad Counters) (`v1.5.723`)**:
+  - **🔢 Easy Sudoku Clues Upgrade to 50 Clues ([`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/easier_sudoku_puzzles.sql`](supabase/easier_sudoku_puzzles.sql))**:
+    - Upgraded all 25 Easy puzzles from 38-39 clues to a generous 50 clues (leaving only ~31 empty cells, over 62% pre-filled), making the Easy tier relaxed, approachable, and fun.
+  - **🛡️ 5 Mistakes Allowance on Easy Tier ([`src/js/features/sudoku.js`](src/js/features/sudoku.js), [`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql))**:
+    - Relaxed mistake limit on Easy to 5 mistakes (up from 3) so accidental touch clicks don't terminate daily sessions prematurely.
+  - **💡 3 Free Hints Per Game ([`src/js/features/sudoku.js`](src/js/features/sudoku.js), [`index.html`](index.html))**:
+    - Added a `💡 Hint (3)` button to the controls bar. Clicking reveals 1 correct cell with an animated green pop to help players when stuck.
+  - **🔢 Keypad Remaining Counters & Completed Checkmarks ([`src/js/features/sudoku.js`](src/js/features/sudoku.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Added real-time remaining number counters to the 1-9 keypad buttons. When all 9 instances of a number are placed, the button dims with a green checkmark `✓`.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.723"` and refreshed asset queries.
+
 - **PLAN-020: Player Referral Link Share & Daily Games UX Polish (`v1.5.722`)**:
   - **🔗 Player Referral Link Integration in Results Share ([`src/js/features/wordle.js`](src/js/features/wordle.js), [`src/js/features/sudoku.js`](src/js/features/sudoku.js))**:
     - Both Cyber Wordle and Cyber Sudoku result shares now automatically include the player's personal referral link (`https://polygongaming.io/?ref=<player_referral_code>`), allowing viral recruitment directly from Discord and X shares.

@@ -23,6 +23,12 @@ let isGameCompleted = false;
 let isSubmitting = false;
 let moveHistory = []; // [{ index, prevVal, newVal, prevNotes }]
 let keyListenersAttached = false;
+let hintsRemaining = 3;
+let knownSolution = null;
+
+export function getMaxMistakes() {
+  return activeDifficulty === 'easy' ? 5 : 3;
+}
 
 /**
  * Initializes Sudoku screen when user navigates to the game
@@ -88,6 +94,8 @@ export async function startDailySudokuGame(difficulty) {
     }
 
     cluesMask = res.clues_mask || '';
+    knownSolution = res.solution || null;
+    hintsRemaining = 3;
     mistakes = res.mistakes || 0;
     isGameCompleted = false;
     moveHistory = [];
@@ -239,12 +247,12 @@ export function inputSudokuNumber(num) {
 
     if (sfx && typeof sfx.playBuzzer === 'function') sfx.playBuzzer();
 
-    if (mistakes >= 4) {
-      // Game over (max 3 mistakes exceeded)
+    const maxM = getMaxMistakes();
+    if (mistakes > maxM) {
       terminateSudokuGame();
       return;
     }
-    if (triggerToast) triggerToast(`Mistake! (${mistakes}/3) Conflicts with row, column, or block.`, 'error');
+    if (triggerToast) triggerToast(`Mistake! (${mistakes}/${maxM}) Conflicts with row, column, or block.`, 'error');
     return;
   }
 
@@ -424,7 +432,8 @@ function terminateSudokuGame() {
     if (payout) payout.innerText = '0 PGT Earned (Challenge locked until 00:00 UTC)';
     if (timeEl) timeEl.innerText = 'Patience and precision are key to decrypting the grid.';
   }
-  if (triggerToast) triggerToast('Challenge failed: 4 mistakes exceeded.', 'error');
+  const maxM = getMaxMistakes();
+  if (triggerToast) triggerToast(`Challenge failed: ${maxM} mistakes exceeded.`, 'error');
   refreshDailyGamesHubStatus();
 }
 
@@ -464,8 +473,14 @@ function updateSudokuHud() {
     else pill.style.background = 'var(--color-primary)';
   }
 
+  const maxM = getMaxMistakes();
   if (mistakesEl) {
-    mistakesEl.innerText = `Mistakes: ${mistakes} / 3`;
+    mistakesEl.innerText = `Mistakes: ${mistakes} / ${maxM}`;
+    mistakesEl.style.color = mistakes >= maxM ? 'var(--color-danger)' : (mistakes > 0 ? 'var(--color-warning)' : 'var(--text-dim)');
+  }
+  const hintLabel = document.getElementById('label-sudoku-hint');
+  if (hintLabel) {
+    hintLabel.innerText = `Hint (${hintsRemaining})`;
   }
 }
 
@@ -640,6 +655,134 @@ export function shareSudokuResult() {
   });
 }
 
+/**
+ * Updates 1-9 keypad badges showing how many numbers remain to be placed
+ */
+export function updateSudokuKeypadCounters() {
+  const counts = {};
+  for (let d = 1; d <= 9; d++) counts[d] = 0;
+  for (let i = 0; i < 81; i++) {
+    const val = playerBoard[i];
+    if (val >= 1 && val <= 9) counts[val]++;
+  }
+
+  for (let d = 1; d <= 9; d++) {
+    const keyBtn = document.getElementById(`sudoku-key-${d}`);
+    if (keyBtn) {
+      const remaining = 9 - counts[d];
+      if (remaining <= 0) {
+        keyBtn.classList.add('completed');
+        keyBtn.innerHTML = `<span>${d}</span><span class="sudoku-key-badge" style="color: #00e676;">✓</span>`;
+      } else {
+        keyBtn.classList.remove('completed');
+        keyBtn.innerHTML = `<span>${d}</span><span class="sudoku-key-badge">${remaining}</span>`;
+      }
+    }
+  }
+}
+
+/**
+ * Backtracking solver used as fallback for hints
+ */
+function solveSudokuGrid(grid) {
+  const board = [...grid];
+  function isValid(b, idx, num) {
+    const r = Math.floor(idx / 9);
+    const c = idx % 9;
+    const br = Math.floor(r / 3) * 3;
+    const bc = Math.floor(c / 3) * 3;
+    for (let i = 0; i < 81; i++) {
+      if (b[i] === num) {
+        const row = Math.floor(i / 9);
+        const col = i % 9;
+        const boxR = Math.floor(row / 3) * 3;
+        const boxC = Math.floor(col / 3) * 3;
+        if (row === r || col === c || (boxR === br && boxC === bc)) return false;
+      }
+    }
+    return true;
+  }
+  function solve(b) {
+    for (let i = 0; i < 81; i++) {
+      if (b[i] === 0) {
+        for (let num = 1; num <= 9; num++) {
+          if (isValid(b, i, num)) {
+            b[i] = num;
+            if (solve(b)) return true;
+            b[i] = 0;
+          }
+        }
+        return false;
+      }
+    }
+    return true;
+  }
+  return solve(board) ? board : null;
+}
+
+/**
+ * Reveals 1 correct cell to help the player if stuck (3 free hints per puzzle)
+ */
+export function useSudokuHint() {
+  if (isGameCompleted) return;
+  if (hintsRemaining <= 0) {
+    if (triggerToast) triggerToast('No hints remaining for today!', 'info');
+    return;
+  }
+
+  // Target selected cell if empty, or pick the first empty cell on the board
+  let targetIdx = selectedCellIndex;
+  if (targetIdx === null || playerBoard[targetIdx] !== 0) {
+    targetIdx = playerBoard.findIndex(v => v === 0);
+  }
+
+  if (targetIdx === -1) {
+    if (triggerToast) triggerToast('Puzzle is already full!', 'info');
+    return;
+  }
+
+  let correctDigit = 0;
+  if (knownSolution && knownSolution[targetIdx]) {
+    correctDigit = parseInt(knownSolution[targetIdx], 10);
+  } else {
+    const clues = playerBoard.map((v, i) => (cluesMask[i] !== '0' && cluesMask[i] !== '.') ? parseInt(cluesMask[i], 10) : 0);
+    const sol = solveSudokuGrid(clues);
+    if (sol && sol[targetIdx]) correctDigit = sol[targetIdx];
+  }
+
+  if (!correctDigit) {
+    if (triggerToast) triggerToast('Hint could not be calculated', 'error');
+    return;
+  }
+
+  playerBoard[targetIdx] = correctDigit;
+  notesBoard[targetIdx].clear();
+  selectedCellIndex = targetIdx;
+  hintsRemaining--;
+
+  updateSudokuHud();
+  renderSudokuGrid();
+  highlightRelatedCells();
+  saveLocalDraft();
+
+  const cellEl = document.getElementById(`sudoku-cell-${targetIdx}`);
+  if (cellEl) {
+    cellEl.classList.add('pop');
+    cellEl.style.color = '#00e676';
+    setTimeout(() => {
+      cellEl.classList.remove('pop');
+      cellEl.style.removeProperty('color');
+    }, 450);
+  }
+
+  if (sfx && typeof sfx.playCoin === 'function') sfx.playCoin();
+  if (triggerToast) triggerToast(`💡 Hint applied: placed ${correctDigit}! (${hintsRemaining} left)`, 'success');
+
+  if (playerBoard.every(v => v > 0)) {
+    submitSudokuSolution();
+  }
+}
+
 // Window globals
 if (typeof window !== 'undefined') {
   window.initSudokuGame = initSudokuGame;
@@ -650,4 +793,6 @@ if (typeof window !== 'undefined') {
   window.toggleSudokuNotes = toggleSudokuNotes;
   window.openSudokuStatsModal = openSudokuStatsModal;
   window.shareSudokuResult = shareSudokuResult;
+  window.useSudokuHint = useSudokuHint;
+  window.updateSudokuKeypadCounters = updateSudokuKeypadCounters;
 }
