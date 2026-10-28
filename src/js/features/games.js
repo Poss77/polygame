@@ -153,9 +153,11 @@ export function closeGameView() {
     });
 
     const gridEarn = document.getElementById('grid-category-earn');
+    const gridDaily = document.getElementById('grid-category-daily');
     const gridBet = document.getElementById('grid-category-bet');
 
     if (gridEarn) gridEarn.classList.remove('grid-category-hidden');
+    if (gridDaily) gridDaily.classList.remove('grid-category-hidden');
     if (gridBet) gridBet.classList.remove('grid-category-hidden');
 
     // Reactivate the correct grid based on active tab
@@ -163,7 +165,15 @@ export function closeGameView() {
     if (activeTab) {
       const id = activeTab.id;
       if (id === 'tab-category-earn' && gridEarn) gridEarn.style.display = 'grid';
+      if (id === 'tab-category-daily' && gridDaily) {
+        gridDaily.style.display = 'block';
+        if (typeof window.refreshDailyGamesHubStatus === 'function') {
+          window.refreshDailyGamesHubStatus();
+        }
+      }
       if (id === 'tab-category-bet' && gridBet) gridBet.style.display = 'block';
+    } else if (gridEarn) {
+      gridEarn.style.display = 'grid';
     }
   } catch (err) {
     console.error("[closeGameView] Exception caught:", err);

@@ -260,6 +260,7 @@ export function switchTab(tabId) {
     if (typeof window.loadDefenseLeaderboard === 'function') window.loadDefenseLeaderboard();
     if (typeof window.loadTopWeeklyArcadePlayers === 'function') window.loadTopWeeklyArcadePlayers();
     if (typeof window.updateGameTileBadges === 'function') window.updateGameTileBadges();
+    if (typeof window.refreshDailyGamesHubStatus === 'function') window.refreshDailyGamesHubStatus();
   }
   if (tabId === 'buy-referrals') {
     if (typeof window.initReferralShop === 'function') window.initReferralShop();
