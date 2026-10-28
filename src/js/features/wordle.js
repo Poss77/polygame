@@ -14,6 +14,8 @@ import { refreshDailyGamesHubStatus } from './daily-hub.js';
 let currentGuess = '';
 let currentRow = 0;
 let isGameOver = false;
+let isGameWon = false;
+let winAttemptCount = 0;
 let isSubmitting = false;
 let boardGuesses = []; // [{ word, colors }]
 let targetWordRevealed = '';
@@ -33,6 +35,8 @@ export async function initWordleGame() {
   currentGuess = '';
   currentRow = 0;
   isGameOver = false;
+  isGameWon = false;
+  winAttemptCount = 0;
   isSubmitting = false;
   boardGuesses = [];
   targetWordRevealed = '';
@@ -214,6 +218,8 @@ async function submitCurrentGuess() {
     if (res.solved) {
       // Victory!
       isGameOver = true;
+      isGameWon = true;
+      winAttemptCount = boardGuesses.length;
       targetWordRevealed = res.target_word || guessUpper;
       pgtWonToday = res.pgt_awarded || 0;
 
@@ -233,6 +239,8 @@ async function submitCurrentGuess() {
     } else if (res.failed || res.guesses_count >= 6) {
       // Defeat!
       isGameOver = true;
+      isGameWon = false;
+      winAttemptCount = 0;
       targetWordRevealed = res.target_word || '';
       showPostgameCard(false, 0, targetWordRevealed);
       if (triggerToast) triggerToast(`Cipher lock engaged. Secret was: ${targetWordRevealed}`, 'error');
@@ -341,10 +349,14 @@ async function syncWordleServerState() {
 
     if (w.is_solved || w.claimed) {
       isGameOver = true;
+      isGameWon = true;
+      winAttemptCount = (w.guesses && w.guesses.length) || (w.guesses_count) || 1;
       pgtWonToday = w.pgt_awarded || 0;
       showPostgameCard(true, pgtWonToday, '');
     } else if (w.is_failed) {
       isGameOver = true;
+      isGameWon = false;
+      winAttemptCount = 0;
       showPostgameCard(false, 0, '');
     }
   } catch (err) {
@@ -413,10 +425,28 @@ export async function openWordleStatsModal() {
       const maxCount = Math.max(1, ...s.dist);
       distContainer.innerHTML = '';
 
+      // Highlight winning attempt if the puzzle was solved today
+      const currentWinningAttempt = (isGameOver && isGameWon) ? (winAttemptCount || boardGuesses.length) : null;
+
       s.dist.forEach((count, idx) => {
         const rowNum = idx + 1;
-        const pct = Math.max(8, Math.round((count / maxCount) * 100));
-        const isCurrentWinRow = isGameOver && (currentRow === rowNum);
+        const pct = count > 0 ? Math.max(8, Math.round((count / maxCount) * 100)) : 8;
+        const isCurrentWinRow = (currentWinningAttempt === rowNum);
+
+        let barBg;
+        let textColor;
+        if (count > 0) {
+          if (isCurrentWinRow) {
+            barBg = 'var(--color-success, #00ff66)';
+            textColor = '#000';
+          } else {
+            barBg = 'var(--color-primary, #00f0ff)';
+            textColor = '#000';
+          }
+        } else {
+          barBg = 'rgba(255, 255, 255, 0.08)';
+          textColor = 'var(--text-dim, #94a3b8)';
+        }
 
         const rowDiv = document.createElement('div');
         rowDiv.style.display = 'flex';
@@ -427,7 +457,7 @@ export async function openWordleStatsModal() {
         rowDiv.innerHTML = `
           <span style="width: 14px; font-weight: 800; color: var(--text-dim);">${rowNum}</span>
           <div style="flex: 1; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; height: 22px;">
-            <div style="width: ${pct}%; height: 100%; background: ${isCurrentWinRow ? 'var(--color-success)' : 'var(--color-primary)'}; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-weight: 800; font-size: 0.75rem; color: #000; border-radius: 4px;">
+            <div style="width: ${pct}%; height: 100%; background: ${barBg}; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-weight: 800; font-size: 0.75rem; color: ${textColor}; border-radius: 4px; transition: width 0.3s ease;">
               ${count}
             </div>
           </div>

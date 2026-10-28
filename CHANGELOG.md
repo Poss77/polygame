@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PLAN-020: Fix Wordle Guess Distribution Chart Colors & Design Tokens (`v1.5.728`)**:
+  - **🎨 Wordle Histogram Colors ([`src/js/features/wordle.js`](src/js/features/wordle.js), [`src/css/variables.css`](src/css/variables.css))**:
+    - Added `--color-success: #00ff66;` to `:root` design tokens in `variables.css`.
+    - Corrected guess distribution rendering: rows with `0` wins now render as neutral, muted gray bars with light text instead of electric cyan.
+    - Rows with wins render in electric cyan, and the specific row representing today's winning attempt is highlighted in vibrant green (`--color-success`).
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.728"` and refreshed asset queries.
+
 - **PLAN-020: Fix Daily Games Payout Multipliers & Validation Invariants (`v1.5.727`)**:
   - **🛡️ Server-Side Multiplier Authoritative Schema ([`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/fix_daily_games_payout_rpc.sql`](supabase/fix_daily_games_payout_rpc.sql))**:
     - Fixed runtime error `record "v_user" has no field "all_nfts"` in `submit_wordle_guess` and `claim_daily_sudoku_reward`.
