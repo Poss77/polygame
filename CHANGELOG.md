@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace Official Theme Soundtrack & Ambient Audio Engine (`v1.5.748`)**:
+  - **🎵 PolySpace Theme Soundtrack Integration ([`src/assets/audio/polyspace_theme.mp3`](src/assets/audio/polyspace_theme.mp3), [`src/js/core/audio.js`](src/js/core/audio.js))**:
+    - Integrated the official custom PolySpace space synthesizer soundtrack (`polyspace_theme.mp3`, 2m47s loop) into the client audio asset catalog.
+    - Added dedicated `startPolySpaceAudio()`, `stopPolySpaceAudio()`, and `togglePolySpaceAudio()` methods to `RetroSynth` with volume mixing (0.35 gain) to ensure crystal-clear SFX audibility.
+  - **🛰️ PolySpace Fleet Command Soundtrack HUD Button ([`index.html`](index.html), [`src/js/app.js`](src/js/app.js))**:
+    - Added a stylized **`[ 🎵 Theme: ON / OFF ]`** toggle button directly inside the PolySpace Fleet Command header bar.
+    - Seamlessly auto-plays soundtrack on entering the `#space` view (respecting persistent user preference in `localStorage`), and pauses background playback when routing to other views or arcade games.
+  - **🚀 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.748"` and updated asset cache busters.
+
 - **Viral Acquisition Engine, 1-Click Social Sharing & Gameplay Quick Replay (`v1.5.747`)**:
   - **🚀 Viral Player Acquisition Engine ([`src/js/utils/social-share.js`](src/js/utils/social-share.js), [`index.html`](index.html), [`src/js/app.js`](src/js/app.js))**:
     - Built comprehensive viral attribution and social sharing module with automated referral link generation (`https://polygongaming.io/?ref={player_id}`).
