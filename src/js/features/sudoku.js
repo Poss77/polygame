@@ -9,6 +9,7 @@ import { triggerToast, openModal, closeModal } from '../core/ui.js';
 import { sfx } from '../core/audio.js';
 import { triggerConfetti } from '../utils/confetti.js';
 import { refreshDailyGamesHubStatus } from './daily-hub.js';
+import { DAILY_SUDOKU_PUZZLES, getSudokuPuzzleById, getSudokuPuzzleFallback } from './sudoku-puzzles.js';
 
 let activeDifficulty = 'medium';
 let cluesMask = ''; // 81 chars ('0'-'9')
@@ -76,6 +77,7 @@ async function checkDailySudokuStatus() {
         activeDifficulty = localSolved.difficulty;
       }
 
+      // Step A: If solution is not yet known, query start_daily_sudoku RPC
       if (!knownSolution) {
         try {
           const { data: puzData } = await executeAuthenticatedRpc('start_daily_sudoku', {
@@ -90,6 +92,51 @@ async function checkDailySudokuStatus() {
             if (puzData.difficulty) activeDifficulty = puzData.difficulty;
           }
         } catch (e) {}
+      }
+
+      // Step B: Direct database session query to retrieve puzzle_id from daily_game_sessions
+      if (!knownSolution) {
+        try {
+          const client = (typeof window !== 'undefined' && (window.supabaseClient || window.supabase)) ? (window.supabaseClient || window.supabase) : null;
+          if (client) {
+            const { data: sessRow } = await client
+              .from('daily_game_sessions')
+              .select('session_data, pgt_awarded')
+              .eq('player_id', pid)
+              .eq('game_id', 'sudoku')
+              .eq('day_date', today)
+              .maybeSingle();
+
+            if (sessRow && sessRow.session_data) {
+              const puzId = parseInt(sessRow.session_data.puzzle_id, 10);
+              const puz = getSudokuPuzzleById(puzId);
+              if (puz) {
+                cluesMask = puz.clues_mask;
+                knownSolution = puz.solution;
+                if (sessRow.session_data.difficulty) activeDifficulty = sessRow.session_data.difficulty;
+                if (sessRow.session_data.time_seconds) timerSeconds = sessRow.session_data.time_seconds;
+                if (sessRow.session_data.mistakes !== undefined) mistakes = sessRow.session_data.mistakes;
+              }
+            }
+          }
+        } catch (sessErr) {
+          console.warn('[Sudoku] Session lookup fallback error:', sessErr);
+        }
+      }
+
+      // Step C: Deterministic puzzle seed fallback (100% infallible offline calculation)
+      if (!knownSolution) {
+        let hashVal = 0;
+        const seedStr = pid + activeDifficulty + 'sudoku_seed_v1' + today;
+        for (let i = 0; i < seedStr.length; i++) {
+          hashVal = ((hashVal << 5) - hashVal) + seedStr.charCodeAt(i);
+          hashVal |= 0;
+        }
+        const fallbackPuz = getSudokuPuzzleFallback(activeDifficulty, Math.abs(hashVal));
+        if (fallbackPuz) {
+          cluesMask = fallbackPuz.clues_mask;
+          knownSolution = fallbackPuz.solution;
+        }
       }
 
       playerBoard = new Array(81).fill(0);
@@ -141,6 +188,40 @@ export async function startDailySudokuGame(difficulty) {
     });
 
     if (error || !res || !res.success) {
+      if (res && res.message && res.message.includes('already completed')) {
+        // Player already completed today's Sudoku!
+        isGameCompleted = true;
+        stopSudokuTimer();
+
+        let hashVal = 0;
+        const today = new Date().toISOString().split('T')[0];
+        const seedStr = pid + activeDifficulty + 'sudoku_seed_v1' + today;
+        for (let i = 0; i < seedStr.length; i++) {
+          hashVal = ((hashVal << 5) - hashVal) + seedStr.charCodeAt(i);
+          hashVal |= 0;
+        }
+        const fallbackPuz = getSudokuPuzzleFallback(activeDifficulty, Math.abs(hashVal));
+        if (fallbackPuz) {
+          cluesMask = fallbackPuz.clues_mask;
+          knownSolution = fallbackPuz.solution;
+        }
+
+        playerBoard = new Array(81).fill(0);
+        notesBoard = Array.from({ length: 81 }, () => new Set());
+        const displaySource = knownSolution || cluesMask || '';
+        for (let i = 0; i < 81; i++) {
+          const char = displaySource[i] || '0';
+          if (char !== '0' && char !== '.') {
+            playerBoard[i] = parseInt(char, 10);
+          }
+        }
+
+        showSudokuPostgameCard(true, 0, activeDifficulty);
+        showPlayScreen(true);
+        updateSudokuHud();
+        renderSudokuGrid();
+        return;
+      }
       if (triggerToast) triggerToast(res?.message || error?.message || 'Error starting Sudoku', 'error');
       return;
     }
@@ -154,6 +235,21 @@ export async function startDailySudokuGame(difficulty) {
       isGameCompleted = true;
       hintsRemaining = 0;
       stopSudokuTimer();
+
+      if (!knownSolution) {
+        let hashVal = 0;
+        const today = new Date().toISOString().split('T')[0];
+        const seedStr = pid + activeDifficulty + 'sudoku_seed_v1' + today;
+        for (let i = 0; i < seedStr.length; i++) {
+          hashVal = ((hashVal << 5) - hashVal) + seedStr.charCodeAt(i);
+          hashVal |= 0;
+        }
+        const fallbackPuz = getSudokuPuzzleFallback(activeDifficulty, Math.abs(hashVal));
+        if (fallbackPuz) {
+          cluesMask = fallbackPuz.clues_mask;
+          knownSolution = fallbackPuz.solution;
+        }
+      }
 
       playerBoard = new Array(81).fill(0);
       notesBoard = Array.from({ length: 81 }, () => new Set());

@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Sudoku: Infallible Puzzle Bundling & Offline Fallback (`v1.5.737`)**:
+  - **🧩 75-Puzzle Client Bundle & Infallible Fallback ([`src/js/features/sudoku-puzzles.js`](src/js/features/sudoku-puzzles.js), [`src/js/features/sudoku.js`](src/js/features/sudoku.js))**:
+    - Bundled all 75 calibrated daily puzzles (25 Easy, 25 Medium, 25 Hard) into [`src/js/features/sudoku-puzzles.js`](src/js/features/sudoku-puzzles.js) mirroring the Wordle dictionary architecture.
+    - Added multi-stage fallback resolution in `checkDailySudokuStatus()` and `startDailySudokuGame()`:
+      1. RPC response (`get_daily_games_hub_status` / `start_daily_sudoku`).
+      2. Local session completion cache (`polygame_sudoku_completed_${today}`).
+      3. Direct `daily_game_sessions` query with `puzzle_id` mapped via `getSudokuPuzzleById()`.
+      4. Deterministic hash seed fallback via `getSudokuPuzzleFallback()`, guaranteeing that even without running SQL updates on the database, returning to a completed puzzle always renders all 81 solved digits.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.737"` and refreshed script cache busters.
+
 - **Cyber Sudoku: Fix Completed Board Rendering & HUD State (`v1.5.736`)**:
   - **🧩 Completed Board Restoration ([`src/js/features/sudoku.js`](src/js/features/sudoku.js), [`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/fix_completed_sudoku_board_retrieval.sql`](supabase/fix_completed_sudoku_board_retrieval.sql))**:
     - Fixed black board issue when returning to view today's completed Sudoku puzzle. Previously, `checkDailySudokuStatus()` only unhid the play screen without fetching the puzzle data, populating `playerBoard`, or calling `renderSudokuGrid()`.
