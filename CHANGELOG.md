@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PLAN-020: Player Referral Link Share & Daily Games UX Polish (`v1.5.722`)**:
+  - **🔗 Player Referral Link Integration in Results Share ([`src/js/features/wordle.js`](src/js/features/wordle.js), [`src/js/features/sudoku.js`](src/js/features/sudoku.js))**:
+    - Both Cyber Wordle and Cyber Sudoku result shares now automatically include the player's personal referral link (`https://polygongaming.io/?ref=<player_referral_code>`), allowing viral recruitment directly from Discord and X shares.
+    - Added dedicated `📋 Share Result` buttons to both the Sudoku postgame card and stats modal.
+  - **🧹 Obsolete Domain Purge ([`src/js/features/faucet.js`](src/js/features/faucet.js), [`.agents/AGENTS.md`](.agents/AGENTS.md), [`plans/`](plans/))**:
+    - Purged remaining references to obsolete `polygame.fun` across all code and documentation, standardizing strictly on `https://polygongaming.io/`.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.722"` and refreshed asset queries.
+
 - **PLAN-020: Daily Cyber Games Hub (Wordle & Sudoku) with Dedicated Daily Tab & Salted Seed Anti-Cheat (`v1.5.721`)**:
   - **📅 Dedicated Daily Games Tab & Matrix Hub ([`index.html`](index.html), [`src/js/features/games.js`](src/js/features/games.js), [`src/js/features/daily-hub.js`](src/js/features/daily-hub.js))**:
     - Added a dedicated top-level `[ 📅 Daily Games ]` category tab alongside `[ ⚡ Mini-Games (Earn) ]` and `[ 🎲 Win PGT (Bet) ]`.

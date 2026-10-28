@@ -464,7 +464,19 @@ export function shareWordleResult() {
     emojiGrid += '\n';
   });
 
-  const shareText = `PolyGame Cyber Wordle (${todayStr})\nRow ${rowCount} • ${pgtWonToday > 0 ? `+${pgtWonToday} PGT Won! ⚡` : 'Daily Cipher'}\n\n${emojiGrid}\nPlay at: https://polygongaming.io/`;
+  const refCode = (appState && appState.state && appState.state.referralCode) ||
+                  (window.PolyState && window.PolyState.state && window.PolyState.state.referralCode) ||
+                  (appState && appState.state && appState.state.user && appState.state.user.referral_code) ||
+                  '';
+  const refInput = document.getElementById('ref-invite-link');
+  let playUrl = 'https://polygongaming.io/';
+  if (refInput && refInput.value && refInput.value.includes('?ref=')) {
+    playUrl = refInput.value.trim();
+  } else if (refCode && refCode !== 'EMPTY') {
+    playUrl = `https://polygongaming.io/?ref=${encodeURIComponent(refCode.trim())}`;
+  }
+
+  const shareText = `PolyGame Cyber Wordle (${todayStr})\nRow ${rowCount} • ${pgtWonToday > 0 ? `+${pgtWonToday} PGT Won! ⚡` : 'Daily Cipher'}\n\n${emojiGrid}\nPlay at: ${playUrl}`;
 
   navigator.clipboard.writeText(shareText).then(() => {
     if (triggerToast) triggerToast('📋 Results copied to clipboard for Discord & X!', 'success');

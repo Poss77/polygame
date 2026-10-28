@@ -608,6 +608,38 @@ export async function openSudokuStatsModal() {
   }
 }
 
+/**
+ * Copies Sudoku share card with player's referral link to clipboard
+ */
+export function shareSudokuResult() {
+  if (!isGameCompleted) {
+    if (triggerToast) triggerToast('Complete today\'s Sudoku first!', 'info');
+    return;
+  }
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const refCode = (appState && appState.state && appState.state.referralCode) ||
+                  (window.PolyState && window.PolyState.state && window.PolyState.state.referralCode) ||
+                  (appState && appState.state && appState.state.user && appState.state.user.referral_code) ||
+                  '';
+  const refInput = document.getElementById('ref-invite-link');
+  let playUrl = 'https://polygongaming.io/';
+  if (refInput && refInput.value && refInput.value.includes('?ref=')) {
+    playUrl = refInput.value.trim();
+  } else if (refCode && refCode !== 'EMPTY') {
+    playUrl = `https://polygongaming.io/?ref=${encodeURIComponent(refCode.trim())}`;
+  }
+
+  const diffEmoji = activeDifficulty === 'easy' ? '🟢' : (activeDifficulty === 'hard' ? '🔴' : '🟡');
+  const shareText = `PolyGame Cyber Sudoku (${todayStr})\n${diffEmoji} ${activeDifficulty.toUpperCase()} Solved in ${formatTime(timerSeconds)} • ${mistakes} Mistakes\n\nPlay at: ${playUrl}`;
+
+  navigator.clipboard.writeText(shareText).then(() => {
+    if (triggerToast) triggerToast('📋 Sudoku result copied to clipboard with your referral link!', 'success');
+  }).catch(() => {
+    if (triggerToast) triggerToast('Unable to copy to clipboard', 'error');
+  });
+}
+
 // Window globals
 if (typeof window !== 'undefined') {
   window.initSudokuGame = initSudokuGame;
@@ -617,4 +649,5 @@ if (typeof window !== 'undefined') {
   window.undoSudokuMove = undoSudokuMove;
   window.toggleSudokuNotes = toggleSudokuNotes;
   window.openSudokuStatsModal = openSudokuStatsModal;
+  window.shareSudokuResult = shareSudokuResult;
 }
