@@ -207,10 +207,11 @@ export async function fetchUnreferredCensus(forceRefresh = false) {
       if (Array.isArray(data)) {
         data.forEach(row => {
           if (row.is_banned) return;
-          let lvl = row.last_weekly_active_tier;
-          if (lvl === null || lvl === undefined) {
-            lvl = row.weekly_active_tier || 0;
-          }
+          // Highest (best) tier achieved across the last 2 weeks (current active week vs prior completed week)
+          let lvl = Math.max(
+            parseInt(row.weekly_active_tier || 0, 10),
+            parseInt(row.last_weekly_active_tier || 0, 10)
+          );
           lvl = parseInt(lvl, 10);
           if (isNaN(lvl) || lvl < 0) lvl = 0;
           if (lvl > 5) lvl = 5;
@@ -627,7 +628,8 @@ export async function executeReferralAdoption() {
           p_l0: cartQuantities[0] || 0,
           p_payment_method: 'POL',
           p_pgt_cost: 0,
-          p_tx_hash: tx.hash
+          p_tx_hash: tx.hash,
+          p_pol_cost: disc.finalPricePOL
         });
 
         if (data && data.success) {

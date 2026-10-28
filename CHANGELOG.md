@@ -5,6 +5,39 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Sudoku: Fix Completed Board Rendering & HUD State (`v1.5.736`)**:
+  - **🧩 Completed Board Restoration ([`src/js/features/sudoku.js`](src/js/features/sudoku.js), [`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/fix_completed_sudoku_board_retrieval.sql`](supabase/fix_completed_sudoku_board_retrieval.sql))**:
+    - Fixed black board issue when returning to view today's completed Sudoku puzzle. Previously, `checkDailySudokuStatus()` only unhid the play screen without fetching the puzzle data, populating `playerBoard`, or calling `renderSudokuGrid()`.
+    - Updated `get_daily_games_hub_status` and `start_daily_sudoku` RPCs to look up and return `clues_mask`, `solution`, `time_seconds`, and `mistakes` for completed sessions.
+    - Updated `checkDailySudokuStatus()` and `startDailySudokuGame()` to render the full solved grid with original clues and filled numbers, update the HUD with the accurate difficulty, elapsed solve time, and mistakes, and hide the controls/keypad while displaying the victory card.
+    - Added instant client completion caching (`polygame_sudoku_completed_${today}`) in `localStorage` upon puzzle victory.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.736"` and refreshed script cache busters.
+
+- **Referral Marketplace: Fix price_pol On-Chain Cost, 2-Week Best Activity Tier & Direct Access (`v1.5.735`)**:
+  - **🛒 Referral Adoption On-Chain POL Recording ([`src/js/features/referral-shop.js`](src/js/features/referral-shop.js), [`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/fix_referral_adoption_price_pol_and_2week_tier.sql`](supabase/fix_referral_adoption_price_pol_and_2week_tier.sql))**:
+    - Fixed `price_pol` in `public.nft_sales` recording `0` instead of the actual on-chain POL paid. `adopt_referrals` now accepts `p_pol_cost NUMERIC` and records the exact discounted POL cost into `public.nft_sales`.
+    - Backfilled existing adoption records in `public.nft_sales` with their verified on-chain Polygon transaction values (`0.68 POL` and `1.35 POL`).
+  - **📈 2-Week Best Activity Tier Calculation ([`src/js/features/referral-shop.js`](src/js/features/referral-shop.js), [`src/js/features/referrals.js`](src/js/features/referrals.js), [`src/js/features/profile.js`](src/js/features/profile.js), [`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql))**:
+    - Enhanced referral activity tier determination across census and adoption queries to take `GREATEST(COALESCE(weekly_active_tier, 0), COALESCE(last_weekly_active_tier, 0))` (and `Math.max()` on the client), ensuring players are always evaluated by their best/highest tier achieved across the last 2 weeks (current active week vs prior snapshotted week).
+  - **🔗 Access & Discovery ([`index.html`](index.html))**:
+    - Unhid `#card-referral-shop-preview` on the Affiliates page (`#referrals`) so players can easily click "Explore Marketplace →" to navigate directly to `#buy-referrals`.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.735"` and refreshed script cache busters.
+
+- **PLAN-020: Recalibrate Daily Sudoku Base Rewards (20, 40, 60 PGT) & Hub Tile Sync (`v1.5.734`)**:
+  - **💎 Sudoku Base Rewards Calibration ([`index.html`](index.html), [`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/update_sudoku_base_rewards_20_40_60.sql`](supabase/update_sudoku_base_rewards_20_40_60.sql))**:
+    - Updated Cyber Sudoku base completion rewards across all 3 difficulty tiers:
+      - **🟢 Easy Tier**: **20 PGT base** (+4 PGT / +20% Flawless Solver Bonus)
+      - **🟡 Medium Tier**: **40 PGT base** (+8 PGT / +20% Flawless Solver Bonus)
+      - **🔴 Hard Tier**: **60 PGT base** (+12 PGT / +20% Flawless Solver Bonus)
+    - Synced the Daily Games Hub card tile in `index.html` to display `💎 20–60 PGT Base • +20% Flawless Solver Bonus` (previously `15–25 PGT Base`).
+    - Synced tier selection cards in `index.html` to display `+20 PGT`, `+40 PGT`, and `+60 PGT`.
+    - Updated authoritative RPC `claim_daily_sudoku_reward` to calculate base rewards (20 / 40 / 60) before applying player multipliers (NFTs, VIP, Apex Relics, Ambassador) and atomically increment `users.total_earned` alongside `balance_pgt`.
+    - Generated standalone migration script `supabase/update_sudoku_base_rewards_20_40_60.sql`.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.734"` and refreshed asset queries across all game scripts.
+
 - **PLAN-020: Calibrate Sudoku Difficulty Tiers (Easy: 52, Med: 40, Hard: 32) (`v1.5.733`)**:
   - **🧩 3-Tier Sudoku Calibration ([`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/calibrate_sudoku_tiers_52_40_32.sql`](supabase/calibrate_sudoku_tiers_52_40_32.sql), [`index.html`](index.html))**:
     - Calibrated all 75 puzzles (25 per tier) to the exact player difficulty targets:

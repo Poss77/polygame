@@ -53,8 +53,60 @@ async function checkDailySudokuStatus() {
     const s = res.sudoku;
     if (s.is_completed) {
       // Show completed board view
-      showSudokuPostgameCard(true, s.pgt_awarded || 0, s.difficulty || 'medium');
-      showPlayScreen();
+      activeDifficulty = s.difficulty || 'medium';
+      timerSeconds = s.time_seconds || 0;
+      mistakes = s.mistakes || 0;
+      isGameCompleted = true;
+      hintsRemaining = 0;
+      stopSudokuTimer();
+
+      const today = new Date().toISOString().split('T')[0];
+      let localSolved = null;
+      try {
+        const raw = localStorage.getItem('polygame_sudoku_completed_' + today);
+        if (raw) localSolved = JSON.parse(raw);
+      } catch (e) {}
+
+      cluesMask = s.clues_mask || (localSolved && localSolved.cluesMask) || '';
+      knownSolution = s.solution || (localSolved && localSolved.solution) || '';
+      if (!timerSeconds && localSolved && localSolved.timeSeconds) {
+        timerSeconds = localSolved.timeSeconds;
+      }
+      if (localSolved && localSolved.difficulty) {
+        activeDifficulty = localSolved.difficulty;
+      }
+
+      if (!knownSolution) {
+        try {
+          const { data: puzData } = await executeAuthenticatedRpc('start_daily_sudoku', {
+            p_player_id: pid,
+            p_difficulty: activeDifficulty
+          });
+          if (puzData && puzData.solution) {
+            cluesMask = puzData.clues_mask || cluesMask;
+            knownSolution = puzData.solution;
+            if (puzData.time_seconds) timerSeconds = puzData.time_seconds;
+            if (puzData.mistakes !== undefined) mistakes = puzData.mistakes;
+            if (puzData.difficulty) activeDifficulty = puzData.difficulty;
+          }
+        } catch (e) {}
+      }
+
+      playerBoard = new Array(81).fill(0);
+      notesBoard = Array.from({ length: 81 }, () => new Set());
+      const displaySource = knownSolution || cluesMask || '';
+      for (let i = 0; i < 81; i++) {
+        const char = displaySource[i] || '0';
+        if (char !== '0' && char !== '.') {
+          playerBoard[i] = parseInt(char, 10);
+        }
+      }
+
+      showSudokuPostgameCard(true, s.pgt_awarded || 0, activeDifficulty);
+      showPlayScreen(true);
+      updateSudokuHud();
+      renderSudokuGrid();
+      return;
     } else if (s.difficulty) {
       // In progress session: resume puzzle
       await startDailySudokuGame(s.difficulty);
@@ -90,6 +142,33 @@ export async function startDailySudokuGame(difficulty) {
 
     if (error || !res || !res.success) {
       if (triggerToast) triggerToast(res?.message || error?.message || 'Error starting Sudoku', 'error');
+      return;
+    }
+
+    if (res.is_completed) {
+      cluesMask = res.clues_mask || '';
+      knownSolution = res.solution || '';
+      timerSeconds = res.time_seconds || 0;
+      mistakes = res.mistakes || 0;
+      activeDifficulty = res.difficulty || activeDifficulty;
+      isGameCompleted = true;
+      hintsRemaining = 0;
+      stopSudokuTimer();
+
+      playerBoard = new Array(81).fill(0);
+      notesBoard = Array.from({ length: 81 }, () => new Set());
+      const displaySource = knownSolution || cluesMask || '';
+      for (let i = 0; i < 81; i++) {
+        const char = displaySource[i] || '0';
+        if (char !== '0' && char !== '.') {
+          playerBoard[i] = parseInt(char, 10);
+        }
+      }
+
+      showSudokuPostgameCard(true, res.pgt_awarded || 0, activeDifficulty);
+      showPlayScreen(true);
+      updateSudokuHud();
+      renderSudokuGrid();
       return;
     }
 
@@ -390,6 +469,24 @@ async function submitSudokuSolution() {
     isGameCompleted = true;
     localStorage.removeItem('polygame_sudoku_draft');
 
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      localStorage.setItem('polygame_sudoku_completed_' + today, JSON.stringify({
+        date: today,
+        difficulty: activeDifficulty,
+        cluesMask,
+        solution: solutionStr,
+        timeSeconds: timerSeconds,
+        mistakes,
+        pgtAwarded: pgtWon
+      }));
+    } catch (e) {}
+
+    const ctrl = document.querySelector('.sudoku-controls');
+    const keypad = document.querySelector('.sudoku-keypad');
+    if (ctrl) ctrl.style.display = 'none';
+    if (keypad) keypad.style.display = 'none';
+
     if (res.new_balance !== undefined && appState) {
       appState.update({ balancePgt: parseFloat(res.new_balance) });
       if (typeof appState.syncUI === 'function') appState.syncUI();
@@ -465,6 +562,10 @@ function formatTime(sec) {
 function updateSudokuHud() {
   const pill = document.getElementById('sudoku-diff-pill');
   const mistakesEl = document.getElementById('sudoku-mistakes-badge');
+  const timerEl = document.getElementById('sudoku-timer-display');
+  if (timerEl) {
+    timerEl.innerText = formatTime(timerSeconds);
+  }
 
   if (pill) {
     pill.innerText = activeDifficulty.toUpperCase();
@@ -491,11 +592,16 @@ function showDifficultyScreen() {
   if (s2) s2.style.display = 'none';
 }
 
-function showPlayScreen() {
+function showPlayScreen(isCompleted = false) {
   const s1 = document.getElementById('sudoku-difficulty-screen');
   const s2 = document.getElementById('sudoku-play-screen');
   if (s1) s1.style.display = 'none';
   if (s2) s2.style.display = 'flex';
+
+  const ctrl = document.querySelector('.sudoku-controls');
+  const keypad = document.querySelector('.sudoku-keypad');
+  if (ctrl) ctrl.style.display = isCompleted ? 'none' : 'flex';
+  if (keypad) keypad.style.display = isCompleted ? 'none' : 'grid';
 }
 
 function showSudokuPostgameCard(isWin, pgt, diff) {

@@ -754,8 +754,8 @@ export async function openPublicProfile(walletAddress) {
     if (avatarEl) avatarEl.innerText = (name.charAt(0) || '🎮').toUpperCase();
     if (walletEl) walletEl.innerText = isInternal(displayAddr) ? 'Google Account (No Web3 Wallet Linked)' : displayAddr;
 
-    // Last Week Official Active Tier Badge beside Name
-    const lastTierLvl = parseInt(user.last_weekly_active_tier !== undefined ? user.last_weekly_active_tier : (user.weekly_active_tier || 0), 10);
+    // Best Active Tier Badge across last 2 weeks beside Name
+    const lastTierLvl = Math.max(parseInt(user.weekly_active_tier || 0, 10), parseInt(user.last_weekly_active_tier || 0, 10));
     const tierBadgeInfo = {
       5: { label: '👑 L5 Apex Legend', color: '#ffd700', bg: 'rgba(255,215,0,0.15)', border: '#ffd700' },
       4: { label: '💎 L4 Elite Champion', color: '#00ff88', bg: 'rgba(0,255,136,0.15)', border: '#00ff88' },
@@ -838,9 +838,7 @@ export async function openPublicProfile(walletAddress) {
         if (!refErr && Array.isArray(refRows)) {
           totalL1Count = refRows.length;
           activeL1Count = refRows.filter(r => {
-            const tier = parseInt(r.last_weekly_active_tier !== undefined && r.last_weekly_active_tier !== null
-              ? r.last_weekly_active_tier
-              : (r.weekly_active_tier || 0), 10);
+            const tier = Math.max(parseInt(r.weekly_active_tier || 0, 10), parseInt(r.last_weekly_active_tier || 0, 10));
             return tier >= 1 && tier <= 5;
           }).length;
         }

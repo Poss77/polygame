@@ -328,7 +328,7 @@ export async function loadMyDownlineNetwork() {
       if (isL1) {
         countL1++;
         // Downline Activity Level Census strictly tallies direct Level 1 (L1) referrals
-        const activeTier = parseInt(u.last_weekly_active_tier !== undefined ? u.last_weekly_active_tier : (u.weekly_active_tier || 0), 10);
+        const activeTier = Math.max(parseInt(u.weekly_active_tier || 0, 10), parseInt(u.last_weekly_active_tier || 0, 10));
         if (activeTier === 5) tierL5++;
         else if (activeTier === 4) tierL4++;
         else if (activeTier === 3) tierL3++;
@@ -557,7 +557,7 @@ export function renderReferralLedger() {
     }
 
     const joinDate = u.created_at ? new Date(u.created_at).toLocaleDateString() : 'Recent';
-    const activeTierLvl = parseInt(u.last_weekly_active_tier !== undefined ? u.last_weekly_active_tier : (u.weekly_active_tier || 0), 10);
+    const activeTierLvl = Math.max(parseInt(u.weekly_active_tier || 0, 10), parseInt(u.last_weekly_active_tier || 0, 10));
     const tierBadge = activeTierLvl === 5 ? '👑 L5 Apex' : activeTierLvl === 4 ? '💎 L4 Elite' : activeTierLvl === 3 ? '🥇 L3 Veteran' : activeTierLvl === 2 ? '🥈 L2' : activeTierLvl === 1 ? '🥉 L1' : '⚪ L0';
     const tierBadgeColor = activeTierLvl === 5 ? '#ffd700' : activeTierLvl === 4 ? '#00ff88' : activeTierLvl === 3 ? '#ffaa00' : activeTierLvl === 2 ? '#c084fc' : activeTierLvl === 1 ? '#38bdf8' : '#94a3b8';
 
