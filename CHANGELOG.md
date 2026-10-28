@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Sudoku: Pool Expansion to 300 Puzzles (Option A) (`v1.5.738`)**:
+  - **300-Puzzle Scaled Architecture ([`src/js/features/sudoku-puzzles.js`](src/js/features/sudoku-puzzles.js), [`supabase/expand_sudoku_puzzles_300.sql`](supabase/expand_sudoku_puzzles_300.sql), [`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Expanded the Daily Sudoku puzzle pool from 25 puzzles per tier (75 total) to **100 puzzles per difficulty tier (300 puzzles total)**:
+      - **100 Easy Puzzles**: Exactly 52 clues (~3 missing per box, 29 empty cells total).
+      - **100 Medium Puzzles**: Exactly 40 clues (~4.5 missing per box, 41 empty cells total).
+      - **100 Hard Puzzles**: Exactly 32 clues (~5.5 missing per box, 49 empty cells total).
+    - Preserved existing 75 puzzle IDs (1..25 Easy, 26..50 Medium, 51..75 Hard) for 100% backward compatibility with all historical and current player sessions.
+    - Sequentially appended 75 new calibrated puzzles per difficulty (IDs 76..150 for Easy, 151..225 for Medium, 226..300 for Hard) with mathematically verified unique solutions and balanced 3x3 box clue distributions.
+    - Updated client-side direct index lookup `getSudokuPuzzleById(puzzleId)` and `getSudokuPuzzleFallback(difficulty, seedIndex)` to seamlessly support all 300 puzzles.
+    - Added standalone idempotent migration script [`supabase/expand_sudoku_puzzles_300.sql`](supabase/expand_sudoku_puzzles_300.sql) to populate `public.daily_sudoku_puzzles`.
+  - **Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.738"` and refreshed script cache busters.
+
 - **Cyber Sudoku: Infallible Puzzle Bundling & Offline Fallback (`v1.5.737`)**:
   - **🧩 75-Puzzle Client Bundle & Infallible Fallback ([`src/js/features/sudoku-puzzles.js`](src/js/features/sudoku-puzzles.js), [`src/js/features/sudoku.js`](src/js/features/sudoku.js))**:
     - Bundled all 75 calibrated daily puzzles (25 Easy, 25 Medium, 25 Hard) into [`src/js/features/sudoku-puzzles.js`](src/js/features/sudoku-puzzles.js) mirroring the Wordle dictionary architecture.
