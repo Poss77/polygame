@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Referral Marketplace: Fix New Recruit Filter & Pool Accounting (`v1.5.746`)**:
+  - **🌱 Accurate New Recruit Recognition ([`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/split_scout_and_recruit_pools.sql`](supabase/split_scout_and_recruit_pools.sql), [`src/js/features/referral-shop.js`](src/js/features/referral-shop.js), [`src/js/features/referrals.js`](src/js/features/referrals.js))**:
+    - Identified reason New Recruit previously showed 0 available: the previous filter required `weekly_active_tier = 0`, but newly registered players who claimed a faucet or played a game on day 1 were automatically promoted to Tier 1, inadvertently transferring them into the L1 Scout pool.
+    - Updated `get_unreferred_census()` and `adopt_referrals()` so that **ALL unreferred players created in the last 7 days** (`created_at >= NOW() - INTERVAL '7 days'`) are immediately categorized into the **`🌱 New Recruit (<7d)`** pool (currently 4 players ready for adoption).
+    - Restricted **`🥉 L1 Scout`** strictly to established active casual players registered **more than 7 days ago** (`created_at < NOW() - INTERVAL '7 days' AND tier = 1`, 7 players in pool), ensuring complete mutual exclusivity with zero pool cannibalization.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.746"` and refreshed script cache busters.
+
 - **Referral Adoption Marketplace: Production Launch & Full Security Audit (`v1.5.745`)**:
   - **🚀 Official Production Launch ([`index.html`](index.html), [`src/js/app.js`](src/js/app.js), [`src/js/features/referral-shop.js`](src/js/features/referral-shop.js))**:
     - Removed all "New Feature Preview", "Private Preview", and "Fictive Pricing" labels and banners across the Affiliate Network hub and marketplace view.

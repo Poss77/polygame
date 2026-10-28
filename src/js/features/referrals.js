@@ -328,19 +328,18 @@ export async function loadMyDownlineNetwork() {
       if (isL1) {
         countL1++;
         // Downline Activity Level Census strictly tallies direct Level 1 (L1) referrals
-        const activeTier = Math.max(parseInt(u.weekly_active_tier || 0, 10), parseInt(u.last_weekly_active_tier || 0, 10));
-        if (activeTier === 5) tierL5++;
-        else if (activeTier === 4) tierL4++;
-        else if (activeTier === 3) tierL3++;
-        else if (activeTier === 2) tierL2++;
-        else if (activeTier === 1) tierL1++;
-        else if (activeTier === 0) {
-          const createdAtMs = u.created_at ? new Date(u.created_at).getTime() : 0;
-          if (createdAtMs >= Date.now() - 7 * 24 * 60 * 60 * 1000) {
-            tierRecruit++;
-          } else {
-            tierL0++;
-          }
+        // Fresh signups in the last 7 days are categorized as Recruits
+        const isRecent = u.created_at && (new Date(u.created_at).getTime() >= Date.now() - 7 * 24 * 60 * 60 * 1000);
+        if (isRecent) {
+          tierRecruit++;
+        } else {
+          const activeTier = Math.max(parseInt(u.weekly_active_tier || 0, 10), parseInt(u.last_weekly_active_tier || 0, 10));
+          if (activeTier === 5) tierL5++;
+          else if (activeTier === 4) tierL4++;
+          else if (activeTier === 3) tierL3++;
+          else if (activeTier === 2) tierL2++;
+          else if (activeTier === 1) tierL1++;
+          else tierL0++;
         }
       } else if (isMyAddr(u.referred_by_l2)) {
         countL2++;

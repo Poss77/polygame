@@ -237,6 +237,16 @@ export async function fetchUnreferredCensus(forceRefresh = false) {
         data.forEach(row => {
           if (row.is_banned) return;
           if (row.player_id && row.player_id.toLowerCase().startsWith('test_')) return;
+
+          // Fresh signup within the last 7 days -> Recruit
+          if (row.created_at) {
+            const createdAtMs = new Date(row.created_at).getTime();
+            if (!isNaN(createdAtMs) && createdAtMs >= sevenDaysAgo) {
+              counts['recruit'] = (counts['recruit'] || 0) + 1;
+              return;
+            }
+          }
+
           let lvl = Math.max(
             parseInt(row.weekly_active_tier || 0, 10),
             parseInt(row.last_weekly_active_tier || 0, 10)
@@ -244,14 +254,6 @@ export async function fetchUnreferredCensus(forceRefresh = false) {
           lvl = parseInt(lvl, 10);
           if (isNaN(lvl) || lvl < 0) lvl = 0;
           if (lvl > 5) lvl = 5;
-
-          if (lvl === 0 && row.created_at) {
-            const createdAtMs = new Date(row.created_at).getTime();
-            if (!isNaN(createdAtMs) && createdAtMs >= sevenDaysAgo) {
-              counts['recruit'] = (counts['recruit'] || 0) + 1;
-              return;
-            }
-          }
 
           counts[lvl] = (counts[lvl] || 0) + 1;
         });
