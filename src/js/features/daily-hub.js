@@ -4,7 +4,7 @@
 // ============================================================
 
 import { appState } from '../core/state.js';
-import { executeAuthenticatedRpc } from '../core/db-sync.js';
+import { executeAuthenticatedRpc } from '../core/auth-web3.js';
 
 let countdownInterval = null;
 let cachedHubStatus = null;

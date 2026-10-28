@@ -5,6 +5,7 @@ import { appState, PolyState } from './state.js';
 import { closeModal, triggerToast, connectWeb3, escapeHtml } from './ui.js';
 import { normalizeRelicsObject, mergeRelicsObjects } from '../features/relics.js';
 import { hasValidWeb3Session, clearWeb3Session, executeAuthenticatedRpc, ensureValidSupabaseSession } from './auth-web3.js';
+export { executeAuthenticatedRpc };
 
 const getAppState = () => {
   try {

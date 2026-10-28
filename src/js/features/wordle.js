@@ -4,7 +4,7 @@
 // ============================================================
 
 import { appState } from '../core/state.js';
-import { executeAuthenticatedRpc } from '../core/db-sync.js';
+import { executeAuthenticatedRpc } from '../core/auth-web3.js';
 import { triggerToast, openModal, closeModal } from '../core/ui.js';
 import { sfx } from '../core/audio.js';
 import { triggerConfetti } from '../utils/confetti.js';
