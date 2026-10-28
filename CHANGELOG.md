@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PLAN-020: Fix Daily Games Payout Multipliers & Validation Invariants (`v1.5.727`)**:
+  - **🛡️ Server-Side Multiplier Authoritative Schema ([`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/fix_daily_games_payout_rpc.sql`](supabase/fix_daily_games_payout_rpc.sql))**:
+    - Fixed runtime error `record "v_user" has no field "all_nfts"` in `submit_wordle_guess` and `claim_daily_sudoku_reward`.
+    - Corrected NFT multiplier calculation to authoritatively union `owned_nfts` and `crate_nfts`.
+    - Corrected VIP multiplier calculation to check `users.vip_until` and `users.vip_level`.
+    - Corrected Relic multiplier calculation to verify `is_season1_apex_unlocked(users.relics)`.
+    - Updated balance credit to atomically update `total_earned` alongside `balance_pgt`.
+  - **📦 Database Schema & Master Synchronization ([`supabase/master_schema.sql`](supabase/master_schema.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Synchronized Section 27 in `master_schema.sql` with unified polymorphic tables and RLS policies.
+    - Recompiled `master_rpcs.sql` with automated verification.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.727"` and refreshed asset queries.
+
 - **PLAN-020: Consolidated Daily Games Schema from 9 Tables to 2 Polymorphic Tables (`v1.5.725`)**:
   - **🏛️ Streamlined Database Schema ([`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/consolidate_daily_games_schema.sql`](supabase/consolidate_daily_games_schema.sql))**:
     - Dropped 7 redundant tables (`daily_wordle_sessions`, `daily_wordle_claims`, `daily_wordle_stats`, `daily_sudoku_sessions`, `daily_sudoku_claims`, `daily_sudoku_stats`, `daily_logic_streaks`).
