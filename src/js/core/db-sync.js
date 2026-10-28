@@ -1270,7 +1270,7 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
             window.invalidateGameLeaderboardCache(activeGameKey);
           }
           if (typeof window.loadGameLeaderboard === 'function') {
-            window.loadGameLeaderboard(activeGameKey, true);
+            await window.loadGameLeaderboard(activeGameKey, true);
           }
         }
 

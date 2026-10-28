@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Drift: Recalibrate Velocity Safety Clamps & Instant Leaderboard Await (`v1.5.739`)**:
+  - **🏎️ Velocity Rate Clamp Recalibration ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/fix_cyber_drift_velocity_rate_clamp_and_tiboryeah.sql`](supabase/fix_cyber_drift_velocity_rate_clamp_and_tiboryeah.sql))**:
+    - Identified root cause of Tiboryeah's 123,308 high score being clamped down to 117,600: Cyber Drift's duration safety rate clamp in `end_arcade_session` was hardcoded to `v_duration_seconds * 1200` (1,200 pts/sec), based on an outdated assumption of 167–200 km/h cruising.
+    - At top speeds (350–450 km/h) with active Nitro and dense orb streaks, high-skill driving legitimately generates 2,000–2,500 pts/sec (Tiboryeah covered 9,869m in 98s at 352 km/h, collecting 164 orbs = 1,258.2 pts/sec).
+    - Paul V's 232,636 score was not clamped because his marathon run lasted 680 seconds (11m 20s), averaging only 342.1 pts/sec (well within the old 1,200 pts/sec ceiling).
+    - Recalibrated `drift` score clamp to `LEAST(v_clamped_score, 500000, GREATEST(2500, v_duration_seconds * 3000))` (3,000 pts/sec) and increased `v_max_velocity_rate` to `1.75`.
+  - **⚡ Real-Time Leaderboard Post-Game Sync ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Updated `endArcadeSession` to asynchronously `await window.loadGameLeaderboard(activeGameKey, true)`, ensuring the in-game leaderboard DOM updates with the fresh tournament standing before displaying the game-over screen.
+  - **🎖️ Player Remediation ([`supabase/fix_cyber_drift_velocity_rate_clamp_and_tiboryeah.sql`](supabase/fix_cyber_drift_velocity_rate_clamp_and_tiboryeah.sql))**:
+    - Restored Tiboryeah's score from 117,600 to 123,308 in `public.arcade_sessions` (session `24c3872d-a083-4f17-859f-3276e2a2e3b9`) and `public.users.drift_highscore`.
+    - Retroactively credited +12.88 PGT ($78.68 - $65.80 PGT) to Tiboryeah's `balance_pgt` and `total_earned`.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.739"` and refreshed script cache busters.
+
 - **Cyber Sudoku: Pool Expansion to 300 Puzzles (Option A) (`v1.5.738`)**:
   - **300-Puzzle Scaled Architecture ([`src/js/features/sudoku-puzzles.js`](src/js/features/sudoku-puzzles.js), [`supabase/expand_sudoku_puzzles_300.sql`](supabase/expand_sudoku_puzzles_300.sql), [`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
     - Expanded the Daily Sudoku puzzle pool from 25 puzzles per tier (75 total) to **100 puzzles per difficulty tier (300 puzzles total)**:
