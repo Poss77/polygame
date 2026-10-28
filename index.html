@@ -2391,6 +2391,163 @@
               </div>
             </div>
 
+            <!-- Panel: Cyber Wordle (PLAN-020) -->
+            <div id="panel-game-wordle" class="game-panel-hidden" style="width: 100%; display: none; flex-direction: column; align-items: center; justify-content: flex-start; padding: 1rem 0;">
+              <div class="wordle-container">
+                <!-- Wordle Top Bar / Info -->
+                <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-cyan); border-radius: 8px;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 1.1rem;">🔠</span>
+                    <span style="font-weight: 800; font-size: 0.95rem; color: var(--color-primary); letter-spacing: 0.5px;">CYBER WORDLE</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span id="wordle-attempt-badge" style="font-size: 0.8rem; font-weight: 700; color: var(--text-dim); background: rgba(0, 240, 255, 0.1); padding: 0.25rem 0.6rem; border-radius: 12px; border: 1px solid rgba(0, 240, 255, 0.2);">Attempt 1/6</span>
+                    <button type="button" class="btn-secondary" onclick="window.openWordleStatsModal()" style="padding: 0.35rem 0.7rem; font-size: 0.8rem;" title="View Wordle Statistics">
+                      📊 Stats
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Wordle 5x6 Board -->
+                <div id="wordle-grid" class="wordle-grid"></div>
+
+                <!-- Postgame Outcome Card (Hidden during play) -->
+                <div id="wordle-postgame-card" class="card" style="display: none; width: 100%; text-align: center; padding: 1.25rem; border: 1px solid var(--border-cyan); background: rgba(8, 14, 28, 0.95); margin-top: 0.5rem;">
+                  <div id="wordle-postgame-title" style="font-size: 1.25rem; font-weight: 900; margin-bottom: 0.4rem; color: #fff;"></div>
+                  <div id="wordle-postgame-payout" style="font-size: 1.1rem; font-weight: 800; color: var(--color-success); margin-bottom: 0.4rem;"></div>
+                  <div id="wordle-postgame-word" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;"></div>
+                  <div style="display: flex; gap: 0.75rem; justify-content: center;">
+                    <button type="button" class="btn-primary" onclick="window.shareWordleResult()" style="padding: 0.6rem 1.2rem; font-size: 0.9rem;">
+                      📋 Share Result
+                    </button>
+                    <button type="button" class="btn-secondary" onclick="window.openWordleStatsModal()" style="padding: 0.6rem 1.2rem; font-size: 0.9rem;">
+                      📊 Stats
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Virtual On-Screen Keyboard -->
+                <div id="wordle-keyboard" class="wordle-keyboard"></div>
+              </div>
+            </div>
+
+            <!-- Panel: Cyber Sudoku (PLAN-020) -->
+            <div id="panel-game-sudoku" class="game-panel-hidden" style="width: 100%; display: none; flex-direction: column; align-items: center; justify-content: flex-start; padding: 1rem 0;">
+              
+              <!-- Screen 1: Difficulty Selector Screen -->
+              <div id="sudoku-difficulty-screen" style="display: flex; flex-direction: column; align-items: center; gap: 1.5rem; width: 100%; max-width: 500px; padding: 1rem;">
+                <div style="text-align: center;">
+                  <div style="font-size: 2.2rem; margin-bottom: 0.3rem;">🔢</div>
+                  <h3 style="font-size: 1.4rem; font-weight: 900; color: var(--color-warning); margin: 0 0 0.5rem 0;">DAILY CYBER SUDOKU</h3>
+                  <p style="color: var(--text-dim); font-size: 0.9rem; margin: 0; max-width: 400px;">
+                    Select your difficulty level for today's daily puzzle. Once confirmed, your difficulty is locked for today!
+                  </p>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 0.85rem; width: 100%;">
+                  <!-- Easy Tier Card -->
+                  <div class="card" onclick="window.startDailySudokuGame('easy')" style="cursor: pointer; padding: 1rem 1.25rem; border: 1px solid rgba(0, 230, 118, 0.4); display: flex; justify-content: space-between; align-items: center; transition: transform 0.15s, box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 0 15px rgba(0,230,118,0.3)'" onmouseout="this.style.boxShadow='none'">
+                    <div>
+                      <div style="font-size: 1.1rem; font-weight: 800; color: #00e676;">🟢 EASY TIER</div>
+                      <div style="font-size: 0.8rem; color: var(--text-dim);">40-45 clues revealed • Beginner friendly</div>
+                    </div>
+                    <div style="text-align: right;">
+                      <div style="font-size: 1.2rem; font-weight: 900; color: #00e676;">+50 PGT</div>
+                      <div style="font-size: 0.72rem; color: var(--text-dim);">Base Reward</div>
+                    </div>
+                  </div>
+
+                  <!-- Medium Tier Card -->
+                  <div class="card" onclick="window.startDailySudokuGame('medium')" style="cursor: pointer; padding: 1rem 1.25rem; border: 1px solid rgba(0, 240, 255, 0.4); display: flex; justify-content: space-between; align-items: center; transition: transform 0.15s, box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 0 15px rgba(0,240,255,0.3)'" onmouseout="this.style.boxShadow='none'">
+                    <div>
+                      <div style="font-size: 1.1rem; font-weight: 800; color: var(--color-primary);">🟡 MEDIUM TIER</div>
+                      <div style="font-size: 0.8rem; color: var(--text-dim);">32-35 clues revealed • Balanced challenge</div>
+                    </div>
+                    <div style="text-align: right;">
+                      <div style="font-size: 1.2rem; font-weight: 900; color: var(--color-primary);">+150 PGT</div>
+                      <div style="font-size: 0.72rem; color: var(--text-dim);">Base Reward</div>
+                    </div>
+                  </div>
+
+                  <!-- Hard Tier Card -->
+                  <div class="card" onclick="window.startDailySudokuGame('hard')" style="cursor: pointer; padding: 1rem 1.25rem; border: 1px solid rgba(255, 51, 102, 0.4); display: flex; justify-content: space-between; align-items: center; transition: transform 0.15s, box-shadow 0.15s;" onmouseover="this.style.boxShadow='0 0 15px rgba(255,51,102,0.3)'" onmouseout="this.style.boxShadow='none'">
+                    <div>
+                      <div style="font-size: 1.1rem; font-weight: 800; color: #ff3366;">🔴 HARD TIER</div>
+                      <div style="font-size: 0.8rem; color: var(--text-dim);">26-29 clues revealed • Advanced logic</div>
+                    </div>
+                    <div style="text-align: right;">
+                      <div style="font-size: 1.2rem; font-weight: 900; color: #ff3366;">+400 PGT</div>
+                      <div style="font-size: 0.72rem; color: var(--text-dim);">Base Reward</div>
+                    </div>
+                  </div>
+                </div>
+
+                <button type="button" class="btn-secondary" onclick="window.openSudokuStatsModal()" style="padding: 0.6rem 1.2rem; font-size: 0.85rem;">
+                  📊 View Sudoku Records &amp; Stats
+                </button>
+              </div>
+
+              <!-- Screen 2: Active Puzzle Gameplay Screen -->
+              <div id="sudoku-play-screen" class="sudoku-container" style="display: none;">
+                <!-- Sudoku HUD Bar -->
+                <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 1rem; background: rgba(0,0,0,0.3); border: 1px solid var(--border-cyan); border-radius: 8px;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span id="sudoku-diff-pill" style="font-size: 0.8rem; font-weight: 800; text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 6px; background: rgba(0,240,255,0.15); color: var(--color-primary); border: 1px solid var(--border-cyan);">MEDIUM</span>
+                    <span id="sudoku-timer-display" style="font-family: monospace; font-size: 0.95rem; font-weight: 700; color: #fff;">00:00</span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span id="sudoku-mistakes-badge" style="font-size: 0.8rem; font-weight: 700; color: var(--text-dim);">Mistakes: 0/3</span>
+                    <button type="button" class="btn-secondary" onclick="window.openSudokuStatsModal()" style="padding: 0.35rem 0.7rem; font-size: 0.8rem;" title="View Sudoku Statistics">
+                      📊 Stats
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 9x9 Sudoku Grid -->
+                <div id="sudoku-grid" class="sudoku-grid"></div>
+
+                <!-- Postgame Outcome Card (Hidden during play) -->
+                <div id="sudoku-postgame-card" class="card" style="display: none; width: 100%; text-align: center; padding: 1.25rem; border: 1px solid var(--border-cyan); background: rgba(8, 14, 28, 0.95);">
+                  <div id="sudoku-postgame-title" style="font-size: 1.25rem; font-weight: 900; margin-bottom: 0.4rem; color: #fff;"></div>
+                  <div id="sudoku-postgame-payout" style="font-size: 1.1rem; font-weight: 800; color: var(--color-success); margin-bottom: 0.4rem;"></div>
+                  <div id="sudoku-postgame-time" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;"></div>
+                  <button type="button" class="btn-primary" onclick="window.openSudokuStatsModal()" style="padding: 0.6rem 1.2rem; font-size: 0.9rem;">
+                    📊 View Statistics
+                  </button>
+                </div>
+
+                <!-- Control Buttons: Undo, Erase, Notes Mode -->
+                <div class="sudoku-controls">
+                  <button type="button" class="sudoku-ctrl-btn" onclick="window.undoSudokuMove()">
+                    <span style="font-size: 1.1rem;">↩️</span>
+                    <span>Undo</span>
+                  </button>
+                  <button type="button" class="sudoku-ctrl-btn" onclick="window.eraseSudokuCell()">
+                    <span style="font-size: 1.1rem;">🧹</span>
+                    <span>Erase</span>
+                  </button>
+                  <button type="button" class="sudoku-ctrl-btn" id="btn-sudoku-notes" onclick="window.toggleSudokuNotes()">
+                    <span style="font-size: 1.1rem;">✏️</span>
+                    <span id="label-sudoku-notes">Notes: OFF</span>
+                  </button>
+                </div>
+
+                <!-- 1-9 Number Input Keypad -->
+                <div class="sudoku-keypad">
+                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(1)">1</button>
+                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(2)">2</button>
+                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(3)">3</button>
+                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(4)">4</button>
+                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(5)">5</button>
+                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(6)">6</button>
+                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(7)">7</button>
+                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(8)">8</button>
+                  <button type="button" class="sudoku-key" onclick="window.inputSudokuNumber(9)">9</button>
+                </div>
+              </div>
+
+            </div>
+
           </div>
 
           <!-- Leaderboard Column (Populated dynamically by initArcadeLeaderboardCards in games-registry.js) -->
