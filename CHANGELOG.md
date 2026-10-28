@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PLAN-020: Rebalance Cyber Sudoku Difficulty Tier Base Rewards (`v1.5.724`)**:
+  - **💰 Rebalanced Difficulty Tier Rewards ([`index.html`](index.html), [`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/easier_sudoku_puzzles.sql`](supabase/easier_sudoku_puzzles.sql))**:
+    - Rebalanced base rewards across Sudoku difficulty cards and authoritative Supabase RPCs:
+      - 🟢 **Easy Tier**: **+50 PGT** (Base) + 20% Flawless bonus (+10 PGT)
+      - 🟡 **Medium Tier**: **+75 PGT** (Base) + 20% Flawless bonus (+15 PGT)
+      - 🔴 **Hard Tier**: **+100 PGT** (Base) + 20% Flawless bonus (+20 PGT)
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.724"` and refreshed asset queries.
+
 - **PLAN-020: Quality-of-Life Sudoku Polish (Easy Clues, Hints, 5 Mistakes Buffer & Keypad Counters) (`v1.5.723`)**:
   - **🔢 Easy Sudoku Clues Upgrade to 50 Clues ([`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/easier_sudoku_puzzles.sql`](supabase/easier_sudoku_puzzles.sql))**:
     - Upgraded all 25 Easy puzzles from 38-39 clues to a generous 50 clues (leaving only ~31 empty cells, over 62% pre-filled), making the Easy tier relaxed, approachable, and fun.
