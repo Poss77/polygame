@@ -464,7 +464,7 @@ export function shareWordleResult() {
     emojiGrid += '\n';
   });
 
-  const shareText = `PolyGame Cyber Wordle (${todayStr})\nRow ${rowCount} • ${pgtWonToday > 0 ? `+${pgtWonToday} PGT Won! ⚡` : 'Daily Cipher'}\n\n${emojiGrid}\nPlay at: https://polygame.fun`;
+  const shareText = `PolyGame Cyber Wordle (${todayStr})\nRow ${rowCount} • ${pgtWonToday > 0 ? `+${pgtWonToday} PGT Won! ⚡` : 'Daily Cipher'}\n\n${emojiGrid}\nPlay at: https://polygongaming.io/`;
 
   navigator.clipboard.writeText(shareText).then(() => {
     if (triggerToast) triggerToast('📋 Results copied to clipboard for Discord & X!', 'success');

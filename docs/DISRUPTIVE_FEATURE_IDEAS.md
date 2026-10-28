@@ -1,8 +1,8 @@
-﻿# Polygon Gaming — Disruptive Feature Roadmap & Concepts Archive
+# Polygon Gaming — Disruptive Feature Roadmap & Concepts Archive
 
 > **Status**: Backlog / Future Vision Archive  
 > **Created**: 2026-09-03  
-> **Platform**: Polygon Gaming (`https://polygongaming.io/` / `https://polygame.fun/`)  
+> **Platform**: Polygon Gaming (`https://polygongaming.io/`)  
 > **Native Token**: PGT (PolyGame Token)
 
 ---

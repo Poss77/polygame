@@ -1392,7 +1392,7 @@ export function openCalendarFallback(targetMs) {
   const end = new Date(targetMs + 15 * 60 * 1000);
   const pad = (n) => String(n).padStart(2, '0');
   const formatIsoUtc = (d) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`;
-  const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent("⚡ Claim PolyGame Daily Faucet (50 PGT)")}&dates=${formatIsoUtc(start)}/${formatIsoUtc(end)}&details=${encodeURIComponent("Your daily 50 PGT reward is ready on Polygon Gaming! Visit https://polygame.fun to claim and play.")}&location=https://polygame.fun`;
+  const calUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent("⚡ Claim PolyGame Daily Faucet (50 PGT)")}&dates=${formatIsoUtc(start)}/${formatIsoUtc(end)}&details=${encodeURIComponent("Your daily 50 PGT reward is ready on Polygon Gaming! Visit https://polygongaming.io/ to claim and play.")}&location=https://polygongaming.io/`;
   window.open(calUrl, '_blank');
   triggerToast("📅 Calendar reminder opened! Save it to get alerted tomorrow.", "info");
 }

@@ -2,7 +2,7 @@
 
 > **Plan ID**: `PLAN-018`  
 > **Codename**: PolyLocale  
-> **Target Platform**: Polygon Gaming (`https://polygongaming.io` / `https://polygame.fun`)  
+> **Target Platform**: Polygon Gaming (`https://polygongaming.io/`)  
 > **Architecture**: Vanilla HTML/CSS/JavaScript with Supabase PostgreSQL backend  
 > **Status**: Planned / Reference  
 
