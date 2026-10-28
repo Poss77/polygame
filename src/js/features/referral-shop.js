@@ -8,7 +8,7 @@ import { supabase, SUPABASE_URL, SUPABASE_KEY, ADMIN_WALLET_ADDRESS } from '../c
 import { triggerToast, openModal, closeModal } from '../core/ui.js';
 import { appState } from '../core/state.js';
 
-// Configuration of the 6 Weekly Activity Levels with 3x reduced pricing
+// Configuration of the 7 Referral Adoption Categories with baseline & max 10x boost yield
 export const REFERRAL_TIERS = [
   {
     level: 5,
@@ -21,6 +21,8 @@ export const REFERRAL_TIERS = [
     desc: 'Ultra-active downline player with peak daily faucet and arcade engagement. Maximum commission yield.',
     fictivePriceUSD: 8.00,
     estWeeklyPgt: '150 - 400 PGT/wk',
+    maxWeeklyPgt: 'Up to 4,000 PGT/wk (10x Boost)',
+    basePgtYield: 150,
     icon: '👑'
   },
   {
@@ -34,6 +36,8 @@ export const REFERRAL_TIERS = [
     desc: 'High-frequency weekly player. Consistent daily earner across arcade leaderboards and faucet claims.',
     fictivePriceUSD: 5.00,
     estWeeklyPgt: '80 - 200 PGT/wk',
+    maxWeeklyPgt: 'Up to 2,000 PGT/wk (10x Boost)',
+    basePgtYield: 80,
     icon: '💎'
   },
   {
@@ -47,6 +51,8 @@ export const REFERRAL_TIERS = [
     desc: 'Steady weekly participant with recurring claims and regular arcade sessions.',
     fictivePriceUSD: 2.50,
     estWeeklyPgt: '40 - 100 PGT/wk',
+    maxWeeklyPgt: 'Up to 1,000 PGT/wk (10x Boost)',
+    basePgtYield: 40,
     icon: '🥇'
   },
   {
@@ -60,20 +66,39 @@ export const REFERRAL_TIERS = [
     desc: 'Casual active player checking in multiple times per week.',
     fictivePriceUSD: 1.25,
     estWeeklyPgt: '20 - 50 PGT/wk',
+    maxWeeklyPgt: 'Up to 500 PGT/wk (10x Boost)',
+    basePgtYield: 20,
     icon: '🥈'
   },
   {
     level: 1,
-    name: 'Scout / Recruit',
-    badge: '🥉 L1 Scout / Recruit',
+    name: 'Scout',
+    badge: '🥉 L1 Scout',
     color: '#38bdf8',
     border: 'rgba(56, 189, 248, 0.4)',
     bg: 'linear-gradient(135deg, rgba(56, 189, 248, 0.08), rgba(56, 189, 248, 0.02))',
-    reqText: '1+ Faucet / week OR New User (<7d)',
-    desc: 'Entry active player or fresh signup from the last 7 days. High growth potential as they discover games.',
+    reqText: '1+ Faucet or Game / week',
+    desc: 'Proven active player with verified weekly faucet claims or arcade sessions. Consistent baseline earner.',
     fictivePriceUSD: 0.60,
     estWeeklyPgt: '10 - 25 PGT/wk',
+    maxWeeklyPgt: 'Up to 250 PGT/wk (10x Boost)',
+    basePgtYield: 10,
     icon: '🥉'
+  },
+  {
+    level: 'recruit',
+    name: 'New Recruit',
+    badge: '🌱 Fresh Recruit (<7d)',
+    color: '#10b981',
+    border: 'rgba(16, 185, 129, 0.4)',
+    bg: 'linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.02))',
+    reqText: 'Registered < 7 days ago',
+    desc: 'Brand new unreferred player registered within the last 7 days. High discovery upside with potential to scale to L3–L5.',
+    fictivePriceUSD: 0.60,
+    estWeeklyPgt: '10 - 25 PGT/wk',
+    maxWeeklyPgt: 'Up to 250 PGT/wk (10x Boost)',
+    basePgtYield: 10,
+    icon: '🌱'
   },
   {
     level: 0,
@@ -86,13 +111,15 @@ export const REFERRAL_TIERS = [
     desc: 'Registered unreferred player idle for over a week. Budget adoption cost with reactivation upside.',
     fictivePriceUSD: 0.15,
     estWeeklyPgt: 'Reactivation Upside',
+    maxWeeklyPgt: 'Reactivation Upside',
+    basePgtYield: 0,
     icon: '⚪'
   }
 ];
 
 // Live state
-let availableCensus = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, 0: 0 };
-let cartQuantities = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, 0: 0 };
+let availableCensus = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, 0: 0, recruit: 0 };
+let cartQuantities = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, 0: 0, recruit: 0 };
 let isFetchingCensus = false;
 let selectedPaymentMethod = 'pol'; // 'pol' or 'pgt'
 
@@ -174,7 +201,7 @@ export async function fetchUnreferredCensus(forceRefresh = false) {
       return;
     }
 
-    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, 0: 0 };
+    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, 0: 0, recruit: 0 };
     let fetchedViaRpc = false;
 
     // 1. Fast server-side aggregation RPC
@@ -187,6 +214,7 @@ export async function fetchUnreferredCensus(forceRefresh = false) {
         counts[3] = parseInt(rpcCounts['3'] || 0, 10);
         counts[4] = parseInt(rpcCounts['4'] || 0, 10);
         counts[5] = parseInt(rpcCounts['5'] || 0, 10);
+        counts['recruit'] = parseInt(rpcCounts['recruit'] || 0, 10);
         fetchedViaRpc = true;
       }
     } catch (e) {
@@ -209,7 +237,6 @@ export async function fetchUnreferredCensus(forceRefresh = false) {
         data.forEach(row => {
           if (row.is_banned) return;
           if (row.player_id && row.player_id.toLowerCase().startsWith('test_')) return;
-          // Highest (best) tier achieved across the last 2 weeks (current active week vs prior completed week)
           let lvl = Math.max(
             parseInt(row.weekly_active_tier || 0, 10),
             parseInt(row.last_weekly_active_tier || 0, 10)
@@ -218,11 +245,11 @@ export async function fetchUnreferredCensus(forceRefresh = false) {
           if (isNaN(lvl) || lvl < 0) lvl = 0;
           if (lvl > 5) lvl = 5;
 
-          // Option A: If tier is 0, but user registered within last 7 days, treat as L1 (New Recruit)
           if (lvl === 0 && row.created_at) {
             const createdAtMs = new Date(row.created_at).getTime();
             if (!isNaN(createdAtMs) && createdAtMs >= sevenDaysAgo) {
-              lvl = 1;
+              counts['recruit'] = (counts['recruit'] || 0) + 1;
+              return;
             }
           }
 
@@ -251,8 +278,8 @@ window.fetchUnreferredCensus = fetchUnreferredCensus;
  * Update top hero statistics
  */
 function updateShopHeroStats() {
-  const totalAvailable = Object.values(availableCensus).reduce((a, b) => a + b, 0);
-  const activeAvailable = (availableCensus[1] || 0) + (availableCensus[2] || 0) + (availableCensus[3] || 0) + (availableCensus[4] || 0) + (availableCensus[5] || 0);
+  const totalAvailable = Object.values(availableCensus).reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0);
+  const activeAvailable = (availableCensus[1] || 0) + (availableCensus[2] || 0) + (availableCensus[3] || 0) + (availableCensus[4] || 0) + (availableCensus[5] || 0) + (availableCensus['recruit'] || 0);
   const dormantAvailable = availableCensus[0] || 0;
   const myL1 = appState?.state?.referralsL1 || 0;
 
@@ -304,9 +331,14 @@ export function renderReferralShopTiers() {
             <span style="color: var(--text-dim); font-size: 0.72rem;">CRITERIA:</span>
             <strong style="font-size: 0.78rem; color: #fff;">${tier.reqText}</strong>
           </div>
-          <div class="ref-shop-yield-pill" style="color: ${tier.color};">
-            <span style="font-size: 0.72rem; color: var(--text-dim);">EST. COMMISSION:</span>
-            <strong style="font-size: 0.78rem;">${tier.estWeeklyPgt}</strong>
+          <div class="ref-shop-yield-pill" style="color: ${tier.color}; text-align: right;">
+            <span style="font-size: 0.7rem; color: var(--text-dim); display: block;">EST. COMMISSION</span>
+            <strong style="font-size: 0.78rem; display: block;">${tier.estWeeklyPgt}</strong>
+            ${tier.maxWeeklyPgt && tier.maxWeeklyPgt !== tier.estWeeklyPgt ? `
+              <span style="font-size: 0.67rem; color: #00ff88; font-weight: 700; display: block; margin-top: 1px;">
+                ⚡ ${tier.maxWeeklyPgt}
+              </span>
+            ` : ''}
           </div>
         </div>
 
@@ -323,7 +355,7 @@ export function renderReferralShopTiers() {
           </div>
 
           <div class="ref-shop-stepper-box">
-            <button class="ref-shop-btn-step" onclick="window.stepReferralShopCart(${lvl}, -1)" ${inCart <= 0 ? 'disabled' : ''}>-</button>
+            <button class="ref-shop-btn-step" onclick="window.stepReferralShopCart('${lvl}', -1)" ${inCart <= 0 ? 'disabled' : ''}>-</button>
             <input type="number" 
                    id="ref-shop-input-${lvl}" 
                    class="ref-shop-input-qty" 
@@ -331,9 +363,9 @@ export function renderReferralShopTiers() {
                    min="0" 
                    max="${available}" 
                    ${isOutOfStock ? 'disabled' : ''}
-                   onchange="window.setReferralShopQtyDirect(${lvl}, this.value)">
-            <button class="ref-shop-btn-step" onclick="window.stepReferralShopCart(${lvl}, 1)" ${isOutOfStock || inCart >= available ? 'disabled' : ''}>+</button>
-            <button class="ref-shop-btn-max" onclick="window.maxReferralShopCart(${lvl})" ${isOutOfStock || inCart >= available ? 'disabled' : ''}>Max</button>
+                   onchange="window.setReferralShopQtyDirect('${lvl}', this.value)">
+            <button class="ref-shop-btn-step" onclick="window.stepReferralShopCart('${lvl}', 1)" ${isOutOfStock || inCart >= available ? 'disabled' : ''}>+</button>
+            <button class="ref-shop-btn-max" onclick="window.maxReferralShopCart('${lvl}')" ${isOutOfStock || inCart >= available ? 'disabled' : ''}>Max</button>
           </div>
         </div>
 
@@ -397,7 +429,7 @@ window.setReferralShopQtyDirect = setReferralShopQtyDirect;
  * Clear all cart selections
  */
 export function clearReferralShopCart() {
-  cartQuantities = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, 0: 0 };
+  cartQuantities = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0, 0: 0, recruit: 0 };
   renderReferralShopTiers();
   updateOrderSummary();
   triggerToast("Referral selections cleared", "info");
@@ -410,6 +442,7 @@ window.clearReferralShopCart = clearReferralShopCart;
 export function updateOrderSummary() {
   let totalCount = 0;
   let subtotalUSD = 0.0;
+  let projectedBaseYield = 0;
   const breakdownList = [];
 
   REFERRAL_TIERS.forEach(tier => {
@@ -418,6 +451,7 @@ export function updateOrderSummary() {
       totalCount += qty;
       const cost = qty * tier.fictivePriceUSD;
       subtotalUSD += cost;
+      projectedBaseYield += qty * (tier.basePgtYield || 0);
       breakdownList.push({
         badge: tier.badge,
         name: tier.name,
@@ -484,7 +518,35 @@ export function updateOrderSummary() {
           </div>
         `;
       });
-      elItemsList.innerHTML = bHtml;
+      // Calculate player active referral bonuses
+      let bonusHtml = '';
+      if (projectedBaseYield > 0) {
+        const multis = typeof appState?.getMultipliers === 'function' ? appState.getMultipliers() : {};
+        const isVip = typeof appState?.isVipActive === 'function' && appState.isVipActive();
+        const rawNftMult = multis.rawNftReferralMultiplier || multis.nftReferralMultiplier || 1.0;
+        const ambMult = multis.ambReferralMultiplier || (appState?.state?.isAmbassador ? 1.5 : 1.0);
+        const vipMult = isVip ? 2.0 : 1.0;
+        const userRefMult = rawNftMult * ambMult * vipMult;
+
+        bonusHtml = `
+          <div style="margin-top: 0.6rem; padding: 0.5rem 0.6rem; background: rgba(0, 255, 136, 0.06); border: 1px solid rgba(0, 255, 136, 0.22); border-radius: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Est. Base Commission:</span>
+              <strong style="font-size: 0.78rem; color: #fff;">~${projectedBaseYield.toLocaleString()} PGT/wk</strong>
+            </div>
+            ${userRefMult > 1.0 ? `
+              <div style="font-size: 0.72rem; color: #00ff88; font-weight: 700; margin-top: 3px; text-align: right;">
+                🔥 With Your ${userRefMult.toFixed(2)}x Boosts: ~${Math.round(projectedBaseYield * userRefMult).toLocaleString()} PGT/wk
+              </div>
+            ` : `
+              <div style="font-size: 0.68rem; color: #00ff88; font-weight: 600; margin-top: 3px; text-align: right;">
+                🚀 Up to ~${(projectedBaseYield * 10).toLocaleString()} PGT/wk with 10x Boosts
+              </div>
+            `}
+          </div>
+        `;
+      }
+      elItemsList.innerHTML = bHtml + bonusHtml;
     }
   }
 
@@ -637,6 +699,7 @@ export async function executeReferralAdoption() {
           p_l2: cartQuantities[2] || 0,
           p_l1: cartQuantities[1] || 0,
           p_l0: cartQuantities[0] || 0,
+          p_recruit: cartQuantities['recruit'] || 0,
           p_payment_method: 'POL',
           p_pgt_cost: 0,
           p_tx_hash: tx.hash,

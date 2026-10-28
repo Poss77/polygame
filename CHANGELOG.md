@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Referral Marketplace: Split Scout & Recruit Pools + 10x Boost Yield Display (`v1.5.743`)**:
+  - **🌱 Dedicated Scout vs. Recruit Pools ([`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/split_scout_and_recruit_pools.sql`](supabase/split_scout_and_recruit_pools.sql))**:
+    - Disaggregated Level 1 into two clear, distinct adoption categories:
+      - **🥉 L1 Scout**: Verified unreferred players with proven weekly activity (`weekly_active_tier = 1`).
+      - **🌱 Fresh Recruit (<7d)**: Brand new unreferred signups registered in the past 7 days (`tier = 0 AND created_at >= NOW() - INTERVAL '7 days'`), giving buyers full transparency between established casuals and fresh discovery signups.
+    - Updated `adopt_referrals()` with explicit `p_recruit` parameter, adopting newest signups first (`ORDER BY created_at DESC`).
+    - Updated `get_unreferred_census()` to return separated `'1'` and `'recruit'` pool tallies.
+  - **⚡ Conservative vs. 10x Boost Indicators ([`src/js/features/referral-shop.js`](src/js/features/referral-shop.js), [`src/js/features/referrals.js`](src/js/features/referrals.js), [`index.html`](index.html))**:
+    - Enhanced card yield badges across all tiers to display both base commission and max potential: e.g. `150 - 400 PGT/wk` with `⚡ Up to 4,000 PGT/wk (10x Boost)`.
+    - Added real-time Projected Commission Yield calculation to the sticky Order Summary sidebar, detecting user's active VIP, Ambassador, and equipped NFT referral multipliers to project personalized weekly earnings (or highlighting the up to 10x ceiling for unboosted accounts).
+    - Added dedicated `🌱 Recruit (<7d)` counter to the Downline Level Census grid in `#referrals`.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.743"` and refreshed script cache busters.
+
 - **Referral Marketplace: Option A — 7-Day New Recruits Priced as Level 1 (`v1.5.742`)**:
   - **🌱 New User Recruits as Level 1 ([`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/update_referral_option_a_7day_new_recruits.sql`](supabase/update_referral_option_a_7day_new_recruits.sql))**:
     - Resolved cold-start dormant classification for fresh accounts: newly registered players with 0 weekly faucets/games default to activity tier 0, but represent high-potential new participants discovering the ecosystem rather than long-term dormant accounts.

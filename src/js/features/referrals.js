@@ -320,7 +320,7 @@ export async function loadMyDownlineNetwork() {
     }
 
     let countL1 = 0, countL2 = 0, countL3 = 0, countL4 = 0;
-    let tierL0 = 0, tierL1 = 0, tierL2 = 0, tierL3 = 0, tierL4 = 0, tierL5 = 0;
+    let tierL0 = 0, tierRecruit = 0, tierL1 = 0, tierL2 = 0, tierL3 = 0, tierL4 = 0, tierL5 = 0;
     const isMyAddr = (addr) => addr && myAddrs.includes(addr.toLowerCase());
 
     downlines.forEach(u => {
@@ -328,20 +328,20 @@ export async function loadMyDownlineNetwork() {
       if (isL1) {
         countL1++;
         // Downline Activity Level Census strictly tallies direct Level 1 (L1) referrals
-        let activeTier = Math.max(parseInt(u.weekly_active_tier || 0, 10), parseInt(u.last_weekly_active_tier || 0, 10));
-        // Option A: Fresh signups in the last 7 days are categorized as L1 (Recruit)
-        if (activeTier === 0 && u.created_at) {
-          const createdAtMs = new Date(u.created_at).getTime();
-          if (!isNaN(createdAtMs) && createdAtMs >= Date.now() - 7 * 24 * 60 * 60 * 1000) {
-            activeTier = 1;
-          }
-        }
+        const activeTier = Math.max(parseInt(u.weekly_active_tier || 0, 10), parseInt(u.last_weekly_active_tier || 0, 10));
         if (activeTier === 5) tierL5++;
         else if (activeTier === 4) tierL4++;
         else if (activeTier === 3) tierL3++;
         else if (activeTier === 2) tierL2++;
         else if (activeTier === 1) tierL1++;
-        else tierL0++;
+        else if (activeTier === 0) {
+          const createdAtMs = u.created_at ? new Date(u.created_at).getTime() : 0;
+          if (createdAtMs >= Date.now() - 7 * 24 * 60 * 60 * 1000) {
+            tierRecruit++;
+          } else {
+            tierL0++;
+          }
+        }
       } else if (isMyAddr(u.referred_by_l2)) {
         countL2++;
       } else if (isMyAddr(u.referred_by_l3)) {
@@ -374,6 +374,7 @@ export async function loadMyDownlineNetwork() {
 
     // Live update Downline Weekly Active Level Census counters
     const elT0 = document.getElementById('ref-tier-l0-count');
+    const elTRecruit = document.getElementById('ref-tier-recruit-count');
     const elT1 = document.getElementById('ref-tier-l1-count');
     const elT2 = document.getElementById('ref-tier-l2-count');
     const elT3 = document.getElementById('ref-tier-l3-count');
@@ -381,6 +382,7 @@ export async function loadMyDownlineNetwork() {
     const elT5 = document.getElementById('ref-tier-l5-count');
 
     if (elT0) elT0.innerText = tierL0;
+    if (elTRecruit) elTRecruit.innerText = tierRecruit;
     if (elT1) elT1.innerText = tierL1;
     if (elT2) elT2.innerText = tierL2;
     if (elT3) elT3.innerText = tierL3;
