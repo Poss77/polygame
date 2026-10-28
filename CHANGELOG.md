@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PLAN-020: Fix Ambassador Multiplier to Canonical 2.0x in Daily Games (`v1.5.729`)**:
+  - **🛡️ Multiplier Alignment ([`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/fix_daily_games_payout_rpc.sql`](supabase/fix_daily_games_payout_rpc.sql))**:
+    - Corrected Ambassador multiplier from `1.10x` to canonical `2.0x` across `submit_wordle_guess` and `claim_daily_sudoku_reward`.
+    - Player Poss's total multiplier is now authoritatively: `1.95 (NFTs) × 2.0 (VIP Gold) × 1.5 (Apex Relics) × 2.0 (Ambassador) = 11.7x`.
+    - Added retroactive balance correction script for Poss's today Wordle prize (+105.3 PGT, reaching 234.0 PGT total).
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.729"` and refreshed asset queries.
+
 - **PLAN-020: Fix Wordle Guess Distribution Chart Colors & Design Tokens (`v1.5.728`)**:
   - **🎨 Wordle Histogram Colors ([`src/js/features/wordle.js`](src/js/features/wordle.js), [`src/css/variables.css`](src/css/variables.css))**:
     - Added `--color-success: #00ff66;` to `:root` design tokens in `variables.css`.
