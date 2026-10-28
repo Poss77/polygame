@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Affiliates & Referral Marketplace: Top Referrers Direct Action (`v1.5.741`)**:
+  - **🛒 Direct Marketplace Shortcut ([`index.html`](index.html))**:
+    - Added high-visibility **"🛒 Purchase Referrals"** CTA button directly inside the header of the "Top Referrers" card on `#referrals`, giving players instant access to the Referral Adoption Marketplace.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.741"` and refreshed script cache busters.
+
 - **Gameplay UI: Remove In-Game Toasts & Suppress Notification Overlap (`v1.5.740`)**:
   - **🔕 In-Game Toast Elimination ([`game.js`](game.js), [`drift.js`](drift.js), [`invaders.js`](invaders.js), [`stacker.js`](stacker.js), [`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js))**:
     - Removed all intrusive HTML toast notifications fired during live gameplay (shield activation/break, overcharge timers, boss rage warnings, speed restoration, shard/crystal pickups, relic drops, and coin harvests).

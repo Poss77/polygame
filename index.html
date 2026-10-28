@@ -372,7 +372,7 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.740">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.741">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -3174,8 +3174,15 @@
 
           <!-- Top Referrers Column -->
           <div class="card">
-            <h3 class="card-title" style="margin-bottom: 0.5rem; color: var(--color-secondary);">Top Referrers</h3>
-            <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 0.75rem;">Global ranking of top network builders.</p>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.75rem;">
+              <div>
+                <h3 class="card-title" style="margin-bottom: 0.25rem; color: var(--color-secondary);">Top Referrers</h3>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin: 0;">Global ranking of top network builders.</p>
+              </div>
+              <button class="btn-primary" onclick="switchTab('buy-referrals')" style="font-size: 0.75rem; padding: 0.4rem 0.75rem; display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 8px; font-weight: 700; white-space: nowrap; cursor: pointer; flex-shrink: 0; box-shadow: 0 0 12px rgba(192, 132, 252, 0.25);">
+                🛒 Purchase Referrals
+              </button>
+            </div>
             <div style="display: flex; gap: 0.4rem; margin-bottom: 0.75rem;">
               <button class="btn-secondary active" id="btn-ref-tab-pgt" onclick="switchReferralLeaderboardTab('pgt')" style="flex:1; font-size:0.75rem; padding:0.35rem;">PGT Referrers</button>
               <button class="btn-secondary" id="btn-ref-tab-pol" onclick="switchReferralLeaderboardTab('pol')" style="flex:1; font-size:0.75rem; padding:0.35rem; color:var(--color-primary);">💎 POL NFT Referrers</button>
@@ -5188,17 +5195,17 @@
     </div>
   </div>
 
-  <script src="game.js?v=1.5.740"></script>
-  <script src="invaders.js?v=1.5.740"></script>
-  <script src="drift.js?v=1.5.740"></script>
-  <script src="stacker.js?v=1.5.740"></script>
-  <script src="space.js?v=1.5.740"></script>
-  <script type="module" src="skeet.js?v=1.5.740"></script>
-  <script type="module" src="defense.js?v=1.5.740"></script>
-  <script type="module" src="runner.js?v=1.5.740"></script>
-  <script type="module" src="q2048.js?v=1.5.740"></script>
-  <script src="tetris.js?v=1.5.740"></script>
-  <script type="module" src="src/js/app.js?v=1.5.740"></script>
+  <script src="game.js?v=1.5.741"></script>
+  <script src="invaders.js?v=1.5.741"></script>
+  <script src="drift.js?v=1.5.741"></script>
+  <script src="stacker.js?v=1.5.741"></script>
+  <script src="space.js?v=1.5.741"></script>
+  <script type="module" src="skeet.js?v=1.5.741"></script>
+  <script type="module" src="defense.js?v=1.5.741"></script>
+  <script type="module" src="runner.js?v=1.5.741"></script>
+  <script type="module" src="q2048.js?v=1.5.741"></script>
+  <script src="tetris.js?v=1.5.741"></script>
+  <script type="module" src="src/js/app.js?v=1.5.741"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">
