@@ -791,9 +791,7 @@ class CyberRunnerGame {
             this.createExplosionParticles(sPos, '#ffd700', 16);
             const coinText = this.overdriveTimer > 0 ? '🪙 +10 PGT COINS (2X!)' : '🪙 +5 PGT COIN!';
             this.addFloatingText(coinText, sPos.x, sPos.y - 25, '#ffd700', 1.35);
-            if (typeof window.triggerToast === 'function') {
-              window.triggerToast(`🪙 Rare Harvest: Claimed ${yieldCount * 5} PGT Coin!`, 'success');
-            }
+            // in-game toast removed
           } else if (item.type === 'shard') {
             const yieldCount = this.overdriveTimer > 0 ? 2 : 1;
             this.bonusItemsCollected = Math.min(50, this.bonusItemsCollected + yieldCount);

@@ -568,9 +568,7 @@ class Cyber2048Game {
           this.score += 500;
           this.playSfx('coin');
           this.triggerCoinBadge();
-          if (typeof window.triggerToast === 'function') {
-            window.triggerToast('🪙 Rare Harvest: Claimed 5 PGT Bonus Coin!', 'success');
-          }
+          // in-game toast removed
           this.coinCell = null;
           this.movesSinceCoin = 0;
         } else {
@@ -724,10 +722,7 @@ class Cyber2048Game {
         this.bonusTokens = Math.min(8, this.bonusTokens + gain);
       }
       this.playSfx('milestone', val);
-      if (typeof window.triggerToast === 'function') {
-        const rewardText = gain > 0 ? ` +${gain} Bonus PGT Token(s)` : '';
-        window.triggerToast(`🎉 Quantum Merge: Created ${val} Tile!${rewardText}`, 'success');
-      }
+      // in-game toast removed
       this.triggerMilestoneCelebration(val);
     }
   }

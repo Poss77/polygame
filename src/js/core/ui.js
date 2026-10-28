@@ -26,6 +26,20 @@ if (typeof window !== 'undefined') {
 // --- Notification Toast Manager ---
 
 export function triggerToast(message, type = 'success') {
+  // Suppress outside toast notifications during active arcade gameplay to prevent distraction & UI overlap
+  try {
+    const activeContainer = document.getElementById('active-game-container');
+    const isGameOpen = activeContainer && activeContainer.classList.contains('active-game') && activeContainer.style.display !== 'none';
+    const isGameFullscreen = document.body && (
+      document.body.classList.contains('game-fullscreen-open') ||
+      document.body.classList.contains('mobile-fullscreen-active') ||
+      document.body.classList.contains('game-active')
+    );
+    if (isGameOpen || isGameFullscreen) {
+      return;
+    }
+  } catch (e) {}
+
   let container = document.getElementById('notification-stack') || document.getElementById('toast-container');
   const fsEl = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement;
   const targetParent = fsEl || document.body;

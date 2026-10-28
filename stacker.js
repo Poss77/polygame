@@ -596,9 +596,7 @@ class CyberStackerGame {
           sessionId: this.sessionId
         });
       } else {
-        if (window.triggerToast) {
-          window.triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${pickedRelic.name} (+1 In-Game Relic)`, "success");
-        }
+        // in-game toast removed
         if (window.appState && window.appState.state) {
           const currentRelics = { ...(window.appState.state.relics || {}) };
           const prev = currentRelics[pickedRelic.id] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
@@ -711,7 +709,7 @@ class CyberStackerGame {
       this.floors = Math.max(0, this.floors - collapseCount);
       this.towerWobble *= 0.3;
       this.addPopup("💥 TOWER SECTION COLLAPSE!", "#ff3366");
-      if (window.triggerToast) window.triggerToast("⚠️ Tower instability caused a structural collapse!", "warning");
+      // in-game toast removed
     }
   }
 

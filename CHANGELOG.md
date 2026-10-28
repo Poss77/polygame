@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Gameplay UI: Remove In-Game Toasts & Suppress Notification Overlap (`v1.5.740`)**:
+  - **🔕 In-Game Toast Elimination ([`game.js`](game.js), [`drift.js`](drift.js), [`invaders.js`](invaders.js), [`stacker.js`](stacker.js), [`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js))**:
+    - Removed all intrusive HTML toast notifications fired during live gameplay (shield activation/break, overcharge timers, boss rage warnings, speed restoration, shard/crystal pickups, relic drops, and coin harvests).
+    - All gameplay events continue to render their native, non-intrusive on-canvas floating texts, particle bursts, audio cues, and top HUD indicator bars without cluttering the screen or stealing focus.
+  - **🛡️ Gameplay Notification Suppression ([`src/js/core/ui.js`](src/js/core/ui.js), [`src/js/features/games.js`](src/js/features/games.js), [`src/css/notifications.css`](src/css/notifications.css))**:
+    - Enhanced `triggerToast()` to automatically suppress outside notifications whenever an arcade game is active (`active-game-container.active-game` or `document.body.game-active`).
+    - Added CSS suppression rules ensuring `.notification-container` is completely hidden and non-overlapping during windowed and fullscreen gameplay.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.740"` and refreshed script cache busters.
+
 - **Cyber Drift: Recalibrate Velocity Safety Clamps & Instant Leaderboard Await (`v1.5.739`)**:
   - **🏎️ Velocity Rate Clamp Recalibration ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/fix_cyber_drift_velocity_rate_clamp_and_tiboryeah.sql`](supabase/fix_cyber_drift_velocity_rate_clamp_and_tiboryeah.sql))**:
     - Identified root cause of Tiboryeah's 123,308 high score being clamped down to 117,600: Cyber Drift's duration safety rate clamp in `end_arcade_session` was hardcoded to `v_duration_seconds * 1200` (1,200 pts/sec), based on an outdated assumption of 167–200 km/h cruising.

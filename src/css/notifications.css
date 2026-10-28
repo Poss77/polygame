@@ -54,3 +54,12 @@
   color: white;
 }
 
+
+/* Suppress outside toast notifications during active arcade gameplay */
+body.game-active .notification-container,
+body.game-fullscreen-open .notification-container,
+body.mobile-fullscreen-active .notification-container,
+#active-game-container.active-game ~ .notification-container,
+.game-window-container.fullscreen-active ~ .notification-container {
+  display: none !important;
+}

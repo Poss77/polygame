@@ -939,9 +939,7 @@ class NeonAstroDodge {
     const liveScoreEl = document.getElementById('game-live-score');
     if (liveScoreEl) liveScoreEl.innerText = this.score;
 
-    if (window.triggerToast) {
-      window.triggerToast(`🏆 ${b.name} DESTROYED! +${bonusTokens * 5} PGT Shard Bonus Earned!`, "warning");
-    }
+    // in-game toast removed
 
     this.boss = null; // Boss eliminated, arcade session continues seamlessly!
   }
@@ -1003,7 +1001,7 @@ class NeonAstroDodge {
       this.slowMoTime--;
       if (this.slowMoTime <= 0) {
         this.slowMo = false;
-        triggerToast("Chronos Warp Expired — Speed Restored!", "info");
+        // in-game toast removed
       }
     }
 
@@ -1062,7 +1060,7 @@ class NeonAstroDodge {
         this.player.shieldTime--;
         if (this.player.shieldTime <= 0) {
           this.player.shield = false;
-          triggerToast("Shield deactivated!", "error");
+          // in-game toast removed
         }
       }
 
@@ -1072,7 +1070,7 @@ class NeonAstroDodge {
         if (this.player.tripleTime <= 0) {
           this.player.tripleGun = false;
           this.player.weaponLevel = 0;
-          triggerToast("Weapon Overcharge Expired!", "info");
+          // in-game toast removed
         }
       }
 
@@ -1243,7 +1241,7 @@ class NeonAstroDodge {
         hasEntered: false,
         swayTime: 0
       };
-      if (window.triggerToast) window.triggerToast(archetype.announcement, "error");
+      // in-game toast removed
       if (typeof sfx.playExplosion === 'function') sfx.playExplosion();
     }
 
@@ -1274,7 +1272,7 @@ class NeonAstroDodge {
             alpha: 1.0,
             vy: -1.0
           });
-          if (window.triggerToast) window.triggerToast(`🔥 ${b.name} ENRAGED! Firepower & speed increased!`, "warning");
+          // in-game toast removed
         }
 
         b.swayTime += 1 * bossSpeedMult;
@@ -1356,7 +1354,7 @@ class NeonAstroDodge {
           this.player.shield = false;
           this.player.x = Math.max(30, this.player.x - 50);
           if (typeof sfx.playError === 'function') sfx.playError();
-          triggerToast("Shield Deflected Boss Hull!", "success");
+          // in-game toast removed
           this.createExplosionSparks(this.player.x, this.player.y, '#00f0ff', 25);
         } else {
           this.createExplosionSparks(this.player.x, this.player.y, '#ff0055', 50);
@@ -1604,7 +1602,7 @@ class NeonAstroDodge {
         if (this.player.shield) {
           this.player.shield = false;
           if (typeof sfx.playError === 'function') sfx.playError();
-          triggerToast("Shield Absorbed Laser Hit!", "success");
+          // in-game toast removed
           this.createExplosionSparks(this.player.x, this.player.y, '#00f0ff', 15);
         } else {
           this.createExplosionSparks(this.player.x, this.player.y, '#ff0055', 40);
@@ -1663,7 +1661,7 @@ class NeonAstroDodge {
           this.player.shield = false;
           if (typeof sfx.playError === 'function') sfx.playError();
           this.enemies.splice(i, 1);
-          triggerToast("Shield Destroyed Obstacle!", "success");
+          // in-game toast removed
           this.createExplosionSparks(e.x, e.y, '#ffd700', 15);
           continue;
         } else {
@@ -1798,7 +1796,7 @@ class NeonAstroDodge {
           this.player.shield = false;
           sfx.playError();
           this.obstacles.splice(i, 1);
-          triggerToast("Shield Absorbed Crash!", "success");
+          // in-game toast removed
           this.createExplosionSparks(obs.x, this.player.y, 'var(--color-warning)', 15);
           continue;
         } else {
@@ -1837,9 +1835,7 @@ class NeonAstroDodge {
               sessionId: this.sessionId
             });
           } else {
-            if (typeof triggerToast === 'function') {
-              triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${col.relicName} (+1 In-Game Relic)`, "success");
-            }
+            // in-game toast removed
             if (window.appState && window.appState.state) {
               const currentRelics = { ...(window.appState.state.relics || {}) };
               const prev = currentRelics[col.relicId] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
@@ -1881,7 +1877,7 @@ class NeonAstroDodge {
           
           // +10 PGT bonus reward verified and credited at game over!
           this.bonusTokensCollected = (this.bonusTokensCollected || 0) + 2;
-          triggerToast("💎 ULTRA-RARE PGT CRYSTAL! (+10 PGT Bonus)", "success");
+          // in-game toast removed
           
           this.floatTexts.push({
             text: "💎 RARE CRYSTAL! +10 PGT",
@@ -1923,7 +1919,7 @@ class NeonAstroDodge {
         if (pup.type === 'slow') {
           this.slowMo = true;
           this.slowMoTime = Math.round(600 * overdriveMult); // Base 10s scaled by Overdrive Matrix
-          triggerToast(`⌛ Chronos Warp! 50% Speed (${Math.round(this.slowMoTime / 60)}s)`, "success");
+          // in-game toast removed
           this.createExplosionSparks(pup.x, pup.y, 'var(--color-accent)', 18);
         } else if (pup.type === 'triple') {
           const durationFrames = Math.round(1200 * overdriveMult);
@@ -1931,21 +1927,21 @@ class NeonAstroDodge {
             // Already have weapon boost -> Upgrade to Level 2 (Quad-Lasers + Homing Missiles)!
             this.player.weaponLevel = 2;
             this.player.tripleTime = durationFrames;
-            triggerToast(`🚀 Lvl 2 Overcharge: Quad-Lasers + Homing Missiles (${Math.round(durationFrames / 60)}s)!`, "warning");
+            // in-game toast removed
             this.createExplosionSparks(pup.x, pup.y, '#ffaa00', 30);
           } else {
             // Level 1: 4-Bullet Quad Spread
             this.player.tripleGun = true;
             this.player.weaponLevel = 1;
             this.player.tripleTime = durationFrames;
-            triggerToast(`⚡ Lvl 1 Overcharge: Quad-Laser Spread (${Math.round(durationFrames / 60)}s)!`, "success");
+            // in-game toast removed
             this.createExplosionSparks(pup.x, pup.y, '#ff00ff', 20);
           }
         } else {
           this.player.shield = true;
           const shieldFrames = Math.round(1200 * overdriveMult);
           this.player.shieldTime = shieldFrames;
-          triggerToast(`🛡️ Energy Shield Active (${Math.round(shieldFrames / 60)}s)!`, "success");
+          // in-game toast removed
           this.createExplosionSparks(pup.x, pup.y, 'var(--color-warning)', 15);
         }
         

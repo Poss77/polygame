@@ -600,9 +600,7 @@ class CyberDriftGame {
                 sessionId: this.sessionId
               });
             } else {
-              if (window.triggerToast) {
-                window.triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${orb.relicMeta.name} (+1 In-Game Relic)`, "success");
-              }
+              // in-game toast removed
               if (window.appState && window.appState.state) {
                 const currentRelics = { ...(window.appState.state.relics || {}) };
                 const prev = currentRelics[orb.relicMeta.id] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
@@ -633,7 +631,7 @@ class CyberDriftGame {
             this.shield = Math.min(100, this.shield + 25);
             if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
             this.addParticleBurst(orbPx, playerPy, '#00ff66');
-            if (window.triggerToast) window.triggerToast("🛡️ SHIELD REPAIRED (+25 HP)!", "success");
+            // in-game toast removed
 
           } else if (orb.type === 'pgt_coin') {
             // 🪙 PGT BONUS COIN (+5 PGT at game over)

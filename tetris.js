@@ -868,9 +868,7 @@ class CyberTetrisGame {
         this.score += 500 * coinsHarvested;
         this.playSfx('coin');
         this.triggerFloatingBadge(coinsHarvested > 1 ? `🪙 +${coinsHarvested * 5} PGT COINS!` : '🪙 +5 PGT COIN!', 'coin', 'RARE HARVEST');
-        if (typeof window.triggerToast === 'function') {
-          window.triggerToast(`🪙 Rare Harvest: Claimed ${coinsHarvested * 5} PGT Coin(s)!`, 'success');
-        }
+        // in-game toast removed
         this.updateHUD();
       }
 

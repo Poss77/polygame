@@ -58,6 +58,7 @@ export function switchGameCategory(category) {
 export function closeGameView() {
   try {
     document.body.classList.remove('game-fullscreen-open');
+    document.body.classList.remove('game-active');
     const sidebarEl = document.querySelector('.sidebar');
     if (sidebarEl) sidebarEl.style.display = '';
 
@@ -107,6 +108,7 @@ export function closeGameView() {
     const gameWindowContainer = document.getElementById('game-window-container');
     if (gameWindowContainer) gameWindowContainer.classList.remove('fullscreen-active');
     if (document.body) document.body.classList.remove('game-fullscreen-open');
+    document.body.classList.remove('game-active');
 
     const activeContainer = document.getElementById('active-game-container');
     const tabsContainer = document.getElementById('games-category-tabs');
@@ -315,6 +317,7 @@ export function switchGameModeView(mode) {
   if (activeContainer) {
     activeContainer.classList.remove('hidden-game');
     activeContainer.classList.add('active-game');
+    document.body.classList.add('game-active');
     activeContainer.style.setProperty('display', 'grid', 'important');
   }
   if (tabsContainer) tabsContainer.style.display = 'flex';

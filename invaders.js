@@ -314,7 +314,7 @@ class CyberInvaders {
         color: '#ff0055'
       };
 
-      if (window.triggerToast) window.triggerToast(`🚨 BOSS APPROACHING: ${bossName.toUpperCase()}!`, "error");
+      // in-game toast removed
     } else {
       // --- DYNAMIC ALIEN SWARM (With 4 New Alien Classes & Flight Entrances) ---
       const cols = 8;
@@ -486,7 +486,7 @@ class CyberInvaders {
     });
 
     if (window.sfx && typeof window.sfx.playLaser === 'function') window.sfx.playLaser();
-    if (window.triggerToast) window.triggerToast("⚡ HYPER OVERDRIVE BEAM READY!", "success");
+    // in-game toast removed
   }
 
   update() {
@@ -694,9 +694,7 @@ class CyberInvaders {
               sessionId: this.sessionId
             });
           } else {
-            if (window.triggerToast) {
-              window.triggerToast(`🏺 QUANTUM RELIC HARVESTED! ${p.relicName} (+1 In-Game Relic)`, "success");
-            }
+            // in-game toast removed
             if (window.appState && window.appState.state) {
               const currentRelics = { ...(window.appState.state.relics || {}) };
               const prev = currentRelics[p.relicId] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
