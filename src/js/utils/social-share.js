@@ -201,7 +201,9 @@ if (typeof window !== 'undefined') {
         'Cyber Stacker': 'stacker-final-score',
         'Cyber Runner': 'runner-final-score',
         'Quantum 2048': 'q2048-final-score',
-        'Cyber Tetris': 'tetris-final-score'
+        'Cyber Tetris': 'tetris-final-score',
+        'Cyber Skeet': 'skeet-res-score',
+        'Cyber Defense': 'defense-res-score'
       };
       const id = elMap[defaultGameTitle];
       if (id) {

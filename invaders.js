@@ -1387,7 +1387,17 @@ class CyberInvaders {
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.25rem; font-size: 0.88rem;">
               <span style="color: var(--color-warning); font-weight: 700;">Earned:</span>
-              <strong style="color: var(--color-warning); font-size: 1rem;">${payoutDisplay}</strong>
+              <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <strong style="color: var(--color-warning); font-size: 1rem;">${payoutDisplay}</strong>
+                <span style="display: inline-flex; align-items: center; gap: 3px;">
+                  <button type="button" onclick="window.shareCurrentGameScore('Cyber Invaders')" title="Share score on 𝕏" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); border-radius: 5px; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0;">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                  </button>
+                  <button type="button" onclick="window.shareCurrentGameScoreTg('Cyber Invaders')" title="Share score on Telegram" style="background: rgba(0,136,204,0.18); border: 1px solid rgba(0,136,204,0.45); border-radius: 5px; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #00b0ff; padding: 0; font-size: 0.72rem;">
+                    ✈️
+                  </button>
+                </span>
+              </span>
             </div>
           </div>
 
@@ -1395,14 +1405,7 @@ class CyberInvaders {
             🚀 Defend Again (Space)
           </button>
 
-          <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
-            <button type="button" onclick="window.shareCurrentGameScore('Cyber Invaders')" style="flex: 1; background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255, 255, 255, 0.2); font-weight: 700; font-size: 0.8rem; padding: 0.45rem; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> 𝕏 Share
-            </button>
-            <button type="button" onclick="window.shareCurrentGameScoreTg('Cyber Invaders')" style="flex: 1; background: rgba(0, 136, 204, 0.15); color: #00b0ff; border: 1px solid rgba(0, 136, 204, 0.35); font-weight: 700; font-size: 0.8rem; padding: 0.45rem; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
-              ✈️ Telegram
-            </button>
-          </div>
+          
         </div>
       `;
       window.lastArcadeResult = {

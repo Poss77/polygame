@@ -507,8 +507,7 @@ class NeonAstroDodge {
 
     // Hide UI Overlay
     this.overlay.classList.add('hidden');
-    const astroShareRow = document.getElementById('astro-dodge-share-row');
-    if (astroShareRow) astroShareRow.style.display = 'none';
+    
     
     // Draw initial feedback
     document.getElementById('game-live-score').innerText = '0';
@@ -707,7 +706,17 @@ class NeonAstroDodge {
         ${isNewHigh ? '<strong style="color:var(--color-warning);">🏆 NEW HIGH SCORE!</strong><br>' : ''}
         Score: <strong style="color:var(--color-primary);">${cleanScore.toLocaleString()}</strong> | Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong>${this.bossDefeatedCount > 0 ? ` | Bosses: <strong style="color:#ff0055;">☠️ ${this.bossDefeatedCount}</strong>` : ''}<br>
         <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawBase.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
-        <span style="font-size:1.1rem; font-weight:800; color:var(--color-success);">Final Payout: ${payoutDisplay}</span>
+        <span style="font-size:1.1rem; font-weight:800; color:var(--color-success); display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <span>Final Payout: ${payoutDisplay}</span>
+          <span style="display: inline-flex; align-items: center; gap: 4px; margin-left: 4px;">
+            <button type="button" onclick="window.shareCurrentGameScore('Astro-Dodge')" title="Share score on 𝕏" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </button>
+            <button type="button" onclick="window.shareCurrentGameScoreTg('Astro-Dodge')" title="Share score on Telegram" style="background: rgba(0,136,204,0.18); border: 1px solid rgba(0,136,204,0.45); border-radius: 6px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #00b0ff; padding: 0; font-size: 0.75rem;">
+              ✈️
+            </button>
+          </span>
+        </span>
       `;
     }
 

@@ -1494,7 +1494,7 @@
 
 
 
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.748">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.749">
 
 
 
@@ -6338,39 +6338,7 @@
 
 
 
-                  <!-- Astro-Dodge 1-Click Viral Social Share Row -->
-
-
-
-                  <div id="astro-dodge-share-row" style="display: none; gap: 0.5rem; justify-content: center; margin: 0.35rem 0; width: 100%; max-width: 420px;">
-
-
-
-                    <button type="button" onclick="window.shareCurrentGameScore('Astro-Dodge')" style="flex: 1; background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); font-size: 0.82rem; font-weight: 700; padding: 0.55rem 0.75rem; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
-
-
-
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> 𝕏 Share Score
-
-
-
-                    </button>
-
-
-
-                    <button type="button" onclick="window.shareCurrentGameScoreTg('Astro-Dodge')" style="flex: 1; background: rgba(0, 136, 204, 0.18); color: #00b0ff; border: 1px solid rgba(0, 136, 204, 0.4); font-size: 0.82rem; font-weight: 700; padding: 0.55rem 0.75rem; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem;">
-
-
-
-                      ✈️ Telegram
-
-
-
-                    </button>
-
-
-
-                  </div>
+                  
 
 
 
@@ -6694,7 +6662,17 @@
 
 
 
-                  <div style="font-size: 1.5rem; font-weight: 800; color: var(--color-success); margin-bottom: 0.25rem;" id="drift-final-pgt">+0.00 PGT</div>
+                  <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                    <span style="font-size: 1.5rem; font-weight: 800; color: var(--color-success);" id="drift-final-pgt">+0.00 PGT</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                      <button type="button" onclick="window.shareCurrentGameScore('Cyber Drift')" title="Share score on 𝕏" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                      </button>
+                      <button type="button" onclick="window.shareCurrentGameScoreTg('Cyber Drift')" title="Share score on Telegram" style="background: rgba(0,136,204,0.18); border: 1px solid rgba(0,136,204,0.45); border-radius: 6px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #00b0ff; padding: 0; font-size: 0.78rem;">
+                        ✈️
+                      </button>
+                    </span>
+                  </div>
 
 
 
@@ -6706,39 +6684,7 @@
 
 
 
-                  <div style="display: flex; gap: 0.75rem; align-items: center; justify-content: center; flex-wrap: wrap;">
-
-
-
-                    <button class="btn-play-game" onclick="startCyberDrift()" style="background: var(--color-primary); color: #000; font-weight: 800; padding: 0.75rem 1.8rem; border-radius: 8px; border: none; cursor: pointer;">PLAY AGAIN (SPACE)</button>
-
-
-
-                    <button type="button" onclick="window.shareCurrentGameScore('Cyber Drift')" style="background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); font-weight: 700; padding: 0.75rem 1.25rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
-
-
-
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> 𝕏 Share
-
-
-
-                    </button>
-
-
-
-                    <button type="button" onclick="window.shareCurrentGameScoreTg('Cyber Drift')" style="background: rgba(0, 136, 204, 0.18); color: #00b0ff; border: 1px solid rgba(0, 136, 204, 0.4); font-weight: 700; padding: 0.75rem 1rem; border-radius: 8px; cursor: pointer;">
-
-
-
-                      ✈️ Telegram
-
-
-
-                    </button>
-
-
-
-                  </div>
+                  <button class="btn-play-game" onclick="startCyberDrift()" style="background: var(--color-primary); color: #000; font-weight: 800; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer;">PLAY AGAIN (SPACE)</button>
 
 
 
@@ -6914,7 +6860,17 @@
 
 
 
-                  <div style="font-size: 1.5rem; font-weight: 800; color: var(--color-success); margin-bottom: 0.25rem;" id="stacker-final-pgt">+0.00 PGT</div>
+                  <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                    <span style="font-size: 1.5rem; font-weight: 800; color: var(--color-success);" id="stacker-final-pgt">+0.00 PGT</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                      <button type="button" onclick="window.shareCurrentGameScore('Cyber Stacker')" title="Share score on 𝕏" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                      </button>
+                      <button type="button" onclick="window.shareCurrentGameScoreTg('Cyber Stacker')" title="Share score on Telegram" style="background: rgba(0,136,204,0.18); border: 1px solid rgba(0,136,204,0.45); border-radius: 6px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #00b0ff; padding: 0; font-size: 0.78rem;">
+                        ✈️
+                      </button>
+                    </span>
+                  </div>
 
 
 
@@ -6926,39 +6882,7 @@
 
 
 
-                  <div style="display: flex; gap: 0.75rem; align-items: center; justify-content: center; flex-wrap: wrap;">
-
-
-
-                    <button class="btn-play-game" id="btn-stacker-restart" onclick="window.launchCyberStackerGame()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.75rem 1.8rem; border-radius: 8px; border: none; cursor: pointer;">PLAY AGAIN (SPACE)</button>
-
-
-
-                    <button type="button" onclick="window.shareCurrentGameScore('Cyber Stacker')" style="background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); font-weight: 700; padding: 0.75rem 1.25rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
-
-
-
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> 𝕏 Share
-
-
-
-                    </button>
-
-
-
-                    <button type="button" onclick="window.shareCurrentGameScoreTg('Cyber Stacker')" style="background: rgba(0, 136, 204, 0.18); color: #00b0ff; border: 1px solid rgba(0, 136, 204, 0.4); font-weight: 700; padding: 0.75rem 1rem; border-radius: 8px; cursor: pointer;">
-
-
-
-                      ✈️ Telegram
-
-
-
-                    </button>
-
-
-
-                  </div>
+                  <button class="btn-play-game" id="btn-stacker-restart" onclick="window.launchCyberStackerGame()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer;">PLAY AGAIN (SPACE)</button>
 
 
 
@@ -7154,7 +7078,17 @@
 
 
 
-                  <div style="font-size: 1.6rem; font-weight: 800; color: var(--color-success); margin: 0.25rem 0;" id="skeet-res-payout">+0.00 PGT</div>
+                  <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 0.25rem 0;">
+                    <span style="font-size: 1.6rem; font-weight: 800; color: var(--color-success);" id="skeet-res-payout">+0.00 PGT</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                      <button type="button" onclick="window.shareCurrentGameScore('Cyber Skeet')" title="Share score on 𝕏" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                      </button>
+                      <button type="button" onclick="window.shareCurrentGameScoreTg('Cyber Skeet')" title="Share score on Telegram" style="background: rgba(0,136,204,0.18); border: 1px solid rgba(0,136,204,0.45); border-radius: 6px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #00b0ff; padding: 0; font-size: 0.78rem;">
+                        ✈️
+                      </button>
+                    </span>
+                  </div>
 
 
 
@@ -7442,7 +7376,17 @@
 
 
 
-                  <div style="font-size: 1.6rem; font-weight: 800; color: var(--color-success); margin: 0.25rem 0;" id="defense-res-payout">+0.00 PGT</div>
+                  <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 0.25rem 0;">
+                    <span style="font-size: 1.6rem; font-weight: 800; color: var(--color-success);" id="defense-res-payout">+0.00 PGT</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                      <button type="button" onclick="window.shareCurrentGameScore('Cyber Defense')" title="Share score on 𝕏" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                      </button>
+                      <button type="button" onclick="window.shareCurrentGameScoreTg('Cyber Defense')" title="Share score on Telegram" style="background: rgba(0,136,204,0.18); border: 1px solid rgba(0,136,204,0.45); border-radius: 6px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #00b0ff; padding: 0; font-size: 0.78rem;">
+                        ✈️
+                      </button>
+                    </span>
+                  </div>
 
 
 
@@ -7742,7 +7686,17 @@
 
 
 
-                  <div style="font-size: 1.6rem; font-weight: 800; color: var(--color-success); margin: 0.15rem 0 0.4rem 0;" id="runner-final-pgt">+0.00 PGT</div>
+                  <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 0.15rem 0 0.4rem 0;">
+                    <span style="font-size: 1.6rem; font-weight: 800; color: var(--color-success);" id="runner-final-pgt">+0.00 PGT</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                      <button type="button" onclick="window.shareCurrentGameScore('Cyber Runner')" title="Share score on 𝕏" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                      </button>
+                      <button type="button" onclick="window.shareCurrentGameScoreTg('Cyber Runner')" title="Share score on Telegram" style="background: rgba(0,136,204,0.18); border: 1px solid rgba(0,136,204,0.45); border-radius: 6px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #00b0ff; padding: 0; font-size: 0.78rem;">
+                        ✈️
+                      </button>
+                    </span>
+                  </div>
 
 
 
@@ -7754,11 +7708,8 @@
 
 
 
-                  <div style="display: flex; gap: 0.6rem; margin-top: 0.5rem; flex-wrap: wrap; justify-content: center;">
-                    <button class="btn-play-game" onclick="window.startCyberRunner()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.75rem 1.5rem; border-radius: 8px; border: none; cursor: pointer;">⚡ RUN AGAIN (SPACE)</button>
-                    <button type="button" onclick="window.shareCurrentGameScore('Cyber Runner')" style="background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); font-weight: 700; padding: 0.75rem 1rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> 𝕏 Share
-                    </button>
+                  <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+                    <button class="btn-play-game" onclick="window.startCyberRunner()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer;">⚡ RUN AGAIN (SPACE)</button>
                     <button class="btn-secondary" onclick="closeGameView()" style="padding: 0.75rem 1.25rem; font-weight: 700; border-radius: 8px; cursor: pointer;">LOBBY</button>
                   </div>
 
@@ -8056,7 +8007,17 @@
 
 
 
-                  <div style="font-size: 1.6rem; font-weight: 800; color: var(--color-success); margin: 0.15rem 0 0.4rem 0;" id="q2048-final-pgt">+0.00 PGT</div>
+                  <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 0.15rem 0 0.4rem 0;">
+                    <span style="font-size: 1.6rem; font-weight: 800; color: var(--color-success);" id="q2048-final-pgt">+0.00 PGT</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                      <button type="button" onclick="window.shareCurrentGameScore('Quantum 2048')" title="Share score on 𝕏" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                      </button>
+                      <button type="button" onclick="window.shareCurrentGameScoreTg('Quantum 2048')" title="Share score on Telegram" style="background: rgba(0,136,204,0.18); border: 1px solid rgba(0,136,204,0.45); border-radius: 6px; width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #00b0ff; padding: 0; font-size: 0.78rem;">
+                        ✈️
+                      </button>
+                    </span>
+                  </div>
 
 
 
@@ -8068,11 +8029,8 @@
 
 
 
-                  <div style="display: flex; gap: 0.6rem; margin-top: 0.5rem; flex-wrap: wrap; justify-content: center;">
-                    <button class="btn-play-game q2048-restart-btn" onclick="window.startCyber2048()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.75rem 1.5rem; border-radius: 8px; border: none; cursor: pointer;">🔄 PLAY AGAIN (SPACE)</button>
-                    <button type="button" onclick="window.shareCurrentGameScore('Quantum 2048')" style="background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); font-weight: 700; padding: 0.75rem 1rem; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> 𝕏 Share
-                    </button>
+                  <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+                    <button class="btn-play-game q2048-restart-btn" onclick="window.startCyber2048()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.75rem 2rem; border-radius: 8px; border: none; cursor: pointer;">🔄 PLAY AGAIN (SPACE)</button>
                     <button class="btn-secondary q2048-lobby-btn" onclick="closeGameView()" style="padding: 0.75rem 1.25rem; font-weight: 700; border-radius: 8px; cursor: pointer;">LOBBY</button>
                   </div>
 
@@ -8442,7 +8400,17 @@
 
 
 
-                    <div style="font-size: 1.5rem; font-weight: 800; color: var(--color-success); margin: 0.1rem 0 0.35rem 0;" id="tetris-final-pgt">+0.00 PGT</div>
+                    <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 0.1rem 0 0.35rem 0;">
+                    <span style="font-size: 1.5rem; font-weight: 800; color: var(--color-success);" id="tetris-final-pgt">+0.00 PGT</span>
+                    <span style="display: inline-flex; align-items: center; gap: 4px;">
+                      <button type="button" onclick="window.shareCurrentGameScore('Cyber Tetris')" title="Share score on 𝕏" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0;">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                      </button>
+                      <button type="button" onclick="window.shareCurrentGameScoreTg('Cyber Tetris')" title="Share score on Telegram" style="background: rgba(0,136,204,0.18); border: 1px solid rgba(0,136,204,0.45); border-radius: 6px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #00b0ff; padding: 0; font-size: 0.75rem;">
+                        ✈️
+                      </button>
+                    </span>
+                  </div>
 
 
 
@@ -8455,10 +8423,7 @@
 
 
                     <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; justify-content: center;">
-                      <button class="btn-play-game" onclick="window.startCyberTetris()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.65rem 1.3rem; border-radius: 8px; border: none; cursor: pointer; font-size: 0.85rem;">🔄 RETRY (SPACE)</button>
-                      <button type="button" onclick="window.shareCurrentGameScore('Cyber Tetris')" style="background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); font-weight: 700; padding: 0.65rem 0.9rem; border-radius: 8px; cursor: pointer; font-size: 0.82rem; display: flex; align-items: center; gap: 0.35rem;">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> 𝕏 Share
-                      </button>
+                      <button class="btn-play-game" onclick="window.startCyberTetris()" style="background: var(--color-primary); color: #000; font-weight: 900; padding: 0.65rem 1.4rem; border-radius: 8px; border: none; cursor: pointer; font-size: 0.85rem;">🔄 RETRY (SPACE)</button>
                       <button class="btn-secondary" onclick="closeGameView()" style="padding: 0.65rem 1rem; font-weight: 700; border-radius: 8px; cursor: pointer; font-size: 0.85rem;">LOBBY</button>
                     </div>
 
@@ -21099,47 +21064,47 @@
 
 
 
-  <script src="game.js?v=1.5.748"></script>
+  <script src="game.js?v=1.5.749"></script>
 
 
 
-  <script src="invaders.js?v=1.5.748"></script>
+  <script src="invaders.js?v=1.5.749"></script>
 
 
 
-  <script src="drift.js?v=1.5.748"></script>
+  <script src="drift.js?v=1.5.749"></script>
 
 
 
-  <script src="stacker.js?v=1.5.748"></script>
+  <script src="stacker.js?v=1.5.749"></script>
 
 
 
-  <script src="space.js?v=1.5.748"></script>
+  <script src="space.js?v=1.5.749"></script>
 
 
 
-  <script type="module" src="skeet.js?v=1.5.748"></script>
+  <script type="module" src="skeet.js?v=1.5.749"></script>
 
 
 
-  <script type="module" src="defense.js?v=1.5.748"></script>
+  <script type="module" src="defense.js?v=1.5.749"></script>
 
 
 
-  <script type="module" src="runner.js?v=1.5.748"></script>
+  <script type="module" src="runner.js?v=1.5.749"></script>
 
 
 
-  <script type="module" src="q2048.js?v=1.5.748"></script>
+  <script type="module" src="q2048.js?v=1.5.749"></script>
 
 
 
-  <script src="tetris.js?v=1.5.748"></script>
+  <script src="tetris.js?v=1.5.749"></script>
 
 
 
-  <script type="module" src="src/js/app.js?v=1.5.748"></script>
+  <script type="module" src="src/js/app.js?v=1.5.749"></script>
 
 
 

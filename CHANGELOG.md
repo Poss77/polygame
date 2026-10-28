@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Compact Inline Payout Share Icons Across ALL Arcade Games (`v1.5.749`)**:
+  - **✨ Compact Payout Share Icons ([`index.html`](index.html), [`game.js`](game.js), [`invaders.js`](invaders.js), [`src/js/utils/social-share.js`](src/js/utils/social-share.js))**:
+    - Replaced the bulky, separate share button rows across all 9 arcade game over screens with two elegant, compact 24–26px icon buttons (**𝕏** and **✈️ Telegram**) placed directly inline next to the **Final Payout** text.
+    - Eliminates vertical UI clutter on mobile and desktop screens while keeping social virality at the exact focal point where player excitement peaks (reward payout).
+    - Unified across Astro-Dodge, Cyber Invaders, Cyber Drift, Cyber Stacker, Cyber Runner, Quantum 2048, Cyber Tetris, Cyber Skeet, and Cyber Defense.
+    - Added DOM score resolvers for `skeet-res-score` and `defense-res-score` in `src/js/utils/social-share.js`.
+  - **🚀 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.749"` and synced cache buster parameters across all script tags.
+
 - **PolySpace Official Theme Soundtrack & Ambient Audio Engine (`v1.5.748`)**:
   - **🎵 PolySpace Theme Soundtrack Integration ([`src/assets/audio/polyspace_theme.mp3`](src/assets/audio/polyspace_theme.mp3), [`src/js/core/audio.js`](src/js/core/audio.js))**:
     - Integrated the official custom PolySpace space synthesizer soundtrack (`polyspace_theme.mp3`, 2m47s loop) into the client audio asset catalog.
