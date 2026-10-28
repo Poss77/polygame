@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PLAN-020: Increase Easy Sudoku Clues to 60 Numbers (`v1.5.731`)**:
+  - **🧩 Casual Easy Sudoku Calibration ([`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql), [`supabase/update_easy_sudoku_60_clues.sql`](supabase/update_easy_sudoku_60_clues.sql), [`index.html`](index.html))**:
+    - Upgraded all 25 Easy daily Sudoku puzzles from 50 clues to 60 pre-filled numbers (~58-62 clues), leaving only ~21 empty cells to solve.
+    - Updated Easy tier card description in `index.html` to reflect `58-62 clues revealed • 5 mistakes buffer • Relaxed friendly`.
+    - Generated standalone migration script `supabase/update_easy_sudoku_60_clues.sql` for instant database update.
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.731"` and refreshed asset queries.
+
 - **PLAN-020: Fix Mobile Fullscreen Modal Stacking & Z-Index Hierarchy (`v1.5.730`)**:
   - **📱 Modal Stacking Resolution ([`src/css/modals.css`](src/css/modals.css), [`src/css/mobile.css`](src/css/mobile.css), [`index.html`](index.html))**:
     - Fixed stacking context conflict where `.game-window-container.fullscreen-active` (`z-index: 99999999 !important;`) eclipsed `.modal-overlay` on mobile devices (`z-index: 10000000 !important;`).
