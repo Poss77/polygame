@@ -783,16 +783,17 @@ class PolySpaceEngine {
     const currentLvl = Math.max(1, lvl || 1);
     if (currentLvl <= 35) {
       return {
-        iron: Math.floor(40 * Math.pow(1.22, currentLvl - 1)),
-        tit: Math.floor(10 * Math.pow(1.22, currentLvl - 1)),
+        iron: Math.floor(80 * Math.pow(1.22, currentLvl - 1)),
+        tit: Math.floor(30 * Math.pow(1.22, currentLvl - 1)),
         pgt: Math.floor(50 * Math.pow(1.22, currentLvl - 1))
       };
     }
-    const taper = Math.pow(1.15, currentLvl - 35);
+    const mineralTaper = Math.pow(1.18, currentLvl - 35);
+    const pgtTaper = Math.pow(1.15, currentLvl - 35);
     return {
-      iron: Math.floor((40 * Math.pow(1.22, 34)) * taper),
-      tit: Math.floor((10 * Math.pow(1.22, 34)) * taper),
-      pgt: Math.floor((50 * Math.pow(1.22, 34)) * taper)
+      iron: Math.floor((80 * Math.pow(1.22, 34)) * mineralTaper),
+      tit: Math.floor((30 * Math.pow(1.22, 34)) * mineralTaper),
+      pgt: Math.floor((50 * Math.pow(1.22, 34)) * pgtTaper)
     };
   }
 

@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Rebalance Module Upgrade Mineral Costs (Option 1) (`v1.5.720`)**:
+  - **⛏️ Rebalanced Iron & Titanium Base Costs ([`space.js`](space.js), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - Increased Base Iron upgrade cost from 40 to 80 (2.0x base).
+    - Increased Base Titanium upgrade cost from 10 to 30 (3.0x base), raising the Titanium-to-Iron ratio from 25% up to 37.5% to align with expedition drop rates in Deep Space and Odyssey.
+  - **📈 Mineral Endgame Scaling & 1.18 Taper ([`space.js`](space.js), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - Adjusted Level 36–50 mineral cost taper to 1.18 (while preserving the 1.15 taper for PGT to maintain strict <2-year token ROI).
+    - Provides a meaningful endgame sink for player mineral stockpiles without impeding token payback.
+    - Created migration file [`supabase/rebalance_polyspace_mineral_costs_option1.sql`](supabase/rebalance_polyspace_mineral_costs_option1.sql) and rebuilt [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql).
+  - **🚀 Cache-Busters & Version Bump ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.720"` and refreshed asset queries.
+
 - **PolySpace: Rebalance ROI with L35-50 Cost Taper, L21-50 Laser Scaling & +25% Long Missions (`v1.5.719`)**:
   - **🚀 Level 35–50 Module Cost Tapering ([`space.js`](space.js), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
     - Tapered exponential module upgrade cost scaling from 1.22 down to 1.15 for Levels 36–50, cutting Level 50 upgrade costs by up to 59% (from 852k PGT down to 351k PGT).
