@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Staking Vault Interactive NFT Marketplace Routing (`v1.5.751`)**:
+  - **🛍️ Staking NFT Boost Direct Link ([`index.html`](index.html))**:
+    - Converted the static "🚀 APY up to 23% with NFT" badge in the Staking Vault into an interactive 1-click CTA button (`staking-nft-boost-banner`).
+    - Clicking routes directly to the NFT tab and opens the active **Utility NFT Marketplace** (`switchTab('nft')` + `switchNftView('market')`).
+    - Added subtle hover animation, cyan border glow, cursor feedback, and external link indicator (`↗`).
+  - **🚀 Version Increment ([`src/js/core/config.js`](src/js/core/config.js))**:
+    - Incremented `APP_VERSION = "1.5.751"`.
+
 - **Official X (Twitter) Conversion Tracking Integration (`v1.5.750`)**:
   - **📊 X Pixel Base Code (`ri5fg`) Integration ([`index.html`](index.html), [`privacy.html`](privacy.html), [`terms.html`](terms.html), [`contact.html`](contact.html), [`verify.html`](verify.html), [`launch.html`](launch.html), [`arcade.html`](arcade.html), [`arcade/index.html`](arcade/index.html))**:
     - Embedded the official asynchronous X conversion tracking base code SDK (`https://static.ads-twitter.com/uwt.js`) configured with Pixel ID `ri5fg` across all entry points and public site documents right before `</head>`.
