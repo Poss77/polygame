@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Desktop Welcome Banner Layout Expansion (`v1.5.756`)**:
+  - **🖥️ Expanded Left Banner Width ([`index.html`](index.html), [`src/css/views.css`](src/css/views.css))**:
+    - Removed the legacy `max-width: 60%` bottleneck on `.welcome-content` in desktop view, allowing the main action column to utilize all available width up to the floating logo.
+    - Expanded paragraph max-width to 900px and set `.welcome-content` flex basis to 520px with `flex: 1 1 520px`.
+    - Enabled all 3 fast-start buttons (`💧 Claim Free Faucet`, `🎮 Play Arcade Games`, `🏛️ Stake & Vault APY`) and all 3 sitewide stats badges (`Arcade Plays`, `Relics Found`, `Faucet Claims`) to sit side-by-side in balanced, single rows on desktop.
+    - Added `flex-shrink: 0` to `.welcome-ill` to keep the glowing Polygon Gaming emblem crisp and correctly proportioned.
+  - **🚀 Version Increment ([`src/js/core/config.js`](src/js/core/config.js))**:
+    - Incremented `APP_VERSION = "1.5.756"`.
+
 - **Referral Sharing Auth Gate for Unauthenticated Guests (`v1.5.755`)**:
   - **🔒 Guest Referral Protection ([`index.html`](index.html), [`src/js/core/state.js`](src/js/core/state.js))**:
     - Hid the referral link input field, 1-click **📋 Copy Link**, **𝕏 Tweet Invite**, and **✈️ Telegram** buttons for unauthenticated visitors.

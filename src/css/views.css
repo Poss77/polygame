@@ -158,7 +158,8 @@
 
 .welcome-content {
   z-index: 1;
-  max-width: 60%;
+  flex: 1;
+  max-width: 100%;
 }
 
 .welcome-content h2 {
@@ -176,8 +177,9 @@
 }
 
 .welcome-ill {
-  width: 180px;
-  height: 180px;
+  width: 150px;
+  height: 150px;
+  flex-shrink: 0;
   position: relative;
   display: flex;
   align-items: center;
