@@ -110,10 +110,25 @@ class NeonAstroDodge {
       }
     });
 
+    let cachedRect = null;
+    let lastRectTime = 0;
+
+    const getCachedRect = () => {
+      const now = performance.now();
+      if (!cachedRect || now - lastRectTime > 250) {
+        cachedRect = this.canvas.getBoundingClientRect();
+        lastRectTime = now;
+      }
+      return cachedRect;
+    };
+
+    window.addEventListener('resize', () => { cachedRect = null; });
+    window.addEventListener('scroll', () => { cachedRect = null; }, { passive: true });
+
     // Mouse Movement & Click Controls for PC
     const getCanvasCoords = (e) => {
-      const rect = this.canvas.getBoundingClientRect();
-      if (!rect.width || !rect.height) return { x: e.clientX, y: e.clientY };
+      const rect = getCachedRect();
+      if (!rect || !rect.width || !rect.height) return { x: e.clientX, y: e.clientY };
       const scaleX = this.canvas.width / rect.width;
       const scaleY = this.canvas.height / rect.height;
       return {
@@ -174,20 +189,7 @@ class NeonAstroDodge {
     let touchStartY = 0;
     let touchStartX = 0;
     let lastTapTimestamp = 0;
-    let cachedRect = null;
-    let lastRectTime = 0;
-
-    const getCachedRect = () => {
-      const now = performance.now();
-      if (!cachedRect || now - lastRectTime > 500) {
-        cachedRect = this.canvas.getBoundingClientRect();
-        lastRectTime = now;
-      }
-      return cachedRect;
-    };
-
-    window.addEventListener('resize', () => { cachedRect = null; });
-    window.addEventListener('scroll', () => { cachedRect = null; }, { passive: true });
+    // cachedRect and getCachedRect defined above and shared across mouse and touch
 
     const handleTouchStart = (e) => {
       if (!this.isPlaying || !e.touches || e.touches.length === 0) return;
@@ -510,9 +512,16 @@ class NeonAstroDodge {
     
     
     // Draw initial feedback
-    document.getElementById('game-live-score').innerText = '0';
-    document.getElementById('game-live-shards').innerText = '0';
-    document.getElementById('game-live-earned').innerText = '0.00';
+    this._lastScoreVal = null;
+    this._lastShardsVal = null;
+    this._lastEarnedVal = null;
+    this._lastBoostVal = null;
+    if (!this._scoreEl) this._scoreEl = document.getElementById('game-live-score');
+    if (this._scoreEl) this._scoreEl.textContent = '0';
+    if (!this._shardsEl) this._shardsEl = document.getElementById('game-live-shards');
+    if (this._shardsEl) this._shardsEl.textContent = '0';
+    if (!this._earnedEl) this._earnedEl = document.getElementById('game-live-earned');
+    if (this._earnedEl) this._earnedEl.textContent = '0.00';
 
     // Hook combined NFT & VIP & Starship multiplier display
     const multis = appState.getMultipliers();
@@ -706,16 +715,16 @@ class NeonAstroDodge {
         ${isNewHigh ? '<strong style="color:var(--color-warning);">🏆 NEW HIGH SCORE!</strong><br>' : ''}
         Score: <strong style="color:var(--color-primary);">${cleanScore.toLocaleString()}</strong> | Shards: <strong style="color:var(--color-accent);">${this.shardsCollected}</strong>${this.bossDefeatedCount > 0 ? ` | Bosses: <strong style="color:#ff0055;">☠️ ${this.bossDefeatedCount}</strong>` : ''}<br>
         <span style="font-size:0.9rem; color:var(--text-muted);">Base: ${rawBase.toFixed(2)} PGT • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier}% NFT${vipBadgeStr})</span><br>
-        <span style="font-size:1.1rem; font-weight:800; color:var(--color-success); display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-          <span>Final Payout: ${payoutDisplay}</span>
-          <span style="display: inline-flex; align-items: center; gap: 4px; margin-left: 4px;">
-            <button type="button" onclick="window.shareCurrentGameScore('Astro-Dodge')" title="Share score on 𝕏" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0;">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-            </button>
-            <button type="button" onclick="window.shareCurrentGameScoreTg('Astro-Dodge')" title="Share score on Telegram" style="background: rgba(0,136,204,0.18); border: 1px solid rgba(0,136,204,0.45); border-radius: 6px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #00b0ff; padding: 0; font-size: 0.75rem;">
-              ✈️
-            </button>
-          </span>
+        <span style="font-size:1.1rem; font-weight:800; color:var(--color-success); display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+          <span>Final Payout: ${payoutDisplay}</span>
+          <span style="display: inline-flex; align-items: center; gap: 4px; margin-left: 4px;">
+            <button type="button" onclick="window.shareCurrentGameScore('Astro-Dodge')" title="Share score on 𝕏" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </button>
+            <button type="button" onclick="window.shareCurrentGameScoreTg('Astro-Dodge')" title="Share score on Telegram" style="background: rgba(0,136,204,0.18); border: 1px solid rgba(0,136,204,0.45); border-radius: 6px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #00b0ff; padding: 0; font-size: 0.75rem;">
+              ✈️
+            </button>
+          </span>
         </span>
       `;
     }
@@ -964,11 +973,24 @@ class NeonAstroDodge {
     });
 
     const liveScoreEl = document.getElementById('game-live-score');
-    if (liveScoreEl) liveScoreEl.innerText = this.score;
+    this.updateScoreUI();
 
     // in-game toast removed
 
     this.boss = null; // Boss eliminated, arcade session continues seamlessly!
+  }
+
+  updateScoreUI() {
+    if (this._lastScoreVal !== this.score) {
+      this._lastScoreVal = this.score;
+      if (!this._scoreEl) this._scoreEl = document.getElementById('game-live-score');
+      if (this._scoreEl) this._scoreEl.textContent = this.score;
+    }
+    if (this._lastShardsVal !== this.shardsCollected) {
+      this._lastShardsVal = this.shardsCollected;
+      if (!this._shardsEl) this._shardsEl = document.getElementById('game-live-shards');
+      if (this._shardsEl) this._shardsEl.textContent = this.shardsCollected;
+    }
   }
 
   // --- Entity Updates ---
@@ -996,9 +1018,18 @@ class NeonAstroDodge {
       const liveFinalPgt = Math.min(1000.0, (liveRawPgt * playerMult) + Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0));
 
       if (!this._earnedEl) this._earnedEl = document.getElementById('game-live-earned');
-      if (this._earnedEl) this._earnedEl.innerText = liveFinalPgt.toFixed(2);
+      const earnedStr = liveFinalPgt.toFixed(2);
+      if (this._earnedEl && this._lastEarnedVal !== earnedStr) {
+        this._lastEarnedVal = earnedStr;
+        this._earnedEl.textContent = earnedStr;
+      }
+
       if (!this._boostLabelEl) this._boostLabelEl = document.getElementById('game-nft-boost-label');
-      if (this._boostLabelEl) this._boostLabelEl.innerText = `${playerMult.toFixed(1)}x`;
+      const boostStr = `${playerMult.toFixed(1)}x`;
+      if (this._boostLabelEl && this._lastBoostVal !== boostStr) {
+        this._lastBoostVal = boostStr;
+        this._boostLabelEl.textContent = boostStr;
+      }
     } else {
       this._hudTick++;
     }
@@ -1486,7 +1517,7 @@ class NeonAstroDodge {
                 alpha: 1.0,
                 vy: -0.7
               });
-              document.getElementById('game-live-score').innerText = this.score;
+              this.updateScoreUI();
               this.enemies.splice(j, 1);
             }
             break;
@@ -1595,7 +1626,7 @@ class NeonAstroDodge {
                 alpha: 1.0,
                 vy: -0.7
               });
-              document.getElementById('game-live-score').innerText = this.score;
+              this.updateScoreUI();
               this.enemies.splice(j, 1);
             }
             break;
@@ -1623,7 +1654,7 @@ class NeonAstroDodge {
           this.createExplosionSparks(eb.x, eb.y, '#00f0ff', 12);
           this.score += 50;
           this.registerComboHit("bullet_deflect");
-          document.getElementById('game-live-score').innerText = this.score;
+          this.updateScoreUI();
           continue;
         }
         if (this.player.shield) {
@@ -1682,7 +1713,7 @@ class NeonAstroDodge {
             alpha: 1.0,
             vy: -0.8
           });
-          document.getElementById('game-live-score').innerText = this.score;
+          this.updateScoreUI();
           continue;
         } else if (this.player.shield) {
           this.player.shield = false;
@@ -1794,7 +1825,7 @@ class NeonAstroDodge {
             vy: -0.8
           });
           sfx.playCoin();
-          document.getElementById('game-live-score').innerText = this.score;
+          this.updateScoreUI();
         }
       }
 
@@ -1816,7 +1847,7 @@ class NeonAstroDodge {
               alpha: 1.0,
               vy: -0.9
             });
-            document.getElementById('game-live-score').innerText = this.score;
+            this.updateScoreUI();
           }
           continue;
         } else if (this.player.shield) {
@@ -1837,7 +1868,7 @@ class NeonAstroDodge {
       if (obs.x + obs.w < -20) {
         this.obstacles.splice(i, 1);
         this.score += 25; // Passive survival score
-        document.getElementById('game-live-score').innerText = this.score;
+        this.updateScoreUI();
       }
     }
 
@@ -1924,8 +1955,8 @@ class NeonAstroDodge {
           this.createExplosionSparks(col.x, col.y, '#ffffff', 6);
         }
         
-        document.getElementById('game-live-score').innerText = this.score;
-        document.getElementById('game-live-shards').innerText = this.shardsCollected;
+        this.updateScoreUI();
+        this.updateScoreUI();
         this.collectibles.splice(i, 1);
         continue;
       }

@@ -593,6 +593,23 @@ export async function autoConnectWeb3() {
     return;
   }
 
+  // Never trigger asynchronous wallet extension handshakes during real-time gameplay
+  if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) {
+    return;
+  }
+
+  // If visitor is an unauthenticated guest with no prior session/wallet, skip probing injected extensions
+  // This completely eliminates MetaMask 'background-liveness' stream leaks and content-script reflow lag
+  const hasPriorSession = Boolean(
+    localStorage.getItem('polygame_auth_token') ||
+    localStorage.getItem('polygame_web3_session') ||
+    (localStorage.getItem('polygame_wallet_address') && !localStorage.getItem('polygame_wallet_address').startsWith('0xguest'))
+  );
+  if (!hasPriorSession) {
+    if (window.POLY_DEBUG) console.log("[autoConnectWeb3] Unauthenticated guest visitor with no prior session. Skipping auto-probe.");
+    return;
+  }
+
   // Startup silent check for injected window.ethereum (e.g. inside MetaMask Browser or Desktop extension)
   if (typeof window.ethereum !== 'undefined') {
     try {

@@ -108,7 +108,7 @@ export function updateFaucetNavBadge(overridePgtReady = null, overrideVipReady =
   const stateObj = getFaucetAppState();
   const isConnected = stateObj && typeof stateObj.isPlayerConnected === 'function' && stateObj.isPlayerConnected();
   if (!isConnected || !stateObj || !stateObj.state) {
-    navBadge.style.display = 'none';
+    if (navBadge.style.display !== 'none') navBadge.style.display = 'none';
     return;
   }
 

@@ -16,6 +16,7 @@ const getAppState = () => {
 
 // --- Unauthenticated Guest Visit Tracker ---
 export async function trackGuestVisit() {
+  if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) return;
   const activeState = getAppState();
   if (!supabase || (activeState && activeState.isPlayerConnected())) return;
   try {
@@ -27,7 +28,7 @@ export async function trackGuestVisit() {
       }
     }
   } catch (e) {
-    console.warn("Guest visit tracking skipped:", e);
+    if (window.POLY_DEBUG) console.warn("Guest visit tracking skipped:", e);
   }
 }
 
@@ -3118,6 +3119,7 @@ window.formatShortAddress = formatShortAddress;
 // --- Native Privacy-First Daily Traffic & Guest Analytics ---
 
 export async function trackDailyVisit() {
+  if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) return;
   if (!supabase) return;
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -3164,6 +3166,7 @@ export async function trackDailyVisit() {
 window.trackDailyVisit = trackDailyVisit;
 
 export async function recordGuestGamePlay() {
+  if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) return;
   if (!supabase) return;
   try {
     const activeSt = getAppState();

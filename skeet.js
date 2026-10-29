@@ -93,7 +93,19 @@ export class CyberSkeetEngine {
     window.addEventListener('resize', () => this.resizeCanvas());
     this.resizeCanvas();
 
-    // 1. Mouse Aim & Click (Direct 1:1 desktop cursor lock across playable window)
+    // 1. Mouse Aim & Click (Direct 1:1 desktop cursor lock across playable window with cached rect)
+    let _cachedCanvasRect = null;
+    let _lastRectTime = 0;
+    const getCachedCanvasRect = () => {
+      const now = performance.now();
+      if (!_cachedCanvasRect || now - _lastRectTime > 250) {
+        _cachedCanvasRect = this.canvas.getBoundingClientRect();
+        _lastRectTime = now;
+      }
+      return _cachedCanvasRect;
+    };
+    window.addEventListener('resize', () => { _cachedCanvasRect = null; });
+
     const syncMouseCrosshair = (e) => {
       if (this.state !== 'PLAYING' || !this.canvas) return;
       if (!e || e.isTrusted !== true) {
@@ -101,7 +113,7 @@ export class CyberSkeetEngine {
         return;
       }
       this._lastTrustedInputTime = Date.now();
-      const rect = this.canvas.getBoundingClientRect();
+      const rect = getCachedCanvasRect();
       if (!rect.width || !rect.height) return;
 
       const scaleX = this.canvas.width / rect.width;

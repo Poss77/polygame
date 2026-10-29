@@ -5,6 +5,23 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Eliminate Guest Reflow Lag & Background Timers (`v1.5.758`)**:
+  - **⚡ Eliminate Desktop Mousemove Forced Reflows ([`game.js`](game.js), [`skeet.js`](skeet.js))**:
+    - Replaced raw, uncached `this.canvas.getBoundingClientRect()` calls inside `getCanvasCoords(e)` with cached `getCachedRect()` (throttled to 250ms), preventing synchronous layout thrashing on every single desktop mouse movement.
+    - Added canvas bounding rect caching in `skeet.js` desktop crosshair sync.
+  - **🛑 Suppress Guest Background Timers & RPCs During Active Gameplay ([`src/js/core/db-sync.js`](src/js/core/db-sync.js), [`src/js/app.js`](src/js/app.js))**:
+    - Added active gameplay guards (`isAnyArcadeGamePlaying()`) to `trackGuestVisit()` (2s timer), `trackDailyVisit()` (1.2s timer), and `recordGuestGamePlay()` so background analytics network requests never interrupt real-time gameplay.
+    - Guarded `triggerResizes` in `app.js` to ensure mass canvas resize events are skipped while a game is actively playing.
+  - **🦊 Prevent Unauthenticated MetaMask Probing ([`src/js/features/profile.js`](src/js/features/profile.js))**:
+    - Skip silent `eth_accounts` probing on boot for fresh unauthenticated visitors with no prior session/wallet, stopping MetaMask `contentscript.js` from establishing leaked `background-liveness` streams and triggering reflow stalls.
+  - **🚀 High-Performance HUD DOM Updates ([`game.js`](game.js))**:
+    - Created deduplicated `updateScoreUI()` method using non-reflowing `.textContent` and value change checks, replacing all 8 direct `.innerText` assignments.
+    - Gated `game-live-earned` and `game-nft-boost-label` DOM writes to only mutate DOM when the formatted text changes.
+  - **🔇 Silenced Benign Audio AbortError ([`src/js/core/audio.js`](src/js/core/audio.js))**:
+    - Handled standard HTML5 `AbortError` in `polyspaceAudio.play().catch(...)` when playback is interrupted by immediate tab changes.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.758"` and cache-busted scripts.
+
 - **Performance & Pacing Optimization for Unauthenticated Visitors (`v1.5.757`)**:
   - **⚡ Eliminate Guest Background RPC & Reflow Storm ([`src/js/features/faucet.js`](src/js/features/faucet.js), [`src/js/features/dex.js`](src/js/features/dex.js), [`src/js/features/daily-hub.js`](src/js/features/daily-hub.js))**:
     - Guarded on-chain DEX scans (`syncUserLiquidity`, `fetchUserTotalPgtLiquidity`) against synthetic guest addresses (`0xguest...`), stopping hundreds of futile JSON-RPC queries.
