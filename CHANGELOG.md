@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **High-Converting Dashboard Homepage Rework & Tokenomics Modal (`v1.5.752`)**:
+  - **🚀 Clean Player-First Dashboard Experience ([`index.html`](index.html))**:
+    - **Tokenomics Modal (`#modal-tokenomics`)**: Extracted the 560-line PGT Tokenomics & 10-Year Distribution section into a dedicated, high-performance popup modal with all charts and allocation models preserved, eliminating home screen clutter.
+    - **3-Step Fast Start Action Bar**: Integrated direct 1-click CTA buttons in the welcome hero: `1️⃣ Claim Free Faucet 💧`, `2️⃣ Play Arcade Games 🎮`, and `3️⃣ Stake & Vault APY 🏛️`.
+    - **Daily Free Rewards Hub**: Added a prominent 3-column daily earning card highlighting the 24h Faucet, Daily Wordle, and Daily Sudoku with direct launch buttons.
+    - **Featured Games Quick-Launch Grid**: Added direct launch cards with gameplay teasers for Astro-Dodge, PolySpace Fleet, Cyber Invaders, and Cyber Mines.
+    - **3 Platform Pillars**: Replaced long paragraphs with 3 crisp visual feature cards (Free & Skill-Based, Polygon Native PGT, Passive Vault Yield & NFTs).
+    - **Transparency & Leaderboards Action Bar**: Moved top token holders and tokenomics specs into a clean bottom action bar with 1-click modals.
+  - **🚀 Version Increment ([`src/js/core/config.js`](src/js/core/config.js))**:
+    - Incremented `APP_VERSION = "1.5.752"`.
+
 - **Staking Vault Interactive NFT Marketplace Routing (`v1.5.751`)**:
   - **🛍️ Staking NFT Boost Direct Link ([`index.html`](index.html))**:
     - Converted the static "🚀 APY up to 23% with NFT" badge in the Staking Vault into an interactive 1-click CTA button (`staking-nft-boost-banner`).
