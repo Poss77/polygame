@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Dashboard Simplification & Clutter Removal (`v1.5.754`)**:
+  - **🧹 Removed Informational Feature Pillar Cards ([`index.html`](index.html))**:
+    - Removed the redundant 3-card info block ("100% Free & Skill-Based", "Polygon POS Native", "Passive Vault Yield") from the main dashboard to keep player focus purely on action, games, daily challenges, and earning.
+  - **🚀 Version Increment ([`src/js/core/config.js`](src/js/core/config.js))**:
+    - Incremented `APP_VERSION = "1.5.754"`.
+
 - **High-Converting Dashboard Homepage Rework & Tokenomics Modal (`v1.5.752`)**:
   - **🚀 Clean Player-First Dashboard Experience ([`index.html`](index.html))**:
     - **Tokenomics Modal (`#modal-tokenomics`)**: Extracted the 560-line PGT Tokenomics & 10-Year Distribution section into a dedicated, high-performance popup modal with all charts and allocation models preserved, eliminating home screen clutter.
