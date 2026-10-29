@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Official X (Twitter) Conversion Tracking Integration (`v1.5.750`)**:
+  - **📊 X Pixel Base Code (`ri5fg`) Integration ([`index.html`](index.html), [`privacy.html`](privacy.html), [`terms.html`](terms.html), [`contact.html`](contact.html), [`verify.html`](verify.html), [`launch.html`](launch.html), [`arcade.html`](arcade.html), [`arcade/index.html`](arcade/index.html))**:
+    - Embedded the official asynchronous X conversion tracking base code SDK (`https://static.ads-twitter.com/uwt.js`) configured with Pixel ID `ri5fg` across all entry points and public site documents right before `</head>`.
+    - Enables accurate ad attribution, visitor conversion tracking, and campaign ROI analytics for upcoming promotional campaigns.
+  - **🚀 Version Increment ([`src/js/core/config.js`](src/js/core/config.js))**:
+    - Incremented `APP_VERSION = "1.5.750"`.
+
 - **Compact Inline Payout Share Icons Across ALL Arcade Games (`v1.5.749`)**:
   - **✨ Compact Payout Share Icons ([`index.html`](index.html), [`game.js`](game.js), [`invaders.js`](invaders.js), [`src/js/utils/social-share.js`](src/js/utils/social-share.js))**:
     - Replaced the bulky, separate share button rows across all 9 arcade game over screens with two elegant, compact 24–26px icon buttons (**𝕏** and **✈️ Telegram**) placed directly inline next to the **Final Payout** text.
