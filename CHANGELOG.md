@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Performance & Pacing Optimization for Unauthenticated Visitors (`v1.5.757`)**:
+  - **⚡ Eliminate Guest Background RPC & Reflow Storm ([`src/js/features/faucet.js`](src/js/features/faucet.js), [`src/js/features/dex.js`](src/js/features/dex.js), [`src/js/features/daily-hub.js`](src/js/features/daily-hub.js))**:
+    - Guarded on-chain DEX scans (`syncUserLiquidity`, `fetchUserTotalPgtLiquidity`) against synthetic guest addresses (`0xguest...`), stopping hundreds of futile JSON-RPC queries.
+    - Replaced failing/unauthorized `polygon-rpc.com` (401 Unauthorized) with high-availability public CORS endpoint `polygon.llamarpc.com`.
+    - Guarded `refreshDailyGamesHubStatus` against unauthenticated guest IDs to prevent `PROFILE_NOT_FOUND` Supabase RPC errors, serving instantaneous local challenge defaults.
+    - Paused Daily Hub countdown interval during active gameplay (`isAnyArcadeGamePlaying()`) and when tab is hidden, preventing forced reflow violations (58ms).
+  - **🚀 Fixed Real-Time Pacing in Arcade Loop ([`game.js`](game.js))**:
+    - Fixed accumulator clamp in `NeonAstroDodge.loop()`. Instead of dropping accumulated physics time when a minor frame delay occurs (which slowed game physics to 1/3.5x slow-motion), allow up to 3 catch-up physics ticks so game runs at full 100% real-time 60 FPS pacing smoothly.
+  - **🔄 Script Cache-Bust & Version Increment ([`index.html`](index.html), [`src/js/core/config.js`](src/js/core/config.js))**:
+    - Cache-busted all game scripts with `?v=1.5.757` and set `APP_VERSION = "1.5.757"`.
+
 - **Desktop Welcome Banner Layout Expansion (`v1.5.756`)**:
   - **🖥️ Expanded Left Banner Width ([`index.html`](index.html), [`src/css/views.css`](src/css/views.css))**:
     - Removed the legacy `max-width: 60%` bottleneck on `.welcome-content` in desktop view, allowing the main action column to utilize all available width up to the floating logo.

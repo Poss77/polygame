@@ -62,8 +62,13 @@ export const getFaucetAppState = () => {
 export async function syncUserLiquidity(force = false) {
   const stateObj = getFaucetAppState();
   if (!stateObj || !stateObj.state) return;
-  const wallet = stateObj.state.linkedWalletAddress || stateObj.state.walletAddress || (stateObj.state.playerId && stateObj.state.playerId.startsWith('0x') && stateObj.state.playerId.length === 42 ? stateObj.state.playerId : null);
-  if (!wallet) return;
+
+  // Never execute on-chain DEX scans for unauthenticated guests or synthetic accounts
+  const isConn = typeof stateObj.isPlayerConnected === 'function' ? stateObj.isPlayerConnected() : false;
+  if (!isConn) return;
+
+  const wallet = stateObj.state.linkedWalletAddress || stateObj.state.walletAddress || '';
+  if (!wallet || wallet.startsWith('0xguest') || wallet.startsWith('0xpgt') || wallet.startsWith('0xg_') || wallet.length !== 42) return;
 
   try {
     const res = await fetchUserTotalPgtLiquidity(wallet, force);

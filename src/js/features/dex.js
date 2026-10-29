@@ -7,11 +7,11 @@
 
 import { TOKEN_CONTRACT_ADDRESS } from '../core/config.js';
 
-// Fallback Polygon JSON-RPC Endpoints
+// Fallback Polygon JSON-RPC Endpoints (High-reliability CORS public endpoints)
 export const POLYGON_RPC_ENDPOINTS = [
   'https://polygon-bor-rpc.publicnode.com',
   'https://1rpc.io/matic',
-  'https://polygon-rpc.com',
+  'https://polygon.llamarpc.com',
   'https://rpc.ankr.com/polygon'
 ];
 
@@ -81,8 +81,7 @@ async function rpcCall(toAddress, dataHex) {
       const resp = await fetch(rpcUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(payload)
       });
@@ -491,6 +490,11 @@ export async function fetchUserTotalPgtLiquidity(walletAddress, forceRefresh = f
   }
 
   const key = walletAddress.toLowerCase();
+  // Immediately bypass RPC calls for local guest or synthetic user IDs
+  if (key.startsWith('0xguest') || key.startsWith('0xpgt') || key.startsWith('0xg_')) {
+    return { totalPgt: 0, totalUsd: 0, multiplier: 1.0, isQualified: false, details: [] };
+  }
+
   const cached = lpCache.get(key);
   const now = Date.now();
 

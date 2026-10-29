@@ -817,17 +817,22 @@ class NeonAstroDodge {
     const timestep = 1000 / 60; // 16.667ms per standard 60 FPS frame
     this.accumulatedTime = (this.accumulatedTime || 0) + elapsed;
 
-    // Cap accumulator to prevent catch-up speedups on touch lag or 120Hz/144Hz displays
-    if (this.accumulatedTime > timestep * 2.0) {
-      this.accumulatedTime = timestep;
+    // Cap accumulator at 150ms to prevent spiral of death on tab switch
+    if (this.accumulatedTime > 150) {
+      this.accumulatedTime = 150;
     }
 
     let updated = false;
-    // Strictly update 1 tick per 16.667ms step (max 1 update per frame to guarantee 100% pacing parity)
-    if (this.accumulatedTime >= timestep) {
+    let updates = 0;
+    // Allow up to 3 physics steps per frame so game stays at 100% real-time pacing without slow-motion lag
+    while (this.accumulatedTime >= timestep && updates < 3) {
       this.update();
       this.accumulatedTime -= timestep;
       updated = true;
+      updates++;
+    }
+    if (this.accumulatedTime > timestep * 2) {
+      this.accumulatedTime = 0;
     }
 
     // Render whenever updated or new frame arrives
