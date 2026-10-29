@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Referral Sharing Auth Gate for Unauthenticated Guests (`v1.5.755`)**:
+  - **🔒 Guest Referral Protection ([`index.html`](index.html), [`src/js/core/state.js`](src/js/core/state.js))**:
+    - Hid the referral link input field, 1-click **📋 Copy Link**, **𝕏 Tweet Invite**, and **✈️ Telegram** buttons for unauthenticated visitors.
+    - Replaced with an elegant guest action prompt (`dashboard-ref-guest-row`) explaining the 4-tier commission system and prompting players to **Log In or Connect Wallet** to generate their personal referral link.
+    - Seamlessly displays the full referral sharing suite once a player logs in or connects their wallet.
+  - **🚀 Version Increment ([`src/js/core/config.js`](src/js/core/config.js))**:
+    - Incremented `APP_VERSION = "1.5.755"`.
+
 - **Dashboard Simplification & Clutter Removal (`v1.5.754`)**:
   - **🧹 Removed Informational Feature Pillar Cards ([`index.html`](index.html))**:
     - Removed the redundant 3-card info block ("100% Free & Skill-Based", "Polygon POS Native", "Passive Vault Yield") from the main dashboard to keep player focus purely on action, games, daily challenges, and earning.

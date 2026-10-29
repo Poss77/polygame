@@ -1500,8 +1500,14 @@ export class PolyState {
     if (refInput) {
       refInput.value = `${cleanBaseUrl}?ref=${this.state.referralCode}`;
     }
+    const isConn = this.isPlayerConnected();
+    const dashRefAuth = document.getElementById('dashboard-ref-auth-row');
+    const dashRefGuest = document.getElementById('dashboard-ref-guest-row');
+    if (dashRefAuth) dashRefAuth.style.display = isConn ? 'flex' : 'none';
+    if (dashRefGuest) dashRefGuest.style.display = isConn ? 'none' : 'flex';
+
     const dashRef = document.getElementById('dashboard-ref-link');
-    if (dashRef) {
+    if (dashRef && isConn) {
       dashRef.value = `${cleanBaseUrl}?ref=${this.state.referralCode}`;
     }
     

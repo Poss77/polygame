@@ -2361,70 +2361,33 @@ twq('config','ri5fg');
 
 
 
-          <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-top: 0.75rem;">
-
-
-
+          <!-- Referral Tools: Authenticated (Logged In) -->
+          <div id="dashboard-ref-auth-row" style="display: none; gap: 0.5rem; flex-wrap: wrap; align-items: center; margin-top: 0.75rem;">
             <div style="flex: 1; min-width: 240px; position: relative;">
-
-
-
               <input type="text" id="dashboard-ref-link" readonly value="https://polygongaming.io/" style="width: 100%; background: rgba(0, 0, 0, 0.5); border: 1px solid var(--border-glass); border-radius: 6px; padding: 0.6rem 0.85rem; color: #00f0ff; font-family: monospace; font-size: 0.85rem;" onclick="this.select()">
-
-
-
             </div>
-
-
-
             <button type="button" class="btn-primary" onclick="window.copyReferralShareLink()" style="padding: 0.6rem 1.1rem; font-size: 0.85rem; font-weight: 800; white-space: nowrap;">
-
-
-
               📋 Copy Link
-
-
-
             </button>
-
-
-
             <button type="button" onclick="window.shareDashboardInvite('twitter')" style="background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(255, 255, 255, 0.25); border-radius: 6px; padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap;">
-
-
-
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> 𝕏 Tweet Invite
-
-
-
             </button>
-
-
-
             <button type="button" onclick="window.shareDashboardInvite('telegram')" style="background: rgba(0, 136, 204, 0.18); color: #00b0ff; border: 1px solid rgba(0, 136, 204, 0.4); border-radius: 6px; padding: 0.6rem 0.9rem; font-size: 0.85rem; font-weight: 700; cursor: pointer; white-space: nowrap;">
-
-
-
               ✈️ Telegram
-
-
-
             </button>
-
-
-
             <button type="button" onclick="switchTab('referrals')" style="background: transparent; color: var(--text-muted); border: 1px solid var(--border-glass); border-radius: 6px; padding: 0.6rem 0.9rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap;" title="Open Downline Network & Referral Shop">
-
-
-
               Downline & Marketplace ↗
-
-
-
             </button>
+          </div>
 
-
-
+          <!-- Referral Tools: Guest (Not Logged In) -->
+          <div id="dashboard-ref-guest-row" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.85rem; margin-top: 0.75rem; padding: 0.75rem 1rem; background: rgba(0, 0, 0, 0.45); border: 1px dashed rgba(16, 185, 129, 0.4); border-radius: 8px;">
+            <p style="margin: 0; font-size: 0.85rem; color: var(--text-dim); line-height: 1.4;">
+              🔒 <strong style="color: #fff;">Log in or connect your wallet</strong> to generate your personal 4-tier referral link and start earning lifelong PGT commissions.
+            </p>
+            <button type="button" class="btn-primary" onclick="openModal('wallet')" style="padding: 0.55rem 1.2rem; font-size: 0.85rem; font-weight: 800; white-space: nowrap; background: #10b981; color: #000; border: none; border-radius: 6px; cursor: pointer; box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);">
+              🔑 Log In / Connect
+            </button>
           </div>
 
 
