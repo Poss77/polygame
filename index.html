@@ -1494,7 +1494,7 @@
 
 
 
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.758">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.759">
 
 
 
@@ -2112,24 +2112,24 @@ twq('config','ri5fg');
         <div class="card welcome-banner" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(0, 240, 255, 0.08) 0%, rgba(130, 71, 229, 0.08) 100%); border: 1px solid var(--border-cyan);">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
             <div class="welcome-content" style="flex: 1 1 520px; min-width: 280px; max-width: 100%;">
-              <div style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0.65rem; border-radius: 20px; background: rgba(0, 240, 255, 0.12); border: 1px solid var(--border-cyan); font-size: 0.75rem; font-weight: 800; color: var(--color-accent); margin-bottom: 0.65rem;">
-                <span>⚡ POLYGON POS</span> • <span>ZERO GAS TO PLAY</span> • <span>REAL PGT REWARDS</span>
-              </div>
               <h2 style="font-size: 1.75rem; margin: 0 0 0.5rem 0; font-weight: 900; background: linear-gradient(135deg, #fff 40%, var(--color-accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Play Web3 Arcade Games & Earn PGT</h2>
               <p style="margin-bottom: 1.25rem; font-size: 0.92rem; color: var(--text-dim); line-height: 1.5; max-width: 900px;">
                 Claim free daily tokens, conquer retro arcade leaderboards, solve daily puzzles, and multiply rewards with utility NFTs. 100% free to play, zero deposit required.
               </p>
               
-              <!-- 3-Step Fast Start Action Bar -->
+              <!-- 4-Step Fast Start Action Bar -->
               <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.65rem; margin-bottom: 1.1rem;">
                 <button class="btn-primary" id="btn-banner-action" onclick="switchTab('faucet')" style="white-space: nowrap; font-weight: 800; padding: 0.7rem 1.3rem; display: flex; align-items: center; gap: 0.45rem;">
                   <span>💧</span> <span>1. Claim Free Faucet</span>
                 </button>
-                <button class="btn-secondary" onclick="switchTab('games')" style="white-space: nowrap; font-weight: 700; padding: 0.7rem 1.2rem; display: flex; align-items: center; gap: 0.45rem;">
+                <button class="btn-secondary" onclick="switchTab('games', 'earn')" style="white-space: nowrap; font-weight: 700; padding: 0.7rem 1.2rem; display: flex; align-items: center; gap: 0.45rem;">
                   <span>🎮</span> <span>2. Play Arcade Games</span>
                 </button>
+                <button class="btn-secondary" onclick="switchTab('games', 'daily')" style="white-space: nowrap; font-weight: 700; padding: 0.7rem 1.2rem; display: flex; align-items: center; gap: 0.45rem;">
+                  <span>🧩</span> <span>3. Play Daily Games</span>
+                </button>
                 <button class="btn-secondary" onclick="switchTab('staking')" style="white-space: nowrap; font-weight: 700; padding: 0.7rem 1.2rem; display: flex; align-items: center; gap: 0.45rem;">
-                  <span>🏛️</span> <span>3. Stake & Vault APY</span>
+                  <span>🏛️</span> <span>4. Stake & Vault APY</span>
                 </button>
               </div>
 
@@ -2155,62 +2155,6 @@ twq('config','ri5fg');
             
             <div class="welcome-ill" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
               <img src="src/assets/polygongaming-logo.jpg" alt="Polygon Gaming Logo" style="width: 135px; height: 135px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 35px rgba(0, 240, 255, 0.6), 0 0 15px rgba(255, 0, 255, 0.3); border: 3px solid var(--border-cyan); animation: float 4s ease-in-out infinite;">
-            </div>
-          </div>
-        </div>
-
-        <!-- Daily Free Rewards Hub (Faucet, Wordle, Sudoku) -->
-        <div class="card" style="margin-bottom: 1.5rem; background: radial-gradient(circle at top left, rgba(0, 240, 255, 0.08) 0%, rgba(10, 15, 30, 0.85) 100%); border: 1px solid var(--border-cyan);">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
-            <div>
-              <h3 style="font-size: 1.2rem; color: #fff; margin: 0 0 0.2rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                <span>🎁</span> <span>Daily Free Rewards Hub</span>
-              </h3>
-              <p style="font-size: 0.84rem; color: var(--text-dim); margin: 0;">Complete daily activities every 24 hours to earn free PGT tokens and maintain your streaks.</p>
-            </div>
-            <span style="font-size: 0.75rem; font-weight: 800; color: var(--color-accent); background: rgba(0, 240, 255, 0.12); border: 1px solid var(--border-cyan); padding: 0.25rem 0.75rem; border-radius: 20px;">
-              RESETS DAILY 00:00 UTC
-            </span>
-          </div>
-
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
-            <!-- Free Faucet Card -->
-            <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 10px; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem;">
-              <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(0, 240, 255, 0.15); border: 1px solid var(--border-cyan); display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">💧</div>
-                <div>
-                  <h4 style="margin: 0; font-size: 0.95rem; color: #fff;">24h Free Faucet</h4>
-                  <span style="font-size: 0.76rem; color: var(--color-accent); font-weight: 700;">Up to 30.00 PGT Daily</span>
-                </div>
-              </div>
-              <p style="font-size: 0.8rem; color: var(--text-dim); margin: 0; line-height: 1.4;">Instant faucet reward with streak bonuses & VIP multipliers.</p>
-              <button class="btn-primary" onclick="switchTab('faucet')" style="width: 100%; padding: 0.55rem; font-size: 0.84rem; font-weight: 800;">Claim Faucet ↗</button>
-            </div>
-
-            <!-- Daily Wordle Card -->
-            <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(0, 255, 135, 0.25); border-radius: 10px; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem;">
-              <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(0, 255, 135, 0.15); border: 1px solid rgba(0, 255, 135, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">🟩</div>
-                <div>
-                  <h4 style="margin: 0; font-size: 0.95rem; color: #fff;">Daily Wordle</h4>
-                  <span style="font-size: 0.76rem; color: #00ff87; font-weight: 700;">6 Guesses • +30–50 PGT</span>
-                </div>
-              </div>
-              <p style="font-size: 0.8rem; color: var(--text-dim); margin: 0; line-height: 1.4;">Guess today's 5-letter crypto word and earn instant tokens.</p>
-              <button class="btn-secondary" onclick="if(window.launchDailyWordle){ window.launchDailyWordle(); } else { switchTab('games'); }" style="width: 100%; padding: 0.55rem; font-size: 0.84rem; font-weight: 800; border-color: rgba(0, 255, 135, 0.5); color: #00ff87;">Play Wordle ↗</button>
-            </div>
-
-            <!-- Daily Sudoku Card -->
-            <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 170, 0, 0.25); border-radius: 10px; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between; gap: 0.75rem;">
-              <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(255, 170, 0, 0.15); border: 1px solid rgba(255, 170, 0, 0.4); display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">🔢</div>
-                <div>
-                  <h4 style="margin: 0; font-size: 0.95rem; color: #fff;">Daily Sudoku</h4>
-                  <span style="font-size: 0.76rem; color: var(--color-warning); font-weight: 700;">3 Tiers • Up to 60 PGT</span>
-                </div>
-              </div>
-              <p style="font-size: 0.8rem; color: var(--text-dim); margin: 0; line-height: 1.4;">Test your logic with daily 9x9 grids across 3 difficulty tiers.</p>
-              <button class="btn-secondary" onclick="if(window.launchDailySudoku){ window.launchDailySudoku(); } else { switchTab('games'); }" style="width: 100%; padding: 0.55rem; font-size: 0.84rem; font-weight: 800; border-color: rgba(255, 170, 0, 0.5); color: var(--color-warning);">Play Sudoku ↗</button>
             </div>
           </div>
         </div>
@@ -2286,7 +2230,7 @@ twq('config','ri5fg');
                   Uncover safe grid gems without detonating landmines, spin the lucky wheel, and test your luck.
                 </p>
               </div>
-              <button class="btn-secondary" onclick="switchTab('games')" style="width: 100%; font-size: 0.85rem; font-weight: 800; border-color: rgba(255, 170, 0, 0.5); color: var(--color-warning);">
+              <button class="btn-secondary" onclick="switchTab('games', 'bet')" style="width: 100%; font-size: 0.85rem; font-weight: 800; border-color: rgba(255, 170, 0, 0.5); color: var(--color-warning);">
                 Play Mines & Bets ↗
               </button>
             </div>
@@ -2609,7 +2553,7 @@ twq('config','ri5fg');
 
 
 
-                      <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-warning); cursor: pointer;" onclick="switchTab('games')" title="Click to go to Mini-Games Arcade">🏆 Win 3 Wager Rounds ↗</span>
+                      <span style="font-size: 0.85rem; font-weight: 700; color: var(--color-warning); cursor: pointer;" onclick="switchTab('games', 'bet')" title="Click to go to Betting Games">🏆 Win 3 Wager Rounds ↗</span>
 
 
 
@@ -20203,47 +20147,47 @@ twq('config','ri5fg');
 
 
 
-  <script src="game.js?v=1.5.758"></script>
+  <script src="game.js?v=1.5.759"></script>
 
 
 
-  <script src="invaders.js?v=1.5.758"></script>
+  <script src="invaders.js?v=1.5.759"></script>
 
 
 
-  <script src="drift.js?v=1.5.758"></script>
+  <script src="drift.js?v=1.5.759"></script>
 
 
 
-  <script src="stacker.js?v=1.5.758"></script>
+  <script src="stacker.js?v=1.5.759"></script>
 
 
 
-  <script src="space.js?v=1.5.758"></script>
+  <script src="space.js?v=1.5.759"></script>
 
 
 
-  <script type="module" src="skeet.js?v=1.5.758"></script>
+  <script type="module" src="skeet.js?v=1.5.759"></script>
 
 
 
-  <script type="module" src="defense.js?v=1.5.758"></script>
+  <script type="module" src="defense.js?v=1.5.759"></script>
 
 
 
-  <script type="module" src="runner.js?v=1.5.758"></script>
+  <script type="module" src="runner.js?v=1.5.759"></script>
 
 
 
-  <script type="module" src="q2048.js?v=1.5.758"></script>
+  <script type="module" src="q2048.js?v=1.5.759"></script>
 
 
 
-  <script src="tetris.js?v=1.5.758"></script>
+  <script src="tetris.js?v=1.5.759"></script>
 
 
 
-  <script type="module" src="src/js/app.js?v=1.5.758"></script>
+  <script type="module" src="src/js/app.js?v=1.5.759"></script>
 
 
 

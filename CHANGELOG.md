@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Streamlined Dashboard Hero, Quick-Start Daily Games & Deep Category Routing (`v1.5.759`)**:
+  - **✨ Streamlined Hero Banner & Dashboard Layout ([`index.html`](index.html))**:
+    - Removed redundant top pill banner (`⚡ POLYGON POS • ZERO GAS TO PLAY • REAL PGT REWARDS`) above the main hero heading for a cleaner look.
+    - Removed redundant `Daily Free Rewards Hub` card from the dashboard view (eliminating duplicate Faucet, Daily Wordle, and Daily Sudoku cards).
+    - Expanded hero fast-start action bar into a 4-step quick journey: `💧 1. Claim Free Faucet`, `🎮 2. Play Arcade Games`, `🧩 3. Play Daily Games`, and `🏛️ 4. Stake & Vault APY`.
+  - **🧭 Deep Category Routing for Mini-Games ([`src/js/app.js`](src/js/app.js), [`src/js/features/quests.js`](src/js/features/quests.js), [`index.html`](index.html))**:
+    - Enhanced `switchTab(tabId, subcategory = null)` to support subcategories and added tab alias routing for `'daily'`, `'daily-games'`, `'puzzles'`, `'bet'`, and `'betting'`.
+    - Automatically dispatches `window.switchGameCategory(subcategory)` when navigating to games with a category parameter.
+    - Updated quick-start action buttons, quest navigation links, and featured game cards (such as Cyber Mines) to navigate directly to their corresponding tab categories (`earn`, `daily`, or `bet`) instead of always defaulting to `earn`.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Bumped `APP_VERSION = "1.5.759"` and refreshed script cache busters.
+
 - **Eliminate Guest Reflow Lag & Background Timers (`v1.5.758`)**:
   - **⚡ Eliminate Desktop Mousemove Forced Reflows ([`game.js`](game.js), [`skeet.js`](skeet.js))**:
     - Replaced raw, uncached `this.canvas.getBoundingClientRect()` calls inside `getCanvasCoords(e)` with cached `getCachedRect()` (throttled to 250ms), preventing synchronous layout thrashing on every single desktop mouse movement.

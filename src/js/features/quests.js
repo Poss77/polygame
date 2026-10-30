@@ -236,7 +236,7 @@ export function renderDailyQuestsUI() {
       btnGames.innerText = 'Play Games';
       btnGames.disabled = false;
       btnGames.style.cssText = 'padding: 0.35rem 0.75rem; font-size: 0.75rem; background: rgba(0, 240, 255, 0.12); color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.4); font-weight: 700; border-radius: 6px; opacity: 1; cursor: pointer;';
-      btnGames.onclick = () => switchTab('games');
+      btnGames.onclick = () => switchTab('games', 'earn');
     }
   }
 
@@ -274,7 +274,7 @@ export function renderDailyQuestsUI() {
       btnWins.innerText = 'Play Games';
       btnWins.disabled = false;
       btnWins.style.cssText = 'padding: 0.35rem 0.75rem; font-size: 0.75rem; background: rgba(255, 170, 0, 0.12); color: #ffaa00; border: 1px solid rgba(255, 170, 0, 0.4); font-weight: 700; border-radius: 6px; opacity: 1; cursor: pointer;';
-      btnWins.onclick = () => switchTab('games');
+      btnWins.onclick = () => switchTab('games', 'bet');
     }
   }
 

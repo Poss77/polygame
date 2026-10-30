@@ -210,31 +210,17 @@ window.launchPolySpace = launchPolySpace;
 
 
 
-export function switchTab(tabId) {
-
-
+export function switchTab(tabId, subcategory = null) {
 
   // Always remove fullscreen lock on tab switch so bottom nav is guaranteed visible
 
-
-
   document.body.classList.remove('game-fullscreen-open');
-
-
 
   const sidebarEl = document.querySelector('.sidebar');
 
-
-
   if (sidebarEl) sidebarEl.style.display = '';
 
-
-
-
-
-
-
-  const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'buy-referrals', 'referral-shop', 'profile', 'holders', 'links', 'contact', 'admin'];
+  const VALID_TABS = ['dashboard', 'faucet', 'games', 'arcade', 'space', 'nft', 'vault', 'staking', 'referrals', 'buy-referrals', 'referral-shop', 'profile', 'holders', 'links', 'contact', 'admin', 'daily', 'daily-games', 'puzzles', 'bet', 'betting'];
 
 
 
@@ -252,11 +238,17 @@ export function switchTab(tabId) {
 
   if (cleanTab === 'arcade') cleanTab = 'games';
 
-
-
   if (cleanTab === 'referral-shop') cleanTab = 'buy-referrals';
 
+  if (cleanTab === 'daily' || cleanTab === 'daily-games' || cleanTab === 'puzzles') {
+    cleanTab = 'games';
+    if (!subcategory) subcategory = 'daily';
+  }
 
+  if (cleanTab === 'bet' || cleanTab === 'betting') {
+    cleanTab = 'games';
+    if (!subcategory) subcategory = 'bet';
+  }
 
   if (!cleanTab || cleanTab.includes('=') || cleanTab.includes('&') || !VALID_TABS.includes(cleanTab)) {
 
@@ -1014,7 +1006,9 @@ export function switchTab(tabId) {
 
   if (tabId === 'games') {
 
-
+    if (subcategory && typeof window.switchGameCategory === 'function') {
+      window.switchGameCategory(subcategory);
+    }
 
     if (typeof syncDailyQuests === 'function') syncDailyQuests();
 
