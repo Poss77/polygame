@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace Radar PGT Anomaly Harvest & Animated Celestial Space Objects (`v1.5.762`)**:
+  - **🪐 Animated Celestial Landmarks on Tactical Radar ([`space.js`](space.js))**:
+    - Replaced the placeholder gray circles on the PolySpace radar with 4 animated space objects:
+      - **⚫ Black Hole**: Relativistic photon ring, rotating multi-chromatic accretion disk gradient, and singularity event horizon void.
+      - **🔴 Red Star (Red Giant)**: Molten red/orange core with pulsing solar corona radiance.
+      - **⚪ White Dwarf**: Blinding core with 4-point stellar diffraction spikes and shimmering cyan halo.
+      - **🪐 Ringed Exoplanet**: Multi-tone emerald/azure atmospheric body with tilted 3D orbital rings.
+  - **🪙 Server-Authoritative Radar PGT Harvest Hub ([`index.html`](index.html), [`space.js`](space.js), [`supabase/add_polyspace_radar_pgt_harvest.sql`](supabase/add_polyspace_radar_pgt_harvest.sql))**:
+    - Deployed interactive Radar Harvest HUD directly under the radar canvas featuring an animated floating PGT coin using the official brand icon.
+    - Spawns cosmic anomalies (~every 10s) that remain available until harvested by the player.
+    - Server-authoritative `claim_polyspace_radar_harvest` RPC enforces a strict 10-harvest daily cap per player (resets 00:00 UTC) and 5-second anti-autoclicker cooldown.
+    - Weighted random payout from 0.50 PGT to 10.00 PGT with an exact expectation value of 1.00 PGT (up to 10 PGT daily).
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.762"` and cache-busted scripts.
+
 - **Eliminate Relics Vault Infinite `setTimeout` Loop & 2.7s Gameplay Freeze (`v1.5.761`)**:
   - **⚡ Fix Infinite Recursive `setTimeout` in Relics Vault ([`src/js/features/relics.js`](src/js/features/relics.js))**:
     - Identified and permanently excised the recursive `setTimeout(() => hydrateAndRenderRelicsVault(), 50)` inside `renderRelicsVault()`. This rogue timeout was infinitely re-scheduling itself every 50ms for any player with 0 relics, causing massive DOM reconstructions and blocking the main JavaScript thread for up to 2,760ms (2.76 seconds).

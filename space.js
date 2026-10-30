@@ -118,6 +118,7 @@ class PolySpaceEngine {
   init() {
     this.loadSpaceState();
     this.syncCloudSpaceState(true);
+    this.initRadarPgtHarvest();
     this.canvas = document.getElementById('space-canvas');
     if (!this.canvas) return;
     this.ctx = this.canvas.getContext('2d');
@@ -2698,32 +2699,10 @@ class PolySpaceEngine {
         this.ctx.translate(-mapCenterX, -mapCenterY);
       }
 
-      // Scattered Ambient Asteroids on Map
-      const mapAsts = isRadarOnly ? [
-        { x: w * 0.14, y: h * 0.44, r: 6 },
-        { x: w * 0.36, y: h * 0.65, r: 7 },
-        { x: w * 0.40, y: h * 0.16, r: 6 },
-        { x: w * 0.66, y: h * 0.18, r: 8 },
-        { x: w * 0.68, y: h * 0.66, r: 7 },
-        { x: w * 0.92, y: h * 0.38, r: 7 }
-      ] : [
-        { x: w * 0.47, y: h * 0.40, r: 6 },
-        { x: w * 0.49, y: h * 0.62, r: 7 },
-        { x: w * 0.60, y: h * 0.14, r: 6 },
-        { x: w * 0.76, y: h * 0.18, r: 8 },
-        { x: w * 0.78, y: h * 0.64, r: 7 },
-        { x: w * 0.96, y: h * 0.38, r: 7 }
-      ];
-
-      mapAsts.forEach(ast => {
-        this.ctx.fillStyle = 'rgba(100, 120, 150, 0.35)';
-        this.ctx.strokeStyle = 'rgba(140, 165, 200, 0.5)';
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.arc(ast.x, ast.y, ast.r, 0, Math.PI * 2);
-        this.ctx.fill();
-        this.ctx.stroke();
-      });
+      // ----------------------------------------------------------------------
+      // Tactical Space Landmarks: 1 Black Hole, 1 Red Star, 1 White Dwarf, 1 Exoplanet
+      // ----------------------------------------------------------------------
+      this.drawCelestialSpaceObjects(w, h, isRadarOnly);
 
       // Tactical Rotating Radar Sweep Beam from Outpost Hub
       this.drawTacticalRadarSweep(baseX, baseY);
@@ -5397,6 +5376,355 @@ class PolySpaceEngine {
 }
 
 // Global instance initialization
+
+  // ----------------------------------------------------------------------
+  // CELESTIAL SPACE OBJECTS: 1 Black Hole, 1 Red Star, 1 White Dwarf, 1 Exoplanet
+  // ----------------------------------------------------------------------
+  drawCelestialSpaceObjects(w, h, isRadarOnly) {
+    if (!this.ctx) return;
+
+    // 1. Black Hole (Cygnus Singularity: Rotating Accretion Disk + Event Horizon)
+    const bhX = isRadarOnly ? w * 0.16 : w * 0.47;
+    const bhY = isRadarOnly ? h * 0.44 : h * 0.40;
+    const bhAngle = (Date.now() / 2400) % (Math.PI * 2);
+
+    this.ctx.save();
+    this.ctx.translate(bhX, bhY);
+    this.ctx.rotate(bhAngle);
+
+    // Swirling Multichromatic Accretion Disk
+    const bhGrad = this.ctx.createRadialGradient(0, 0, 6, 0, 0, 22);
+    bhGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+    bhGrad.addColorStop(0.2, 'rgba(0, 240, 255, 0.85)');
+    bhGrad.addColorStop(0.5, 'rgba(168, 85, 247, 0.7)');
+    bhGrad.addColorStop(0.8, 'rgba(236, 72, 153, 0.35)');
+    bhGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+    this.ctx.fillStyle = bhGrad;
+    this.ctx.beginPath();
+    this.ctx.ellipse(0, 0, 22, 9, 0, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Gravitational Photon Lensing Ring
+    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    this.ctx.lineWidth = 1.3;
+    this.ctx.beginPath();
+    this.ctx.arc(0, 0, 8.5, 0, Math.PI * 2);
+    this.ctx.stroke();
+
+    // Pitch-Black Event Horizon Void
+    this.ctx.fillStyle = '#000000';
+    this.ctx.beginPath();
+    this.ctx.arc(0, 0, 7.5, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.restore();
+
+    // Black Hole Label
+    this.ctx.save();
+    this.ctx.font = 'bold 8px monospace';
+    this.ctx.fillStyle = '#c084fc';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText('⚫ Black Hole', bhX, bhY + 16);
+    this.ctx.restore();
+
+    // 2. Red Star / Red Giant (Betelgeuse: Radiant Coronal Pulsing + Molten Core)
+    const rsX = isRadarOnly ? w * 0.36 : w * 0.50;
+    const rsY = isRadarOnly ? h * 0.70 : h * 0.66;
+    const rsPulse = 11 + Math.sin(Date.now() / 380) * 1.8;
+
+    this.ctx.save();
+    const rsGrad = this.ctx.createRadialGradient(rsX, rsY, 2, rsX, rsY, rsPulse + 6);
+    rsGrad.addColorStop(0, '#fffbeb');
+    rsGrad.addColorStop(0.3, '#f97316');
+    rsGrad.addColorStop(0.7, '#dc2626');
+    rsGrad.addColorStop(1, 'rgba(153, 27, 27, 0)');
+
+    this.ctx.fillStyle = rsGrad;
+    this.ctx.beginPath();
+    this.ctx.arc(rsX, rsY, rsPulse + 6, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    this.ctx.fillStyle = '#ef4444';
+    this.ctx.beginPath();
+    this.ctx.arc(rsX, rsY, 6.5, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    this.ctx.font = 'bold 8px monospace';
+    this.ctx.fillStyle = '#f87171';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText('🔴 Red Star', rsX, rsY + 16);
+    this.ctx.restore();
+
+    // 3. White Dwarf (Sirius-B: Blinding Core + Stellar Diffraction Spikes)
+    const wdX = isRadarOnly ? w * 0.40 : w * 0.60;
+    const wdY = isRadarOnly ? h * 0.16 : h * 0.14;
+    const wdShimmer = 1 + Math.sin(Date.now() / 220) * 0.25;
+
+    this.ctx.save();
+    const wdGrad = this.ctx.createRadialGradient(wdX, wdY, 1, wdX, wdY, 11 * wdShimmer);
+    wdGrad.addColorStop(0, '#ffffff');
+    wdGrad.addColorStop(0.45, 'rgba(56, 189, 248, 0.75)');
+    wdGrad.addColorStop(1, 'rgba(14, 165, 233, 0)');
+
+    this.ctx.fillStyle = wdGrad;
+    this.ctx.beginPath();
+    this.ctx.arc(wdX, wdY, 11 * wdShimmer, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.beginPath();
+    this.ctx.arc(wdX, wdY, 3.8, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // 4-point Stellar Cross Spikes
+    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    this.ctx.lineWidth = 1;
+    this.ctx.beginPath();
+    const sLen = 9 * wdShimmer;
+    this.ctx.moveTo(wdX - sLen, wdY);
+    this.ctx.lineTo(wdX + sLen, wdY);
+    this.ctx.moveTo(wdX, wdY - sLen);
+    this.ctx.lineTo(wdX, wdY + sLen);
+    this.ctx.stroke();
+
+    this.ctx.font = 'bold 8px monospace';
+    this.ctx.fillStyle = '#bae6fd';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText('⚪ White Dwarf', wdX, wdY + 15);
+    this.ctx.restore();
+
+    // 4. Ringed Exotic Planet (Kepler Gas Giant: Atmospheric Bands + Orbital Rings)
+    const plX = isRadarOnly ? w * 0.72 : w * 0.80;
+    const plY = isRadarOnly ? h * 0.64 : h * 0.62;
+
+    this.ctx.save();
+    const plGrad = this.ctx.createLinearGradient(plX - 8, plY - 8, plX + 8, plY + 8);
+    plGrad.addColorStop(0, '#059669');
+    plGrad.addColorStop(0.45, '#0284c7');
+    plGrad.addColorStop(1, '#4f46e5');
+
+    this.ctx.fillStyle = plGrad;
+    this.ctx.beginPath();
+    this.ctx.arc(plX, plY, 8, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // 3D Planetary Ring
+    this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.75)';
+    this.ctx.lineWidth = 1.8;
+    this.ctx.beginPath();
+    this.ctx.ellipse(plX, plY, 16, 5.5, -0.32, 0, Math.PI * 2);
+    this.ctx.stroke();
+
+    this.ctx.font = 'bold 8px monospace';
+    this.ctx.fillStyle = '#34d399';
+    this.ctx.textAlign = 'center';
+    this.ctx.fillText('🪐 Exoplanet', plX, plY + 16);
+    this.ctx.restore();
+  }
+
+  // ----------------------------------------------------------------------
+  // RADAR PGT HARVEST ENGINE (PLAN-RADAR-PGT)
+  // Spawns floating PGT coin (~1 every 10s), stays until clicked, max 10/day
+  // ----------------------------------------------------------------------
+  async initRadarPgtHarvest() {
+    this._radarPgtClaimsToday = 0;
+    this._radarPgtCoinSpawned = false;
+    this._radarPgtClaimInProgress = false;
+
+    await this.fetchRadarHarvestStatus();
+
+    // Schedule coin spawn in ~8-12 seconds if player hasn't reached daily cap
+    if (this._radarPgtClaimsToday < 10 && !this._radarPgtCoinSpawned) {
+      this.scheduleNextRadarPgtCoin(Math.random() * 4000 + 8000);
+    }
+  }
+
+  async fetchRadarHarvestStatus() {
+    const sb = (typeof supabase !== 'undefined') ? supabase : (window.supabase || null);
+    const pid = (window.appState && typeof window.appState.getPlayerId === 'function') 
+      ? window.appState.getPlayerId() 
+      : ((window.appState && window.appState.state) ? (window.appState.state.playerId || window.appState.state.walletAddress) : null);
+
+    if (!sb || !pid || String(pid).startsWith('0xguest')) {
+      this.updateRadarHarvestUI(0, 10);
+      return;
+    }
+
+    try {
+      const { data, error } = await sb.rpc('get_polyspace_radar_harvest_status', {
+        p_player_id: String(pid).toLowerCase()
+      });
+      if (!error && data && data.success) {
+        this._radarPgtClaimsToday = parseInt(data.claims_today || 0, 10);
+        this.updateRadarHarvestUI(this._radarPgtClaimsToday, data.claims_remaining);
+      }
+    } catch (e) {
+      console.warn('[fetchRadarHarvestStatus Exception]', e);
+    }
+  }
+
+  scheduleNextRadarPgtCoin(delayMs = 10000) {
+    if (this._radarPgtSpawnTimer) {
+      clearTimeout(this._radarPgtSpawnTimer);
+      this._radarPgtSpawnTimer = null;
+    }
+    if (this._radarPgtClaimsToday >= 10 || this._radarPgtCoinSpawned) return;
+
+    this._radarPgtSpawnTimer = setTimeout(() => {
+      this.spawnRadarPgtCoin();
+    }, delayMs);
+  }
+
+  spawnRadarPgtCoin() {
+    if (this._radarPgtClaimsToday >= 10 || this._radarPgtCoinSpawned) return;
+    this._radarPgtCoinSpawned = true;
+
+    const wrapper = document.getElementById('radar-pgt-coin-wrapper');
+    if (wrapper) {
+      wrapper.style.display = 'inline-flex';
+      wrapper.style.animation = 'radarCoinFloat 2.2s ease-in-out infinite alternate';
+    }
+
+    // Play subtle laser chime
+    try {
+      if (window.sfx && typeof window.sfx.playLaser === 'function') {
+        window.sfx.playLaser();
+      }
+    } catch (e) {}
+  }
+
+  async claimRadarPgtHarvest() {
+    if (this._radarPgtClaimInProgress) return;
+    if (this._radarPgtClaimsToday >= 10) {
+      if (window.triggerToast) window.triggerToast("Daily limit of 10 radar PGT harvests reached!", "warning");
+      return;
+    }
+
+    const sb = (typeof supabase !== 'undefined') ? supabase : (window.supabase || null);
+    const pid = (window.appState && typeof window.appState.getPlayerId === 'function') 
+      ? window.appState.getPlayerId() 
+      : ((window.appState && window.appState.state) ? (window.appState.state.playerId || window.appState.state.walletAddress) : null);
+
+    if (!sb || !pid) {
+      if (window.triggerToast) window.triggerToast("Please connect your wallet to harvest PGT!", "warning");
+      return;
+    }
+
+    this._radarPgtClaimInProgress = true;
+    const wrapper = document.getElementById('radar-pgt-coin-wrapper');
+    if (wrapper) {
+      wrapper.style.opacity = '0.5';
+      wrapper.style.pointerEvents = 'none';
+    }
+
+    try {
+      const { data, error } = await sb.rpc('claim_polyspace_radar_harvest', {
+        p_player_id: String(pid).toLowerCase()
+      });
+
+      if (!error && data && data.success) {
+        this._radarPgtClaimsToday = parseInt(data.claims_today, 10);
+        this._radarPgtCoinSpawned = false;
+
+        if (wrapper) {
+          wrapper.style.display = 'none';
+          wrapper.style.opacity = '1';
+          wrapper.style.pointerEvents = 'auto';
+        }
+
+        // Authoritatively update PGT balance in app state
+        if (data.new_balance !== undefined && window.appState) {
+          window.appState.update({ balancePgt: parseFloat(parseFloat(data.new_balance).toFixed(2)) });
+        }
+
+        try {
+          if (data.is_jackpot && window.confetti) {
+            window.confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+          }
+          if (window.sfx && typeof window.sfx.playDeposit === 'function') {
+            window.sfx.playDeposit();
+          } else if (window.sfx && typeof window.sfx.playLaser === 'function') {
+            window.sfx.playLaser();
+          }
+        } catch (e) {}
+
+        const rewardVal = parseFloat(data.reward_pgt || 0).toFixed(2);
+        const msg = data.is_jackpot 
+          ? `🌟 SUPERNOVA JACKPOT! +${rewardVal} PGT Harvested!` 
+          : `✨ Radar PGT Harvested: +${rewardVal} PGT!`;
+        if (window.triggerToast) {
+          window.triggerToast(msg, "success");
+        }
+
+        this.updateRadarHarvestUI(this._radarPgtClaimsToday, data.claims_remaining);
+
+        // Schedule next coin after ~10 seconds (approx 8-13s random) if remaining < 10
+        if (this._radarPgtClaimsToday < 10) {
+          this.scheduleNextRadarPgtCoin(Math.random() * 5000 + 8000);
+        }
+      } else {
+        const err = (data && data.error) || (error && error.message) || 'Harvest failed';
+        if (window.triggerToast) window.triggerToast(`⚠️ ${err}`, "warning");
+        if (wrapper) {
+          wrapper.style.opacity = '1';
+          wrapper.style.pointerEvents = 'auto';
+        }
+      }
+    } catch (err) {
+      console.warn('[claimRadarPgtHarvest Exception]', err);
+      if (wrapper) {
+        wrapper.style.opacity = '1';
+        wrapper.style.pointerEvents = 'auto';
+      }
+    } finally {
+      this._radarPgtClaimInProgress = false;
+    }
+  }
+
+  updateRadarHarvestUI(claimsToday, claimsRemaining) {
+    const countEl = document.getElementById('radar-harvest-count');
+    const badgeEl = document.getElementById('radar-harvest-badge');
+    const subtitleEl = document.getElementById('radar-harvest-subtitle');
+    const indicatorEl = document.getElementById('radar-harvest-status-indicator');
+
+    if (countEl) countEl.innerText = claimsToday;
+
+    if (claimsToday >= 10) {
+      if (badgeEl) {
+        badgeEl.style.background = 'rgba(255, 170, 0, 0.15)';
+        badgeEl.style.borderColor = 'var(--color-warning)';
+        badgeEl.style.color = '#ffd700';
+        badgeEl.innerHTML = '🪙 Radar Harvest: <strong style="color:#fff;">10 / 10</strong> (Daily Cap Reached)';
+      }
+      if (subtitleEl) {
+        subtitleEl.innerText = 'Daily harvest limit reached (10/10) • Resets at 00:00 UTC';
+        subtitleEl.style.color = '#ffd700';
+      }
+      if (indicatorEl) {
+        indicatorEl.style.background = '#ffd700';
+        indicatorEl.style.boxShadow = '0 0 8px #ffd700';
+      }
+      const wrapper = document.getElementById('radar-pgt-coin-wrapper');
+      if (wrapper) wrapper.style.display = 'none';
+    } else {
+      if (badgeEl) {
+        badgeEl.style.background = 'rgba(0, 240, 255, 0.15)';
+        badgeEl.style.borderColor = 'rgba(0, 240, 255, 0.4)';
+        badgeEl.style.color = '#00f0ff';
+        badgeEl.innerHTML = `🪙 Radar Harvest: <strong style="color:#fff;">${claimsToday}</strong> / 10 Today`;
+      }
+      if (subtitleEl) {
+        subtitleEl.innerText = 'Cosmic PGT fragments drift under the radar • Tap floating coin to harvest (0.5 – 10 PGT)';
+        subtitleEl.style.color = 'var(--text-muted)';
+      }
+      if (indicatorEl) {
+        indicatorEl.style.background = '#00ff88';
+        indicatorEl.style.boxShadow = '0 0 8px #00ff88';
+      }
+    }
+  }
+
+
 window.polySpace = new PolySpaceEngine();
 
 window.initPolySpace = function() {
@@ -5492,3 +5820,5 @@ window.toggleShipTracking = function() { if (window.polySpace) window.polySpace.
 window.trackSpecificExpedition = function(expId) { if (window.polySpace) window.polySpace.trackSpecificExpedition(expId); };
 window.setSpaceCanvasMode = function(mode) { if (window.polySpace) window.polySpace.setCanvasMode(mode); };
 
+
+window.claimRadarPgtHarvest = function() { if (window.polySpace) window.polySpace.claimRadarPgtHarvest(); };

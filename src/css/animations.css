@@ -168,3 +168,9 @@
   display: inline-block;
   animation: spin 0.8s linear infinite;
 }
+
+/* Radar Floating PGT Harvest Coin Keyframes */
+@keyframes radarCoinFloat {
+  0% { transform: translateY(0px) scale(1); filter: drop-shadow(0 0 6px #00f0ff); }
+  100% { transform: translateY(-5px) scale(1.05); filter: drop-shadow(0 0 14px #a855f7); }
+}
