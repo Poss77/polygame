@@ -5373,9 +5373,6 @@ class PolySpaceEngine {
     this._isRaidingOutpost = false;
     this.updateUI();
   }
-}
-
-// Global instance initialization
 
   // ----------------------------------------------------------------------
   // CELESTIAL SPACE OBJECTS: 1 Black Hole, 1 Red Star, 1 White Dwarf, 1 Exoplanet
@@ -5723,8 +5720,9 @@ class PolySpaceEngine {
       }
     }
   }
+}
 
-
+// Global instance initialization
 window.polySpace = new PolySpaceEngine();
 
 window.initPolySpace = function() {

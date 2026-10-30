@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Fix PolySpaceEngine Class Closure & Init Error (`v1.5.763`)**:
+  - **🐛 Fix Class Scope Premature Closing Brace ([`space.js`](space.js))**:
+    - Resolved `Uncaught SyntaxError: Unexpected token '{' (space.js:5383)` caused by a premature closing brace before the newly introduced celestial objects and radar PGT harvest methods.
+    - Restored full class encapsulation so `window.polySpace = new PolySpaceEngine()` instantiates correctly without triggering the initialization fallback warning when opening PolySpace.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.763"` and cache-busted all scripts and stylesheets.
+
 - **PolySpace Radar PGT Anomaly Harvest & Animated Celestial Space Objects (`v1.5.762`)**:
   - **🪐 Animated Celestial Landmarks on Tactical Radar ([`space.js`](space.js))**:
     - Replaced the placeholder gray circles on the PolySpace radar with 4 animated space objects:
