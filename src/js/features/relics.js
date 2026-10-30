@@ -450,15 +450,27 @@ export function isSeason1ApexUnlocked(userRelics) {
 export const isSerie1ApexUnlocked = isSeason1ApexUnlocked;
 
 let _isHydratingRelics = false;
+let _hasHydratedRelicsOnce = false;
 
 // Hydrate relics directly from Supabase for the current player, updating in-memory state & rendering vault
 export async function hydrateAndRenderRelicsVault(force = false) {
+  // Never run hydration during active arcade gameplay
+  if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) {
+    return;
+  }
+
+  // Prevent duplicate background queries if already hydrated or in-flight
+  if (_isHydratingRelics) return;
+  if (!force && _hasHydratedRelicsOnce) {
+    renderRelicsVault();
+    return;
+  }
+
+  _isHydratingRelics = true;
+  _hasHydratedRelicsOnce = true;
+
   // 1. Immediate local render
   renderRelicsVault();
-
-  // 2. Prevent overlapping network queries
-  if (_isHydratingRelics) return;
-  _isHydratingRelics = true;
 
   try {
     const s1Prog = getSeason1Progress(appState?.state?.relics || {});
@@ -534,11 +546,6 @@ export function renderRelicsVault() {
 
   const userRelics = normalizeRelicsObject(appState.state.relics || {});
   const s1Progress = getSeason1Progress(userRelics);
-
-  // If local state has 0 relics, automatically trigger background hydration from database
-  if (s1Progress.ownedCount === 0 && !_isHydratingRelics) {
-    setTimeout(() => hydrateAndRenderRelicsVault(), 50);
-  }
 
   // Group relics by game category
   const categories = [

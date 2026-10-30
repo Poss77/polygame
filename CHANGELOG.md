@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Eliminate Relics Vault Infinite `setTimeout` Loop & 2.7s Gameplay Freeze (`v1.5.761`)**:
+  - **⚡ Fix Infinite Recursive `setTimeout` in Relics Vault ([`src/js/features/relics.js`](src/js/features/relics.js))**:
+    - Identified and permanently excised the recursive `setTimeout(() => hydrateAndRenderRelicsVault(), 50)` inside `renderRelicsVault()`. This rogue timeout was infinitely re-scheduling itself every 50ms for any player with 0 relics, causing massive DOM reconstructions and blocking the main JavaScript thread for up to 2,760ms (2.76 seconds).
+    - Added session hydration latching (`_hasHydratedRelicsOnce`) and an active arcade gameplay guard (`isAnyArcadeGamePlaying()`) to `hydrateAndRenderRelicsVault()`.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.761"` and cache-busted scripts.
+
 - **Performance Diagnostic Sentinel & Background Gameplay Task Suppression (`v1.5.760`)**:
   - **🔍 In-App Performance Diagnostic Sentinel ([`index.html`](index.html))**:
     - Embedded an early boot execution timer interceptor wrapping `window.setTimeout` and `window.setInterval` to capture and log any task blocking the main thread for $\ge 40\text{ms}$ with full source stack trace (`⚠️ [LAG SPIKE DIAGNOSTIC]`), pinpointing the exact caller responsible for Chrome DevTools violation warnings.
