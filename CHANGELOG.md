@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Fix `panY` ReferenceError in Radar Token Projection (`v1.5.766`)**:
+  - **🐛 Fix Missing `panY` Parameter & Add Coordinate Fallbacks ([`space.js`](space.js))**:
+    - Fixed `Uncaught ReferenceError: panY is not defined` inside `drawFloatingRadarPgtToken()` where `panY` was used to calculate the token's screen coordinate for hit-testing but was omitted from the method arguments and call signature.
+    - Added defensive fallbacks (`this._mapPanX || 0`, `this._mapPanY || 0`, `this._mapZoom || 1.0`) ensuring screen projections never throw under any canvas pan/zoom state.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.766"` and updated cache busters.
+
 - **Fix Canvas State Stack Overflow & Map Zoom Freeze (`v1.5.765`)**:
   - **🐛 Balance Canvas `save()` / `restore()` Operations ([`space.js`](space.js))**:
     - Identified and resolved missing `this.ctx.restore()` calls in `drawCelestialSpaceObjects()` for the Red Star, White Dwarf, and Exoplanet landmarks, as well as an extraneous restore in `drawHangarBulkheadArchitecture()`.

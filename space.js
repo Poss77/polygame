@@ -2728,7 +2728,7 @@ class PolySpaceEngine {
       this.drawCelestialSpaceObjects(w, h, isRadarOnly);
 
       // Floating PGT Token on Tactical Radar (Click-to-harvest directly on map)
-      this.drawFloatingRadarPgtToken(baseX, baseY, mapCenterX, mapCenterY, zoom, panX);
+      this.drawFloatingRadarPgtToken(baseX, baseY, mapCenterX, mapCenterY, zoom, panX, panY);
 
       // Tactical Rotating Radar Sweep Beam from Outpost Hub
       this.drawTacticalRadarSweep(baseX, baseY);
@@ -5610,8 +5610,12 @@ class PolySpaceEngine {
     } catch (e) {}
   }
 
-  drawFloatingRadarPgtToken(baseX, baseY, mapCenterX, mapCenterY, zoom, panX) {
+  drawFloatingRadarPgtToken(baseX, baseY, mapCenterX, mapCenterY, zoom, panX, panY) {
     if (!this._radarPgtCoinSpawned || !this._radarPgtTokenNormalized) return;
+
+    const pX = (typeof panX === 'number') ? panX : (this._mapPanX || 0);
+    const pY = (typeof panY === 'number') ? panY : (this._mapPanY || 0);
+    const z = (typeof zoom === 'number') ? zoom : (this._mapZoom || 1.0);
 
     const { angle, dist } = this._radarPgtTokenNormalized;
     const tokenX = baseX + Math.cos(angle) * dist;
@@ -5619,9 +5623,9 @@ class PolySpaceEngine {
     const tokenY = baseY + Math.sin(angle) * dist + bobY;
 
     // Record screen position for canvas click hit-testing
-    const screenX = (tokenX - mapCenterX) * zoom + mapCenterX + panX;
-    const screenY = (tokenY - mapCenterY) * zoom + mapCenterY + panY;
-    this._radarPgtTokenScreenPos = { x: screenX, y: screenY, radius: 15 * zoom };
+    const screenX = (tokenX - mapCenterX) * z + mapCenterX + pX;
+    const screenY = (tokenY - mapCenterY) * z + mapCenterY + pY;
+    this._radarPgtTokenScreenPos = { x: screenX, y: screenY, radius: 15 * z };
 
     this.ctx.save();
     this.ctx.translate(tokenX, tokenY);
