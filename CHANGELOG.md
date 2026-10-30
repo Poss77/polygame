@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace Radar On-Map PGT Harvest & Celestial Label Cleanup (`v1.5.764`)**:
+  - **✨ Floating PGT Token Directly on Tactical Radar Canvas ([`space.js`](space.js))**:
+    - Relocated the floating PGT token anomaly directly onto the radar map canvas with smooth bobbing motion, orbiting holographic rings, and neon cyan glow.
+    - Implemented coordinate-aware click and hover hit-testing on the canvas so players click the token directly on the map to harvest.
+  - **⏱️ Rebalanced Spawn Pacing (3.75x More Rare) ([`space.js`](space.js))**:
+    - Increased anomaly spawn intervals from ~8–12s to **30–45 seconds** (average ~37.5s), pacing rewards naturally throughout the session while keeping the 10/day cap intact.
+  - **🌌 Clean Aesthetic Celestial Objects ([`space.js`](space.js))**:
+    - Excised all textual name labels (`⚫ Black Hole`, `🔴 Red Star`, `⚪ White Dwarf`, `🪐 Exoplanet`), preserving the visual fidelity and dark-space immersion of the tactical radar.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.764"` and updated cache-busters across all script tags.
+
 - **Fix PolySpaceEngine Class Closure & Init Error (`v1.5.763`)**:
   - **🐛 Fix Class Scope Premature Closing Brace ([`space.js`](space.js))**:
     - Resolved `Uncaught SyntaxError: Unexpected token '{' (space.js:5383)` caused by a premature closing brace before the newly introduced celestial objects and radar PGT harvest methods.

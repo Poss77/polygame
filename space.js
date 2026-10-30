@@ -118,6 +118,10 @@ class PolySpaceEngine {
   init() {
     this.loadSpaceState();
     this.syncCloudSpaceState(true);
+    if (!this._pgtTokenImg) {
+      this._pgtTokenImg = new Image();
+      this._pgtTokenImg.src = 'src/assets/pgt-token-icon.jpg';
+    }
     this.initRadarPgtHarvest();
     this.canvas = document.getElementById('space-canvas');
     if (!this.canvas) return;
@@ -142,6 +146,17 @@ class PolySpaceEngine {
         const isHangarOnly = mode === 'hangar';
         const divX = (rect.width || this.width) * 0.43;
         const mapMinX = isRadarOnly ? 0 : divX;
+
+        // 0. Check Click directly on Floating PGT Token on the Tactical Map
+        if (this._radarPgtCoinSpawned && this._radarPgtTokenScreenPos) {
+          const tp = this._radarPgtTokenScreenPos;
+          const dist = Math.hypot(clickX - tp.x, clickY - tp.y);
+          if (dist <= Math.max(22, (tp.radius || 15) + 6)) {
+            if (window.sfx && window.sfx.playClick) window.sfx.playClick();
+            this.claimRadarPgtHarvest();
+            return;
+          }
+        }
 
         // 1. Check NFT Dock bounds in Hangar (if not radar-only)
         if (!isRadarOnly && this._nftDockBounds) {
@@ -179,6 +194,16 @@ class PolySpaceEngine {
         const divX = (rect.width || this.width) * 0.43;
         const mapMinX = isRadarOnly ? 0 : divX;
         const b = this._nftDockBounds;
+
+        if (this._radarPgtCoinSpawned && this._radarPgtTokenScreenPos) {
+          const tp = this._radarPgtTokenScreenPos;
+          const dist = Math.hypot(mx - tp.x, my - tp.y);
+          if (dist <= Math.max(22, (tp.radius || 15) + 6)) {
+            this.canvas.style.cursor = 'pointer';
+            this.canvas.title = '✨ Click to Harvest PGT Token!';
+            return;
+          }
+        }
 
         if (!isRadarOnly && b && mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
           this.canvas.style.cursor = 'pointer';
@@ -2703,6 +2728,9 @@ class PolySpaceEngine {
       // Tactical Space Landmarks: 1 Black Hole, 1 Red Star, 1 White Dwarf, 1 Exoplanet
       // ----------------------------------------------------------------------
       this.drawCelestialSpaceObjects(w, h, isRadarOnly);
+
+      // Floating PGT Token on Tactical Radar (Click-to-harvest directly on map)
+      this.drawFloatingRadarPgtToken(baseX, baseY, mapCenterX, mapCenterY, zoom, panX);
 
       // Tactical Rotating Radar Sweep Beam from Outpost Hub
       this.drawTacticalRadarSweep(baseX, baseY);
@@ -5416,13 +5444,7 @@ class PolySpaceEngine {
     this.ctx.fill();
     this.ctx.restore();
 
-    // Black Hole Label
-    this.ctx.save();
-    this.ctx.font = 'bold 8px monospace';
-    this.ctx.fillStyle = '#c084fc';
-    this.ctx.textAlign = 'center';
-    this.ctx.fillText('⚫ Black Hole', bhX, bhY + 16);
-    this.ctx.restore();
+
 
     // 2. Red Star / Red Giant (Betelgeuse: Radiant Coronal Pulsing + Molten Core)
     const rsX = isRadarOnly ? w * 0.36 : w * 0.50;
@@ -5446,11 +5468,7 @@ class PolySpaceEngine {
     this.ctx.arc(rsX, rsY, 6.5, 0, Math.PI * 2);
     this.ctx.fill();
 
-    this.ctx.font = 'bold 8px monospace';
-    this.ctx.fillStyle = '#f87171';
-    this.ctx.textAlign = 'center';
-    this.ctx.fillText('🔴 Red Star', rsX, rsY + 16);
-    this.ctx.restore();
+
 
     // 3. White Dwarf (Sirius-B: Blinding Core + Stellar Diffraction Spikes)
     const wdX = isRadarOnly ? w * 0.40 : w * 0.60;
@@ -5484,11 +5502,7 @@ class PolySpaceEngine {
     this.ctx.lineTo(wdX, wdY + sLen);
     this.ctx.stroke();
 
-    this.ctx.font = 'bold 8px monospace';
-    this.ctx.fillStyle = '#bae6fd';
-    this.ctx.textAlign = 'center';
-    this.ctx.fillText('⚪ White Dwarf', wdX, wdY + 15);
-    this.ctx.restore();
+
 
     // 4. Ringed Exotic Planet (Kepler Gas Giant: Atmospheric Bands + Orbital Rings)
     const plX = isRadarOnly ? w * 0.72 : w * 0.80;
@@ -5512,11 +5526,7 @@ class PolySpaceEngine {
     this.ctx.ellipse(plX, plY, 16, 5.5, -0.32, 0, Math.PI * 2);
     this.ctx.stroke();
 
-    this.ctx.font = 'bold 8px monospace';
-    this.ctx.fillStyle = '#34d399';
-    this.ctx.textAlign = 'center';
-    this.ctx.fillText('🪐 Exoplanet', plX, plY + 16);
-    this.ctx.restore();
+
   }
 
   // ----------------------------------------------------------------------
@@ -5530,9 +5540,9 @@ class PolySpaceEngine {
 
     await this.fetchRadarHarvestStatus();
 
-    // Schedule coin spawn in ~8-12 seconds if player hasn't reached daily cap
+    // Schedule coin spawn in ~30-45 seconds (3-4x more rare) if daily cap not reached
     if (this._radarPgtClaimsToday < 10 && !this._radarPgtCoinSpawned) {
-      this.scheduleNextRadarPgtCoin(Math.random() * 4000 + 8000);
+      this.scheduleNextRadarPgtCoin(Math.random() * 15000 + 30000);
     }
   }
 
@@ -5560,7 +5570,7 @@ class PolySpaceEngine {
     }
   }
 
-  scheduleNextRadarPgtCoin(delayMs = 10000) {
+  scheduleNextRadarPgtCoin(delayMs = 35000) {
     if (this._radarPgtSpawnTimer) {
       clearTimeout(this._radarPgtSpawnTimer);
       this._radarPgtSpawnTimer = null;
@@ -5576,10 +5586,19 @@ class PolySpaceEngine {
     if (this._radarPgtClaimsToday >= 10 || this._radarPgtCoinSpawned) return;
     this._radarPgtCoinSpawned = true;
 
-    const wrapper = document.getElementById('radar-pgt-coin-wrapper');
-    if (wrapper) {
-      wrapper.style.display = 'inline-flex';
-      wrapper.style.animation = 'radarCoinFloat 2.2s ease-in-out infinite alternate';
+    // Pick random location around tactical radar (between 50px and 130px from base)
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 50 + Math.random() * 80;
+    this._radarPgtTokenNormalized = { angle, dist };
+
+    const subtitleEl = document.getElementById('radar-harvest-subtitle');
+    if (subtitleEl) {
+      subtitleEl.innerHTML = '<span style="color:#00ff88; font-weight:800;">✨ Cosmic PGT Token Detected!</span> Click token directly on the map to harvest (0.5 – 10 PGT)';
+    }
+    const indicatorEl = document.getElementById('radar-harvest-status-indicator');
+    if (indicatorEl) {
+      indicatorEl.style.background = '#00f0ff';
+      indicatorEl.style.boxShadow = '0 0 12px #00f0ff';
     }
 
     // Play subtle laser chime
@@ -5588,6 +5607,75 @@ class PolySpaceEngine {
         window.sfx.playLaser();
       }
     } catch (e) {}
+  }
+
+  drawFloatingRadarPgtToken(baseX, baseY, mapCenterX, mapCenterY, zoom, panX) {
+    if (!this._radarPgtCoinSpawned || !this._radarPgtTokenNormalized) return;
+
+    const { angle, dist } = this._radarPgtTokenNormalized;
+    const tokenX = baseX + Math.cos(angle) * dist;
+    const bobY = Math.sin(Date.now() / 320) * 3.5;
+    const tokenY = baseY + Math.sin(angle) * dist + bobY;
+
+    // Record screen position for canvas click hit-testing
+    const screenX = (tokenX - mapCenterX) * zoom + mapCenterX + panX;
+    const screenY = (tokenY - mapCenterY) * zoom + mapCenterY + panY;
+    this._radarPgtTokenScreenPos = { x: screenX, y: screenY, radius: 15 * zoom };
+
+    this.ctx.save();
+    this.ctx.translate(tokenX, tokenY);
+
+    // 1. Pulsing Outer Aura / Anomaly Ring
+    const pulse = 16 + Math.sin(Date.now() / 200) * 3;
+    const auraGrad = this.ctx.createRadialGradient(0, 0, 6, 0, 0, pulse + 6);
+    auraGrad.addColorStop(0, 'rgba(0, 240, 255, 0.45)');
+    auraGrad.addColorStop(0.5, 'rgba(168, 85, 247, 0.3)');
+    auraGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+    this.ctx.fillStyle = auraGrad;
+    this.ctx.beginPath();
+    this.ctx.arc(0, 0, pulse + 6, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // 2. Rotating Hologram Rings around the token
+    const rot = (Date.now() / 1500) % (Math.PI * 2);
+    this.ctx.strokeStyle = 'rgba(0, 240, 255, 0.7)';
+    this.ctx.lineWidth = 1.2;
+    this.ctx.beginPath();
+    this.ctx.ellipse(0, 0, 18, 7, rot, 0, Math.PI * 2);
+    this.ctx.stroke();
+
+    // 3. Render Circular PGT Token (official logo image or stylized token fallback)
+    const tokenRadius = 13;
+    if (this._pgtTokenImg && this._pgtTokenImg.complete && this._pgtTokenImg.naturalWidth > 0) {
+      this.ctx.save();
+      this.ctx.beginPath();
+      this.ctx.arc(0, 0, tokenRadius, 0, Math.PI * 2);
+      this.ctx.clip();
+      this.ctx.drawImage(this._pgtTokenImg, -tokenRadius, -tokenRadius, tokenRadius * 2, tokenRadius * 2);
+      this.ctx.restore();
+    } else {
+      this.ctx.fillStyle = '#7c3aed';
+      this.ctx.beginPath();
+      this.ctx.arc(0, 0, tokenRadius, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.font = 'bold 9px sans-serif';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillText('PGT', 0, 0);
+    }
+
+    // 4. Bright Neon Cyan Border with Glow
+    this.ctx.strokeStyle = '#00f0ff';
+    this.ctx.lineWidth = 1.8;
+    this.ctx.shadowColor = '#00f0ff';
+    this.ctx.shadowBlur = 8;
+    this.ctx.beginPath();
+    this.ctx.arc(0, 0, tokenRadius, 0, Math.PI * 2);
+    this.ctx.stroke();
+    this.ctx.shadowBlur = 0;
+
+    this.ctx.restore();
   }
 
   async claimRadarPgtHarvest() {
@@ -5622,12 +5710,8 @@ class PolySpaceEngine {
       if (!error && data && data.success) {
         this._radarPgtClaimsToday = parseInt(data.claims_today, 10);
         this._radarPgtCoinSpawned = false;
-
-        if (wrapper) {
-          wrapper.style.display = 'none';
-          wrapper.style.opacity = '1';
-          wrapper.style.pointerEvents = 'auto';
-        }
+        this._radarPgtTokenScreenPos = null;
+        this._radarPgtTokenNormalized = null;
 
         // Authoritatively update PGT balance in app state
         if (data.new_balance !== undefined && window.appState) {
@@ -5655,9 +5739,9 @@ class PolySpaceEngine {
 
         this.updateRadarHarvestUI(this._radarPgtClaimsToday, data.claims_remaining);
 
-        // Schedule next coin after ~10 seconds (approx 8-13s random) if remaining < 10
+        // Schedule next coin after ~30-45 seconds (3-4x more rare) if remaining < 10
         if (this._radarPgtClaimsToday < 10) {
-          this.scheduleNextRadarPgtCoin(Math.random() * 5000 + 8000);
+          this.scheduleNextRadarPgtCoin(Math.random() * 15000 + 30000);
         }
       } else {
         const err = (data && data.error) || (error && error.message) || 'Harvest failed';
@@ -5701,8 +5785,9 @@ class PolySpaceEngine {
         indicatorEl.style.background = '#ffd700';
         indicatorEl.style.boxShadow = '0 0 8px #ffd700';
       }
-      const wrapper = document.getElementById('radar-pgt-coin-wrapper');
-      if (wrapper) wrapper.style.display = 'none';
+      this._radarPgtCoinSpawned = false;
+      this._radarPgtTokenScreenPos = null;
+      this._radarPgtTokenNormalized = null;
     } else {
       if (badgeEl) {
         badgeEl.style.background = 'rgba(0, 240, 255, 0.15)';
@@ -5711,12 +5796,16 @@ class PolySpaceEngine {
         badgeEl.innerHTML = `🪙 Radar Harvest: <strong style="color:#fff;">${claimsToday}</strong> / 10 Today`;
       }
       if (subtitleEl) {
-        subtitleEl.innerText = 'Cosmic PGT fragments drift under the radar • Tap floating coin to harvest (0.5 – 10 PGT)';
-        subtitleEl.style.color = 'var(--text-muted)';
+        if (this._radarPgtCoinSpawned) {
+          subtitleEl.innerHTML = '<span style="color:#00ff88; font-weight:800;">✨ Cosmic PGT Token Detected!</span> Click token directly on the map to harvest (0.5 – 10 PGT)';
+        } else {
+          subtitleEl.innerText = 'Cosmic PGT tokens drift across the tactical radar • Click token on map to harvest (0.5 – 10 PGT)';
+          subtitleEl.style.color = 'var(--text-muted)';
+        }
       }
       if (indicatorEl) {
-        indicatorEl.style.background = '#00ff88';
-        indicatorEl.style.boxShadow = '0 0 8px #00ff88';
+        indicatorEl.style.background = this._radarPgtCoinSpawned ? '#00f0ff' : '#00ff88';
+        indicatorEl.style.boxShadow = this._radarPgtCoinSpawned ? '0 0 10px #00f0ff' : '0 0 8px #00ff88';
       }
     }
   }
