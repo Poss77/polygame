@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Supply History 24h Baseline Fix & Monthly/Yearly Downsampling (`v1.5.769`)**:
+  - **📈 24h Timeline Baseline & Key Collision Fix ([`src/js/features/holders.js`](src/js/features/holders.js))**:
+    - Resolved the critical chart anomaly where missing historical hours at the beginning of the 24-hour window erroneously inherited the current live total supply (`currentHoldersTotalSupply`), causing the chart to start artificially high, plunge sharply, and then rise back at the current hour.
+    - Added a prior baseline lookup (`.lt('created_at', sinceDate).order('created_at', { ascending: false }).limit(1)`) so the 24h window initializes strictly with the actual historical supply at or preceding the 24h boundary.
+    - Switched hourly slot keys from ambiguous `${hours}:00` (which collided across day boundaries) to date-aware keys (`${year}-${month}-${day}_${hour}`).
+  - **📉 Monthly & Yearly Memory Downsampling ([`src/js/features/holders.js`](src/js/features/holders.js))**:
+    - **Monthly**: Downsampled from 720 hourly points to **30 daily points** (1 end-of-day snapshot per day), reducing memory and DOM footprint by 96%.
+    - **Yearly**: Downsampled from up to 8,760 hourly points to **52 weekly points**, eliminating memory bloat and duplicate month labels.
+    - Added Chart.js `maxTicksLimit` and rotation constraints to keep x-axis tick labels clean and legible across mobile and desktop.
+  - **🗄️ Database Downsampling Migration ([`supabase/prune_old_hourly_supply_snapshots.sql`](supabase/prune_old_hourly_supply_snapshots.sql))**:
+    - Created clean standalone stored procedure `public.prune_old_supply_history()` to preserve 1 snapshot per day for records older than 30 days and prune intermediate duplicate hourly entries.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.769"` and updated cache busters.
+
 - **Pure Guest Mode & Turnstile Exemption for Unauthenticated Testing (`v1.5.768`)**:
   - **🛡️ Unauthenticated Guest Turnstile Exemption ([`src/js/features/arcade-security.js`](src/js/features/arcade-security.js))**:
     - Exempted unauthenticated visitors (`!isPlayerConnected()` and `0xguest...` identifiers) from Cloudflare Turnstile human verification challenges in `requiresVerification()` and `promptTurnstileChallenge()`.

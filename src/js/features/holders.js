@@ -305,15 +305,30 @@ export async function renderHoldersSupplyChart(timeframe = 'day', currentTotal =
   const labels = [];
   const chartData = [];
   let dbHistory = [];
+  let priorBaseline = null;
+
+  const now = new Date();
+  let sinceDate = new Date();
+  if (timeframe === 'day') sinceDate.setHours(sinceDate.getHours() - 24);
+  else if (timeframe === 'month') sinceDate.setDate(sinceDate.getDate() - 30);
+  else if (timeframe === 'year') sinceDate.setFullYear(sinceDate.getFullYear() - 1);
 
   // Query real historical supply snapshots from Supabase database
   if (supabase) {
     try {
-      let sinceDate = new Date();
-      if (timeframe === 'day') sinceDate.setHours(sinceDate.getHours() - 24);
-      else if (timeframe === 'month') sinceDate.setDate(sinceDate.getDate() - 30);
-      else if (timeframe === 'year') sinceDate.setFullYear(sinceDate.getFullYear() - 1);
+      // 1. Fetch the most recent snapshot immediately before sinceDate to establish accurate baseline
+      const { data: prior } = await supabase
+        .from('pgt_supply_history')
+        .select('created_at, total_supply')
+        .lt('created_at', sinceDate.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1);
 
+      if (prior && prior.length > 0 && prior[0].total_supply !== null) {
+        priorBaseline = parseFloat(prior[0].total_supply);
+      }
+
+      // 2. Fetch history records within the window
       const { data: history, error } = await supabase
         .from('pgt_supply_history')
         .select('created_at, total_supply')
@@ -328,48 +343,90 @@ export async function renderHoldersSupplyChart(timeframe = 'day', currentTotal =
     }
   }
 
+  // Fallback initial baseline: prior snapshot -> earliest available in window -> current live total
+  let initialBaseline = (priorBaseline !== null && !isNaN(priorBaseline))
+    ? priorBaseline
+    : (dbHistory.length > 0 && dbHistory[0].total_supply !== null
+        ? parseFloat(dbHistory[0].total_supply)
+        : currentHoldersTotalSupply);
+
   if (timeframe === 'day') {
-    const now = new Date();
+    // 24 Hourly Slots with Date-Aware Keys (Prevents Day-to-Day Hour Collisions)
+    const toHourSlotKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}_${d.getHours()}`;
     const hourlyMap = {};
-    
+
     dbHistory.forEach(item => {
       const d = new Date(item.created_at);
-      const hourKey = `${d.getHours()}:00`;
-      hourlyMap[hourKey] = parseFloat(item.total_supply || 0);
+      hourlyMap[toHourSlotKey(d)] = parseFloat(item.total_supply || 0);
     });
 
-    let lastKnownVal = currentHoldersTotalSupply;
+    let lastKnownVal = initialBaseline;
     for (let i = 23; i >= 0; i--) {
       const slotTime = new Date(now.getTime() - i * 60 * 60 * 1000);
-      const hourKey = `${slotTime.getHours()}:00`;
-      labels.push(hourKey);
-      
-      if (hourlyMap[hourKey] !== undefined) {
-        lastKnownVal = hourlyMap[hourKey];
+      const slotKey = toHourSlotKey(slotTime);
+      labels.push(`${slotTime.getHours()}:00`);
+
+      if (hourlyMap[slotKey] !== undefined) {
+        lastKnownVal = hourlyMap[slotKey];
+      }
+      if (i === 0 && currentHoldersTotalSupply > 0) {
+        lastKnownVal = currentHoldersTotalSupply;
       }
       chartData.push(lastKnownVal);
     }
-  } else if (dbHistory.length > 0) {
+  } else if (timeframe === 'month') {
+    // 30 Daily Slots (Downsampled: 1 point per day, never keeping every hour in memory)
+    const toDaySlotKey = (d) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const dailyMap = {};
+
+    // Group hourly records into daily end-of-day snapshots
     dbHistory.forEach(item => {
       const d = new Date(item.created_at);
-      if (timeframe === 'month') labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
-      else labels.push(d.toLocaleString('default', { month: 'short' }));
-      chartData.push(parseFloat(item.total_supply || 0));
+      // Chronological ascending: later hour in the day naturally overwrites earlier hour
+      dailyMap[toDaySlotKey(d)] = parseFloat(item.total_supply || 0);
     });
+
+    let lastKnownVal = initialBaseline;
+    for (let i = 29; i >= 0; i--) {
+      const slotTime = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const slotKey = toDaySlotKey(slotTime);
+      labels.push(`${slotTime.getMonth() + 1}/${slotTime.getDate()}`);
+
+      if (dailyMap[slotKey] !== undefined) {
+        lastKnownVal = dailyMap[slotKey];
+      }
+      if (i === 0 && currentHoldersTotalSupply > 0) {
+        lastKnownVal = currentHoldersTotalSupply;
+      }
+      chartData.push(lastKnownVal);
+    }
   } else {
-    const now = new Date();
-    if (timeframe === 'month') {
-      for (let i = 4; i >= 0; i--) {
-        const d = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
-        labels.push(`${d.getMonth() + 1}/${d.getDate()}`);
-        chartData.push(currentHoldersTotalSupply);
+    // 52 Weekly Slots (Downsampled: 1 point per week, never keeping hourly noise in memory)
+    const toWeekSlotKey = (d) => {
+      const start = new Date(d.getFullYear(), 0, 1);
+      const weekIndex = Math.floor((d - start) / (7 * 24 * 60 * 60 * 1000));
+      return `${d.getFullYear()}_w${weekIndex}`;
+    };
+    const weeklyMap = {};
+
+    dbHistory.forEach(item => {
+      const d = new Date(item.created_at);
+      weeklyMap[toWeekSlotKey(d)] = parseFloat(item.total_supply || 0);
+    });
+
+    let lastKnownVal = initialBaseline;
+    for (let i = 51; i >= 0; i--) {
+      const slotTime = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+      const slotKey = toWeekSlotKey(slotTime);
+      labels.push(`${slotTime.toLocaleString('default', { month: 'short' })} ${slotTime.getDate()}`);
+
+      if (weeklyMap[slotKey] !== undefined) {
+        lastKnownVal = weeklyMap[slotKey];
       }
-    } else {
-      for (let i = 3; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i * 3, 1);
-        labels.push(d.toLocaleString('default', { month: 'short' }));
-        chartData.push(currentHoldersTotalSupply);
+      if (i === 0 && currentHoldersTotalSupply > 0) {
+        lastKnownVal = currentHoldersTotalSupply;
       }
+      chartData.push(lastKnownVal);
     }
   }
 
@@ -410,7 +467,7 @@ export async function renderHoldersSupplyChart(timeframe = 'day', currentTotal =
         fill: true,
         tension: 0.3,
         pointBackgroundColor: '#ff00ff',
-        pointRadius: timeframe === 'year' ? 4 : 2
+        pointRadius: timeframe === 'year' ? 1.5 : (timeframe === 'month' ? 2 : 2.5)
       }]
     },
     options: {
@@ -427,7 +484,12 @@ export async function renderHoldersSupplyChart(timeframe = 'day', currentTotal =
       scales: {
         x: {
           grid: { color: 'rgba(255, 255, 255, 0.05)' },
-          ticks: { color: '#8a99ad', font: { size: 10 } }
+          ticks: {
+            color: '#8a99ad',
+            font: { size: 10 },
+            maxTicksLimit: timeframe === 'year' ? 12 : (timeframe === 'month' ? 10 : 8),
+            maxRotation: 0
+          }
         },
         y: {
           grid: { color: 'rgba(255, 255, 255, 0.05)' },
