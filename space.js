@@ -874,8 +874,6 @@ class PolySpaceEngine {
     this.ctx.stroke();
     this.ctx.restore();
 
-    this.ctx.restore();
-
     // If Hangar fills full canvas width, draw symmetrical right bulkhead gantry
     if (divX >= w - 10) {
       const rightX = w;
@@ -5467,6 +5465,7 @@ class PolySpaceEngine {
     this.ctx.beginPath();
     this.ctx.arc(rsX, rsY, 6.5, 0, Math.PI * 2);
     this.ctx.fill();
+    this.ctx.restore();
 
 
 
@@ -5501,6 +5500,7 @@ class PolySpaceEngine {
     this.ctx.moveTo(wdX, wdY - sLen);
     this.ctx.lineTo(wdX, wdY + sLen);
     this.ctx.stroke();
+    this.ctx.restore();
 
 
 
@@ -5525,6 +5525,7 @@ class PolySpaceEngine {
     this.ctx.beginPath();
     this.ctx.ellipse(plX, plY, 16, 5.5, -0.32, 0, Math.PI * 2);
     this.ctx.stroke();
+    this.ctx.restore();
 
 
   }

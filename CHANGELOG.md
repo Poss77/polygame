@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Fix Canvas State Stack Overflow & Map Zoom Freeze (`v1.5.765`)**:
+  - **🐛 Balance Canvas `save()` / `restore()` Operations ([`space.js`](space.js))**:
+    - Identified and resolved missing `this.ctx.restore()` calls in `drawCelestialSpaceObjects()` for the Red Star, White Dwarf, and Exoplanet landmarks, as well as an extraneous restore in `drawHangarBulkheadArchitecture()`.
+    - Previously, 3 un-restored `save()` calls were leaking every animation frame (180 leaked states/sec). When zooming in, the canvas transformation matrix compounded exponentially ($1.3^N$) across the leaked states, inflating coordinates to infinity, flooding the canvas with a solid yellow destination blowout, and freezing the browser thread.
+    - Verified strict 1:1 balance of all canvas context transformations across the engine.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.765"` and cache-busted all script and stylesheet tags.
+
 - **PolySpace Radar On-Map PGT Harvest & Celestial Label Cleanup (`v1.5.764`)**:
   - **✨ Floating PGT Token Directly on Tactical Radar Canvas ([`space.js`](space.js))**:
     - Relocated the floating PGT token anomaly directly onto the radar map canvas with smooth bobbing motion, orbiting holographic rings, and neon cyan glow.
