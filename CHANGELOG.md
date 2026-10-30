@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Pure Guest Mode & Turnstile Exemption for Unauthenticated Testing (`v1.5.768`)**:
+  - **🛡️ Unauthenticated Guest Turnstile Exemption ([`src/js/features/arcade-security.js`](src/js/features/arcade-security.js))**:
+    - Exempted unauthenticated visitors (`!isPlayerConnected()` and `0xguest...` identifiers) from Cloudflare Turnstile human verification challenges in `requiresVerification()` and `promptTurnstileChallenge()`.
+    - Unauthenticated guests play client-side demo runs with zero database sessions and zero server PGT payouts (Zero Anon Writes invariant), meaning Turnstile challenges were needlessly interrupting guest free play and automated headless QA testing without providing anti-cheat value.
+    - Guarded `recordTurnstileBotWarning()` to strictly exclude guest addresses from attempting to log bot warnings to Supabase.
+  - **🤖 QA Test Bot Zero-Login Guest Execution (`tools/qa-bot/test_bot.py`, `tools/qa-bot/suites/`)**:
+    - Defaulted automated QA test runs to Pure Guest Mode (`is_guest = not args.auth`), allowing the QA bot to test all 11 platform views, modals, canvas rendering, and free arcade gameplay without hardcoding credentials or creating backdoors.
+    - Updated `suite_04_arcade_games.py` and `suite_05_casino_wagers.py` to audit guest demo gameplay smoothly and assert anti-cheat guards without throwing false database delta failures.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.768"` and updated cache busters.
+
 - **Bold 3x3 Section Divider Lines in Cyber Sudoku (`v1.5.767`)**:
   - **📐 Bold 3x3 Section Grid Dividers ([`src/css/features/games.css`](src/css/features/games.css))**:
     - Replaced faint 2px borders with bold 3px `#00f0ff` (neon cyan) dividers between each of the 3x3 sub-grids, both vertically (after columns 3 and 6) and horizontally (after rows 3 and 6).

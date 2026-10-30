@@ -85,6 +85,19 @@ export function resetArcadePlayCount() {
 export function requiresVerification() {
   const state = appState?.state || {};
 
+  // 0. Guests & Unauthenticated Visitors:
+  // Guests play purely in client-side free demo mode (Zero Anon Writes, 0 server PGT rewards, no DB sessions).
+  // Never interrupt unauthenticated guests or automated headless guest test suites with Turnstile.
+  const isConnected = (appState && typeof appState.isPlayerConnected === 'function')
+    ? appState.isPlayerConnected()
+    : false;
+  const rawId = (appState && typeof appState.getPlayerId === 'function')
+    ? (appState.getPlayerId() || '')
+    : (state.playerId || state.walletAddress || '');
+  if (!isConnected || rawId.toLowerCase().startsWith('0xguest')) {
+    return false;
+  }
+
   // 1. Live Master Kill-Switch: If disabled by admin, never prompt
   if (state.turnstileArcadeEnabled === false) {
     return false;
@@ -109,14 +122,17 @@ export function requiresVerification() {
  */
 export async function recordTurnstileBotWarning(gameName = 'Arcade', reason = 'turnstile_arcade_failed') {
   try {
+    const isConnected = (appState && typeof appState.isPlayerConnected === 'function')
+      ? appState.isPlayerConnected()
+      : false;
     const client = supabase || window.supabaseClient || window.supabase;
-    if (!client) return;
+    if (!client || !isConnected) return;
 
     const wallet = (appState && typeof appState.getPlayerId === 'function') 
       ? appState.getPlayerId() 
       : (appState && appState.state && (appState.state.playerId || appState.state.walletAddress || ''));
     
-    if (!wallet) return;
+    if (!wallet || wallet.toLowerCase().startsWith('0xguest')) return;
 
     console.warn(`[ArcadeSecurity] Recording bot warning for ${wallet} in ${gameName}: ${reason}`);
 
@@ -185,6 +201,17 @@ export function resumeAllArcadeGames() {
  * Uses a single-flight promise to prevent multiple runs in a row.
  */
 export function promptTurnstileChallenge(gameName = 'Arcade') {
+  // 0. Guests & Unauthenticated Visitors: Immediately bypass without prompting
+  const isConnected = (appState && typeof appState.isPlayerConnected === 'function')
+    ? appState.isPlayerConnected()
+    : false;
+  const rawId = (appState && typeof appState.getPlayerId === 'function')
+    ? (appState.getPlayerId() || '')
+    : (appState?.state?.playerId || appState?.state?.walletAddress || '');
+  if (!isConnected || rawId.toLowerCase().startsWith('0xguest')) {
+    return Promise.resolve({ verified: true, token: null, guest: true });
+  }
+
   if (isChallengeInProgress && activeVerificationResolver) {
     return activeVerificationResolver.promise;
   }
