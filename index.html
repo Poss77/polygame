@@ -54,6 +54,48 @@
 
 
 
+    // Performance Diagnostic Sentinel: pinpoint any slow setTimeout/setInterval handlers (>=40ms)
+    (function() {
+      try {
+        const _origSetTimeout = window.setTimeout;
+        const _origSetInterval = window.setInterval;
+
+        window.setTimeout = function(fn, delay, ...args) {
+          if (typeof fn !== 'function') return _origSetTimeout.apply(this, [fn, delay, ...args]);
+          const captureErr = new Error();
+          const wrapped = function() {
+            const t0 = performance.now();
+            try {
+              return fn.apply(this, arguments);
+            } finally {
+              const dur = performance.now() - t0;
+              if (dur >= 40) {
+                console.warn(`⚠️ [LAG SPIKE DIAGNOSTIC] setTimeout handler took ${dur.toFixed(1)}ms!\nOrigin stack:\n${captureErr.stack}`);
+              }
+            }
+          };
+          return _origSetTimeout.apply(this, [wrapped, delay, ...args]);
+        };
+
+        window.setInterval = function(fn, delay, ...args) {
+          if (typeof fn !== 'function') return _origSetInterval.apply(this, [fn, delay, ...args]);
+          const captureErr = new Error();
+          const wrapped = function() {
+            const t0 = performance.now();
+            try {
+              return fn.apply(this, arguments);
+            } finally {
+              const dur = performance.now() - t0;
+              if (dur >= 40) {
+                console.warn(`⚠️ [LAG SPIKE DIAGNOSTIC] setInterval handler took ${dur.toFixed(1)}ms!\nOrigin stack:\n${captureErr.stack}`);
+              }
+            }
+          };
+          return _origSetInterval.apply(this, [wrapped, delay, ...args]);
+        };
+      } catch (e) {}
+    })();
+
     // Anti-Framing Clickjacking Defense: Prevent embedding in malicious iframes/phishing wrappers
 
 
@@ -1494,7 +1536,7 @@
 
 
 
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.759">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.760">
 
 
 
@@ -20147,47 +20189,47 @@ twq('config','ri5fg');
 
 
 
-  <script src="game.js?v=1.5.759"></script>
+  <script src="game.js?v=1.5.760"></script>
 
 
 
-  <script src="invaders.js?v=1.5.759"></script>
+  <script src="invaders.js?v=1.5.760"></script>
 
 
 
-  <script src="drift.js?v=1.5.759"></script>
+  <script src="drift.js?v=1.5.760"></script>
 
 
 
-  <script src="stacker.js?v=1.5.759"></script>
+  <script src="stacker.js?v=1.5.760"></script>
 
 
 
-  <script src="space.js?v=1.5.759"></script>
+  <script src="space.js?v=1.5.760"></script>
 
 
 
-  <script type="module" src="skeet.js?v=1.5.759"></script>
+  <script type="module" src="skeet.js?v=1.5.760"></script>
 
 
 
-  <script type="module" src="defense.js?v=1.5.759"></script>
+  <script type="module" src="defense.js?v=1.5.760"></script>
 
 
 
-  <script type="module" src="runner.js?v=1.5.759"></script>
+  <script type="module" src="runner.js?v=1.5.760"></script>
 
 
 
-  <script type="module" src="q2048.js?v=1.5.759"></script>
+  <script type="module" src="q2048.js?v=1.5.760"></script>
 
 
 
-  <script src="tetris.js?v=1.5.759"></script>
+  <script src="tetris.js?v=1.5.760"></script>
 
 
 
-  <script type="module" src="src/js/app.js?v=1.5.759"></script>
+  <script type="module" src="src/js/app.js?v=1.5.760"></script>
 
 
 

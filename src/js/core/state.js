@@ -294,6 +294,10 @@ export class PolyState {
   // Debounced / Throttled DB save to prevent spamming Supabase with rapid REST updates
   saveToDB(forceImmediate = false) {
     if (!this.isPlayerConnected() || !supabase || this.isSyncingWithDB) return;
+    // Pause background state saves during real-time arcade gameplay to guarantee 60 FPS
+    if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) {
+      return;
+    }
     
     if (this._dbSaveTimer) {
       clearTimeout(this._dbSaveTimer);
@@ -311,6 +315,9 @@ export class PolyState {
 
   async _executeSaveToDB() {
     if (!this.isPlayerConnected() || !supabase || this.isSyncingWithDB) return;
+    if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) {
+      return;
+    }
 
     try {
       const currentStakedPgt = (this.state.stakes || []).reduce((sum, s) => {

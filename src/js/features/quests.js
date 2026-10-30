@@ -71,6 +71,10 @@ let _isSyncing = false;
 
 export async function syncDailyQuests(forceImmediate = false) {
   if (!appState.isPlayerConnected() || !supabase) return null;
+  // Never perform asynchronous network quest sync during real-time gameplay
+  if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) {
+    return null;
+  }
 
   if (!forceImmediate && _syncDebounceTimer) {
     clearTimeout(_syncDebounceTimer);

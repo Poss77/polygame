@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Performance Diagnostic Sentinel & Background Gameplay Task Suppression (`v1.5.760`)**:
+  - **🔍 In-App Performance Diagnostic Sentinel ([`index.html`](index.html))**:
+    - Embedded an early boot execution timer interceptor wrapping `window.setTimeout` and `window.setInterval` to capture and log any task blocking the main thread for $\ge 40\text{ms}$ with full source stack trace (`⚠️ [LAG SPIKE DIAGNOSTIC]`), pinpointing the exact caller responsible for Chrome DevTools violation warnings.
+  - **🛑 Suppress Background DB Saves & Network Syncs During Active Gameplay ([`src/js/core/state.js`](src/js/core/state.js), [`src/js/features/quests.js`](src/js/features/quests.js), [`src/js/app.js`](src/js/app.js))**:
+    - Added `isAnyArcadeGamePlaying()` guards to `appState.saveToDB()` (debounced 2s timer) and `_executeSaveToDB()` so that client-side Supabase REST writes and auth session verifications never interrupt real-time gameplay.
+    - Added `isAnyArcadeGamePlaying()` guard to `syncDailyQuests()` preventing network quest syncs during active arcade sessions.
+    - Added `isAnyArcadeGamePlaying()` guard to `updateTimers()` in `app.js` to eliminate background weekly leaderboard timer DOM calculations during gameplay.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.760"` and cache-busted scripts.
+
 - **Streamlined Dashboard Hero, Quick-Start Daily Games & Deep Category Routing (`v1.5.759`)**:
   - **✨ Streamlined Hero Banner & Dashboard Layout ([`index.html`](index.html))**:
     - Removed redundant top pill banner (`⚡ POLYGON POS • ZERO GAS TO PLAY • REAL PGT REWARDS`) above the main hero heading for a cleaner look.

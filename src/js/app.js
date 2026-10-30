@@ -2147,6 +2147,7 @@ function startLeaderboardResetTimer() {
 
 
   function updateTimers() {
+    if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) return;
 
 
 
