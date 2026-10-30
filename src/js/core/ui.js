@@ -1065,6 +1065,7 @@ export async function refreshOnChainBalances() {
     const polBal = await getDirectPolygonPOLBalance(address);
 
     appState.update({
+      onchainBalancePgt: pgtBal,
       onchainPgtBalance: pgtBal,
       balancePol: polBal,
       balanceMatic: polBal
@@ -1072,6 +1073,9 @@ export async function refreshOnChainBalances() {
 
     const onchainPgtEl = document.getElementById('balance-pgt-onchain');
     if (onchainPgtEl) onchainPgtEl.innerText = pgtBal.toFixed(2);
+
+    const onchainPill = document.getElementById('token-pill-pgt-onchain');
+    if (onchainPill) onchainPill.style.display = 'flex';
 
     const polBalEl = document.getElementById('balance-pol');
     if (polBalEl) polBalEl.innerText = polBal.toFixed(4);

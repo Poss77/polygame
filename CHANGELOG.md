@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **On-Chain PGT Balance Display & Direct RPC Sync for Linked Web3 Accounts (`v1.5.770`)**:
+  - **🔗 Header On-Chain PGT Pill Visibility ([`src/js/core/state.js`](src/js/core/state.js))**:
+    - Resolved the issue where players logged in via Google with a linked Web3 wallet (or users without an injected Web3 signer) could not see their on-chain PGT balance in the header top bar.
+    - Updated `syncUI()` visibility logic: `token-pill-pgt-onchain` and `token-pill-1flr-onchain` now display when `this.state.walletConnected || this.getActiveWeb3Address() || this.state.onchainBalancePgt > 0`.
+    - Added fallback display check `this.state.onchainBalancePgt != null ? this.state.onchainBalancePgt : this.state.onchainPgtBalance` to guarantee exact numerical rendering.
+  - **⚡ Live Direct RPC Balances Fetch on Boot & Auth Restore ([`src/js/features/profile.js`](src/js/features/profile.js), [`src/js/core/db-sync.js`](src/js/core/db-sync.js), [`src/js/core/ui.js`](src/js/core/ui.js))**:
+    - In `autoConnectWeb3()`, decoupled the public direct JSON-RPC read queries (`getDirectPolygonPOLBalance` and `getDirectPolygonPGTBalance`) from the 7-day SIWE session check so live balances are always fetched even when authenticated via Google Auth or before re-signing.
+    - Fixed property key mismatch in `refreshOnChainBalances()`: now updates both `onchainBalancePgt` and `onchainPgtBalance`.
+    - Invoked `refreshOnChainBalances()` automatically during `syncAuthenticatedUser` whenever a linked Web3 wallet is restored from Supabase.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.770"` and synced cache busters.
+
 - **Supply History 24h Baseline Fix & Monthly/Yearly Downsampling (`v1.5.769`)**:
   - **📈 24h Timeline Baseline & Key Collision Fix ([`src/js/features/holders.js`](src/js/features/holders.js))**:
     - Resolved the critical chart anomaly where missing historical hours at the beginning of the 24-hour window erroneously inherited the current live total supply (`currentHoldersTotalSupply`), causing the chart to start artificially high, plunge sharply, and then rise back at the current hour.

@@ -960,12 +960,14 @@ export class PolyState {
     const balMatic = document.getElementById('balance-matic');
     if (balMatic) balMatic.innerText = parseFloat(this.state.balanceMatic || 0).toFixed(2);
     
+    const hasWeb3 = !!(this.state.walletConnected || this.getActiveWeb3Address() || (this.state.onchainBalancePgt && this.state.onchainBalancePgt > 0));
     const onchainPill = document.getElementById('token-pill-pgt-onchain');
     const onchainLabel = document.getElementById('balance-pgt-onchain');
     if (onchainPill && onchainLabel) {
-      if (this.state.walletConnected) {
+      if (hasWeb3) {
         onchainPill.style.display = 'flex';
-        onchainLabel.innerText = (this.state.onchainBalancePgt || 0).toFixed(2);
+        const displayVal = (this.state.onchainBalancePgt != null ? this.state.onchainBalancePgt : (this.state.onchainPgtBalance || 0));
+        onchainLabel.innerText = Number(displayVal).toFixed(2);
       } else {
         onchainPill.style.display = 'none';
       }
@@ -974,7 +976,7 @@ export class PolyState {
     const onchainFlrPill = document.getElementById('token-pill-1flr-onchain');
     const onchainFlrLabel = document.getElementById('balance-1flr-onchain');
     if (onchainFlrPill && onchainFlrLabel) {
-      if (this.state.walletConnected) {
+      if (hasWeb3) {
         onchainFlrPill.style.display = 'flex';
         onchainFlrLabel.innerText = (this.state.onchainBalance1flr || 0).toFixed(2);
       } else {

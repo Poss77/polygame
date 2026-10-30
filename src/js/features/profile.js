@@ -634,10 +634,6 @@ export async function autoConnectWeb3() {
 
   if (isConnected && activeAddr && !activeAddr.startsWith('0xguest') && !activeAddr.startsWith('0xpgt')) {
     const addr = activeAddr.toLowerCase();
-    if (!hasValidWeb3Session(addr)) {
-      if (window.POLY_DEBUG) console.log("[autoConnectWeb3] Stored state address has no active 7-day session. Skipping auto-sync.");
-      return;
-    }
 
     // Refresh live on-chain POL and PGT balances via direct RPC
     if (typeof window.getDirectPolygonPOLBalance === 'function') {
@@ -645,11 +641,19 @@ export async function autoConnectWeb3() {
         const livePol = await window.getDirectPolygonPOLBalance(addr);
         const livePgt = typeof window.getDirectPolygonPGTBalance === 'function' ? await window.getDirectPolygonPGTBalance(addr) : 0;
         if (livePol > 0) appState.state.balanceMatic = livePol;
-        if (livePgt > 0) appState.state.onchainBalancePgt = livePgt;
+        if (livePgt >= 0) {
+          appState.state.onchainBalancePgt = livePgt;
+          appState.state.onchainPgtBalance = livePgt;
+        }
         appState.syncUI();
       } catch (e) {
         console.warn("Direct RPC startup balance fetch warning:", e);
       }
+    }
+
+    if (!hasValidWeb3Session(addr) && !appState.state.authUserId) {
+      if (window.POLY_DEBUG) console.log("[autoConnectWeb3] Stored state address has no active 7-day session. Skipping auto-sync.");
+      return;
     }
 
     // Instantly pull fresh DB profile & PolySpace data on every page refresh (F5) silently

@@ -2889,9 +2889,12 @@ async function syncAuthenticatedUser(user) {
         }
       }
 
-      // Background on-chain fleet query if user has linked wallet
+      // Background on-chain fleet & balance query if user has linked wallet
       const targetWalletRestore = linked || activeAppState.getActiveWeb3Address();
       if (targetWalletRestore && !targetWalletRestore.startsWith('0xpgt') && !targetWalletRestore.startsWith('0xg')) {
+        if (typeof window !== 'undefined' && typeof window.refreshOnChainBalances === 'function') {
+          window.refreshOnChainBalances();
+        }
         if (typeof window !== 'undefined' && window.PolyHangar && typeof window.PolyHangar.syncFleetFromChain === 'function') {
           setTimeout(() => {
             window.PolyHangar.syncFleetFromChain(targetWalletRestore, false);
