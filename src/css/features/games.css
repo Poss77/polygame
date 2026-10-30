@@ -2367,16 +2367,18 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
   width: 100%;
   max-width: 420px;
   aspect-ratio: 1 / 1;
-  background: rgba(6, 10, 22, 0.9);
-  border: 3px solid var(--border-cyan);
+  background: rgba(6, 10, 22, 0.95);
+  border: 3px solid #00f0ff;
   border-radius: 8px;
-  box-shadow: 0 0 25px rgba(0, 240, 255, 0.15);
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.25);
   margin: 0 auto;
   user-select: none;
+  overflow: hidden;
 }
 
 .sudoku-cell {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2388,16 +2390,19 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
   transition: background 0.12s ease;
 }
 
-/* 3x3 Box Thick Borders */
+/* 3x3 Box Bold Section Dividers */
 .sudoku-cell:nth-child(3n) {
-  border-right: 2px solid var(--border-cyan);
+  border-right: 3px solid #00f0ff;
 }
 .sudoku-cell:nth-child(9n) {
   border-right: none;
 }
 .sudoku-cell:nth-child(n+19):nth-child(-n+27),
 .sudoku-cell:nth-child(n+46):nth-child(-n+54) {
-  border-bottom: 2px solid var(--border-cyan);
+  border-bottom: 3px solid #00f0ff;
+}
+.sudoku-cell:nth-child(n+73):nth-child(-n+81) {
+  border-bottom: none;
 }
 
 .sudoku-cell.clue {

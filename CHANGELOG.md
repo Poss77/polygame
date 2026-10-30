@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Bold 3x3 Section Divider Lines in Cyber Sudoku (`v1.5.767`)**:
+  - **📐 Bold 3x3 Section Grid Dividers ([`src/css/features/games.css`](src/css/features/games.css))**:
+    - Replaced faint 2px borders with bold 3px `#00f0ff` (neon cyan) dividers between each of the 3x3 sub-grids, both vertically (after columns 3 and 6) and horizontally (after rows 3 and 6).
+    - Refactored internal cell borders to 1px directional dividers (`border-right` / `border-bottom`) to prevent border doubling and ensure crisp, clean grid geometry.
+    - Enhanced the outer 9x9 board perimeter with matching 3px `#00f0ff` borders and cyan ambient glow.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.767"` and cache-busted all scripts and stylesheets.
+
 - **Fix `panY` ReferenceError in Radar Token Projection (`v1.5.766`)**:
   - **🐛 Fix Missing `panY` Parameter & Add Coordinate Fallbacks ([`space.js`](space.js))**:
     - Fixed `Uncaught ReferenceError: panY is not defined` inside `drawFloatingRadarPgtToken()` where `panY` was used to calculate the token's screen coordinate for hit-testing but was omitted from the method arguments and call signature.
