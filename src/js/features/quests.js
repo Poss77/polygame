@@ -20,6 +20,14 @@ export function getUserQuests() {
   }
 
   if (!q || typeof q !== 'object' || q.date !== today) {
+    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    const lastDate = (q && q.last_streak_date) || '';
+    // If last streak date is older than yesterday, the active streak has expired back to 0
+    let validStreak = (q && q.streak_days) || 0;
+    if (lastDate !== yesterday && lastDate !== today) {
+      validStreak = 0;
+    }
+
     q = {
       date: today,
       games: 0,
@@ -29,8 +37,8 @@ export function getUserQuests() {
       mining_claimed: false,
       wins_claimed: false,
       master_claimed: false,
-      streak_days: (q && q.streak_days) || 0,
-      last_streak_date: (q && q.last_streak_date) || '',
+      streak_days: validStreak,
+      last_streak_date: lastDate,
       streak_wheel_available: (q && q.streak_wheel_available) || false
     };
     appState.state.dailyQuests = q;
