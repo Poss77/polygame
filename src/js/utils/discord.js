@@ -468,3 +468,73 @@ export async function checkMultiAccountIP(playerIdOrAddress, linkedAddress = nul
   }
 }
 window.checkMultiAccountIP = checkMultiAccountIP;
+
+/**
+ * Browser Console Forensic Audit: Scans Supabase for all accounts sharing an IP address with their usernames.
+ * Run in DevTools console:
+ *   await auditSharedIPs()                      // View all clusters with >= 2 accounts
+ *   await auditSharedIPs({ user: 'Nower' })     // View all accounts on same IP as 'Nower'
+ *   await auditSharedIPs({ ip: '160.19.227.159' }) // View all accounts on a specific IP
+ */
+export async function auditSharedIPs({ minAccounts = 2, user = null, ip = null, ignoreWhitelisted = true } = {}) {
+  const client = window.supabase || window.supabaseClient;
+  if (!client) {
+    console.warn("Supabase client unavailable.");
+    return;
+  }
+  console.log("🔍 Scanning IP records and account usernames...");
+  try {
+    const [{ data: ipRecords }, { data: userProfiles }] = await Promise.all([
+      client.from('user_ips').select('player_id,ip_address,created_at,last_seen'),
+      client.from('users').select('player_id,username,linked_wallet_address,balance_pgt,created_at')
+    ]);
+
+    const userMap = new Map((userProfiles || []).map(u => [(u.player_id || '').toLowerCase(), u]));
+    const ipMap = new Map();
+
+    for (const r of (ipRecords || [])) {
+      const rawIp = r.ip_address;
+      const pid = (r.player_id || '').toLowerCase();
+      if (!rawIp || !pid) continue;
+      if (!ipMap.has(rawIp)) ipMap.set(rawIp, new Map());
+      ipMap.get(rawIp).set(pid, r);
+    }
+
+    const results = [];
+    for (const [rawIp, pidsMap] of ipMap.entries()) {
+      if (ignoreWhitelisted && window.WHITELISTED_ADMIN_IPS && window.WHITELISTED_ADMIN_IPS.has(rawIp)) continue;
+      if (ip && rawIp !== ip) continue;
+      if (pidsMap.size < minAccounts && !ip && !user) continue;
+
+      const accounts = [];
+      let hasUserMatch = false;
+      for (const [pid, ipInfo] of pidsMap.entries()) {
+        const u = userMap.get(pid) || {};
+        const uname = u.username || '(No username)';
+        if (user && (pid.includes(user.toLowerCase()) || uname.toLowerCase().includes(user.toLowerCase()))) {
+          hasUserMatch = true;
+        }
+        accounts.push({
+          Username: uname,
+          'Player ID': pid.length > 14 ? `${pid.slice(0, 6)}...${pid.slice(-4)}` : pid,
+          Wallet: u.linked_wallet_address ? `${u.linked_wallet_address.slice(0, 6)}...${u.linked_wallet_address.slice(-4)}` : '-',
+          'PGT Balance': Number(u.balance_pgt || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }),
+          'Last Seen': ipInfo.last_seen ? ipInfo.last_seen.substring(0, 16).replace('T', ' ') : '-'
+        });
+      }
+
+      if (user && !hasUserMatch) continue;
+
+      console.group(`🌐 IP: ${rawIp} (${accounts.length} Accounts)`);
+      console.table(accounts);
+      console.groupEnd();
+      results.push({ ip: rawIp, count: accounts.length, accounts });
+    }
+
+    console.log(`✅ Audit complete: ${results.length} IP cluster(s) found.`);
+    return results;
+  } catch (err) {
+    console.error("Error in auditSharedIPs:", err);
+  }
+}
+window.auditSharedIPs = auditSharedIPs;
