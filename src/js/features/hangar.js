@@ -4,7 +4,7 @@
 // Features: Minting (2.0 POL), Fleet Switching, Demo Mode, & Combat Skill Upgrades
 // ==============================================================================
 
-import { triggerToast, openModal, closeModal } from '../core/ui.js';
+import { triggerToast, openModal, closeModal, escapeHtml } from '../core/ui.js';
 import { STARSHIP_CONTRACT_ADDRESS, TOKEN_CONTRACT_ADDRESS, ADMIN_WALLET_ADDRESS } from '../core/config.js';
 
 // --- ALPHA AUTHORIZED IDENTIFIERS ---
@@ -654,6 +654,9 @@ export function getEquippedStarship() {
 export function clearHangarFleet() {
   activeFleet = [];
   selectedFleetIndex = 0;
+  selectedShipTokenId = null;
+  fleetFilterRarity = 'all';
+  fleetSearchQuery = '';
   demoShip = null;
   try {
     localStorage.removeItem('polygame_user_fleet');
@@ -966,9 +969,135 @@ let selectedFleetIndex = 0;
 let demoShip = null;
 let isMintingStarship = false;
 
+// Dedicated Fleet Filtering, Search, & Sorting State
+let fleetFilterRarity = 'all'; // 'all' | 'Mythic' | 'Legendary' | 'Epic' | 'Rare' | 'equipped' | 't3'
+let fleetSearchQuery = '';
+let fleetSortBy = 'multiplier_desc'; // 'multiplier_desc' | 'rarity_desc' | 'token_asc' | 'token_desc' | 'tier_desc'
+let selectedShipTokenId = null;
+
+const RARITY_WEIGHT = {
+  'Mythic': 4,
+  'Legendary': 3,
+  'Epic': 2,
+  'Rare': 1
+};
+
+export function getShipEffectiveMultiplier(ship) {
+  if (!ship || !ship.dna) return 1.0;
+  const rarity = getStarshipRarity(ship.dna);
+  const isT3 = (ship.shipTier || 1) >= 3 || (
+    (ship.rapidFireLevel || 1) >= 3 &&
+    (ship.plasmaDamageLevel || 1) >= 3 &&
+    (ship.overdriveLevel || 1) >= 3 &&
+    (ship.missilePodLevel || 1) >= 3
+  );
+  const base = rarity.baseEarnMultiplier || 1.1;
+  return isT3 ? parseFloat((base * 1.5).toFixed(2)) : base;
+}
+
+export function getFilteredAndSortedFleet() {
+  if (!activeFleet || activeFleet.length === 0) return [];
+  const equippedShip = getEquippedStarship();
+  const query = (fleetSearchQuery || '').trim().toLowerCase();
+
+  let list = activeFleet.slice();
+
+  // 1. Text Filter (Token ID, Name, DNA, Traits)
+  if (query) {
+    const cleanId = query.replace(/^[#\s]*(?:ship|no\.?|token)?\s*[#:]?\s*/i, '').trim();
+    list = list.filter(ship => {
+      const sName = String(ship.name || '').toLowerCase();
+      const sId = String(ship.tokenId || '');
+      const sDna = String(ship.dna || '');
+      if (sName.includes(query)) return true;
+      if (sId === query || sId === cleanId) return true;
+      if (sDna.includes(query)) return true;
+
+      try {
+        const traits = decodeDNA(ship.dna);
+        if (traits.chassis.name.toLowerCase().includes(query)) return true;
+        if (traits.wings.name.toLowerCase().includes(query)) return true;
+        if (traits.palette.name.toLowerCase().includes(query)) return true;
+        if (traits.canopy.name.toLowerCase().includes(query)) return true;
+        if (traits.thruster.name.toLowerCase().includes(query)) return true;
+        if (traits.decal.name.toLowerCase().includes(query)) return true;
+        const rarity = getStarshipRarity(ship.dna);
+        if (rarity.tier.toLowerCase().includes(query)) return true;
+      } catch (e) {}
+
+      return false;
+    });
+  }
+
+  // 2. Rarity / Category Filter
+  if (fleetFilterRarity && fleetFilterRarity !== 'all') {
+    if (fleetFilterRarity === 'equipped') {
+      list = list.filter(ship => equippedShip && (ship.tokenId === equippedShip.tokenId || ship.dna === equippedShip.dna));
+    } else if (fleetFilterRarity === 't3') {
+      list = list.filter(ship => {
+        return (ship.shipTier || 1) >= 3 || (
+          (ship.rapidFireLevel || 1) >= 3 &&
+          (ship.plasmaDamageLevel || 1) >= 3 &&
+          (ship.overdriveLevel || 1) >= 3 &&
+          (ship.missilePodLevel || 1) >= 3
+        );
+      });
+    } else {
+      list = list.filter(ship => {
+        const r = getStarshipRarity(ship.dna);
+        return r && r.tier && r.tier.toLowerCase() === fleetFilterRarity.toLowerCase();
+      });
+    }
+  }
+
+  // 3. Sorting
+  list.sort((a, b) => {
+    if (fleetSortBy === 'multiplier_desc') {
+      const mA = getShipEffectiveMultiplier(a);
+      const mB = getShipEffectiveMultiplier(b);
+      if (mB !== mA) return mB - mA;
+      return (b.tokenId || 0) - (a.tokenId || 0);
+    }
+    if (fleetSortBy === 'rarity_desc') {
+      const rA = getStarshipRarity(a.dna);
+      const rB = getStarshipRarity(b.dna);
+      const wA = RARITY_WEIGHT[rA?.tier] || 0;
+      const wB = RARITY_WEIGHT[rB?.tier] || 0;
+      if (wB !== wA) return wB - wA;
+      const sA = rA?.score || 0;
+      const sB = rB?.score || 0;
+      if (sB !== sA) return sB - sA;
+      return (b.tokenId || 0) - (a.tokenId || 0);
+    }
+    if (fleetSortBy === 'token_asc') {
+      return (a.tokenId || 0) - (b.tokenId || 0);
+    }
+    if (fleetSortBy === 'token_desc') {
+      return (b.tokenId || 0) - (a.tokenId || 0);
+    }
+    if (fleetSortBy === 'tier_desc') {
+      const tA = a.shipTier || 1;
+      const tB = b.shipTier || 1;
+      if (tB !== tA) return tB - tA;
+      return (b.tokenId || 0) - (a.tokenId || 0);
+    }
+    return 0;
+  });
+
+  return list;
+}
+
 export function openHangarModal() {
   activeFleet = getUserFleet();
   selectedFleetIndex = 0;
+  const equipped = getEquippedStarship();
+  if (equipped && equipped.tokenId && activeFleet.some(s => s.tokenId === equipped.tokenId)) {
+    selectedShipTokenId = equipped.tokenId;
+  } else if (activeFleet.length > 0) {
+    selectedShipTokenId = activeFleet[0].tokenId || activeFleet[0].dna;
+  } else {
+    selectedShipTokenId = null;
+  }
 
   if (activeFleet.length === 0) {
     // Generate an initial random demo ship for players with 0 ships
@@ -1058,8 +1187,22 @@ export function syncHangarButtonVisibility() {
 }
 
 function getActivePreviewShip() {
+  const filtered = getFilteredAndSortedFleet();
+  if (filtered.length > 0) {
+    if (selectedShipTokenId !== null) {
+      const found = filtered.find(s => s.tokenId === selectedShipTokenId || (s.dna && s.dna === selectedShipTokenId));
+      if (found) return found;
+    }
+    selectedShipTokenId = filtered[0].tokenId || filtered[0].dna;
+    return filtered[0];
+  }
   if (activeFleet && activeFleet.length > 0) {
-    return activeFleet[selectedFleetIndex] || activeFleet[0];
+    if (selectedShipTokenId !== null) {
+      const found = activeFleet.find(s => s.tokenId === selectedShipTokenId || (s.dna && s.dna === selectedShipTokenId));
+      if (found) return found;
+    }
+    selectedShipTokenId = activeFleet[0].tokenId || activeFleet[0].dna;
+    return activeFleet[0];
   }
   return demoShip;
 }
@@ -1133,12 +1276,17 @@ function renderHangarModalUI() {
   const ship = getActivePreviewShip();
   if (!container || !ship) return;
 
+  // Preserve search input focus & cursor if user is actively typing
+  const searchInputActive = document.activeElement && document.activeElement.id === 'hangar-fleet-search-input';
+  const cursorStart = searchInputActive ? document.activeElement.selectionStart : null;
+  const cursorEnd = searchInputActive ? document.activeElement.selectionEnd : null;
+
   const t = decodeDNA(ship.dna);
   const p = t.palette;
   const rarity = getStarshipRarity(ship.dna);
   const isDemo = !!ship.isDemo;
   const equippedShip = getEquippedStarship();
-  const isCurrentlyEquipped = equippedShip && equippedShip.dna === ship.dna;
+  const isCurrentlyEquipped = equippedShip && (equippedShip.tokenId === ship.tokenId || equippedShip.dna === ship.dna);
   const isTier3Plus = (
     (ship.shipTier || 1) >= 3 ||
     (
@@ -1156,18 +1304,130 @@ function renderHangarModalUI() {
   const t3PotentialMultiplier = parseFloat((baseEarnMultiplier * 1.5).toFixed(2));
   const bonusPct = Math.round((tierEarnMultiplier - 1) * 100);
 
-  // Fleet Navigation Tabs / Switcher Pills (Option 1: Horizontal Docking Strip)
+  // Compute filtered & sorted fleet
+  const filteredFleet = getFilteredAndSortedFleet();
+  const currentFilteredIndex = filteredFleet.findIndex(s => s.tokenId === ship.tokenId || (s.dna && s.dna === ship.dna));
+
+  // Compute live rarity counts for filter chips
+  const counts = {
+    all: activeFleet.length,
+    Mythic: 0,
+    Legendary: 0,
+    Epic: 0,
+    Rare: 0,
+    equipped: 0,
+    t3: 0
+  };
+  activeFleet.forEach(s => {
+    const r = getStarshipRarity(s.dna);
+    if (r && r.tier && counts[r.tier] !== undefined) {
+      counts[r.tier]++;
+    }
+    if (equippedShip && (s.tokenId === equippedShip.tokenId || s.dna === equippedShip.dna)) {
+      counts.equipped++;
+    }
+    const isT3 = (s.shipTier || 1) >= 3 || (
+      (s.rapidFireLevel || 1) >= 3 &&
+      (s.plasmaDamageLevel || 1) >= 3 &&
+      (s.overdriveLevel || 1) >= 3 &&
+      (s.missilePodLevel || 1) >= 3
+    );
+    if (isT3) {
+      counts.t3++;
+    }
+  });
+
+  const isFilterActive = (fleetFilterRarity !== 'all' || fleetSearchQuery.trim() !== '' || fleetSortBy !== 'multiplier_desc');
+
+  // Fleet Navigation Tabs / Switcher Pills with Search, Filter & Sort Toolbar
   let fleetSelectorHtml = '';
   if (activeFleet.length > 0) {
+    const filterToolbarHtml = `
+      <div style="background: rgba(0, 240, 255, 0.03); border: 1px solid rgba(0, 240, 255, 0.16); border-radius: 10px; padding: 0.55rem 0.75rem; margin-bottom: 0.65rem; display: flex; flex-direction: column; gap: 0.5rem;">
+        <!-- Search & Sort Row -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <!-- Search Box -->
+          <div style="position: relative; flex: 1; min-width: 175px; max-width: 320px;">
+            <input 
+              type="text" 
+              id="hangar-fleet-search-input" 
+              value="${escapeHtml(fleetSearchQuery)}" 
+              placeholder="🔍 Search #ID, name, trait..." 
+              oninput="window.PolyHangar.setFleetSearch(this.value)"
+              style="width: 100%; box-sizing: border-box; background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(0, 240, 255, 0.35); border-radius: 6px; padding: 0.35rem 1.8rem 0.35rem 0.65rem; color: #fff; font-size: 0.75rem; outline: none; transition: border-color 0.2s;"
+              onfocus="this.style.borderColor='var(--color-primary)';"
+              onblur="this.style.borderColor='rgba(0, 240, 255, 0.35)';"
+            />
+            ${fleetSearchQuery ? `
+              <button onclick="window.PolyHangar.clearFleetSearch()" style="position: absolute; right: 0.4rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: #94a3b8; font-size: 0.85rem; cursor: pointer; padding: 0 0.2rem; line-height: 1;" title="Clear search">✕</button>
+            ` : ''}
+          </div>
+
+          <!-- Sort Controls & Reset -->
+          <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 0.3rem;">
+              <span style="font-size: 0.7rem; color: #94a3b8; font-weight: 700;">Sort:</span>
+              <select 
+                id="hangar-fleet-sort-select" 
+                onchange="window.PolyHangar.setFleetSort(this.value)"
+                style="background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(0, 240, 255, 0.35); border-radius: 6px; padding: 0.35rem 0.55rem; color: #00f0ff; font-size: 0.74rem; font-weight: 700; outline: none; cursor: pointer;"
+              >
+                <option value="multiplier_desc" ${fleetSortBy === 'multiplier_desc' ? 'selected' : ''}>⚡ Multiplier (High → Low)</option>
+                <option value="rarity_desc" ${fleetSortBy === 'rarity_desc' ? 'selected' : ''}>🏆 Rarity (Mythic → Rare)</option>
+                <option value="token_asc" ${fleetSortBy === 'token_asc' ? 'selected' : ''}>🔢 Token # (Low → High)</option>
+                <option value="token_desc" ${fleetSortBy === 'token_desc' ? 'selected' : ''}>🔢 Token # (High → Low)</option>
+                <option value="tier_desc" ${fleetSortBy === 'tier_desc' ? 'selected' : ''}>🛡️ Hull Tier (T5 → T1)</option>
+              </select>
+            </div>
+            ${isFilterActive ? `
+              <button onclick="window.PolyHangar.resetFleetFilters()" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; border-radius: 6px; padding: 0.35rem 0.6rem; font-size: 0.72rem; font-weight: 700; cursor: pointer; transition: all 0.2s;" title="Reset all filters & sorting">↺ Reset</button>
+            ` : ''}
+          </div>
+        </div>
+
+        <!-- Rarity & Status Filter Chips -->
+        <div style="display: flex; gap: 0.35rem; flex-wrap: wrap; align-items: center;">
+          ${[
+            { key: 'all', label: 'All', count: counts.all, color: '#00f0ff', bg: 'rgba(0,240,255,0.15)', border: 'rgba(0,240,255,0.4)' },
+            { key: 'Mythic', label: '👑 Mythic', count: counts.Mythic, color: '#ff0055', bg: 'rgba(255,0,85,0.2)', border: 'rgba(255,0,85,0.5)' },
+            { key: 'Legendary', label: '⚡ Legendary', count: counts.Legendary, color: '#ffd700', bg: 'rgba(255,215,0,0.18)', border: 'rgba(255,215,0,0.5)' },
+            { key: 'Epic', label: '🔮 Epic', count: counts.Epic, color: '#bd00ff', bg: 'rgba(189,0,255,0.18)', border: 'rgba(189,0,255,0.5)' },
+            { key: 'Rare', label: '🔷 Rare', count: counts.Rare, color: '#00f0ff', bg: 'rgba(0,240,255,0.15)', border: 'rgba(0,240,255,0.4)' },
+            { key: 'equipped', label: '🚀 Equipped', count: counts.equipped, color: '#00ff88', bg: 'rgba(0,255,136,0.18)', border: 'rgba(0,255,136,0.5)' },
+            { key: 't3', label: '🔥 T3+ Tuned', count: counts.t3, color: '#ff7700', bg: 'rgba(255,119,0,0.18)', border: 'rgba(255,119,0,0.5)' },
+          ].map(chip => {
+            const isSelected = fleetFilterRarity === chip.key;
+            const isDisabled = chip.count === 0 && chip.key !== 'all';
+            return `
+              <button 
+                onclick="window.PolyHangar.setFleetFilter('${chip.key}')" 
+                style="padding: 0.22rem 0.55rem; font-size: 0.7rem; font-weight: 800; border-radius: 6px; cursor: ${isDisabled ? 'default' : 'pointer'}; opacity: ${isDisabled ? '0.4' : '1'}; display: flex; align-items: center; gap: 0.35rem; transition: all 0.2s; background: ${isSelected ? chip.bg : 'rgba(255,255,255,0.03)'}; border: 1px solid ${isSelected ? chip.border : 'rgba(255,255,255,0.12)'}; color: ${isSelected ? chip.color : '#94a3b8'}; box-shadow: ${isSelected ? `0 0 8px ${chip.border}` : 'none'};"
+                title="Filter by ${chip.label} (${chip.count} ships)"
+              >
+                <span>${chip.label}</span>
+                <span style="font-size: 0.62rem; padding: 1px 4px; border-radius: 3px; background: rgba(0,0,0,0.35); color: ${isSelected ? chip.color : '#fff'}; font-family: monospace;">${chip.count}</span>
+              </button>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+
     fleetSelectorHtml = `
+      ${filterToolbarHtml}
       <div style="position: relative; display: flex; align-items: center; width: 100%; margin-bottom: 0.75rem; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 0.4rem; gap: 0.35rem;">
-        ${activeFleet.length > 3 ? `
+        ${filteredFleet.length > 3 ? `
           <button onclick="window.PolyHangar.scrollFleetStrip(-1)" style="flex-shrink: 0; background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.25); color: #00f0ff; border-radius: 6px; padding: 0.35rem 0.55rem; cursor: pointer; font-weight: 900; font-size: 0.75rem; transition: all 0.2s; line-height: 1;" title="Scroll Left (Previous Ships)">◀</button>
         ` : ''}
         <div id="hangar-fleet-strip" style="display: flex; gap: 0.45rem; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; width: 100%; padding: 0.15rem 0.1rem 0.35rem 0.1rem; align-items: center; scrollbar-width: thin; scrollbar-color: rgba(0,240,255,0.4) transparent; -webkit-overflow-scrolling: touch; scroll-behavior: smooth;">
-          ${activeFleet.map((s, idx) => {
-            const isSelected = idx === selectedFleetIndex;
-            const isEq = equippedShip && equippedShip.tokenId === s.tokenId;
+          ${filteredFleet.length === 0 ? `
+            <div style="padding: 0.6rem 0.8rem; background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.15); border-radius: 8px; width: 100%; display: flex; align-items: center; justify-content: space-between; font-size: 0.78rem; color: #94a3b8;">
+              <span>🔍 No starships match your filter criteria.</span>
+              <button onclick="window.PolyHangar.resetFleetFilters()" style="background: rgba(0,240,255,0.1); border: 1px solid var(--color-primary); color: #00f0ff; border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.72rem; font-weight: 800; cursor: pointer;">Show All Ships</button>
+            </div>
+          ` : filteredFleet.map((s) => {
+            const isSelected = (ship && (ship.tokenId === s.tokenId || (ship.dna && ship.dna === s.dna)));
+            const isEq = equippedShip && (equippedShip.tokenId === s.tokenId || equippedShip.dna === s.dna);
             const sRarity = getStarshipRarity(s.dna);
             const sIsT3 = (s.shipTier || 1) >= 3 || (
               (s.rapidFireLevel || 1) >= 3 &&
@@ -1177,8 +1437,10 @@ function renderHangarModalUI() {
             );
             const sBase = sRarity.baseEarnMultiplier || 1.1;
             const sMult = sIsT3 ? parseFloat((sBase * 1.5).toFixed(2)) : sBase;
+            const tabId = `fleet-tab-${s.tokenId || s.dna}`;
+            const selArg = s.tokenId ? s.tokenId : `'${s.dna}'`;
             return `
-              <button id="fleet-tab-${idx}" onclick="window.PolyHangar.selectShip(${idx})" style="flex-shrink: 0; padding: 0.38rem 0.75rem; font-size: 0.75rem; font-weight: 800; border-radius: 8px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 0.45rem; transition: all 0.2s; background: ${isSelected ? 'rgba(0,240,255,0.2)' : 'rgba(255,255,255,0.04)'}; border: 1px solid ${isSelected ? 'var(--color-primary)' : 'rgba(255,255,255,0.15)'}; color: ${isSelected ? '#00f0ff' : '#94a3b8'}; box-shadow: ${isSelected ? '0 0 10px rgba(0,240,255,0.3)' : 'none'};">
+              <button id="${tabId}" onclick="window.PolyHangar.selectShip(${selArg})" style="flex-shrink: 0; padding: 0.38rem 0.75rem; font-size: 0.75rem; font-weight: 800; border-radius: 8px; cursor: pointer; white-space: nowrap; display: flex; align-items: center; gap: 0.45rem; transition: all 0.2s; background: ${isSelected ? 'rgba(0,240,255,0.2)' : 'rgba(255,255,255,0.04)'}; border: 1px solid ${isSelected ? 'var(--color-primary)' : 'rgba(255,255,255,0.15)'}; color: ${isSelected ? '#00f0ff' : '#94a3b8'}; box-shadow: ${isSelected ? '0 0 10px rgba(0,240,255,0.3)' : 'none'};">
                 <span>🛸 ${s.name || `Ship #${s.tokenId}`}</span>
                 <span style="font-size: 0.62rem; padding: 1px 4px; border-radius: 3px; background: ${sRarity.bg}; color: ${sRarity.color}; border: 1px solid ${sRarity.border}; font-weight: 900;">${sRarity.badge}</span>
                 <span style="font-size: 0.65rem; padding: 1px 4px; border-radius: 3px; background: rgba(255,255,255,0.1); color: #ffd700;">T${s.shipTier || 1}</span>
@@ -1188,7 +1450,7 @@ function renderHangarModalUI() {
             `;
           }).join('')}
         </div>
-        ${activeFleet.length > 3 ? `
+        ${filteredFleet.length > 3 ? `
           <button onclick="window.PolyHangar.scrollFleetStrip(1)" style="flex-shrink: 0; background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.25); color: #00f0ff; border-radius: 6px; padding: 0.35rem 0.55rem; cursor: pointer; font-weight: 900; font-size: 0.75rem; transition: all 0.2s; line-height: 1;" title="Scroll Right (More Ships)">▶</button>
         ` : ''}
       </div>
@@ -1248,13 +1510,17 @@ function renderHangarModalUI() {
       
       <!-- Left Column: Ship 60FPS Preview & Actions -->
       <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(0,240,255,0.2); border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
-        ${activeFleet.length > 1 ? `
+        ${filteredFleet.length > 1 ? `
           <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; max-width: 300px; padding: 0.1rem 0.25rem;">
             <button onclick="window.PolyHangar.prevShip()" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 6px; padding: 0.25rem 0.65rem; font-size: 0.8rem; font-weight: 800; cursor: pointer; transition: all 0.2s;" title="Previous Starship">◀ Prev</button>
-            <span style="font-size: 0.75rem; font-weight: 800; color: #00f0ff; font-family: monospace;">Ship ${selectedFleetIndex + 1} of ${activeFleet.length}</span>
+            <span style="font-size: 0.75rem; font-weight: 800; color: #00f0ff; font-family: monospace;">Ship ${currentFilteredIndex >= 0 ? currentFilteredIndex + 1 : 1} of ${filteredFleet.length}${filteredFleet.length < activeFleet.length ? ` (${activeFleet.length} total)` : ''}</span>
             <button onclick="window.PolyHangar.nextShip()" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 6px; padding: 0.25rem 0.65rem; font-size: 0.8rem; font-weight: 800; cursor: pointer; transition: all 0.2s;" title="Next Starship">Next ▶</button>
           </div>
-        ` : ''}
+        ` : (activeFleet.length > 0 ? `
+          <div style="display: flex; justify-content: center; align-items: center; width: 100%; max-width: 300px; padding: 0.1rem 0.25rem;">
+            <span style="font-size: 0.75rem; font-weight: 800; color: #00f0ff; font-family: monospace;">Ship 1 of ${filteredFleet.length || 1}${filteredFleet.length < activeFleet.length ? ` (${activeFleet.length} total)` : ''}</span>
+          </div>
+        ` : '')}
 
         <div style="position: relative; width: 100%; max-width: 300px; aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; border: 1px solid rgba(0,240,255,0.35); background: #02040a; box-shadow: 0 0 20px rgba(0,240,255,0.12);">
           <canvas id="hangar-ship-canvas" width="300" height="300" style="width: 100%; height: 100%; display: block;"></canvas>
@@ -1371,12 +1637,24 @@ function renderHangarModalUI() {
     </div>
   `;
 
+  // Restore search input focus and cursor position after re-render
+  if (searchInputActive) {
+    const newSearchInput = document.getElementById('hangar-fleet-search-input');
+    if (newSearchInput) {
+      newSearchInput.focus();
+      if (cursorStart !== null && cursorEnd !== null) {
+        newSearchInput.setSelectionRange(cursorStart, cursorEnd);
+      }
+    }
+  }
+
   // Immediately bind/restart 60FPS animation loop for the newly created canvas in the DOM
   startHangarCanvasLoop();
 
   // Auto-scroll the active ship pill into center view inside the horizontal docking strip
   setTimeout(() => {
-    const activeTab = document.getElementById(`fleet-tab-${selectedFleetIndex}`);
+    const targetTabId = `fleet-tab-${ship.tokenId || ship.dna}`;
+    const activeTab = document.getElementById(targetTabId);
     if (activeTab) {
       activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
@@ -1431,24 +1709,82 @@ function renderSkillRow(name, level, effectText, skillType, isDemo) {
   `;
 }
 
-// --- FLEET SWITCHING ACTIONS ---
+// --- FLEET SWITCHING ACTIONS & FILTER CONTROLLERS ---
 
-export function selectShip(index) {
-  if (activeFleet && activeFleet[index]) {
-    selectedFleetIndex = index;
-    renderHangarModalUI();
+export function selectShip(identifier) {
+  const match = activeFleet.find(s => s.tokenId === identifier || (s.dna && s.dna === identifier));
+  if (match) {
+    selectedShipTokenId = match.tokenId || match.dna;
+  } else if (typeof identifier === 'number' && activeFleet[identifier]) {
+    selectedShipTokenId = activeFleet[identifier].tokenId || activeFleet[identifier].dna;
+  } else {
+    selectedShipTokenId = identifier;
   }
+  renderHangarModalUI();
 }
 
 export function prevShip() {
-  if (!activeFleet || activeFleet.length <= 1) return;
-  selectedFleetIndex = (selectedFleetIndex - 1 + activeFleet.length) % activeFleet.length;
+  const filtered = getFilteredAndSortedFleet();
+  if (filtered.length <= 1) return;
+  const curr = getActivePreviewShip();
+  const currentIndex = filtered.findIndex(s => s.tokenId === curr?.tokenId || (s.dna && s.dna === curr?.dna));
+  const newIndex = (currentIndex - 1 + filtered.length) % filtered.length;
+  selectedShipTokenId = filtered[newIndex].tokenId || filtered[newIndex].dna;
   renderHangarModalUI();
 }
 
 export function nextShip() {
-  if (!activeFleet || activeFleet.length <= 1) return;
-  selectedFleetIndex = (selectedFleetIndex + 1) % activeFleet.length;
+  const filtered = getFilteredAndSortedFleet();
+  if (filtered.length <= 1) return;
+  const curr = getActivePreviewShip();
+  const currentIndex = filtered.findIndex(s => s.tokenId === curr?.tokenId || (s.dna && s.dna === curr?.dna));
+  const newIndex = (currentIndex + 1) % filtered.length;
+  selectedShipTokenId = filtered[newIndex].tokenId || filtered[newIndex].dna;
+  renderHangarModalUI();
+}
+
+export function setFleetFilter(filter) {
+  if (fleetFilterRarity === filter && filter !== 'all') {
+    fleetFilterRarity = 'all';
+  } else {
+    fleetFilterRarity = filter;
+  }
+  const filtered = getFilteredAndSortedFleet();
+  if (filtered.length > 0 && !filtered.some(s => s.tokenId === selectedShipTokenId || (s.dna && s.dna === selectedShipTokenId))) {
+    selectedShipTokenId = filtered[0].tokenId || filtered[0].dna;
+  }
+  renderHangarModalUI();
+}
+
+export function setFleetSort(sortBy) {
+  fleetSortBy = sortBy;
+  renderHangarModalUI();
+}
+
+export function setFleetSearch(query) {
+  fleetSearchQuery = query;
+  const filtered = getFilteredAndSortedFleet();
+  if (filtered.length > 0 && !filtered.some(s => s.tokenId === selectedShipTokenId || (s.dna && s.dna === selectedShipTokenId))) {
+    selectedShipTokenId = filtered[0].tokenId || filtered[0].dna;
+  }
+  renderHangarModalUI();
+}
+
+export function clearFleetSearch() {
+  fleetSearchQuery = '';
+  renderHangarModalUI();
+}
+
+export function resetFleetFilters() {
+  fleetFilterRarity = 'all';
+  fleetSearchQuery = '';
+  fleetSortBy = 'multiplier_desc';
+  const equipped = getEquippedStarship();
+  if (equipped && equipped.tokenId && activeFleet.some(s => s.tokenId === equipped.tokenId)) {
+    selectedShipTokenId = equipped.tokenId;
+  } else if (activeFleet.length > 0) {
+    selectedShipTokenId = activeFleet[0].tokenId || activeFleet[0].dna;
+  }
   renderHangarModalUI();
 }
 
@@ -1757,7 +2093,14 @@ window.PolyHangar = {
   clearFleet: clearHangarFleet,
   formatCanonicalShipName,
   upgradeSkill,
-  syncContractBaseURI
+  syncContractBaseURI,
+  setFleetFilter,
+  setFleetSort,
+  setFleetSearch,
+  clearFleetSearch,
+  resetFleetFilters,
+  getFilteredAndSortedFleet,
+  getShipEffectiveMultiplier
 };
 
 // Auto-sync button visibility based on login/wallet state
