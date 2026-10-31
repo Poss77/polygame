@@ -853,21 +853,6 @@ export function handleStreakWheelLanding(res, segmentIdx) {
       claimBtn.style.borderColor = '#66ffb3';
       claimBtn.style.color = '#02200f';
     }
-  }
-
-  const claimBtn = document.getElementById('btn-streak-wheel-claim-close');
-  if (claimBtn) {
-    if (res.prize_type === 'crate') {
-      claimBtn.innerText = '🎁 Open Cyber Crate Now!';
-      claimBtn.style.background = 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)';
-      claimBtn.style.borderColor = '#f472b6';
-      claimBtn.style.color = '#fff';
-    } else {
-      claimBtn.innerText = 'Awesome! Collect Reward';
-      claimBtn.style.background = 'linear-gradient(135deg, #00ff88 0%, #00cc66 100%)';
-      claimBtn.style.borderColor = '#66ffb3';
-      claimBtn.style.color = '#02200f';
-    }
   }
 
   if (amountEl) {
