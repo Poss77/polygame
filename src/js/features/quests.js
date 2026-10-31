@@ -771,63 +771,7 @@ window.spinStreakWheelAction = spinStreakWheelAction;
 export function handleStreakWheelLanding(res, segmentIdx) {
   const slice = STREAK_WHEEL_SLICES[segmentIdx] || STREAK_WHEEL_SLICES[0];
 
-  if (slice.id === '10000_pgt') {
-    sfx.playRelicFanfare();
-  } else {
-    sfx.playSuccess();
-    setTimeout(() => {
-      try { sfx.playCoin(); } catch(e){}
-    }, 250);
-  }
-
-  // Neon Confetti Blast Celebration
-  if (typeof window.triggerConfetti === 'function') {
-    window.triggerConfetti({
-      count: slice.id === '10000_pgt' ? 180 : 120,
-      colors: ['#ffd700', '#ff007a', '#00f0ff', '#00ff88', '#a855f7']
-    });
-    if (slice.id === '10000_pgt' || slice.id === '500_pgt') {
-      setTimeout(() => {
-        if (typeof window.triggerConfetti === 'function') {
-          window.triggerConfetti({ count: 90, spread: 80 });
-        }
-      }, 350);
-    }
-  }
-
-  // Update client state from authoritative server response
-  const updates = {};
-  if (typeof res.new_balance === 'number') {
-    updates.balancePgt = res.new_balance;
-  }
-  if (res.daily_quests) {
-    updates.dailyQuests = res.daily_quests;
-    try { localStorage.setItem('polygame_daily_quests', JSON.stringify(res.daily_quests)); } catch(e){}
-  }
-  if (res.space_state) {
-    updates.spaceState = res.space_state;
-    try { localStorage.setItem('polygame_space_state', JSON.stringify(res.space_state)); } catch(e){}
-  }
-  if (res.vip_until) {
-    updates.vipUntil = res.vip_until;
-  }
-  if (typeof res.vip_level === 'number') {
-    updates.vipLevel = res.vip_level;
-  }
-  if (res.crate_data && res.crate_data.won_nft) {
-    let currentCrateNfts = Array.isArray(appState.state.crateNfts) ? [...appState.state.crateNfts] : [];
-    currentCrateNfts.push(res.crate_data.won_nft);
-    updates.crateNfts = currentCrateNfts;
-  }
-
-  appState.update(updates);
-  appState.saveToDB();
-  renderDailyQuestsUI();
-  if (typeof window.syncProfileView === 'function') {
-    window.syncProfileView();
-  }
-
-  // Display Reveal View
+  // 1. Instant Modal Reveal (Super-fast synchronous DOM update < 2ms)
   const actionSec = document.getElementById('streak-wheel-action-section');
   const resultSec = document.getElementById('streak-wheel-result-section');
   const iconEl = document.getElementById('streak-wheel-result-icon');
@@ -895,6 +839,65 @@ export function handleStreakWheelLanding(res, segmentIdx) {
       descEl.innerText = `+${res.amount || slice.label} has been credited directly to your PGT game balance!`;
     }
   }
+
+  if (slice.id === '10000_pgt') {
+    sfx.playRelicFanfare();
+  } else {
+    sfx.playSuccess();
+    setTimeout(() => {
+      try { sfx.playCoin(); } catch(e){}
+    }, 250);
+  }
+
+  // 2. Schedule non-blocking background sync & confetti in next animation frame to prevent long-task lag warning
+  requestAnimationFrame(() => {
+    // Neon Confetti Blast Celebration
+    if (typeof window.triggerConfetti === 'function') {
+      window.triggerConfetti({
+        count: slice.id === '10000_pgt' ? 180 : 120,
+        colors: ['#ffd700', '#ff007a', '#00f0ff', '#00ff88', '#a855f7']
+      });
+      if (slice.id === '10000_pgt' || slice.id === '500_pgt') {
+        setTimeout(() => {
+          if (typeof window.triggerConfetti === 'function') {
+            window.triggerConfetti({ count: 90, spread: 80 });
+          }
+        }, 350);
+      }
+    }
+
+    // Update client state & persistent storage
+    const updates = {};
+    if (typeof res.new_balance === 'number') {
+      updates.balancePgt = res.new_balance;
+    }
+    if (res.daily_quests) {
+      updates.dailyQuests = res.daily_quests;
+      try { localStorage.setItem('polygame_daily_quests', JSON.stringify(res.daily_quests)); } catch(e){}
+    }
+    if (res.space_state) {
+      updates.spaceState = res.space_state;
+      try { localStorage.setItem('polygame_space_state', JSON.stringify(res.space_state)); } catch(e){}
+    }
+    if (res.vip_until) {
+      updates.vipUntil = res.vip_until;
+    }
+    if (typeof res.vip_level === 'number') {
+      updates.vipLevel = res.vip_level;
+    }
+    if (res.crate_data && res.crate_data.won_nft) {
+      let currentCrateNfts = Array.isArray(appState.state.crateNfts) ? [...appState.state.crateNfts] : [];
+      currentCrateNfts.push(res.crate_data.won_nft);
+      updates.crateNfts = currentCrateNfts;
+    }
+
+    appState.update(updates);
+    appState.saveToDB();
+    renderDailyQuestsUI();
+    if (typeof window.syncProfileView === 'function') {
+      window.syncProfileView();
+    }
+  });
 
   appState.addActivity('You', 'won 7-Day Quest Streak Wheel', res.prize_title || slice.label);
 }

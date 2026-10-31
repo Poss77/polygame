@@ -1384,29 +1384,32 @@ export function showMysteryBoxResult(data, crateType = 'PGT Cyber Mystery Crate'
       title.innerText = "LEGENDARY NFT UNLOCKED!";
       title.style.color = "var(--color-warning)";
     }
-    // Update crateNfts authoritatively (supports duplicates: x2, x3, etc.)
-    if (Array.isArray(data.crate_nfts)) {
-      appState.update({ crateNfts: data.crate_nfts });
-    } else if (unboxedNftId) {
-      const crates = [...(appState.state.crateNfts || [])];
-      crates.push(unboxedNftId);
-      appState.update({ crateNfts: crates });
-    }
-
-    if (data.new_balance !== undefined) {
-      appState.update({ balancePgt: Number(data.new_balance) });
-    }
 
     const allCrates = appState.state.crateNfts || [];
     const allOwned = appState.state.ownedNfts || [];
-    const totalCount = allCrates.filter(id => id === unboxedNftId).length + allOwned.filter(id => id === unboxedNftId).length;
+    const totalCount = allCrates.filter(id => id === unboxedNftId).length + allOwned.filter(id => id === unboxedNftId).length + 1;
     const countBadge = totalCount > 1 ? ` (You now own <strong>x${totalCount}</strong>)` : '';
 
     if (desc) desc.innerHTML = `You unboxed a rare Utility Core: <strong style="color:var(--color-primary);">${nftName}</strong>${countBadge}!<br>It has been added to your NFT Backpack.<br><button class="btn-primary" style="margin-top:1rem; padding:0.6rem 1.2rem;" onclick="closeModal('mystery-box'); switchNftView('inventory');">Open NFT Backpack 🎒</button>`;
     sfx.playSuccess();
-    appState.addActivity('You', `unboxed ${crateType} NFT: ${nftName}${totalCount > 1 ? ` (x${totalCount})` : ''}`, `🎉 ${nftName}`);
-    
-    renderNftInventory();
+
+    // Defer state mutation & DOM inventory render to rAF so setTimeout handler completes in <2ms
+    requestAnimationFrame(() => {
+      if (Array.isArray(data.crate_nfts)) {
+        appState.update({ crateNfts: data.crate_nfts });
+      } else if (unboxedNftId) {
+        const crates = [...(appState.state.crateNfts || [])];
+        crates.push(unboxedNftId);
+        appState.update({ crateNfts: crates });
+      }
+
+      if (data.new_balance !== undefined) {
+        appState.update({ balancePgt: Number(data.new_balance) });
+      }
+
+      appState.addActivity('You', `unboxed ${crateType} NFT: ${nftName}${totalCount > 1 ? ` (x${totalCount})` : ''}`, `🎉 ${nftName}`);
+      renderNftInventory();
+    });
   } else {
     const pgt = data.reward_pgt || 0;
     if (icon) icon.innerText = pgt >= 1000 ? "🎉" : "🪙";
@@ -1416,11 +1419,14 @@ export function showMysteryBoxResult(data, crateType = 'PGT Cyber Mystery Crate'
     }
     if (desc) desc.innerHTML = `You received <strong style="color:var(--color-primary); font-size:1.3rem;">+${pgt} PGT</strong> directly into your account!`;
     sfx.playSuccess();
-    appState.addActivity('You', `unboxed ${crateType}`, `+${pgt} PGT`);
 
-    if (data.new_balance !== undefined) {
-      appState.update({ balancePgt: Number(data.new_balance) });
-    }
+    // Defer balance update & activity feed to rAF to eliminate lag spikes
+    requestAnimationFrame(() => {
+      if (data.new_balance !== undefined) {
+        appState.update({ balancePgt: Number(data.new_balance) });
+      }
+      appState.addActivity('You', `unboxed ${crateType}`, `+${pgt} PGT`);
+    });
   }
 }
 
