@@ -5,6 +5,24 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Wordle Mobile Responsiveness & Touch Latency Optimization (`v1.5.773`)**:
+  - **⚡ Zero-Delay Virtual Keyboard Input ([`src/js/features/wordle.js`](src/js/features/wordle.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Eliminated mobile browsers' 300ms double-tap delay by enforcing `touch-action: manipulation;` and implementing direct `pointerdown` event listeners via `bindFastKey()`.
+    - Added instant tactile visual press feedback and subtle haptic vibration (`navigator.vibrate(6)`) for native-like typing responsiveness on touchscreen devices.
+    - Added `-webkit-tap-highlight-color: transparent;` and `-webkit-user-select: none;` to suppress browser tap highlights and accidental text selection.
+  - **🚀 Single-Tile Targeted DOM Updates ([`src/js/features/wordle.js`](src/js/features/wordle.js))**:
+    - Replaced the redundant 5-tile loop that previously triggered `classList.add('pop')` and multi-timer animations on all 5 tiles for every single key typed.
+    - Letter typing and backspace now mutate and animate strictly the targeted column tile, eliminating layout thrashing and CPU bottlenecks on mobile devices.
+  - **🎯 Instant Submission Feedback on Enter ([`src/js/features/wordle.js`](src/js/features/wordle.js))**:
+    - Added immediate visual feedback (`...` state with disabled pointer events) to the ENTER button when submitting a guess, preventing duplicate submissions and tap confusion while Supabase RPC evaluations are in-flight.
+    - Added warning haptic feedback on invalid dictionary words and row shake animations.
+  - **⚡ Optimistic 0ms Game Restoration from Cache ([`src/js/features/wordle.js`](src/js/features/wordle.js))**:
+    - Integrated with `getCachedHubStatus()` to immediately restore today's board state, guesses, and solved status in 0ms without waiting for network roundtrips when returning to the Daily Hub.
+  - **📱 Mobile Screen Viewport Adaptation ([`src/css/features/games.css`](src/css/features/games.css))**:
+    - Added `@media (max-width: 480px)` styles reducing keyboard gaps and key dimensions so the full Wordle grid and on-screen keyboard fit cleanly within mobile phone viewports without scrolling.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.773"` and synced cache busters.
+
 - **Starship Hangar & Tuning Bay: Quick Search, Rarity Filter Chips & Fleet Sorting Toolbar (`v1.5.772`)**:
   - **🔍 Instant Multi-Trait Search & ID Filtering ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
     - Added an instant search box supporting ship token IDs (e.g. `#12`, `65`), ship names, and 6-digit procedural DNA identifiers.
