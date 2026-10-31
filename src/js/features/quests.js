@@ -604,9 +604,11 @@ export function openStreakWheelModal() {
   const actionSec = document.getElementById('streak-wheel-action-section');
   const resultSec = document.getElementById('streak-wheel-result-section');
   const btnSpin = document.getElementById('btn-spin-streak-wheel');
+  const amountEl = document.getElementById('streak-wheel-prize-amount');
 
   if (actionSec) actionSec.style.display = 'block';
   if (resultSec) resultSec.style.display = 'none';
+  if (amountEl) amountEl.innerText = '';
   if (btnSpin) {
     btnSpin.disabled = false;
     btnSpin.innerText = '🎡 SPIN THE WHEEL!';
@@ -772,6 +774,24 @@ export function handleStreakWheelLanding(res, segmentIdx) {
     sfx.playRelicFanfare();
   } else {
     sfx.playSuccess();
+    setTimeout(() => {
+      try { sfx.playCoin(); } catch(e){}
+    }, 250);
+  }
+
+  // Neon Confetti Blast Celebration
+  if (typeof window.triggerConfetti === 'function') {
+    window.triggerConfetti({
+      count: slice.id === '10000_pgt' ? 180 : 120,
+      colors: ['#ffd700', '#ff007a', '#00f0ff', '#00ff88', '#a855f7']
+    });
+    if (slice.id === '10000_pgt' || slice.id === '500_pgt') {
+      setTimeout(() => {
+        if (typeof window.triggerConfetti === 'function') {
+          window.triggerConfetti({ count: 90, spread: 80 });
+        }
+      }, 350);
+    }
   }
 
   // Update client state from authoritative server response
@@ -810,6 +830,7 @@ export function handleStreakWheelLanding(res, segmentIdx) {
   const actionSec = document.getElementById('streak-wheel-action-section');
   const resultSec = document.getElementById('streak-wheel-result-section');
   const iconEl = document.getElementById('streak-wheel-result-icon');
+  const amountEl = document.getElementById('streak-wheel-prize-amount');
   const titleEl = document.getElementById('streak-wheel-result-title');
   const descEl = document.getElementById('streak-wheel-result-desc');
 
@@ -817,6 +838,30 @@ export function handleStreakWheelLanding(res, segmentIdx) {
   if (resultSec) resultSec.style.display = 'block';
 
   if (iconEl) iconEl.innerText = slice.icon;
+
+  if (amountEl) {
+    if (res.prize_type === 'pgt') {
+      const amtNum = parseFloat(res.amount || slice.label.replace(/[^0-9]/g, '')) || 500;
+      amountEl.innerText = `+${amtNum.toLocaleString()} PGT`;
+      amountEl.style.color = (slice.id === '10000_pgt') ? '#ffd700' : '#00ff88';
+      amountEl.style.textShadow = (slice.id === '10000_pgt') 
+        ? '0 0 25px rgba(255, 215, 0, 0.9)' 
+        : '0 0 25px rgba(0, 255, 136, 0.8)';
+    } else if (res.prize_type === 'crate') {
+      amountEl.innerText = `🎁 1x CYBER CRATE`;
+      amountEl.style.color = '#ec4899';
+      amountEl.style.textShadow = '0 0 25px rgba(236, 72, 153, 0.8)';
+    } else if (res.prize_type === 'minerals') {
+      amountEl.innerText = `+20,000 Ti / +5,000 Q`;
+      amountEl.style.color = '#bd00ff';
+      amountEl.style.textShadow = '0 0 25px rgba(189, 0, 255, 0.8)';
+    } else if (res.prize_type === 'vip') {
+      amountEl.innerText = `+3 DAYS SILVER VIP`;
+      amountEl.style.color = '#eab308';
+      amountEl.style.textShadow = '0 0 25px rgba(234, 179, 8, 0.8)';
+    }
+  }
+
   if (titleEl) {
     titleEl.innerText = res.prize_title || slice.label;
     titleEl.style.color = slice.color;
