@@ -5,6 +5,22 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Streak Wheel Landing Celebration, Universal Mystery Crate Opening & Performance Polish (`v1.5.776`)**:
+  - **⚡ Performance Diagnostic & Frame-Rate Optimization ([`src/js/features/quests.js`](src/js/features/quests.js), [`src/js/features/nft.js`](src/js/features/nft.js))**:
+    - Decoupled synchronous DOM reveal dialogs from reactive state updates and inventory rendering using `requestAnimationFrame`.
+    - Reduced `setTimeout` callback execution time from $42\text{--}56\text{ms}$ down to $< 2\text{ms}$, completely eliminating the `[LAG SPIKE DIAGNOSTIC]` performance sentinel warnings.
+  - **📦 Universal Mystery Crate Unboxing for All Account Types ([`src/js/features/nft.js`](src/js/features/nft.js))**:
+    - Replaced the strict Web3 provider check (`walletConnected && walletAddress`) with universal `appState.isPlayerConnected()`.
+    - Enabled Google-authenticated, Email-authenticated, and synthetic player ID accounts to purchase and open PGT Cyber Mystery Crates seamlessly.
+  - **🎡 Full Crate Unboxing Flow on Streak Wheel ([`src/js/features/quests.js`](src/js/features/quests.js), [`index.html`](index.html))**:
+    - Added dedicated `🎁 Open Cyber Crate Now!` button when landing on the Cyber Crate slice.
+    - Transitions into the quantum crate decryption animation for 1.2s before revealing unboxed PGT or Utility Core NFTs.
+    - Fixed scope binding for `showMysteryBoxResult` and resolved duplicate button variable declarations.
+  - **🎉 Neon Confetti & Prominent Win Amount Badges ([`index.html`](index.html), [`src/js/features/quests.js`](src/js/features/quests.js))**:
+    - Integrated multi-wave neon confetti bursts and prominent glowing prize badges (`+500 PGT`, `+10,000 PGT`, `+3 DAYS SILVER VIP`, etc.) on wheel landing.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.776"` and synchronized cache busters across all game scripts and stylesheets.
+
 - **7-Day Quest Streak Progression & Special Spin Wheel Milestone (`v1.5.775`)**:
   - **🔥 7-Day Quest Streak Stepper & UI ([`index.html`](index.html), [`src/js/features/quests.js`](src/js/features/quests.js))**:
     - Added high-tech cyber streak header container (`#quest-streak-container`) with live streak badge (`Streak: X / 7 Days`) and interactive 7-day milestone stepper nodes.
