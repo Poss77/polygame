@@ -1223,8 +1223,9 @@ export async function buyPgtMysteryBox() {
   }
 
   const client = supabase || window.supabaseClient;
-  if (!client || !appState.state.walletConnected || !appState.state.walletAddress) {
-    triggerToast("Please connect your wallet to open Mystery Crates!", "error");
+  if (!client || !appState.isPlayerConnected()) {
+    triggerToast("Please sign in or connect your account to open Mystery Crates!", "error");
+    if (typeof openModal === "function") openModal("wallet");
     return;
   }
 
@@ -1362,7 +1363,6 @@ export async function buyPolMysteryBox() {
 }
 
 export function showMysteryBoxResult(data, crateType = 'PGT Cyber Mystery Crate') {
-  window.showMysteryBoxResult = showMysteryBoxResult;
   const animContainer = document.getElementById('mystery-box-anim-container');
   const resultContent = document.getElementById('mystery-box-result-content');
   const icon = document.getElementById('mystery-reward-icon');
@@ -1672,3 +1672,5 @@ export async function getOwnedNftsFromChain(address) {
   return detailed.map(item => item.typeId);
 }
 window.getOwnedNftsFromChain = getOwnedNftsFromChain;
+
+window.showMysteryBoxResult = showMysteryBoxResult;

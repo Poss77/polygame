@@ -1,3 +1,4 @@
+import { showMysteryBoxResult } from './nft.js';
 import { appState } from '../core/state.js';
 import { supabase } from '../core/config.js';
 import { triggerToast, openModal, closeModal } from '../core/ui.js';
@@ -839,6 +840,36 @@ export function handleStreakWheelLanding(res, segmentIdx) {
 
   if (iconEl) iconEl.innerText = slice.icon;
 
+  const claimBtn = document.getElementById('btn-streak-wheel-claim-close');
+  if (claimBtn) {
+    if (res.prize_type === 'crate') {
+      claimBtn.innerText = '🎁 Open Cyber Crate Now!';
+      claimBtn.style.background = 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)';
+      claimBtn.style.borderColor = '#f472b6';
+      claimBtn.style.color = '#fff';
+    } else {
+      claimBtn.innerText = 'Awesome! Collect Reward';
+      claimBtn.style.background = 'linear-gradient(135deg, #00ff88 0%, #00cc66 100%)';
+      claimBtn.style.borderColor = '#66ffb3';
+      claimBtn.style.color = '#02200f';
+    }
+  }
+
+  const claimBtn = document.getElementById('btn-streak-wheel-claim-close');
+  if (claimBtn) {
+    if (res.prize_type === 'crate') {
+      claimBtn.innerText = '🎁 Open Cyber Crate Now!';
+      claimBtn.style.background = 'linear-gradient(135deg, #ec4899 0%, #be185d 100%)';
+      claimBtn.style.borderColor = '#f472b6';
+      claimBtn.style.color = '#fff';
+    } else {
+      claimBtn.innerText = 'Awesome! Collect Reward';
+      claimBtn.style.background = 'linear-gradient(135deg, #00ff88 0%, #00cc66 100%)';
+      claimBtn.style.borderColor = '#66ffb3';
+      claimBtn.style.color = '#02200f';
+    }
+  }
+
   if (amountEl) {
     if (res.prize_type === 'pgt') {
       const amtNum = parseFloat(res.amount || slice.label.replace(/[^0-9]/g, '')) || 500;
@@ -896,10 +927,20 @@ export function closeStreakWheelResult() {
       if (typeof openModal === 'function') {
         openModal('mystery-box');
       }
-      if (typeof window.showMysteryBoxResult === 'function') {
-        window.showMysteryBoxResult(crateData, 'PGT Cyber Mystery Crate');
-      }
-    }, 300);
+      const animContainer = document.getElementById('mystery-box-anim-container');
+      const resultContent = document.getElementById('mystery-box-result-content');
+      if (animContainer) animContainer.style.display = 'block';
+      if (resultContent) resultContent.style.display = 'none';
+
+      // Pulsate unboxing for 1.2s then reveal unboxed loot
+      setTimeout(() => {
+        if (typeof showMysteryBoxResult === 'function') {
+          showMysteryBoxResult(crateData, 'PGT Cyber Mystery Crate');
+        } else if (typeof window.showMysteryBoxResult === 'function') {
+          window.showMysteryBoxResult(crateData, 'PGT Cyber Mystery Crate');
+        }
+      }, 1200);
+    }, 250);
   }
 }
 window.closeStreakWheelResult = closeStreakWheelResult;
