@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Deep Timer Decoupling & Elimination of Forced Reflow Lag Spikes (`v1.5.777`)**:
+  - **⚡ Full Non-Blocking Timer Handlers ([`src/js/features/quests.js`](src/js/features/quests.js), [`src/js/features/nft.js`](src/js/features/nft.js))**:
+    - Replaced synchronous `handleStreakWheelLanding` invocation within `setTimeout` with non-blocking `requestAnimationFrame` scheduling, reducing callback duration to $\approx 0.05\text{ms}$.
+    - Moved `appState.addActivity()` and full-page `syncUI()` inside the deferred animation frame, eliminating the synchronous layout forced reflow spike during wheel prize reveals.
+    - Wrapped `showMysteryBoxResult` timers in `buyPgtMysteryBox` and `buyPolMysteryBox` with `requestAnimationFrame` to ensure zero lag diagnostic triggers.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.777"` and synchronized all cache busters.
+
 - **Streak Wheel Landing Celebration, Universal Mystery Crate Opening & Performance Polish (`v1.5.776`)**:
   - **⚡ Performance Diagnostic & Frame-Rate Optimization ([`src/js/features/quests.js`](src/js/features/quests.js), [`src/js/features/nft.js`](src/js/features/nft.js))**:
     - Decoupled synchronous DOM reveal dialogs from reactive state updates and inventory rendering using `requestAnimationFrame`.

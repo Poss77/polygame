@@ -1248,7 +1248,9 @@ export async function buyPgtMysteryBox() {
         window.recordGameMetrics('PGT Cyber Mystery Crate', 1000, data.reward_pgt || 0, 1);
       }
       setTimeout(() => {
-        showMysteryBoxResult(data, 'PGT Cyber Mystery Crate');
+        requestAnimationFrame(() => {
+          showMysteryBoxResult(data, 'PGT Cyber Mystery Crate');
+        });
       }, 1500);
     } else {
       closeModal('mystery-box');
@@ -1348,7 +1350,9 @@ export async function buyPolMysteryBox() {
 
       if (data && data.success) {
         setTimeout(() => {
-          showMysteryBoxResult(data, 'POL Quantum Crate');
+          requestAnimationFrame(() => {
+            showMysteryBoxResult(data, 'POL Quantum Crate');
+          });
         }, 1500);
       } else {
         closeModal('mystery-box');

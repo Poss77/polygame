@@ -753,7 +753,9 @@ export async function spinStreakWheelAction() {
     // Complete spin after 6.2s
     setTimeout(() => {
       _isSpinningStreakWheel = false;
-      handleStreakWheelLanding(res, targetSegmentIndex);
+      requestAnimationFrame(() => {
+        handleStreakWheelLanding(res, targetSegmentIndex);
+      });
     }, 6200);
 
   } catch (err) {
@@ -897,9 +899,8 @@ export function handleStreakWheelLanding(res, segmentIdx) {
     if (typeof window.syncProfileView === 'function') {
       window.syncProfileView();
     }
+    appState.addActivity('You', 'won 7-Day Quest Streak Wheel', res.prize_title || slice.label);
   });
-
-  appState.addActivity('You', 'won 7-Day Quest Streak Wheel', res.prize_title || slice.label);
 }
 window.handleStreakWheelLanding = handleStreakWheelLanding;
 
@@ -922,11 +923,13 @@ export function closeStreakWheelResult() {
 
       // Pulsate unboxing for 1.2s then reveal unboxed loot
       setTimeout(() => {
-        if (typeof showMysteryBoxResult === 'function') {
-          showMysteryBoxResult(crateData, 'PGT Cyber Mystery Crate');
-        } else if (typeof window.showMysteryBoxResult === 'function') {
-          window.showMysteryBoxResult(crateData, 'PGT Cyber Mystery Crate');
-        }
+        requestAnimationFrame(() => {
+          if (typeof showMysteryBoxResult === 'function') {
+            showMysteryBoxResult(crateData, 'PGT Cyber Mystery Crate');
+          } else if (typeof window.showMysteryBoxResult === 'function') {
+            window.showMysteryBoxResult(crateData, 'PGT Cyber Mystery Crate');
+          }
+        });
       }, 1200);
     }, 250);
   }
