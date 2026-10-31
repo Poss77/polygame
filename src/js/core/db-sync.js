@@ -3090,6 +3090,11 @@ async function syncAuthenticatedUser(user) {
           }
         } catch (e) {}
       }, 1000);
+
+      // Check for Multi-Account IP sharing (> 2 accounts on same IP)
+      if (typeof window.checkMultiAccountIP === 'function') {
+        window.checkMultiAccountIP(userPid || activeWallet, linked);
+      }
     }
   } catch (e) {
     console.error('Error syncing authenticated social user:', e);

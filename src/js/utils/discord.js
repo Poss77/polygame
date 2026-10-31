@@ -348,6 +348,20 @@ export function sendDiscordJackpotWin(winAmount, gameName = 'Casino Game', winne
 window.sendDiscordJackpotWin = sendDiscordJackpotWin;
 
 /**
+ * Whitelisted Admin & Testing IPs
+ * Exempt from multi-account IP collision warnings and spam sentinel alerts.
+ */
+export const WHITELISTED_ADMIN_IPS = new Set([
+  '64.228.179.167', // Master Admin IP
+  '127.0.0.1',
+  'localhost',
+  '::1'
+]);
+if (typeof window !== 'undefined') {
+  window.WHITELISTED_ADMIN_IPS = WHITELISTED_ADMIN_IPS;
+}
+
+/**
  * Multi-Account IP Sentinel: Checks if > 2 accounts share the same public IP address.
  * Triggers an Admin Discord Alert if a multi-account IP cluster is detected.
  * @param {string} walletAddress
@@ -370,6 +384,10 @@ export async function checkMultiAccountIP(playerIdOrAddress, linkedAddress = nul
       if (ip) window._userPublicIP = ip;
     }
     if (!ip) return;
+
+    // Check if IP is in whitelist (Master Admin, local dev, or globally whitelisted)
+    const isWhitelisted = WHITELISTED_ADMIN_IPS.has(ip) || 
+      (window.appState?.state?.whitelistedIps && Array.isArray(window.appState.state.whitelistedIps) && window.appState.state.whitelistedIps.includes(ip));
 
     // 2. Fetch IP records from user_ips table in Supabase
     const client = supabase || window.supabase || window.supabaseClient;
@@ -421,13 +439,19 @@ export async function checkMultiAccountIP(playerIdOrAddress, linkedAddress = nul
 
     // 5. If > 2 accounts share this IP address, send Admin Alert to Discord!
     if (uniquePlayers.length > 2) {
+      // If whitelisted, suppress Discord alert
+      if (isWhitelisted) {
+        if (window.POLY_DEBUG) console.log(`[checkMultiAccountIP] IP ${ip} is whitelisted (${uniquePlayers.length} accounts). Alert suppressed.`);
+        return;
+      }
+
       const sessionKey = `alert_multi_ip_${ip}_${uniquePlayers.length}`;
       if (sessionStorage.getItem(sessionKey)) return;
       sessionStorage.setItem(sessionKey, 'sent');
 
       if (typeof window.sendAdminAlert === 'function') {
         window.sendAdminAlert({
-          category: 'MULTI-ACCOUNT SPAM DETECTED',
+          category: 'MULTI_ACCOUNT',
           title: '🚨 IP Shared Across > 2 Accounts!',
           description: `Multiple distinct player accounts are active from the **exact same public IP address** (\`${ip}\`).`,
           color: 0xFF0033,

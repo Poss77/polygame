@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Multi-Account IP Sentinel Fix, Edge Relay Category Normalization & Master Admin IP Whitelisting (`v1.5.774`)**:
+  - **🛡️ Master Admin IP Whitelist ([`src/js/utils/discord.js`](src/js/utils/discord.js))**:
+    - Whitelisted admin IP `64.228.179.167` alongside local testing loopbacks (`127.0.0.1`, `localhost`, `::1`) in `WHITELISTED_ADMIN_IPS`.
+    - `checkMultiAccountIP()` now bypasses Discord alerts for whitelisted IPs, completely eliminating false-positive multi-account spam notifications triggered when the admin switches between primary, test, and alternate accounts.
+  - **🔗 Discord Relay Edge Function Category Normalization ([`supabase/functions/discord-relay/index.ts`](supabase/functions/discord-relay/index.ts))**:
+    - Fixed a category mismatch where `category: 'MULTI-ACCOUNT SPAM DETECTED'` was rejected with HTTP 403 because the serverless relay strictly checked underscore-delimited categories (`'MULTI_ACCOUNT'`).
+    - Added hyphen-to-underscore normalization (`normalizedCategory = cleanCategory.replace(/-/g, '_')`) and added `'MULTI-ACCOUNT'` to `WHITELISTED_SYSTEM_CATEGORIES`.
+    - Deployed updated serverless Edge Function `discord-relay` (v7) to Supabase.
+  - **🔄 Universal IP Sentinel Trigger on Google & Email Logins ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Integrated `checkMultiAccountIP(userPid || activeWallet, linked)` into `syncAuthenticatedUser()`.
+    - Previously, IP collision checks were only invoked on Web3 wallet connections (`syncProfileWithDb`), leaving Google and email-authenticated sessions unmonitored. All authenticated sessions are now checked.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.774"` and synced cache busters.
+
 - **Cyber Wordle Mobile Responsiveness & Touch Latency Optimization (`v1.5.773`)**:
   - **⚡ Zero-Delay Virtual Keyboard Input ([`src/js/features/wordle.js`](src/js/features/wordle.js), [`src/css/features/games.css`](src/css/features/games.css))**:
     - Eliminated mobile browsers' 300ms double-tap delay by enforcing `touch-action: manipulation;` and implementing direct `pointerdown` event listeners via `bindFastKey()`.
