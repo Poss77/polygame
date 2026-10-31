@@ -1536,7 +1536,7 @@
 
 
 
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.774">
+  <link rel="stylesheet" href="src/css/main.css?v=1.5.775">
 
 
 
@@ -2450,6 +2450,29 @@ twq('config','ri5fg');
 
 
 
+
+              <!-- 7-Day Quest Streak & Special Wheel Stepper -->
+              <div id="quest-streak-container" style="background: linear-gradient(135deg, rgba(130, 71, 229, 0.15), rgba(0, 240, 255, 0.08)); border: 1px solid rgba(130, 71, 229, 0.4); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                  <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <span style="font-size: 1.3rem;">🔥</span>
+                    <div>
+                      <strong style="color: #fff; font-size: 0.95rem;">7-Day Quest Streak</strong>
+                      <div style="font-size: 0.75rem; color: var(--text-dim);" id="quest-streak-subtext">Complete daily quests 7 days in a row to earn a Special Wheel Spin!</div>
+                    </div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="background: rgba(255, 170, 0, 0.2); color: #ffaa00; border: 1px solid rgba(255, 170, 0, 0.5); font-size: 0.8rem; font-weight: 800; padding: 0.25rem 0.65rem; border-radius: 20px; letter-spacing: 0.5px;" id="quest-streak-badge">Streak: 0 Days</span>
+                    <button class="btn-primary" id="btn-open-streak-wheel" onclick="openStreakWheelModal()" style="display: none; background: linear-gradient(135deg, #ff007a, #7928ca); color: #fff; font-weight: 900; font-size: 0.82rem; padding: 0.4rem 0.9rem; border: 1px solid #ff66b2; border-radius: 8px; box-shadow: 0 0 15px rgba(255, 0, 122, 0.6); text-transform: uppercase; cursor: pointer;">
+                      🎡 Spin Special Wheel!
+                    </button>
+                  </div>
+                </div>
+                <!-- 7 Stepper Nodes -->
+                <div id="quest-streak-stepper" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.4rem;">
+                  <!-- Injected via renderDailyQuestsUI() -->
+                </div>
+              </div>
 
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
 
@@ -19528,6 +19551,49 @@ twq('config','ri5fg');
 
 
 
+  <!-- 7-Day Quest Streak Special Wheel Modal -->
+  <div class="modal-overlay" id="modal-streak-wheel" style="display: none; pointer-events: none; z-index: 10000000;">
+    <div class="modal-card" style="max-width: 440px; text-align: center; background: radial-gradient(circle at center, #160a2b 0%, #06020c 100%); border: 1px solid #ff007a; box-shadow: 0 0 35px rgba(255,0,122,0.4); border-radius: 16px; padding: 1.5rem; position: relative;">
+      <button class="modal-close-btn" onclick="closeModal('streak-wheel')">&times;</button>
+      
+      <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+        <span style="font-size: 1.5rem;">🎡</span>
+        <h3 style="color: #fff; margin: 0; font-size: 1.25rem; font-weight: 900; background: linear-gradient(135deg, #ff007a, #00f0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">7-Day Streak Special Wheel</h3>
+      </div>
+      <p style="color: var(--text-dim); font-size: 0.8rem; margin: 0 0 1rem 0;">
+        You completed 7 consecutive days of Daily Quests! Spin to claim your exclusive milestone reward!
+      </p>
+
+      <!-- Wheel Visual Container -->
+      <div style="position: relative; width: 340px; height: 340px; margin: 0 auto 1.25rem auto;">
+        <!-- Top Pointer Needle -->
+        <div style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 14px solid transparent; border-right: 14px solid transparent; border-top: 24px solid #ff007a; filter: drop-shadow(0 0 8px #ff007a); z-index: 10;"></div>
+        <canvas id="streak-wheel-canvas" width="340" height="340" style="width: 100%; height: 100%; border-radius: 50%; box-shadow: 0 0 25px rgba(121, 40, 202, 0.5), inset 0 0 15px rgba(0, 0, 0, 0.8); transition: transform 6s cubic-bezier(0.15, 0.95, 0.35, 1);"></canvas>
+        <!-- Center Hub with Crown -->
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 56px; height: 56px; background: radial-gradient(circle, #2d124d, #0d0417); border: 3px solid #ff007a; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; box-shadow: 0 0 12px rgba(255, 0, 122, 0.6); pointer-events: none;">
+          👑
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div id="streak-wheel-action-section">
+        <button id="btn-spin-streak-wheel" class="btn-primary" onclick="spinStreakWheelAction()" style="width: 100%; padding: 0.85rem; font-size: 1rem; font-weight: 900; background: linear-gradient(135deg, #ff007a 0%, #7928ca 100%); color: #fff; border: 1px solid #ff66b2; border-radius: 10px; cursor: pointer; box-shadow: 0 0 20px rgba(255,0,122,0.6); text-transform: uppercase; letter-spacing: 1px;">
+          ⚡ SPIN THE WHEEL!
+        </button>
+      </div>
+
+      <!-- Result Reveal Display -->
+      <div id="streak-wheel-result-section" style="display: none; padding: 0.5rem 0;">
+        <div id="streak-wheel-result-icon" style="font-size: 2.8rem; margin-bottom: 0.25rem;">🎉</div>
+        <h4 id="streak-wheel-result-title" style="margin: 0 0 0.4rem 0; font-size: 1.15rem; color: #00f0ff; font-weight: 900;"></h4>
+        <p id="streak-wheel-result-desc" style="margin: 0 0 1rem 0; font-size: 0.85rem; color: #cbd5e1;"></p>
+        <button id="btn-streak-wheel-claim-close" class="btn-primary" onclick="closeStreakWheelResult()" style="width: 100%; padding: 0.75rem; font-size: 0.95rem; font-weight: 800; background: linear-gradient(135deg, #00ff88, #00cc66); color: #02200f; border: none; border-radius: 8px; cursor: pointer;">
+          Awesome! Collect Reward
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Mystery Crate Unboxing Modal -->
 
 
@@ -20212,47 +20278,47 @@ twq('config','ri5fg');
 
 
 
-  <script src="game.js?v=1.5.774"></script>
+  <script src="game.js?v=1.5.775"></script>
 
 
 
-  <script src="invaders.js?v=1.5.774"></script>
+  <script src="invaders.js?v=1.5.775"></script>
 
 
 
-  <script src="drift.js?v=1.5.774"></script>
+  <script src="drift.js?v=1.5.775"></script>
 
 
 
-  <script src="stacker.js?v=1.5.774"></script>
+  <script src="stacker.js?v=1.5.775"></script>
 
 
 
-  <script src="space.js?v=1.5.774"></script>
+  <script src="space.js?v=1.5.775"></script>
 
 
 
-  <script type="module" src="skeet.js?v=1.5.774"></script>
+  <script type="module" src="skeet.js?v=1.5.775"></script>
 
 
 
-  <script type="module" src="defense.js?v=1.5.774"></script>
+  <script type="module" src="defense.js?v=1.5.775"></script>
 
 
 
-  <script type="module" src="runner.js?v=1.5.774"></script>
+  <script type="module" src="runner.js?v=1.5.775"></script>
 
 
 
-  <script type="module" src="q2048.js?v=1.5.774"></script>
+  <script type="module" src="q2048.js?v=1.5.775"></script>
 
 
 
-  <script src="tetris.js?v=1.5.774"></script>
+  <script src="tetris.js?v=1.5.775"></script>
 
 
 
-  <script type="module" src="src/js/app.js?v=1.5.774"></script>
+  <script type="module" src="src/js/app.js?v=1.5.775"></script>
 
 
 

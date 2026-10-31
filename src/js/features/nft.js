@@ -1361,7 +1361,8 @@ export async function buyPolMysteryBox() {
   }
 }
 
-function showMysteryBoxResult(data, crateType = 'PGT Cyber Mystery Crate') {
+export function showMysteryBoxResult(data, crateType = 'PGT Cyber Mystery Crate') {
+  window.showMysteryBoxResult = showMysteryBoxResult;
   const animContainer = document.getElementById('mystery-box-anim-container');
   const resultContent = document.getElementById('mystery-box-result-content');
   const icon = document.getElementById('mystery-reward-icon');

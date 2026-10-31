@@ -5,6 +5,36 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **7-Day Quest Streak Progression & Special Spin Wheel Milestone (`v1.5.775`)**:
+  - **🔥 7-Day Quest Streak Stepper & UI ([`index.html`](index.html), [`src/js/features/quests.js`](src/js/features/quests.js))**:
+    - Added high-tech cyber streak header container (`#quest-streak-container`) with live streak badge (`Streak: X / 7 Days`) and interactive 7-day milestone stepper nodes.
+    - Each node visually reflects daily completion status (checkmarks for completed days, cyan highlight for the current day, and a glowing neon milestone box for Day 7).
+    - Upon reaching Day 7, unlocks a prominent `🎡 Spin Special Wheel!` launch button.
+  - **🎡 Special Streak Wheel Modal & Custom Angular Slices ([`index.html`](index.html), [`src/js/features/quests.js`](src/js/features/quests.js))**:
+    - Built interactive HTML5 Canvas wheel modal with 8 non-uniform slices totaling $360^\circ$:
+      - `10,000 PGT`: **$12^\circ$ narrow golden sliver** (0.20% rare jackpot) with glowing gold gradient and crown icon.
+      - `500 PGT`: $36^\circ$ violet slice (6.00%).
+      - `200 PGT`: $50^\circ$ cyan slice (20.00%).
+      - `150 PGT`: $54^\circ$ emerald slice (30.00%).
+      - `100 PGT`: $58^\circ$ royal blue slice (30.00%).
+      - `PGT Cyber Mystery Crate`: $45^\circ$ neon pink slice (5.00%) delivering instant unboxing of 200–1,500 PGT or rare Utility Core NFTs.
+      - `Minerals Cache`: $55^\circ$ purple slice (6.00%) crediting +20,000 Titanium and +5,000 Quantum Shards directly to PolySpace cargo.
+      - `+3 Days Silver VIP`: $50^\circ$ amber slice (2.80%) extending or granting Silver VIP with standard 1.5x arcade multiplier and reduced faucet cooldowns.
+    - Expected value ($EV$) calibrated to ~200 PGT.
+    - Pointer needle aligned at top ($270^\circ$) with 6-second cubic-bezier smooth easing and precise slice-center landing calculations.
+  - **📦 PGT Cyber Mystery Crate Modal Integration ([`src/js/features/nft.js`](src/js/features/nft.js), [`src/js/features/quests.js`](src/js/features/quests.js))**:
+    - Reused existing Cyber Mystery Crate artwork and unboxing dialog (`window.showMysteryBoxResult`). Winning a crate seamlessly transitions the player into the quantum crate unboxing experience with audio fanfare.
+  - **🛡️ Server-Authoritative Anti-Cheat RPC ([`supabase/rpcs/10_quests_progression.sql`](supabase/rpcs/10_quests_progression.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Implemented atomic `SECURITY DEFINER` RPC `spin_streak_wheel(p_wallet TEXT)`:
+      - Validates caller authentication via `assert_caller_player_id` to prevent framing.
+      - Enforces server-side 7-day streak requirement (`streak_wheel_available` or `streak_days >= 7`).
+      - Immediately consumes availability and resets `streak_days = max(0, streak_days - 7)` in the same transaction to guarantee zero double-spins or replay exploits.
+      - Generates outcomes using PostgreSQL CSPRNG (`random() * 1000`).
+      - Atomically updates `balance_pgt`, `space_state`, `vip_until`, and `daily_quests`.
+    - Standalone migration provided in [`supabase/add_7day_quest_streak_wheel.sql`](supabase/add_7day_quest_streak_wheel.sql).
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.775"` and synchronized cache busters across all game scripts and stylesheets.
+
 - **Multi-Account IP Sentinel Fix, Edge Relay Category Normalization & Master Admin IP Whitelisting (`v1.5.774`)**:
   - **🛡️ Master Admin IP Whitelist ([`src/js/utils/discord.js`](src/js/utils/discord.js))**:
     - Whitelisted admin IP `64.228.179.167` alongside local testing loopbacks (`127.0.0.1`, `localhost`, `::1`) in `WHITELISTED_ADMIN_IPS`.
