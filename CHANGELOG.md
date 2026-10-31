@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Sudoku: Safe Highlight Mode for Filled Cells & Keypad Selection (`v1.5.778`)**:
+  - **🛡️ Safe Highlight Mode ([`src/js/features/sudoku.js`](src/js/features/sudoku.js))**:
+    - When selecting an already filled cell (clue or player-entered) or having no cell selected, clicking/typing a number (1-9) now safely highlights all instances of that number across the 9x9 board instead of attempting to overwrite and causing an accidental conflict mistake.
+    - Preserved intentional cell modifications: players can easily change an existing number by pressing `Erase` (or `Backspace`/`Delete`) first, then entering the new digit.
+    - When selecting an empty cell, typing or clicking digits continues to place the number (or toggle pencil notes in Notes mode) with real-time conflict checking.
+  - **🎨 Visual Keypad Active State ([`src/css/features/games.css`](src/css/features/games.css), [`src/js/features/sudoku.js`](src/js/features/sudoku.js))**:
+    - Added glowing amber `.active` outline to the matching number button on the keypad (`#sudoku-key-1` through `#sudoku-key-9`), matching the `.same-num` board highlight.
+    - Synced keypad active state across cell clicks, keypad taps, undo moves, hints, and resets.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.778"` and synchronized all cache busters.
+
 - **Deep Timer Decoupling & Elimination of Forced Reflow Lag Spikes (`v1.5.777`)**:
   - **⚡ Full Non-Blocking Timer Handlers ([`src/js/features/quests.js`](src/js/features/quests.js), [`src/js/features/nft.js`](src/js/features/nft.js))**:
     - Replaced synchronous `handleStreakWheelLanding` invocation within `setTimeout` with non-blocking `requestAnimationFrame` scheduling, reducing callback duration to $\approx 0.05\text{ms}$.

@@ -16,6 +16,7 @@ let cluesMask = ''; // 81 chars ('0'-'9')
 let playerBoard = new Array(81).fill(0);
 let notesBoard = Array.from({ length: 81 }, () => new Set());
 let selectedCellIndex = null;
+let activeHighlightedNumber = null;
 let isNotesMode = false;
 let mistakes = 0;
 let timerSeconds = 0;
@@ -275,6 +276,7 @@ export async function startDailySudokuGame(difficulty) {
     isGameCompleted = false;
     moveHistory = [];
     selectedCellIndex = null;
+    activeHighlightedNumber = null;
     isNotesMode = false;
 
     // Initialize player board from clues
@@ -352,38 +354,56 @@ function renderSudokuGrid() {
 function selectSudokuCell(index) {
   if (isGameCompleted) return;
   selectedCellIndex = index;
+  if (playerBoard[index] > 0) {
+    activeHighlightedNumber = playerBoard[index];
+  } else {
+    activeHighlightedNumber = null;
+  }
   highlightRelatedCells();
 }
 
 function highlightRelatedCells() {
+  const targetNum = activeHighlightedNumber || (selectedCellIndex !== null && playerBoard[selectedCellIndex] > 0 ? playerBoard[selectedCellIndex] : null);
+
   for (let i = 0; i < 81; i++) {
     const cell = document.getElementById(`sudoku-cell-${i}`);
     if (!cell) continue;
 
     cell.classList.remove('selected', 'crosshair', 'same-num');
 
-    if (selectedCellIndex === null) continue;
+    if (selectedCellIndex !== null) {
+      const selRow = Math.floor(selectedCellIndex / 9);
+      const selCol = selectedCellIndex % 9;
+      const selBoxRow = Math.floor(selRow / 3) * 3;
+      const selBoxCol = Math.floor(selCol / 3) * 3;
 
-    const selRow = Math.floor(selectedCellIndex / 9);
-    const selCol = selectedCellIndex % 9;
-    const selBoxRow = Math.floor(selRow / 3) * 3;
-    const selBoxCol = Math.floor(selCol / 3) * 3;
+      const curRow = Math.floor(i / 9);
+      const curCol = i % 9;
+      const curBoxRow = Math.floor(curRow / 3) * 3;
+      const curBoxCol = Math.floor(curCol / 3) * 3;
 
-    const curRow = Math.floor(i / 9);
-    const curCol = i % 9;
-    const curBoxRow = Math.floor(curRow / 3) * 3;
-    const curBoxCol = Math.floor(curCol / 3) * 3;
-
-    if (i === selectedCellIndex) {
-      cell.classList.add('selected');
-    } else if (curRow === selRow || curCol === selCol || (curBoxRow === selBoxRow && curBoxCol === selBoxCol)) {
-      cell.classList.add('crosshair');
+      if (i === selectedCellIndex) {
+        cell.classList.add('selected');
+      } else if (curRow === selRow || curCol === selCol || (curBoxRow === selBoxRow && curBoxCol === selBoxCol)) {
+        cell.classList.add('crosshair');
+      }
     }
 
     // Highlight cells with identical number
-    const selVal = playerBoard[selectedCellIndex];
-    if (selVal > 0 && playerBoard[i] === selVal) {
+    if (targetNum > 0 && playerBoard[i] === targetNum) {
       cell.classList.add('same-num');
+    }
+  }
+
+  // Highlight active number button in keypad
+  for (let d = 1; d <= 9; d++) {
+    const keyBtn = document.getElementById(`sudoku-key-${d}`);
+    if (keyBtn) {
+      if (targetNum === d) {
+        keyBtn.classList.add('active');
+      } else {
+        keyBtn.classList.remove('active');
+      }
     }
   }
 }
@@ -392,13 +412,32 @@ function highlightRelatedCells() {
  * Inputs a number (1-9) into the currently selected cell
  */
 export function inputSudokuNumber(num) {
-  if (isGameCompleted || selectedCellIndex === null) return;
+  if (isGameCompleted) return;
 
-  // Cannot modify pre-filled clues
-  if (cluesMask[selectedCellIndex] !== '0' && cluesMask[selectedCellIndex] !== '.' && cluesMask[selectedCellIndex] !== undefined) {
+  // Case 1: No cell selected -> toggle or select number highlight across the board
+  if (selectedCellIndex === null) {
+    activeHighlightedNumber = (activeHighlightedNumber === num) ? null : num;
+    highlightRelatedCells();
+    if (sfx && typeof sfx.playSelect === 'function') sfx.playSelect();
     return;
   }
 
+  // Check if current cell is already filled (clue or player entered)
+  const isClue = (cluesMask[selectedCellIndex] !== '0' && cluesMask[selectedCellIndex] !== '.' && cluesMask[selectedCellIndex] !== undefined);
+  const isFilled = isClue || (playerBoard[selectedCellIndex] > 0);
+
+  // Case 2: Cell is already filled -> Safe Highlight Mode (Option 1)
+  // Instead of attempting to overwrite and causing accidental mistakes,
+  // highlight this number across the board just like tapping a cell with that number.
+  // To change a number, the player uses Erase (or Backspace/Delete) first.
+  if (isFilled) {
+    activeHighlightedNumber = num;
+    highlightRelatedCells();
+    if (sfx && typeof sfx.playSelect === 'function') sfx.playSelect();
+    return;
+  }
+
+  // Case 3: Cell is empty -> enter note or place number
   if (isNotesMode) {
     // Toggle pencil note
     const notes = notesBoard[selectedCellIndex];
@@ -440,11 +479,13 @@ export function inputSudokuNumber(num) {
   });
 
   playerBoard[selectedCellIndex] = num;
+  activeHighlightedNumber = num;
   notesBoard[selectedCellIndex].clear(); // Clear notes upon commit
 
   if (sfx && typeof sfx.playSelect === 'function') sfx.playSelect();
 
   renderSudokuGrid();
+  updateSudokuKeypadCounters();
   saveLocalDraft();
 
   // Check if puzzle is fully solved (all 81 cells non-zero)
@@ -501,9 +542,11 @@ export function eraseSudokuCell() {
   });
 
   playerBoard[selectedCellIndex] = 0;
+  activeHighlightedNumber = null;
   notesBoard[selectedCellIndex].clear();
 
   renderSudokuGrid();
+  updateSudokuKeypadCounters();
   saveLocalDraft();
 }
 
@@ -517,8 +560,10 @@ export function undoSudokuMove() {
   playerBoard[lastMove.index] = lastMove.prevVal;
   notesBoard[lastMove.index] = new Set(lastMove.prevNotes);
   selectedCellIndex = lastMove.index;
+  activeHighlightedNumber = playerBoard[lastMove.index] > 0 ? playerBoard[lastMove.index] : null;
 
   renderSudokuGrid();
+  updateSudokuKeypadCounters();
   saveLocalDraft();
 }
 
@@ -774,6 +819,7 @@ export function restartSudokuPuzzle() {
   notesBoard = Array.from({ length: 81 }, () => new Set());
   moveHistory = [];
   selectedCellIndex = null;
+  activeHighlightedNumber = null;
   for (let i = 0; i < 81; i++) {
     const char = cluesMask[i] || '0';
     if (char !== '0' && char !== '.') {
@@ -911,6 +957,8 @@ export function updateSudokuKeypadCounters() {
     if (val >= 1 && val <= 9) counts[val]++;
   }
 
+  const targetNum = activeHighlightedNumber || (selectedCellIndex !== null && playerBoard[selectedCellIndex] > 0 ? playerBoard[selectedCellIndex] : null);
+
   for (let d = 1; d <= 9; d++) {
     const keyBtn = document.getElementById(`sudoku-key-${d}`);
     if (keyBtn) {
@@ -921,6 +969,11 @@ export function updateSudokuKeypadCounters() {
       } else {
         keyBtn.classList.remove('completed');
         keyBtn.innerHTML = `<span>${d}</span><span class="sudoku-key-badge">${remaining}</span>`;
+      }
+      if (targetNum === d) {
+        keyBtn.classList.add('active');
+      } else {
+        keyBtn.classList.remove('active');
       }
     }
   }
@@ -1003,11 +1056,12 @@ export function useSudokuHint() {
   playerBoard[targetIdx] = correctDigit;
   notesBoard[targetIdx].clear();
   selectedCellIndex = targetIdx;
+  activeHighlightedNumber = correctDigit;
   hintsRemaining--;
 
   updateSudokuHud();
   renderSudokuGrid();
-  highlightRelatedCells();
+  updateSudokuKeypadCounters();
   saveLocalDraft();
 
   const cellEl = document.getElementById(`sudoku-cell-${targetIdx}`);

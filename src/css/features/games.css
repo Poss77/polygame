@@ -2573,6 +2573,13 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
   background: rgba(0, 230, 118, 0.08);
 }
 
+.sudoku-key.active {
+  border-color: #ffaa00 !important;
+  background: rgba(255, 170, 0, 0.22) !important;
+  box-shadow: 0 0 10px rgba(255, 170, 0, 0.45);
+  color: #ffaa00 !important;
+}
+
 .sudoku-key:active {
   transform: scale(0.92);
   background: var(--color-primary);
