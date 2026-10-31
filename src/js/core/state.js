@@ -309,11 +309,11 @@ export class PolyState {
     }
 
     this._dbSaveTimer = setTimeout(async () => {
-      this._executeSaveToDB();
+      this._executeSaveToDB(false);
     }, 2000); // 2 second batching window
   }
 
-  async _executeSaveToDB() {
+  async _executeSaveToDB(forceImmediate = false) {
     if (!this.isPlayerConnected() || !supabase || this.isSyncingWithDB) return;
     if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) {
       return;
@@ -342,9 +342,7 @@ export class PolyState {
         total_staking_yield: this.state.totalStakingYield || 0.0,
         // NOTE: Daily quests claim status and progression are strictly server-authoritative
         // and managed via claim_daily_quest RPC. Omitted from saveToDB to prevent client tampering.
-        app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.016',
-        last_active_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.016'
       };
 
       // Persist activities array to DB
@@ -446,6 +444,22 @@ export class PolyState {
         if (window.POLY_DEBUG) console.log("[saveToDB] Skipping direct table write: No active Supabase Auth session.");
         return;
       }
+
+      // Log Ingestion Optimization: Deduplicate routine background saves.
+      // If payload is identical to last saved state and heartbeat interval has not elapsed, skip network request.
+      const now = Date.now();
+      const payloadSignature = JSON.stringify(dbPayload);
+      const isHeartbeatDue = !this._lastSavedTimestamp || (now - this._lastSavedTimestamp > 10 * 60 * 1000);
+      if (!forceImmediate && this._lastSavedPayloadSignature === payloadSignature && !isHeartbeatDue) {
+        return; // Zero delta; redundant network PATCH skipped
+      }
+
+      dbPayload.updated_at = new Date().toISOString();
+      if (isHeartbeatDue) {
+        dbPayload.last_active_at = new Date().toISOString();
+      }
+      this._lastSavedPayloadSignature = payloadSignature;
+      this._lastSavedTimestamp = now;
 
       let saveRes;
       if (canonicalId) {

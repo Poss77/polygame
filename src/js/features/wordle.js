@@ -234,7 +234,7 @@ async function submitCurrentGuess() {
       showPostgameCard(true, pgtWonToday, targetWordRevealed);
       if (triggerToast) triggerToast(`🎉 Decrypted in ${currentRow + 1} ${currentRow === 0 ? 'try' : 'tries'}! +${pgtWonToday} PGT won!`, 'success');
       if (typeof window.trackQuestProgress === 'function') window.trackQuestProgress('games', 1);
-      refreshDailyGamesHubStatus();
+      refreshDailyGamesHubStatus(true);
 
     } else if (res.failed || res.guesses_count >= 6) {
       // Defeat!
@@ -244,7 +244,7 @@ async function submitCurrentGuess() {
       targetWordRevealed = res.target_word || '';
       showPostgameCard(false, 0, targetWordRevealed);
       if (triggerToast) triggerToast(`Cipher lock engaged. Secret was: ${targetWordRevealed}`, 'error');
-      refreshDailyGamesHubStatus();
+      refreshDailyGamesHubStatus(true);
 
     } else {
       // Advance to next row

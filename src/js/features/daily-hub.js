@@ -44,10 +44,19 @@ export function startDailyHubCountdown() {
   countdownInterval = setInterval(updateTimer, 1000);
 }
 
+let lastHubFetchTime = 0;
+const DAILY_HUB_CACHE_TTL_MS = 3 * 60 * 1000; // 3-minute client TTL to reduce Supabase edge log ingestion
+
+export function invalidateDailyHubCache() {
+  cachedHubStatus = null;
+  lastHubFetchTime = 0;
+}
+window.invalidateDailyHubCache = invalidateDailyHubCache;
+
 /**
  * Fetches authoritatively from Supabase and updates all hub dashboard badges
  */
-export async function refreshDailyGamesHubStatus() {
+export async function refreshDailyGamesHubStatus(forceRefresh = false) {
   startDailyHubCountdown();
 
   const isConn = (appState && typeof appState.isPlayerConnected === 'function') ? appState.isPlayerConnected() : false;
@@ -64,6 +73,12 @@ export async function refreshDailyGamesHubStatus() {
     return;
   }
 
+  const now = Date.now();
+  if (!forceRefresh && cachedHubStatus && (now - lastHubFetchTime < DAILY_HUB_CACHE_TTL_MS)) {
+    updateHubUIFromStatus(cachedHubStatus);
+    return cachedHubStatus;
+  }
+
   try {
     const { data: res, error } = await executeAuthenticatedRpc('get_daily_games_hub_status', {
       p_player_id: pid
@@ -75,6 +90,7 @@ export async function refreshDailyGamesHubStatus() {
     }
 
     cachedHubStatus = res;
+    lastHubFetchTime = now;
     updateHubUIFromStatus(res);
   } catch (err) {
     console.warn('[DailyHub] Exception during status sync:', err);

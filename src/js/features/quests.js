@@ -68,6 +68,7 @@ window.getQuestWalletAddress = getQuestWalletAddress;
 
 let _syncDebounceTimer = null;
 let _isSyncing = false;
+let _lastSyncedQuestsSignature = null;
 
 export async function syncDailyQuests(forceImmediate = false) {
   if (!appState.isPlayerConnected() || !supabase) return null;
@@ -85,6 +86,10 @@ export async function syncDailyQuests(forceImmediate = false) {
     _isSyncing = true;
     try {
       const q = getUserQuests();
+      const currentSignature = JSON.stringify(q);
+      if (!forceImmediate && _lastSyncedQuestsSignature === currentSignature) {
+        return null; // Skip redundant network RPC when quest values are unchanged
+      }
       const wallet = getQuestWalletAddress();
       if (!wallet) return null;
 
@@ -106,6 +111,7 @@ export async function syncDailyQuests(forceImmediate = false) {
         if (!synced.last_streak_date && q.last_streak_date) synced.last_streak_date = q.last_streak_date;
 
         appState.state.dailyQuests = synced;
+        _lastSyncedQuestsSignature = JSON.stringify(synced);
         try {
           localStorage.setItem('polygame_daily_quests', JSON.stringify(synced));
         } catch (e) {}

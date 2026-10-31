@@ -599,7 +599,7 @@ async function submitSudokuSolution() {
     if (triggerToast) triggerToast(`🎉 Cyber Sudoku Solved in ${formatTime(timerSeconds)}! +${pgtWon} PGT won!${flawlessBonusText}`, 'success');
     if (typeof window.trackQuestProgress === 'function') window.trackQuestProgress('games', 1);
 
-    refreshDailyGamesHubStatus();
+    refreshDailyGamesHubStatus(true);
 
   } catch (err) {
     console.error('[Sudoku] Solution submission exception:', err);

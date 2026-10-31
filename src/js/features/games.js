@@ -648,11 +648,11 @@ export function checkIsCurrentUser(player) {
 // 90-second client cache for Grand Prix podium & weekly standings
 let cachedGrandPrixTop3 = null;
 let lastGrandPrixFetchTime = 0;
-const GRAND_PRIX_CACHE_TTL_MS = 90 * 1000;
+const GRAND_PRIX_CACHE_TTL_MS = 5 * 60 * 1000; // 5-minute TTL to reduce Supabase edge log ingestion
 
 let cachedStandingGameResults = null;
 let lastStandingFetchTime = 0;
-const STANDING_CACHE_TTL_MS = 90 * 1000;
+const STANDING_CACHE_TTL_MS = 5 * 60 * 1000; // 5-minute TTL to reduce Supabase edge log ingestion
 
 export function invalidateGrandPrixCache() {
   cachedGrandPrixTop3 = null;

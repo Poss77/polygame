@@ -862,10 +862,6 @@ export function switchTab(tabId, subcategory = null) {
 
 
 
-    if (typeof syncDailyQuests === 'function') syncDailyQuests();
-
-
-
     syncProfileView();
 
 
@@ -988,10 +984,6 @@ export function switchTab(tabId, subcategory = null) {
 
 
 
-    if (typeof syncDailyQuests === 'function') syncDailyQuests();
-
-
-
     if (typeof renderDailyQuestsUI === 'function') renderDailyQuestsUI();
 
 
@@ -1010,33 +1002,7 @@ export function switchTab(tabId, subcategory = null) {
       window.switchGameCategory(subcategory);
     }
 
-    if (typeof syncDailyQuests === 'function') syncDailyQuests();
-
-
-
     if (typeof renderDailyQuestsUI === 'function') renderDailyQuestsUI();
-
-
-
-    loadAstroDodgeLeaderboard();
-
-
-
-    loadInvadersLeaderboard();
-
-
-
-    loadWeeklyWinsLeaderboard();
-
-
-
-    if (typeof window.loadSkeetLeaderboard === 'function') window.loadSkeetLeaderboard();
-
-
-
-    if (typeof window.loadDefenseLeaderboard === 'function') window.loadDefenseLeaderboard();
-
-
 
     if (typeof window.loadTopWeeklyArcadePlayers === 'function') window.loadTopWeeklyArcadePlayers();
 

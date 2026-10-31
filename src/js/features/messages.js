@@ -68,6 +68,14 @@ export function updateUnreadMessageBadge(unreadCount = 0) {
 /**
  * Fetches player messages and unread count from Supabase
  */
+let lastMessagesFetchTime = 0;
+const MESSAGES_CACHE_TTL_MS = 3 * 60 * 1000; // 3-minute client TTL to reduce Supabase edge log ingestion
+
+export function invalidatePlayerMessagesCache() {
+  lastMessagesFetchTime = 0;
+}
+window.invalidatePlayerMessagesCache = invalidatePlayerMessagesCache;
+
 export async function loadPlayerMessages(forceRefresh = false) {
   if (!supabase) return { success: false, messages: [], unread_count: 0 };
 
@@ -87,6 +95,11 @@ export async function loadPlayerMessages(forceRefresh = false) {
     return { success: true, messages: appState.state.playerMessages || [], unread_count: appState.state.unreadMessageCount || 0 };
   }
 
+  const now = Date.now();
+  if (!forceRefresh && lastMessagesFetchTime && (now - lastMessagesFetchTime < MESSAGES_CACHE_TTL_MS)) {
+    return { success: true, messages: appState.state.playerMessages || [], unread_count: appState.state.unreadMessageCount || 0 };
+  }
+
   isFetchingMessages = true;
   try {
     const { data, error } = await executeAuthenticatedRpc('get_player_messages', {
@@ -102,6 +115,7 @@ export async function loadPlayerMessages(forceRefresh = false) {
       const messages = Array.isArray(data.messages) ? data.messages : [];
       const unreadCount = parseInt(data.unread_count || 0, 10);
 
+      lastMessagesFetchTime = now;
       appState.update({
         playerMessages: messages,
         unreadMessageCount: unreadCount
