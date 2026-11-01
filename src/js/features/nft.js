@@ -1,4 +1,4 @@
-import { realSigner, NFT_CONTRACT_ADDRESS, supabase } from '../core/config.js';
+import { realSigner, setRealSigner, setWeb3Provider, NFT_CONTRACT_ADDRESS, supabase } from '../core/config.js';
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { triggerToast, openModal, closeModal } from '../core/ui.js';
@@ -961,7 +961,6 @@ export function promptSilverToGoldConversion(passType) {
 window.promptSilverToGoldConversion = promptSilverToGoldConversion;
 
 export async function activateVipPass(passType) {
-  if (!appState.state.walletConnected) return;
 
   let isConvertingSilverToGold = false;
 
@@ -984,7 +983,7 @@ export async function activateVipPass(passType) {
     }
   }
 
-  const address = appState.getActiveWeb3Address() || appState.state.walletAddress;
+  const address = (appState.getActiveWeb3Address() || appState.state.linkedWalletAddress || appState.state.walletAddress || "").toLowerCase();
   
   try {
     // 1. Check for In-Game (Off-Chain) Pass first (saves gas!)
@@ -997,11 +996,35 @@ export async function activateVipPass(passType) {
       usedOffchain = true;
       triggerToast("Consuming In-Game VIP Pass...", "info");
     } else {
-      // 2. On-Chain (Wallet) Pass - Fast Multicall3 lookup
-      if (!realSigner) {
+      // 2. On-Chain (Wallet) Pass - Acquire or verify active Web3 signer
+      let activeSigner = realSigner || (typeof window !== 'undefined' ? window.realSigner : null);
+      if (!activeSigner && typeof window !== 'undefined' && window.ethereum && window.ethers) {
+        try {
+          const browserProvider = new window.ethers.BrowserProvider(window.ethereum);
+          activeSigner = await browserProvider.getSigner();
+          setRealSigner(activeSigner);
+          setWeb3Provider(browserProvider);
+          appState.update({ walletConnected: true });
+        } catch (err) {
+          console.warn("[activateVipPass] Auto-connecting window.ethereum signer notice:", err);
+        }
+      }
+
+      if (!activeSigner) {
         triggerToast("Please connect your Web3 wallet (MetaMask) to burn your VIP Pass on Polygon!", "warning");
         if (window.openModal) window.openModal('wallet');
         return;
+      }
+
+      // Verify active MetaMask address matches player's linked Polygon wallet
+      try {
+        const signerAddress = (await activeSigner.getAddress()).toLowerCase();
+        if (address && signerAddress !== address) {
+          triggerToast(`⚠️ Please switch MetaMask to your linked Polygon wallet (${address.slice(0, 6)}...${address.slice(-4)})`, "warning");
+          return;
+        }
+      } catch (signerCheckErr) {
+        console.warn("[activateVipPass] Signer address check notice:", signerCheckErr);
       }
 
       triggerToast("Locating your VIP Pass on Polygon...", "info");
@@ -1024,8 +1047,8 @@ export async function activateVipPass(passType) {
         const nftContractReadOnly = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [
           "function ownerOf(uint256 tokenId) view returns (address)",
           "function tokenURI(uint256 tokenId) view returns (string)"
-        ], realSigner);
-        for (let i = 1; i <= 250; i++) {
+        ], activeSigner);
+        for (let i = 1; i <= 350; i++) {
           try {
             const owner = await nftContractReadOnly.ownerOf(i);
             if (owner && owner.toLowerCase() === address.toLowerCase()) {
@@ -1036,7 +1059,8 @@ export async function activateVipPass(passType) {
               }
             }
           } catch (e) {
-            if (e.message && e.message.includes('nonexistent')) break;
+            // Reverted or burned token: continue to scan subsequent tokens
+            continue;
           }
         }
       }
@@ -1049,7 +1073,7 @@ export async function activateVipPass(passType) {
 
       const nftContract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, [
         "function burn(uint256 tokenId) external"
-      ], realSigner);
+      ], activeSigner);
 
       triggerToast(`Burning Polygon VIP Pass #${targetTokenId}... Confirm in MetaMask`, "info");
       const tx = await nftContract.burn(targetTokenId);
@@ -1550,24 +1574,41 @@ export async function getOwnedTokensDetailedFromChain(address) {
   const rpcList = [
     "https://polygon-bor-rpc.publicnode.com",
     "https://polygon.drpc.org",
-    "https://polygon-rpc.com",
     "https://1rpc.io/matic"
   ];
 
-  if (window.ethers && typeof window.ethers.JsonRpcProvider === 'function') {
-    for (const rpcUrl of rpcList) {
+  if (window.ethers) {
+    // Priority 0: Direct browser provider via MetaMask (avoids public RPC rate-limits and CORS)
+    if (typeof window !== 'undefined' && window.ethereum && typeof window.ethers.BrowserProvider === 'function') {
       try {
-        const p = new window.ethers.JsonRpcProvider(rpcUrl);
-        const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, ["function balanceOf(address owner) view returns (uint256)"], p);
+        const bp = new window.ethers.BrowserProvider(window.ethereum);
+        const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, ["function balanceOf(address owner) view returns (uint256)"], bp);
         const b = await contract.balanceOf(address);
         if (b !== undefined && b !== null) {
           balance = BigInt(b);
           if (balance === 0n) return [];
-          provider = p;
-          break;
+          provider = bp;
         }
-      } catch (e) {
-        continue;
+      } catch (bpErr) {
+        console.warn("[getOwnedTokensDetailedFromChain] BrowserProvider scan notice:", bpErr);
+      }
+    }
+
+    if (!provider && typeof window.ethers.JsonRpcProvider === 'function') {
+      for (const rpcUrl of rpcList) {
+        try {
+          const p = new window.ethers.JsonRpcProvider(rpcUrl);
+          const contract = new window.ethers.Contract(NFT_CONTRACT_ADDRESS, ["function balanceOf(address owner) view returns (uint256)"], p);
+          const b = await contract.balanceOf(address);
+          if (b !== undefined && b !== null) {
+            balance = BigInt(b);
+            if (balance === 0n) return [];
+            provider = p;
+            break;
+          }
+        } catch (e) {
+          continue;
+        }
       }
     }
   }

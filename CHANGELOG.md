@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Fix On-Chain VIP Pass Activation Across All Auth Modes (`v1.5.780`)**:
+  - **👑 Resolved VIP Pass Activation Silent Drop ([`src/js/features/nft.js`](src/js/features/nft.js))**:
+    - Eliminated legacy blocking `if (!appState.state.walletConnected) return;` guard that was silently dropping button clicks for Web2/Google authenticated players who have a linked Web3 wallet with on-chain passes on Polygon.
+    - Added automated Web3 signer acquisition from `window.ethereum` if `realSigner` is not yet active, and seamlessly prompts the wallet modal with an informative toast if no Web3 provider is present.
+    - Verified signer address matches the player's linked Polygon wallet before submitting transactions, preventing gas spend on mismatched accounts.
+    - Fixed fallback sequential token scanner: replaced premature `break;` on nonexistent/burned tokens with `continue;` and expanded scan ceiling to 350 tokens, ensuring tokens (e.g. #79 and #106) are reliably detected.
+    - Added direct browser provider (`window.ethereum`) priority in `getOwnedTokensDetailedFromChain` to circumvent public RPC rate-limits and CORS/adblocker restrictions.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.780"` and synchronized all cache busters.
+
 - **Elimination of Bet Game Lag Spikes in Lucky Spinner & Roshambo (`v1.5.779`)**:
   - **⚡ Decoupled Timer Resolution ([`src/js/features/spinner.js`](src/js/features/spinner.js), [`src/js/features/roshambo.js`](src/js/features/roshambo.js))**:
     - Resolved the `[LAG SPIKE DIAGNOSTIC] setTimeout handler took 97.8ms` alert triggered at `spinner.js:158` when the Lucky Spinner wheel completes its spin.
