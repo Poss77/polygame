@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber 2048: Remove Grid Vibration Movement After Moves (`v1.5.784`)**:
+  - **🧩 Stable Turn Animation ([`q2048.js`](q2048.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Removed the 14px directional shift twitch animation (`q2048-shift-up/right/down/left`) that was applied to all board tiles on every valid move.
+    - Preserved responsive tile merge pop (`.q2048-tile-merged`) and new tile appearance (`.q2048-tile-new`), delivering a smooth, crisp gameplay experience without unwanted visual vibration.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.784"` and synchronized all cache busters.
+
 - **PolySpace: Fix Pulse-Scan Anomaly Ready State Indicator (`v1.5.783`)**:
   - **🌌 Pulse-Scan Ready State ([`space.js`](space.js), [`index.html`](index.html))**:
     - Fixed the Deep-Space Anomaly button displaying `(6h Cooldown)` when the cooldown timer expired and the scan became ready to claim.

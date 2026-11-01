@@ -772,14 +772,6 @@ class Cyber2048Game {
 
     if (!this._gridEl) return;
 
-    const shiftClasses = {
-      0: 'q2048-shift-up',
-      1: 'q2048-shift-right',
-      2: 'q2048-shift-down',
-      3: 'q2048-shift-left'
-    };
-    const shiftClass = direction !== undefined ? shiftClasses[direction] : '';
-
     // Batch all 16 cells in an offscreen DocumentFragment to prevent 16 layout reflows per turn
     const fragment = document.createDocumentFragment();
 
@@ -797,8 +789,6 @@ class Cyber2048Game {
           extraClass = ' q2048-tile-merged';
         } else if (isNew) {
           extraClass = ' q2048-tile-new';
-        } else if (shiftClass && val > 0) {
-          extraClass = ` ${shiftClass}`;
         }
 
         if (isCoin) {

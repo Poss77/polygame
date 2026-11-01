@@ -1563,36 +1563,6 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
   animation: q2048-shake 0.18s ease-in-out;
 }
 
-@keyframes q2048-shift-up {
-  0% { transform: translate3d(0, 14px, 0); }
-  100% { transform: translate3d(0, 0, 0); }
-}
-@keyframes q2048-shift-right {
-  0% { transform: translate3d(-14px, 0, 0); }
-  100% { transform: translate3d(0, 0, 0); }
-}
-@keyframes q2048-shift-down {
-  0% { transform: translate3d(0, -14px, 0); }
-  100% { transform: translate3d(0, 0, 0); }
-}
-@keyframes q2048-shift-left {
-  0% { transform: translate3d(14px, 0, 0); }
-  100% { transform: translate3d(0, 0, 0); }
-}
-
-.q2048-shift-up {
-  animation: q2048-shift-up 0.09s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.q2048-shift-right {
-  animation: q2048-shift-right 0.09s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.q2048-shift-down {
-  animation: q2048-shift-down 0.09s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-.q2048-shift-left {
-  animation: q2048-shift-left 0.09s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
 .q2048-tile {
   width: 100%;
   height: 100%;
