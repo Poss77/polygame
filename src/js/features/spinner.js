@@ -158,49 +158,56 @@ export async function spinLuckyWheel() {
     setTimeout(() => {
       spinnerIsSpinning = false;
       
-      appState.update({
-        balancePgt: appState.state.balancePgt + payout
-      });
-      
-      if (serverResult.jackpot_amount) {
-        const counterEl = document.getElementById('progressive-jackpot-counter');
-        if (counterEl) counterEl.innerText = `${parseFloat(serverResult.jackpot_amount).toFixed(2)} PGT`;
-      }
-      if (window.handleServerJackpotWin) window.handleServerJackpotWin(serverResult, 'Lucky Spinner');
-
-      recordGameMetrics('Lucky Spinner', bet, payout);
-      if (multiplier > 1.0 && window.trackQuestProgress) {
-        window.trackQuestProgress('wins', 1);
-      }
-      logBetWin('Lucky Spinner', bet, payout, multiplier);
-      
-      updateSpinnerWagerLabels();
-
+      // 1. Instant Synchronous Visual & Audio Reveal (< 1ms)
       if (serverResult.jackpot_won) {
-        if (multiplier > 1.0 && window.trackQuestProgress) {
-          window.trackQuestProgress('wins', 1);
-        }
         ann.innerText = `👑 GLOBAL JACKPOT HIT! +${parseFloat(serverResult.jackpot_payout).toFixed(2)} PGT!`;
         ann.style.color = "var(--color-accent)";
-        if (multiplier > 0) {
-          appState.addActivity('You', `won spinner bet (${multiplier}x)`, `+${payout} PGT`);
-        }
       } else if (multiplier > 1.0) {
         if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
         ann.innerText = `🎉 WON! Segments aligned at ${multiplier}x multiplier. Payout +${payout} PGT!`;
         ann.style.color = "var(--color-accent)";
-        appState.addActivity('You', `won spinner bet (${multiplier}x)`, `+${payout} PGT`);
       } else if (multiplier === 0.5) {
         if (sfx && typeof sfx.playCoin === 'function') sfx.playCoin();
         ann.innerText = `⚠️ Partial return! Returned 0.5x wager (+${payout} PGT).`;
         ann.style.color = "var(--color-warning)";
-        appState.addActivity('You', `partially hit spinner bet (0.5x)`, `-${bet - payout} PGT`);
       } else {
         if (sfx && typeof sfx.playError === 'function') sfx.playError();
         ann.innerText = `❌ Segment missed! Landed on 0x. Better luck next time!`;
         ann.style.color = "var(--color-danger)";
-        appState.addActivity('You', `lost spinner bet (0x)`, `-${bet} PGT`);
       }
+
+      // 2. Defer heavy reactive state mutation, storage sync, and DOM reflow to next animation frame (< 2ms timer callback)
+      requestAnimationFrame(() => {
+        appState.update({
+          balancePgt: appState.state.balancePgt + payout
+        });
+        
+        if (serverResult.jackpot_amount) {
+          const counterEl = document.getElementById('progressive-jackpot-counter');
+          if (counterEl) counterEl.innerText = `${parseFloat(serverResult.jackpot_amount).toFixed(2)} PGT`;
+        }
+        if (window.handleServerJackpotWin) window.handleServerJackpotWin(serverResult, 'Lucky Spinner');
+
+        recordGameMetrics('Lucky Spinner', bet, payout);
+        if (multiplier > 1.0 && window.trackQuestProgress) {
+          window.trackQuestProgress('wins', 1);
+        }
+        logBetWin('Lucky Spinner', bet, payout, multiplier);
+        
+        updateSpinnerWagerLabels();
+
+        if (serverResult.jackpot_won) {
+          if (multiplier > 0) {
+            appState.addActivity('You', `won spinner bet (${multiplier}x)`, `+${payout} PGT`);
+          }
+        } else if (multiplier > 1.0) {
+          appState.addActivity('You', `won spinner bet (${multiplier}x)`, `+${payout} PGT`);
+        } else if (multiplier === 0.5) {
+          appState.addActivity('You', `partially hit spinner bet (0.5x)`, `-${bet - payout} PGT`);
+        } else {
+          appState.addActivity('You', `lost spinner bet (0x)`, `-${bet} PGT`);
+        }
+      });
     }, 4100);
 
   } catch (err) {

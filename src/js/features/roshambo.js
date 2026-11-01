@@ -169,54 +169,64 @@ export async function playRoshamboRound(playerChoice) {
 
       cpuDisp.innerText = getRoshamboIcon(cpuChoice);
 
-      if (appState && currentSt) {
-        appState.update({
-          balancePgt: currentSt.balancePgt + payout
-        });
-      }
-      updateRoshamboWagerLabels();
-
-      if (serverResult.jackpot_amount) {
-        const counterEl = document.getElementById('progressive-jackpot-counter');
-        if (counterEl) counterEl.innerText = `${parseFloat(serverResult.jackpot_amount).toFixed(2)} PGT`;
-      }
-      if (window.handleServerJackpotWin) window.handleServerJackpotWin(serverResult, 'Roshambo');
-
-      recordGameMetrics('Roshambo', bet, payout);
-
+      // Instant UI announcement and SFX (< 1ms)
       if (serverResult.jackpot_won) {
         if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
         ann.innerText = `👑 GLOBAL JACKPOT HIT! +${parseFloat(serverResult.jackpot_payout).toFixed(2)} PGT!`;
         ann.style.color = "var(--color-accent)";
-        if (result === 'win') {
-          if (appState) appState.addActivity('You', `won Roshambo round (2.0x)`, `+${payout} PGT`);
-          if (window.trackQuestProgress) window.trackQuestProgress('wins', 1);
-          logBetWin('Roshambo', bet, payout, 2.0);
-        } else {
-          logBetWin('Roshambo', bet, payout, 0);
-        }
       } else if (result === 'win') {
         if (sfx && typeof sfx.playSuccess === 'function') sfx.playSuccess();
         ann.innerText = `🎉 YOU WIN! Payout +${payout} PGT (2.0x)!`;
         ann.style.color = "var(--color-accent)";
-        if (appState) appState.addActivity('You', `won Roshambo round (2.0x)`, `+${payout} PGT`);
-        if (window.trackQuestProgress) window.trackQuestProgress('wins', 1);
-        logBetWin('Roshambo', bet, payout, 2.0);
       } else if (result === 'tie') {
         if (sfx && typeof sfx.playCoin === 'function') sfx.playCoin();
         ann.innerText = `🤝 TIE! Bet returned (+${payout} PGT).`;
         ann.style.color = "var(--color-warning)";
-        if (appState) appState.addActivity('You', `tied Roshambo round`, `+0 PGT`);
-        logBetWin('Roshambo', bet, payout, 1.0);
       } else {
         if (sfx && typeof sfx.playError === 'function') sfx.playError();
         ann.innerText = `❌ CPU WINS! Lost ${bet} PGT.`;
         ann.style.color = "var(--color-danger)";
-        if (appState) appState.addActivity('You', `lost Roshambo round`, `-${bet} PGT`);
-        logBetWin('Roshambo', bet, 0, 0);
       }
 
-      addRoshamboLog(result, playerChoice, cpuChoice, bet, payout);
+      // Defer state update, DOM rerenders, and storage writes to rAF (< 2ms timer callback)
+      requestAnimationFrame(() => {
+        if (appState && currentSt) {
+          appState.update({
+            balancePgt: currentSt.balancePgt + payout
+          });
+        }
+        updateRoshamboWagerLabels();
+
+        if (serverResult.jackpot_amount) {
+          const counterEl = document.getElementById('progressive-jackpot-counter');
+          if (counterEl) counterEl.innerText = `${parseFloat(serverResult.jackpot_amount).toFixed(2)} PGT`;
+        }
+        if (window.handleServerJackpotWin) window.handleServerJackpotWin(serverResult, 'Roshambo');
+
+        recordGameMetrics('Roshambo', bet, payout);
+
+        if (serverResult.jackpot_won) {
+          if (result === 'win') {
+            if (appState) appState.addActivity('You', `won Roshambo round (2.0x)`, `+${payout} PGT`);
+            if (window.trackQuestProgress) window.trackQuestProgress('wins', 1);
+            logBetWin('Roshambo', bet, payout, 2.0);
+          } else {
+            logBetWin('Roshambo', bet, payout, 0);
+          }
+        } else if (result === 'win') {
+          if (appState) appState.addActivity('You', `won Roshambo round (2.0x)`, `+${payout} PGT`);
+          if (window.trackQuestProgress) window.trackQuestProgress('wins', 1);
+          logBetWin('Roshambo', bet, payout, 2.0);
+        } else if (result === 'tie') {
+          if (appState) appState.addActivity('You', `tied Roshambo round`, `+0 PGT`);
+          logBetWin('Roshambo', bet, payout, 1.0);
+        } else {
+          if (appState) appState.addActivity('You', `lost Roshambo round`, `-${bet} PGT`);
+          logBetWin('Roshambo', bet, 0, 0);
+        }
+
+        addRoshamboLog(result, playerChoice, cpuChoice, bet, payout);
+      });
     }, 1400);
 
   } catch (err) {

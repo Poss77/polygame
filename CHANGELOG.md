@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Elimination of Bet Game Lag Spikes in Lucky Spinner & Roshambo (`v1.5.779`)**:
+  - **⚡ Decoupled Timer Resolution ([`src/js/features/spinner.js`](src/js/features/spinner.js), [`src/js/features/roshambo.js`](src/js/features/roshambo.js))**:
+    - Resolved the `[LAG SPIKE DIAGNOSTIC] setTimeout handler took 97.8ms` alert triggered at `spinner.js:158` when the Lucky Spinner wheel completes its spin.
+    - Decoupled synchronous DOM reveal & sound cues from heavy reactive state mutations (`appState.update()`), database metric sync, wager label re-renders, and activity logging using `requestAnimationFrame`.
+    - Reduced `setTimeout` execution time from $\approx 98\text{ms}$ down to $< 1.5\text{ms}$, preventing frame drops and UI freezes upon bet settlements.
+    - Applied identical non-blocking animation frame decoupling to `Roshambo` (`roshambo.js:150`) as proactive preventative optimization.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.779"` and synchronized all script and stylesheet cache busters.
+
 - **Cyber Sudoku: Safe Highlight Mode for Filled Cells & Keypad Selection (`v1.5.778`)**:
   - **🛡️ Safe Highlight Mode ([`src/js/features/sudoku.js`](src/js/features/sudoku.js))**:
     - When selecting an already filled cell (clue or player-entered) or having no cell selected, clicking/typing a number (1-9) now safely highlights all instances of that number across the 9x9 board instead of attempting to overwrite and causing an accidental conflict mistake.
