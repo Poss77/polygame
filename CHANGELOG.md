@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Fix Pulse-Scan Anomaly Ready State Indicator (`v1.5.783`)**:
+  - **🌌 Pulse-Scan Ready State ([`space.js`](space.js), [`index.html`](index.html))**:
+    - Fixed the Deep-Space Anomaly button displaying `(6h Cooldown)` when the cooldown timer expired and the scan became ready to claim.
+    - Updated button label to dynamically display `🌌 Pulse-Scan Deep-Space Anomaly (Ready)` upon timer completion and in initial markup, clearly informing players that the anomaly scanner is charged.
+    - Added button disabled state toggling during recharge countdown and concurrency guard (`this._isScanningAnomaly`) to prevent accidental double-tap RPC submissions.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.783"` and synchronized all cache busters.
+
 - **Mobile UI: Prevent Radar Harvest Badge Text Overflow on iPhone (`v1.5.782`)**:
   - **📱 Single-Line Badge Sizing ([`space.js`](space.js), [`index.html`](index.html))**:
     - Fixed the PolySpace Radar Anomaly Harvest badge overflowing across two lines on mobile screens (iPhone) when daily cap is reached.

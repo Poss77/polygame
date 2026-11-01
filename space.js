@@ -1452,10 +1452,12 @@ class PolySpaceEngine {
         btnAnomaly.innerText = `🌌 Pulse-Scan Recharging (${hrs}h ${mins}m ${secs < 10 ? '0' : ''}${secs}s)`;
         btnAnomaly.style.opacity = '0.65';
         btnAnomaly.style.cursor = 'not-allowed';
+        btnAnomaly.disabled = true;
       } else {
-        btnAnomaly.innerText = '🌌 Pulse-Scan Deep-Space Anomaly (6h Cooldown)';
+        btnAnomaly.innerText = '🌌 Pulse-Scan Deep-Space Anomaly (Ready)';
         btnAnomaly.style.opacity = '1';
         btnAnomaly.style.cursor = 'pointer';
+        btnAnomaly.disabled = !!this._isScanningAnomaly;
       }
     }
 
@@ -3276,7 +3278,10 @@ class PolySpaceEngine {
 
   // --- DEEP SPACE ANOMALY SCANNER (NO PGT TOKEN CREATION) ---
   async scanAnomaly() {
-    const sbClient = this.getSupabaseClient();
+    if (this._isScanningAnomaly) return;
+    this._isScanningAnomaly = true;
+    try {
+      const sbClient = this.getSupabaseClient();
     const activePId = window.appState && window.appState.state ? (window.appState.state.playerId || window.appState.state.walletAddress || '') : '';
     const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
 
@@ -3357,6 +3362,10 @@ class PolySpaceEngine {
 
     this.saveSpaceState();
     if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
+    } finally {
+      this._isScanningAnomaly = false;
+      this.updateUI();
+    }
   }
 
   async loadFleetPowerLeaderboard() {
