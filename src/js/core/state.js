@@ -760,7 +760,14 @@ export class PolyState {
     const vipStakingBoost = isVip ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0;
     const vipLeaderboardMultiplier = isVip ? (vipLevel >= 2 ? 2.0 : 1.25) : 1.0;
 
-    const totalReferralMultiplier = rawNftReferralMultiplier * ambReferralMultiplier;
+    // Referral commission multiplier: Additive model (VIP + Ambassador + NFTs)
+    // E.g. Gold VIP (2.0) + Ambassador (1.5) + NFTs (3.30) = 6.80x
+    let totalReferralMultiplier = 0;
+    if (isAmb) totalReferralMultiplier += 1.5;
+    if (isVip) totalReferralMultiplier += (vipLevel >= 2 ? 2.0 : 1.2);
+    if (rawNftReferralMultiplier > 1.0) totalReferralMultiplier += rawNftReferralMultiplier;
+    if (totalReferralMultiplier <= 0) totalReferralMultiplier = 1.0;
+    totalReferralMultiplier = parseFloat(totalReferralMultiplier.toFixed(2));
     const totalFaucetBoostPercent = (nftFaucetBoost + streakBoost + referralBoost);
     const totalLeaderboardMultiplier = parseFloat((rawNftLeaderboardMultiplier * vipLeaderboardMultiplier).toFixed(2));
 

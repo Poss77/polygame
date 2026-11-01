@@ -221,6 +221,13 @@ export function updateReferralUiStats() {
     nftMultEl.innerText = `${multVal.toFixed(2)}x (+${bonusPct}%)`;
   }
 
+  const totalMultEl = document.getElementById('referral-total-multiplier-val');
+  if (totalMultEl && activeSt) {
+    const multis = typeof activeSt.getMultipliers === 'function' ? activeSt.getMultipliers() : {};
+    const totalVal = multis.totalReferralMultiplier || 1.0;
+    totalMultEl.innerText = `${totalVal.toFixed(2)}x`;
+  }
+
   const vipBadge = document.getElementById('referral-vip-badge');
   if (vipBadge && activeSt && typeof activeSt.isVipActive === 'function') {
     vipBadge.style.display = activeSt.isVipActive() ? 'block' : 'none';

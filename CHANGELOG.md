@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Referral Economy: Additive Commission Multiplier Model (`v1.5.785`)**:
+  - **⚡ Additive Boost Synergy ([`src/js/core/state.js`](src/js/core/state.js), [`src/js/features/referrals.js`](src/js/features/referrals.js), [`index.html`](index.html), [`supabase/fix_referral_additive_multipliers_680.sql`](supabase/fix_referral_additive_multipliers_680.sql))**:
+    - Replaced multiplicative referral stacking ($2.0 \times 1.5 \times 3.3 = 9.9\text{x}$) with balanced additive model: $\text{VIP (2.0)} + \text{Ambassador (1.5)} + \text{NFTs (3.30)} = \mathbf{6.80x}$ (68% Level 1 downline commission).
+    - Preserved independent arcade PGT payouts, staking APY boosts, and faucet multipliers unchanged.
+    - Updated `get_user_referral_multiplier` stored procedure in Supabase to parse JSON array string representations in `users.owned_nfts` and recognize Omni Lord (`nft_legendary_king`).
+    - Added real-time `Combined Referral Multiplier` indicator to the affiliate dashboard for transparent visibility of cumulative network boosts.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.785"` and synchronized all cache busters.
+
 - **Cyber 2048: Remove Grid Vibration Movement After Moves (`v1.5.784`)**:
   - **🧩 Stable Turn Animation ([`q2048.js`](q2048.js), [`src/css/features/games.css`](src/css/features/games.css))**:
     - Removed the 14px directional shift twitch animation (`q2048-shift-up/right/down/left`) that was applied to all board tiles on every valid move.
