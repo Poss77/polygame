@@ -543,7 +543,7 @@ async function fetchAndLoadGameLeaderboard(gameKey, forceRefresh = false) {
 
   try {
     // Strip heavy columns (owned_nfts, crate_nfts, space_state) to slash API traffic by ~98%
-    let selectFields = `player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level, equipped_starship`;
+    let selectFields = `player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level, equipped_starship, is_banned`;
     let { data, error } = await supabase.from('users')
       .select(selectFields)
       .gt(conf.scoreField, 0)
@@ -551,7 +551,7 @@ async function fetchAndLoadGameLeaderboard(gameKey, forceRefresh = false) {
       .limit(100);
 
     if (error && (error.code === 'PGRST204' || (error.message && error.message.includes('equipped_starship')))) {
-      const fallbackFields = `player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level`;
+      const fallbackFields = `player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level, is_banned`;
       const res = await supabase.from('users')
         .select(fallbackFields)
         .gt(conf.scoreField, 0)
@@ -571,14 +571,17 @@ async function fetchAndLoadGameLeaderboard(gameKey, forceRefresh = false) {
       throw error;
     }
 
+    // Filter out banned accounts so exploited scores never display
+    const cleanData = (data || []).filter(u => !u.is_banned);
+
     // Cache the clean dataset in memory with fresh timestamp
     leaderboardDataCache[gameKey] = {
-      data: data || [],
+      data: cleanData,
       timestamp: Date.now()
     };
 
     gameLeaderboardsState[gameKey] = {
-      data: data || [],
+      data: cleanData,
       page: gameLeaderboardsState[gameKey]?.page || 1,
       pool
     };

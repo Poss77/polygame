@@ -73,7 +73,7 @@ export async function loadHoldersLeaderboard() {
 
   try {
     const [{ data: allData, error }, { data: activeStakes, error: stakesErr }, { count: arcadeCount }] = await Promise.all([
-      supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, username, user_id, auth_provider, total_claims, relics, space_state, total_arcade_plays, vip_until, vip_level'),
+      supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, username, user_id, auth_provider, total_claims, relics, space_state, total_arcade_plays, vip_until, vip_level, is_banned'),
       supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true),
       supabase.from('arcade_sessions').select('id', { count: 'exact', head: true })
     ]);
@@ -100,7 +100,8 @@ export async function loadHoldersLeaderboard() {
     let globalRelicsFound = 0;
     let globalSpaceMissions = 0;
     
-    cachedHoldersData = (allData || []).map(u => {
+    const activeUsers = (allData || []).filter(u => !u.is_banned);
+    cachedHoldersData = activeUsers.map(u => {
       const bal = parseFloat(u.balance_pgt) || 0;
       const pidKey = (u.player_id || '').toLowerCase().trim();
       const walletKey = (u.linked_wallet_address || '').toLowerCase().trim();
@@ -141,7 +142,7 @@ export async function loadHoldersLeaderboard() {
     
     let userArcadePlays = 0;
     let hasUserArcadePlays = false;
-    (allData || []).forEach(u => {
+    activeUsers.forEach(u => {
       if (u.total_arcade_plays !== undefined && u.total_arcade_plays !== null) {
         hasUserArcadePlays = true;
         userArcadePlays += (parseInt(u.total_arcade_plays) || 0);
@@ -194,8 +195,8 @@ export async function loadHoldersLeaderboard() {
     holdersCurrentPage = 1;
 
     renderHoldersPage(holdersCurrentPage);
-    recordSupplySnapshotIfNeeded(globalTotalWealth);
-    renderHoldersSupplyChart('day', globalTotalWealth);
+    await recordSupplySnapshotIfNeeded(globalTotalWealth);
+    renderHoldersSupplyChart('day', currentHoldersTotalSupply || globalTotalWealth);
     // Note: loadPastWeeklyArchive is only invoked when mode === 'archive'
 
   } catch (err) {
@@ -210,10 +211,14 @@ async function recordSupplySnapshotIfNeeded(total) {
     const now = new Date();
     const currentHourStr = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), 0, 0).toISOString();
     
-    const { error: rpcErr } = await supabase.rpc('record_supply_snapshot', {
+    const { data: rpcRes, error: rpcErr } = await supabase.rpc('record_supply_snapshot', {
       p_created_at: currentHourStr,
       p_total_supply: total
     });
+
+    if (!rpcErr && rpcRes && rpcRes.total_supply) {
+      currentHoldersTotalSupply = parseFloat(rpcRes.total_supply);
+    }
 
     if (rpcErr) {
       const { data } = await supabase

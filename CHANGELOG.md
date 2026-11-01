@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Fix Total Supply History Chart Spike & Exclude Banned Bots (`v1.5.781`)**:
+  - **📈 Elimination of +40k Chart Jump ([`src/js/features/holders.js`](src/js/features/holders.js))**:
+    - Resolved the issue where the final data point on the Total Onsite PGT Supply History chart consistently jumped ~40k above reality.
+    - Sourced root cause: Supabase's `record_supply_snapshot` stored procedure properly excludes banned bots (`WHERE is_banned = false`), yielding ~8.147M authoritative supply for historical points, but the frontend `loadHoldersLeaderboard` previously queried all users unconditionally—adding ~26.8k+ in banned bot balances and forcing the chart's final hour point (`i = 0`) to spike.
+    - Added explicit `is_banned` filtering in `loadHoldersLeaderboard` to ensure banned accounts are excluded from the Top Holders list, Total Onsite PGT metrics, and sitewide statistics.
+    - Connected `recordSupplySnapshotIfNeeded` to capture the authoritative PostgreSQL supply snapshot return value and synchronize the final chart coordinate with true circulating supply.
+  - **🛡️ Leaderboard Integrity Filter ([`src/js/features/leaderboards.js`](src/js/features/leaderboards.js))**:
+    - Filtered out banned users (`is_banned = true`) from all arcade game leaderboards (`fetchAndLoadGameLeaderboard`), ensuring suspended accounts cannot hold podium ranks.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.781"` and synchronized all cache busters.
+
 - **Fix On-Chain VIP Pass Activation Across All Auth Modes (`v1.5.780`)**:
   - **👑 Resolved VIP Pass Activation Silent Drop ([`src/js/features/nft.js`](src/js/features/nft.js))**:
     - Eliminated legacy blocking `if (!appState.state.walletConnected) return;` guard that was silently dropping button clicks for Web2/Google authenticated players who have a linked Web3 wallet with on-chain passes on Polygon.
