@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Mobile UI: Prevent Radar Harvest Badge Text Overflow on iPhone (`v1.5.782`)**:
+  - **📱 Single-Line Badge Sizing ([`space.js`](space.js), [`index.html`](index.html))**:
+    - Fixed the PolySpace Radar Anomaly Harvest badge overflowing across two lines on mobile screens (iPhone) when daily cap is reached.
+    - Added `white-space: nowrap; display: inline-flex; align-items: center;` and adjusted font scaling to ensure the badge stays cleanly on a single line.
+    - Replaced the redundant 45-character `(Daily Cap Reached)` text with sleek `(Capped)`, complementing the subtitle right above it.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.782"` and synchronized all cache busters.
+
 - **Fix Total Supply History Chart Spike & Exclude Banned Bots (`v1.5.781`)**:
   - **📈 Elimination of +40k Chart Jump ([`src/js/features/holders.js`](src/js/features/holders.js))**:
     - Resolved the issue where the final data point on the Total Onsite PGT Supply History chart consistently jumped ~40k above reality.

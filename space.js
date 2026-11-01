@@ -5780,7 +5780,7 @@ class PolySpaceEngine {
         badgeEl.style.background = 'rgba(255, 170, 0, 0.15)';
         badgeEl.style.borderColor = 'var(--color-warning)';
         badgeEl.style.color = '#ffd700';
-        badgeEl.innerHTML = '🪙 Radar Harvest: <strong style="color:#fff;">10 / 10</strong> (Daily Cap Reached)';
+        badgeEl.innerHTML = '🪙 Radar Harvest: <strong style="color:#fff;">10 / 10</strong> (Capped)';
       }
       if (subtitleEl) {
         subtitleEl.innerText = 'Daily harvest limit reached (10/10) • Resets at 00:00 UTC';
