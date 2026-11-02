@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Skeet Economy: 50% Base Earn Rate & Cap Reduction (`v1.5.786`)**:
+  - **🎯 Rebalanced Skeet Payouts ([`skeet.js`](skeet.js), [`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/reduce_cyber_skeet_payout_by_half.sql`](supabase/reduce_cyber_skeet_payout_by_half.sql))**:
+    - Reduced the base PGT earn formula by 50% from `((score / 2000.0) + (clays * 0.05))` to `(((score / 2000.0) + (clays * 0.05)) * 0.50)` across both client simulation and authoritative PostgreSQL settlement.
+    - Adjusted Cyber Skeet's base game earn ceiling from 125.00 PGT down to 62.50 PGT (50% reduction) to balance economy generation against other arcade titles.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.786"` and synchronized all cache busters.
+
 - **Referral Economy: Additive Commission Multiplier Model (`v1.5.785`)**:
   - **⚡ Additive Boost Synergy ([`src/js/core/state.js`](src/js/core/state.js), [`src/js/features/referrals.js`](src/js/features/referrals.js), [`index.html`](index.html), [`supabase/fix_referral_additive_multipliers_680.sql`](supabase/fix_referral_additive_multipliers_680.sql))**:
     - Replaced multiplicative referral stacking ($2.0 \times 1.5 \times 3.3 = 9.9\text{x}$) with balanced additive model: $\text{VIP (2.0)} + \text{Ambassador (1.5)} + \text{NFTs (3.30)} = \mathbf{6.80x}$ (68% Level 1 downline commission).
