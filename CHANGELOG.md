@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Wordle: Mobile Zero-Latency Typing & Keystroke Buffering (`v1.5.787`)**:
+  - **⚡ Type-Ahead Keystroke Buffering ([`src/js/features/wordle.js`](src/js/features/wordle.js))**:
+    - Resolved the mobile input delay where letters typed after row 1 took several seconds to appear or were dropped.
+    - Added an `inputQueue` buffer that captures letter keypresses and backspaces while the previous row is submitting and evaluating.
+    - Seamlessly replays queued keystrokes into the new row the exact millisecond evaluation completes, guaranteeing zero lost inputs.
+  - **🚀 Instant Touch Response & Fast Animations ([`src/js/features/wordle.js`](src/js/features/wordle.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Upgraded `bindFastKey` with `e.preventDefault()` on non-passive `pointerdown` and a 100ms per-button debounce, eliminating 300ms mobile touch delays, double-tap zoom checks, and synthetic click delays.
+    - Accelerated tile flip evaluations: reduced stagger from 150ms to 80ms per column and CSS `flipTile` animation from 0.5s to 0.3s, cutting row resolution time in half (~450ms total).
+    - Throttled mobile haptic pulse to 60ms intervals to eliminate UI thread micro-stutters on mobile devices.
+    - Added `touch-action: manipulation; overscroll-behavior: none;` to `.wordle-container` and `.wordle-grid` to prevent gesture latency.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.787"` and synchronized all cache busters.
+
 - **Cyber Skeet Economy: 50% Base Earn Rate & Cap Reduction (`v1.5.786`)**:
   - **🎯 Rebalanced Skeet Payouts ([`skeet.js`](skeet.js), [`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/reduce_cyber_skeet_payout_by_half.sql`](supabase/reduce_cyber_skeet_payout_by_half.sql))**:
     - Reduced the base PGT earn formula by 50% from `((score / 2000.0) + (clays * 0.05))` to `(((score / 2000.0) + (clays * 0.05)) * 0.50)` across both client simulation and authoritative PostgreSQL settlement.

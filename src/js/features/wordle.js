@@ -21,6 +21,7 @@ let boardGuesses = []; // [{ word, colors }]
 let targetWordRevealed = '';
 let keyListenersAttached = false;
 let pgtWonToday = 0;
+let inputQueue = []; // Type-ahead input buffer for seamless mobile typing during evaluation
 
 const KEYBOARD_ROWS = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
@@ -41,6 +42,7 @@ export async function initWordleGame() {
   boardGuesses = [];
   targetWordRevealed = '';
   pgtWonToday = 0;
+  inputQueue = [];
 
   renderWordleBoard();
   renderWordleKeyboard();
@@ -75,9 +77,13 @@ function renderWordleBoard() {
 }
 
 /**
- * Subtle tactile haptic pulse for mobile touchscreens
+ * Subtle tactile haptic pulse for mobile touchscreens (throttled to prevent UI thread micro-stutters)
  */
+let lastWordleHapticTime = 0;
 function triggerWordleHaptic(duration = 6) {
+  const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  if (now - lastWordleHapticTime < 60) return;
+  lastWordleHapticTime = now;
   if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
     try { navigator.vibrate(duration); } catch (e) {}
   }
@@ -85,25 +91,27 @@ function triggerWordleHaptic(duration = 6) {
 
 /**
  * Fast-tap binder: completely eliminates 300ms mobile touch delay by triggering
- * immediately on pointerdown, and suppresses trailing synthetic click.
+ * immediately on pointerdown, preventing synthetic click propagation and double-tap zoom delay.
  */
 function bindFastKey(btn, onAction) {
-  let touchHandled = false;
+  let lastActionTime = 0;
+
+  const handleAction = (e) => {
+    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    if (now - lastActionTime < 100) return; // Prevent double-trigger from pointerdown + synthetic click
+    lastActionTime = now;
+    onAction();
+  };
 
   btn.addEventListener('pointerdown', (e) => {
     if (e.button !== undefined && e.button !== 0) return; // Only primary touch / left click
-    touchHandled = true;
-    onAction();
-    setTimeout(() => { touchHandled = false; }, 320);
-  }, { passive: true });
+    if (e.cancelable) e.preventDefault();
+    handleAction(e);
+  });
 
   btn.addEventListener('click', (e) => {
-    if (touchHandled) {
-      e.preventDefault();
-      e.stopPropagation();
-      return;
-    }
-    onAction();
+    if (e.cancelable) e.preventDefault();
+    handleAction(e);
   });
 }
 
@@ -168,7 +176,15 @@ function attachKeyListeners() {
 }
 
 function handleLetterInput(letter) {
-  if (isGameOver || isSubmitting) return;
+  if (isGameOver) return;
+  if (isSubmitting) {
+    // Buffer input while previous row is resolving so mobile keystrokes are never dropped
+    if (inputQueue.length < 5) {
+      inputQueue.push({ type: 'letter', char: letter });
+      triggerWordleHaptic(6);
+    }
+    return;
+  }
   if (currentGuess.length >= 5) return;
 
   const targetCol = currentGuess.length;
@@ -186,7 +202,14 @@ function handleLetterInput(letter) {
 }
 
 function handleBackspace() {
-  if (isGameOver || isSubmitting) return;
+  if (isGameOver) return;
+  if (isSubmitting) {
+    if (inputQueue.length > 0) {
+      inputQueue.pop();
+      triggerWordleHaptic(6);
+    }
+    return;
+  }
   if (currentGuess.length === 0) return;
 
   const targetCol = currentGuess.length - 1;
@@ -261,6 +284,7 @@ async function submitCurrentGuess() {
     if (error || !res || !res.success) {
       if (triggerToast) triggerToast(res?.message || error?.message || 'Error submitting guess', 'error');
       shakeCurrentRow();
+      inputQueue = [];
       isSubmitting = false;
       return;
     }
@@ -308,6 +332,24 @@ async function submitCurrentGuess() {
       currentRow++;
       currentGuess = '';
       updateAttemptBadge(currentRow + 1);
+
+      // Replay type-ahead keystrokes buffered during row evaluation into the new row
+      if (inputQueue.length > 0) {
+        const queued = [...inputQueue];
+        inputQueue = [];
+        for (const item of queued) {
+          if (item.type === 'letter' && currentGuess.length < 5) {
+            const col = currentGuess.length;
+            currentGuess += item.char;
+            const tile = document.getElementById(`wordle-tile-${currentRow}-${col}`);
+            if (tile) {
+              tile.innerText = item.char;
+              tile.classList.add('pop');
+              setTimeout(() => { if (tile) tile.classList.remove('pop'); }, 120);
+            }
+          }
+        }
+      }
     }
   } catch (err) {
     console.error('[Wordle] Submission exception:', err);
@@ -334,9 +376,9 @@ function animateRowEvaluation(rowIdx, colors) {
           tile.classList.add(color);
         }
         if (colIdx === 4) {
-          setTimeout(resolve, 350);
+          setTimeout(resolve, 180);
         }
-      }, colIdx * 150);
+      }, colIdx * 80);
     });
   });
 }

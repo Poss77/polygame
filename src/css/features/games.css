@@ -2188,6 +2188,8 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
+  touch-action: manipulation;
+  overscroll-behavior: none;
 }
 
 .wordle-grid {
@@ -2198,6 +2200,8 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
   max-width: 320px;
   aspect-ratio: 5 / 6;
   margin: 0 auto;
+  touch-action: manipulation;
+  overscroll-behavior: none;
 }
 
 .wordle-row {
@@ -2235,7 +2239,7 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
   background: linear-gradient(135deg, #00c853, #009624);
   border-color: #00e676;
   box-shadow: 0 0 15px rgba(0, 230, 118, 0.5);
-  animation: flipTile 0.5s ease forwards;
+  animation: flipTile 0.3s ease forwards;
 }
 
 .wordle-tile.yellow {
@@ -2243,14 +2247,14 @@ body.game-fullscreen-open #panel-game-defense:not([style*="display: none"]):not(
   border-color: #ffea00;
   box-shadow: 0 0 15px rgba(255, 214, 0, 0.5);
   color: #000;
-  animation: flipTile 0.5s ease forwards;
+  animation: flipTile 0.3s ease forwards;
 }
 
 .wordle-tile.gray {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.15);
   color: var(--text-muted);
-  animation: flipTile 0.5s ease forwards;
+  animation: flipTile 0.3s ease forwards;
 }
 
 @keyframes flipTile {
