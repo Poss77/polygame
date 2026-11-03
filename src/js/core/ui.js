@@ -311,8 +311,8 @@ export function openInfoModal(type) {
         <strong>Summary:</strong> By interacting with polygongaming.io or our smart contracts on Polygon, you agree to these Terms. Polygon Gaming is a Web3 entertainment arcade, not an investment platform.
       </div>
 
-      <h4 style="color: var(--color-danger); margin-bottom: 0.35rem; font-size: 0.95rem;">1. Strictly 1 Account Per Person (Anti-Cheat)</h4>
-      <p style="margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--text-muted);">Zero tolerance for multi-accounting, automated farming bots, sybil networks, cheat engines, or memory tampering. Violations trigger automatic database tripwires, immediate account bans, and forfeiture of unclaimed rewards.</p>
+      <h4 style="color: var(--color-danger); margin-bottom: 0.35rem; font-size: 0.95rem;">1. Strictly 1 Account & One Game at a Time (Anti-Cheat)</h4>
+      <p style="margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--text-muted);">Zero tolerance for multi-accounting, playing multiple games at once across tabs/windows, automated farming bots, sybil networks, cheat engines, or memory tampering. Violations trigger automatic database tripwires, immediate account bans, and forfeiture of unclaimed rewards.</p>
 
       <h4 style="color: var(--color-warning); margin-bottom: 0.35rem; font-size: 0.95rem;">2. Virtual Assets & Financial Disclaimer</h4>
       <p style="margin-bottom: 0.75rem; font-size: 0.85rem; color: var(--text-muted);">PGT tokens, relics, starships, and NFTs are strictly gameplay utilities and do NOT represent securities, equity, or investments. No expectation of financial profit.</p>

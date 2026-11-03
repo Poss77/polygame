@@ -370,7 +370,7 @@ twq('config','ri5fg');
     <div class="doc-meta">
       <span>🌐 JURISDICTION: POLYGON MAINNET (CHAIN ID 137)</span>
       <span>•</span>
-      <span>LAST UPDATED: OCTOBER 2026 • v1.5</span>
+      <span>LAST UPDATED: NOVEMBER 2026 • v1.5</span>
     </div>
 
     <h1>Terms of Service</h1>
@@ -384,7 +384,7 @@ twq('config','ri5fg');
         <a href="#eligibility" class="toc-link">2. Eligibility & Age Restriction</a>
         <a href="#services" class="toc-link">3. Ecosystem & Platform Services</a>
         <a href="#non-custodial" class="toc-link">4. Non-Custodial Architecture</a>
-        <a href="#fair-play" class="toc-link">5. Anti-Cheat & Fair Play Policy</a>
+        <a href="#fair-play" class="toc-link">5. Anti-Cheat, Fair Play & Sybil Defense Policy</a>
         <a href="#tokenomics" class="toc-link">6. Virtual Assets & Disclaimer</a>
         <a href="#blockchain" class="toc-link">7. Blockchain & Gas Transactions</a>
         <a href="#ip" class="toc-link">8. Intellectual Property</a>
@@ -443,11 +443,12 @@ twq('config','ri5fg');
 
       <h2 id="fair-play">5. Anti-Cheat, Fair Play & Sybil Defense Policy</h2>
       <div class="callout callout-danger">
-        <strong>Strict 1 Account Per Person Policy:</strong> Multi-accounting, sybil attacks, automated farming scripts, cheat engines, or memory injection will result in an immediate, permanent ban and forfeiture of platform balances.
+        <strong>Strict 1 Account Per Person & Single Active Session Policy:</strong> Multi-accounting, playing multiple games at once (multi-tabbing or concurrent parallel sessions), sybil attacks, automated farming scripts, cheat engines, or memory injection will result in an immediate, permanent ban and forfeiture of platform balances.
       </div>
       <p>To preserve game balance and economic fairness for genuine players, we enforce zero-tolerance anti-cheat policies:</p>
       <ul>
-        <li><strong>Prohibited Exploits:</strong> You agree not to use bots, macros, autohotkey scripts, speedhacks, modified web clients, memory sniffers, or automated network replay tools to manipulate games or farm faucet rewards.</li>
+        <li><strong>No Concurrent Sessions / Multi-Tabbing (One Game at a Time):</strong> You agree to play strictly <strong>one game session at a time</strong>. Playing multiple games at once, opening parallel game sessions across multiple browser tabs, windows, devices, or virtual environments, or executing automated background games while playing another game in the foreground is strictly prohibited. Spawning concurrent sessions to artificially multiply token yields, bypass cooldowns, or accelerate quest/tournament progression is treated as an automated exploit. Any concurrent sessions will be invalidated, associated earnings forfeited, and offending accounts subject to permanent bans.</li>
+        <li><strong>Prohibited Exploits:</strong> You agree not to use bots, macros, autohotkey scripts, speedhacks, modified web clients, memory sniffers, multi-tab spawning macros, or automated network replay tools to manipulate games, play multiple games at once, or farm faucet/arcade rewards.</li>
         <li><strong>Balance Integrity:</strong> All token balances, payouts, and multiplier calculations are guarded server-side by PostgreSQL tripwires (<code>prevent_direct_balance_mutation</code>). Any unauthorized direct modification attempt triggers an automatic security freeze.</li>
         <li><strong>Anti-Sybil Farming:</strong> Running automated networks of disposable accounts, cycling IP addresses through proxies, or forging referral chains to extract unearned faucet/marketplace rewards is strictly prohibited.</li>
         <li><strong>Penalties:</strong> Accounts detected violating these terms will be marked as banned (<code>is_banned = true</code>), disqualified from active tournaments, and blacklisted from current and future reward distributions.</li>

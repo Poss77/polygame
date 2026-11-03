@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Terms of Service: Prohibit Concurrent Games & Multi-Tabbing (`v1.5.789`)**:
+  - **📜 Terms of Service Update ([`terms.html`](terms.html))**:
+    - Added explicit clause in Section 5 (*Anti-Cheat, Fair Play & Sybil Defense Policy*) prohibiting playing multiple games at once.
+    - Ban covers opening concurrent parallel game sessions across multiple browser tabs, windows, devices, or virtual environments, as well as background automated script execution while playing in the foreground.
+    - Violations result in session earnings forfeiture, score invalidation, and permanent account bans.
+    - Updated navigation Table of Contents and 'Last Updated' timestamp to November 2026.
+  - **🛡️ In-App Fair Play Modal ([`src/js/core/ui.js`](src/js/core/ui.js))**:
+    - Updated the in-app Terms & Fair Play summary modal to explicitly display *'1. Strictly 1 Account & One Game at a Time'* with multi-tabbing prohibitions.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.789"` and synchronized all 12 cache busters.
+
 - **Cyber Wordle: Fix Mobile Double-Tap Letter Entry (`v1.5.788`)**:
   - **🔤 Suppress Trailing Synthetic Click Events ([`src/js/features/wordle.js`](src/js/features/wordle.js))**:
     - Resolved issue where tapping a letter on mobile touchscreens registered the letter twice.
