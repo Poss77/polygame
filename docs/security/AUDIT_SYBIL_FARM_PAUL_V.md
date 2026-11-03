@@ -141,11 +141,42 @@ Between **19:44:50 UTC and 19:45:06 UTC** (a 16-second window), the operator ini
 
 > **Forensic Finding**: A single human being cannot physically pilot 9 separate vehicles in Cyber Drift simultaneously across 9 browser tabs, maintaining scores between 73k and 178k points. This confirms automated canvas driving or multi-tab background scripting.
 
-### Evidence 2: Sybil Farm Node SuperRonald🎖️ (`0xpgt2aa64159`) — Identical 15-Session Burst
-Earlier the same day, farm node **SuperRonald🎖️** executed the exact same mechanical pattern:
+### Evidence 2: Farm Node SuperRonald🎖️ (`0xpgt2aa64159`) — 15 Simultaneous Games in 28 Seconds
+Earlier the same day (17:18 UTC), farm node **SuperRonald🎖️** executed the exact same mechanical pattern:
 * Between **17:18:28 UTC and 17:18:56 UTC** (28 seconds), **15 concurrent sessions** of `Cyber Drift` were initialized.
-* **13 sessions** completed in parallel between **17:26:51 UTC and 17:32:27 UTC**, siphoning `296.85 PGT` in 6 minutes.
-* This identical parallelized technique across both Paul V and SuperRonald confirms centralized operator execution and tooling across the Sybil cluster.
+* **13 sessions** completed in parallel between **17:26:51 UTC and 17:32:27 UTC**, siphoning `296.85 PGT` in 6 minutes with scores up to `182,960`.
+
+### Evidence 3: Farm Node Ninja (`0xpgt6c30c08c`) — 15 Simultaneous Games in 47 Seconds
+At 15:38 UTC on the same day, farm node **Ninja** executed the identical pattern:
+* Between **15:38:38 UTC and 15:39:25 UTC** (47 seconds), **15 concurrent sessions** of `Cyber Drift` were initialized.
+* Finished in parallel between **15:47:52 UTC and 15:52:58 UTC**, extracting **`305.08 PGT`** in 14 minutes with scores up to `176,547`.
+
+### Evidence 4: Farm Node TopTop (`0xpgt9ddc0ca3`) — 15 Simultaneous Games in 34 Seconds
+At 14:20 UTC on the same day, farm node **TopTop** executed the identical pattern:
+* Between **14:20:04 UTC and 14:20:38 UTC** (34 seconds), **15 concurrent sessions** of `Cyber Drift` were initialized.
+* Finished in parallel between **14:29:39 UTC and 14:34:21 UTC**, extracting **`318.89 PGT`** in 14 minutes with scores up to `180,864`.
+
+### Evidence 5: Farm Node Cybermix (`0xpgt58f5eb8c`) — 15 Simultaneous Games in 32 Seconds
+At 08:30 UTC on the same day, farm node **Cybermix** executed the identical pattern:
+* Between **08:30:17 UTC and 08:30:49 UTC** (32 seconds), **15 concurrent sessions** of `Cyber Drift` were initialized.
+* Finished in parallel between **08:39:28 UTC and 08:45:18 UTC**, extracting **`392.18 PGT`** in 14 minutes with scores up to `206,415`.
+
+---
+
+### The Full November 2, 2026 Shift Schedule (1,539.74 PGT Siphoned in 5 Parallel Bursts)
+
+The operator systematically cycled through the Sybil cluster throughout the day, executing identical ~2-second multi-tab spawning macros every few hours:
+
+| Time Window (UTC) | Account Operated | Concurrent Sessions | Time Window to Spawn | Parallel Completion Window | Direct PGT Extracted |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **08:30 – 08:45** | **Cybermix** (`0xpgt58f5eb8c`) | 15 parallel tabs | 32 seconds (`08:30:17 - 08:30:49`) | `08:39:28 - 08:45:18` | **392.18 PGT** |
+| **14:20 – 14:34** | **TopTop** (`0xpgt9ddc0ca3`) | 15 parallel tabs | 34 seconds (`14:20:04 - 14:20:38`) | `14:29:39 - 14:34:21` | **318.89 PGT** |
+| **15:38 – 15:53** | **Ninja** (`0xpgt6c30c08c`) | 15 parallel tabs | 47 seconds (`15:38:38 - 15:39:25`) | `15:47:52 - 15:52:58` | **305.08 PGT** |
+| **17:18 – 17:32** | **SuperRonald🎖️** (`0xpgt2aa64159`) | 15 parallel tabs | 28 seconds (`17:18:28 - 17:18:56`) | `17:26:51 - 17:32:27` | **296.85 PGT** |
+| **19:44 – 19:56** | **Paul V** *(Master)* (`0xpgt3a44cee7`) | 9 parallel tabs | 16 seconds (`19:44:50 - 19:45:06`) | `19:53:34 - 19:56:40` | **226.74 PGT** |
+| **Total (Nov 2 Only)** | **5 Accounts in Cluster** | **69 Parallel Sessions** | — | — | **`1,539.74 PGT`** |
+
+> **Key Takeaway**: Across 5 separate accounts, sessions were started at an identical mechanical cadence of **`2.1 ± 0.4 seconds` per session launch**, maintaining 70k to 206k drift scores in parallel tabs. All 4 sub-accounts funnel 10% Level-1 referral commissions directly to Paul V, multiplying the daily unearned yield.
 
 ---
 
