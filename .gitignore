@@ -7,6 +7,7 @@ scratch/
 run_daily_backup.bat
 
 # Internal Planning Documents, Roadmaps & Strategy
+docs/
 plans/
 user manual/
 user_manual/
