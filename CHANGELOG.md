@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Wordle: Fix Mobile Double-Tap Letter Entry (`v1.5.788`)**:
+  - **🔤 Suppress Trailing Synthetic Click Events ([`src/js/features/wordle.js`](src/js/features/wordle.js))**:
+    - Resolved issue where tapping a letter on mobile touchscreens registered the letter twice.
+    - Root cause: A typical human touch hold duration (120ms–250ms) exceeded the previous 100ms debounce threshold, causing the browser's subsequent synthetic `click` event on finger release to trigger a second keypress.
+    - Upgraded `bindFastKey`: `pointerdown` executes the keypress instantaneously with 0ms touch latency, while all subsequent synthetic `click` events within 800ms are safely swallowed.
+    - Double letters (such as 'EE' in SPEED) can now be typed in rapid succession without interference or duplicate ghost clicks.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.788"` and synchronized all 12 cache busters.
+
 - **Cyber Wordle: Mobile Zero-Latency Typing & Keystroke Buffering (`v1.5.787`)**:
   - **⚡ Type-Ahead Keystroke Buffering ([`src/js/features/wordle.js`](src/js/features/wordle.js))**:
     - Resolved the mobile input delay where letters typed after row 1 took several seconds to appear or were dropped.

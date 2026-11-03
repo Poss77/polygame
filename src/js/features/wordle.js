@@ -90,28 +90,29 @@ function triggerWordleHaptic(duration = 6) {
 }
 
 /**
- * Fast-tap binder: completely eliminates 300ms mobile touch delay by triggering
- * immediately on pointerdown, preventing synthetic click propagation and double-tap zoom delay.
+ * Fast-tap binder: triggers immediately on pointerdown with zero touch latency,
+ * and reliably swallows all trailing synthetic click events on touch release.
  */
 function bindFastKey(btn, onAction) {
-  let lastActionTime = 0;
-
-  const handleAction = (e) => {
-    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-    if (now - lastActionTime < 100) return; // Prevent double-trigger from pointerdown + synthetic click
-    lastActionTime = now;
-    onAction();
-  };
+  let lastPointerTime = 0;
 
   btn.addEventListener('pointerdown', (e) => {
     if (e.button !== undefined && e.button !== 0) return; // Only primary touch / left click
     if (e.cancelable) e.preventDefault();
-    handleAction(e);
+    lastPointerTime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    onAction();
   });
 
   btn.addEventListener('click', (e) => {
     if (e.cancelable) e.preventDefault();
-    handleAction(e);
+    e.stopPropagation();
+    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    // If a pointerdown fired within 800ms, this click is a synthetic ghost event: swallow it
+    if (now - lastPointerTime < 800) {
+      return;
+    }
+    // Only fire if activated without pointerdown (e.g. keyboard Tab + Space/Enter accessibility)
+    onAction();
   });
 }
 
