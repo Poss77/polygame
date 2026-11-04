@@ -53,6 +53,8 @@ export function invalidateDailyHubCache() {
 }
 window.invalidateDailyHubCache = invalidateDailyHubCache;
 
+let inFlightHubStatusPromise = null;
+
 /**
  * Fetches authoritatively from Supabase and updates all hub dashboard badges
  */
@@ -79,22 +81,33 @@ export async function refreshDailyGamesHubStatus(forceRefresh = false) {
     return cachedHubStatus;
   }
 
-  try {
-    const { data: res, error } = await executeAuthenticatedRpc('get_daily_games_hub_status', {
-      p_player_id: pid
-    });
-
-    if (error || !res || !res.success) {
-      console.warn('[DailyHub] Status fetch error:', error || res);
-      return;
-    }
-
-    cachedHubStatus = res;
-    lastHubFetchTime = now;
-    updateHubUIFromStatus(res);
-  } catch (err) {
-    console.warn('[DailyHub] Exception during status sync:', err);
+  if (!forceRefresh && inFlightHubStatusPromise) {
+    return await inFlightHubStatusPromise;
   }
+
+  inFlightHubStatusPromise = (async () => {
+    try {
+      const { data: res, error } = await executeAuthenticatedRpc('get_daily_games_hub_status', {
+        p_player_id: pid
+      });
+
+      if (error || !res || !res.success) {
+        console.warn('[DailyHub] Status fetch error:', error || res);
+        return;
+      }
+
+      cachedHubStatus = res;
+      lastHubFetchTime = Date.now();
+      updateHubUIFromStatus(res);
+      return res;
+    } catch (err) {
+      console.warn('[DailyHub] Exception during status sync:', err);
+    } finally {
+      inFlightHubStatusPromise = null;
+    }
+  })();
+
+  return await inFlightHubStatusPromise;
 }
 
 export function getCachedHubStatus() {

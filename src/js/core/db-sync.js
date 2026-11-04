@@ -116,11 +116,13 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
     // 2. Early Security Pre-Check & Validation (Prevents ANY local state corruption or cross-wallet bleeding)
     if (activeUserId && isEVMAddress) {
       try {
-        const { data: userProfile } = await supabase
+        const { data: profileRows } = await supabase
           .from('users')
           .select('*')
-          .eq('user_id', activeUserId)
-          .maybeSingle();
+          .or(`user_id.eq.${activeUserId},web3_auth_id.eq.${activeUserId}`)
+          .order('created_at', { ascending: true })
+          .limit(1);
+        const userProfile = (Array.isArray(profileRows) && profileRows.length > 0) ? profileRows[0] : null;
 
         if (userProfile) {
           // Check A: Permanent Wallet Lock
@@ -398,10 +400,12 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           }));
         } catch (e) {}
         
-        // Keep app_version fresh in database for authenticated login
-        if (activeUserId) {
+        // Keep app_version fresh in database for authenticated login (only PATCH when version differs)
+        const targetVersion = APP_VERSION ? `v${APP_VERSION}` : 'v1.5.033';
+        if (activeUserId && data.app_version !== targetVersion && canonicalId) {
+          data.app_version = targetVersion;
           try {
-            supabase.from('users').update({ app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.033' }).eq('user_id', activeUserId).then(() => {});
+            supabase.from('users').update({ app_version: targetVersion }).eq('player_id', canonicalId).then(() => {});
           } catch (e) {}
         }
 
@@ -2479,6 +2483,11 @@ export async function deleteUserAccount() {
 }
 window.deleteUserAccount = deleteUserAccount;
 
+let _syncAuthInFlight = null;
+let _lastSyncedAuthUserId = null;
+let _lastSyncedAuthTime = 0;
+const AUTH_SYNC_COOLDOWN_MS = 60 * 1000; // 60s cooldown prevents INITIAL_SESSION & cross-tab SIGNED_IN query storms
+
 export async function initAuthListeners() {
   if (!supabase) return;
 
@@ -2509,43 +2518,53 @@ export async function initAuthListeners() {
   }
 }
 
-async function syncAuthenticatedUser(user) {
+async function syncAuthenticatedUser(user, force = false) {
   if (!user || !supabase) return;
   localStorage.removeItem('polygame_user_logged_out');
 
-  let activeAppState = getAppState();
-  if (!activeAppState || !activeAppState.state) {
-    const StateClass = (typeof PolyState !== 'undefined') ? PolyState : (typeof window !== 'undefined' ? window.PolyState : null);
-    if (StateClass) {
-      window.appState = new StateClass();
-      activeAppState = window.appState;
-    }
-  }
-  if (!activeAppState || !activeAppState.state) {
-    console.error("[syncAuthenticatedUser] Critical error: PolyState instance is uninitialized");
+  const now = Date.now();
+  if (!force && _lastSyncedAuthUserId === user.id && (now - _lastSyncedAuthTime < AUTH_SYNC_COOLDOWN_MS)) {
     return;
   }
+  if (_syncAuthInFlight && _lastSyncedAuthUserId === user.id) {
+    return await _syncAuthInFlight;
+  }
 
-  try {
-    // Generate deterministic short internal player_id for Google accounts before real Web3 wallet is linked
-    const internalWallet = ('0xpgt' + user.id.replace(/-/g, '').substring(0, 8)).toLowerCase();
+  _lastSyncedAuthUserId = user.id;
+  _lastSyncedAuthTime = now;
 
-    let { data: userRow, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle();
+  _syncAuthInFlight = (async () => {
+    let activeAppState = getAppState();
+    if (!activeAppState || !activeAppState.state) {
+      const StateClass = (typeof PolyState !== 'undefined') ? PolyState : (typeof window !== 'undefined' ? window.PolyState : null);
+      if (StateClass) {
+        window.appState = new StateClass();
+        activeAppState = window.appState;
+      }
+    }
+    if (!activeAppState || !activeAppState.state) {
+      console.error("[syncAuthenticatedUser] Critical error: PolyState instance is uninitialized");
+      return;
+    }
 
-    const rawGoogleName = user.user_metadata?.full_name || user.user_metadata?.name || '';
-    const initialUsername = (rawGoogleName && !rawGoogleName.includes('@')) ? rawGoogleName : '';
+    try {
+      // Generate deterministic short internal player_id for Google accounts before real Web3 wallet is linked
+      const internalWallet = ('0xpgt' + user.id.replace(/-/g, '').substring(0, 8)).toLowerCase();
 
-    if (!userRow) {
-      // Check if user exists by internal player_id or existing user_id
-      let { data: existingWalletRow } = await supabase
+      // Match user_id, web3_auth_id, or deterministic player_id in a single query to avoid 3x fallback queries
+      let { data: initialRows, error } = await supabase
         .from('users')
         .select('*')
-        .or(`player_id.eq.${internalWallet},user_id.eq.${user.id}`)
-        .maybeSingle();
+        .or(`user_id.eq.${user.id},web3_auth_id.eq.${user.id},player_id.eq.${internalWallet}`)
+        .order('created_at', { ascending: true })
+        .limit(1);
+      let userRow = (Array.isArray(initialRows) && initialRows.length > 0) ? initialRows[0] : null;
+
+      const rawGoogleName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+      const initialUsername = (rawGoogleName && !rawGoogleName.includes('@')) ? rawGoogleName : '';
+
+      if (!userRow) {
+        let existingWalletRow = null;
 
       // Check if a standalone Web3 profile already exists for the active wallet (user_id IS NULL)
       let existingStandaloneRow = null;
@@ -2628,15 +2647,19 @@ async function syncAuthenticatedUser(user) {
     }
 
     if (userRow) {
-      // Keep app_version fresh in database
-      try {
-        supabase.from('users').update({ app_version: APP_VERSION ? `v${APP_VERSION}` : 'v1.5.033' }).eq('user_id', user.id).then(() => {});
-      } catch (e) {}
+      // Keep app_version fresh in database only when version actually changed
+      const targetAppVersion = APP_VERSION ? `v${APP_VERSION}` : 'v1.5.033';
+      if (userRow.app_version !== targetAppVersion && userRow.player_id) {
+        userRow.app_version = targetAppVersion;
+        try {
+          supabase.from('users').update({ app_version: targetAppVersion }).eq('player_id', userRow.player_id).then(() => {});
+        } catch (e) {}
+      }
       // Only set username if real name is available and db username is blank
-      if ((!userRow.username || userRow.username.trim() === '') && initialUsername) {
+      if ((!userRow.username || userRow.username.trim() === '') && initialUsername && userRow.player_id) {
         userRow.username = initialUsername;
         try {
-          await supabase.from('users').update({ username: initialUsername }).eq('user_id', user.id);
+          await supabase.from('users').update({ username: initialUsername }).eq('player_id', userRow.player_id);
         } catch (e) {}
       }
 
@@ -3096,8 +3119,15 @@ async function syncAuthenticatedUser(user) {
         window.checkMultiAccountIP(userPid || activeWallet, linked);
       }
     }
-  } catch (e) {
-    console.error('Error syncing authenticated social user:', e);
+    } catch (e) {
+      console.error('Error syncing authenticated social user:', e);
+    }
+  })();
+
+  try {
+    return await _syncAuthInFlight;
+  } finally {
+    _syncAuthInFlight = null;
   }
 }
 

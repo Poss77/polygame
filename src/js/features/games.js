@@ -645,9 +645,10 @@ export function checkIsCurrentUser(player) {
   return false;
 }
 
-// 90-second client cache for Grand Prix podium & weekly standings
+// 5-minute client cache + in-flight deduplication for Grand Prix podium & weekly standings
 let cachedGrandPrixTop3 = null;
 let lastGrandPrixFetchTime = 0;
+let inFlightGrandPrixPromise = null;
 const GRAND_PRIX_CACHE_TTL_MS = 5 * 60 * 1000; // 5-minute TTL to reduce Supabase edge log ingestion
 
 let cachedStandingGameResults = null;
@@ -672,6 +673,14 @@ export async function loadTopWeeklyArcadePlayers(forceRefresh = false) {
     return;
   }
 
+  if (!forceRefresh && inFlightGrandPrixPromise) {
+    try {
+      const top3 = await inFlightGrandPrixPromise;
+      if (top3) renderGrandPrixPodium(top3, container);
+    } catch (_) {}
+    return;
+  }
+
   const client = (typeof supabase !== 'undefined' && supabase) ? supabase : (typeof window !== 'undefined' ? window.supabaseClient : null);
   if (!client) {
     container.innerHTML = '<div class="podium-empty-slot" style="grid-column: 1 / -1;">Database connecting...</div>';
@@ -687,7 +696,7 @@ export async function loadTopWeeklyArcadePlayers(forceRefresh = false) {
     return !conf || conf.test_mode !== true;
   });
 
-  try {
+  inFlightGrandPrixPromise = (async () => {
     const POINTS_LOOKUP = GRAND_PRIX_POINTS_LOOKUP; // 1st: 5pts, 2nd: 4pts, 3rd: 3pts, 4th: 2pts, 5th-10th: 1pt
 
     // Fetch top 10 for all eligible games concurrently
@@ -759,10 +768,17 @@ export async function loadTopWeeklyArcadePlayers(forceRefresh = false) {
     const top3 = sortedPlayers.slice(0, 3);
     cachedGrandPrixTop3 = top3;
     lastGrandPrixFetchTime = Date.now();
+    return top3;
+  })();
+
+  try {
+    const top3 = await inFlightGrandPrixPromise;
     renderGrandPrixPodium(top3, container);
   } catch (err) {
     console.error("[loadTopWeeklyArcadePlayers] Unexpected error:", err);
     container.innerHTML = '<div class="podium-empty-row" style="color: var(--color-danger);">Error loading weekly champions.</div>';
+  } finally {
+    inFlightGrandPrixPromise = null;
   }
 }
 

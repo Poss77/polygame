@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Supabase Log Ingestion Reduction: Eliminate Multi-Tab Auth Sync Storm & Deduplicate Startup Queries (`v1.5.790`)**:
+  - **🛡️ Auth Sync Deduplication & 60s Cooldown ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Resolved cross-tab `SIGNED_IN` / `INITIAL_SESSION` broadcast storm where opening multiple tabs caused `syncAuthenticatedUser` to fire thousands of times per day (~44,000+ edge logs/day).
+    - Added in-flight promise deduplication (`_syncAuthInFlight`) and a 60-second per-user cooldown (`AUTH_SYNC_COOLDOWN_MS`).
+    - Upgraded initial profile lookup in `syncAuthenticatedUser` and `syncProfileWithDb` to match `user_id`, `web3_auth_id`, and `player_id` in a single query, eliminating 2 fallback `SELECT *` queries and 1 adoption `PATCH` per sync for Web3-linked accounts.
+    - Guarded `app_version` database updates so `PATCH /rest/v1/users` only executes when `userRow.app_version !== targetAppVersion`, saving ~7,400 redundant write logs per day.
+  - **⚡ In-Flight Promise Locks & IP Sync Throttling ([`src/js/features/games.js`](src/js/features/games.js), [`src/js/features/daily-hub.js`](src/js/features/daily-hub.js), [`src/js/utils/discord.js`](src/js/utils/discord.js))**:
+    - Added `inFlightGrandPrixPromise` to `loadTopWeeklyArcadePlayers()` so concurrent callers on page load share a single 8-game query batch instead of firing 24 parallel requests.
+    - Added `inFlightHubStatusPromise` to `refreshDailyGamesHubStatus()` to prevent duplicate `get_daily_games_hub_status` RPC calls during initialization.
+    - Added a 30-minute cross-tab `localStorage` throttle (`polygame_ip_synced_ts_*`) to `checkMultiAccountIP()`, reducing `user_ips` queries and upserts by ~95% (~9,000 logs/day saved).
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.790"` and synchronized all 12 cache busters.
+
 - **Terms of Service: Prohibit Concurrent Games & Multi-Tabbing (`v1.5.789`)**:
   - **📜 Terms of Service Update ([`terms.html`](terms.html))**:
     - Added explicit clause in Section 5 (*Anti-Cheat, Fair Play & Sybil Defense Policy*) prohibiting playing multiple games at once.

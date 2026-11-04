@@ -374,6 +374,16 @@ export async function checkMultiAccountIP(playerIdOrAddress, linkedAddress = nul
   const normalizedPid = activePid.toLowerCase();
   const linkedAddr = (linkedAddress || (window.appState && window.appState.state && window.appState.state.linkedWalletAddress) || '').toLowerCase();
 
+  // Throttle user_ips lookup & upsert to once per 30 minutes per player_id across all tabs
+  const ipSyncKey = `polygame_ip_synced_ts_${normalizedPid}`;
+  try {
+    const lastSyncTs = parseInt(localStorage.getItem(ipSyncKey) || '0', 10);
+    if (lastSyncTs && (Date.now() - lastSyncTs < 30 * 60 * 1000)) {
+      return;
+    }
+    localStorage.setItem(ipSyncKey, String(Date.now()));
+  } catch (_) {}
+
   try {
     // 1. Fetch public IP address via ipify API
     let ip = window._userPublicIP;
