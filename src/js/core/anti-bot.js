@@ -277,7 +277,10 @@ class AntiBotSentinel {
       'direct_function_call': 'Direct Method Call (Console Script Execution)',
       'score_limit_500k_exceeded': 'Score Limit Exceeded (> 500,000 pts)',
       'autoclicker_timing_detected': 'Macro Pattern (Zero-Jitter Autoclicker)',
-      'automated_webdriver': 'Automated Headless Browser (navigator.webdriver)'
+      'automated_webdriver': 'Automated Headless Browser (navigator.webdriver)',
+      'synthetic_input_detected': 'Synthetic DOM Input (Automated Script Detected)',
+      'unfocused_background_session': 'Unfocused Background Play (Multi-Tab Scripting)',
+      'zero_input_anomaly': 'Zero-Input Anomaly (Automated / Memory Injection)'
     };
     return map[reason] || reason || 'Unverified Client Input';
   }

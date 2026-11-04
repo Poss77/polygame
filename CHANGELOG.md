@@ -5,6 +5,25 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Anti-Cheat: Universal Arcade Telemetry Sentinel (Hardware Inputs & Focus Integrity) (`v1.5.792`)**:
+  - **🛡️ Universal Telemetry Collector ([`src/js/features/arcade-security.js`](src/js/features/arcade-security.js), [`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Automatically attaches global capture listeners during every active arcade session across all 9 games (Cyber Drift, Astro-Dodge, Cyber Invaders, Cyber Stacker, Cyber Skeet, Cyber Defense, Cyber Runner, Cyber 2048, Cyber Tetris).
+    - Measures genuine physical hardware inputs (`event.isTrusted === true`) vs. synthetic script dispatchers (`isTrusted === false`).
+    - Tracks active window focus ratio (`focusedTimeMs / durationMs`) via `document.hasFocus()` and `document.visibilityState`.
+    - Bundles telemetry metrics (`is_trusted_ratio`, `focus_ratio`, `input_count`, `synthetic_count`, `duration_ms`) into `endArcadeSession()`.
+  - **⚡ Authoritative Server Validation & Bot Warning Pipeline ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/add_universal_arcade_telemetry_sentinel.sql`](supabase/add_universal_arcade_telemetry_sentinel.sql))**:
+    - Updated `end_arcade_session` with an 8-parameter signature and a backward-compatible 7-parameter forwarder.
+    - Evaluates 3 universal heuristic conditions without clamping legitimate human player scores:
+      1. `synthetic_input_detected`: Triggers when `synthetic_count > 0` and `is_trusted_ratio < 0.85`.
+      2. `unfocused_background_session`: Triggers when `duration >= 15s`, `focus_ratio < 0.20`, and `score > 500`.
+      3. `zero_input_anomaly`: Triggers when `duration >= 20s`, `score > 2,500`, and `input_count == 0` (catches god-mode / memory injectors).
+    - On violation: Voids payout (0 PGT), discards score (0 PTS), burns session, atomically increments `users.bot_warning`, inserts log into `public.bot_security_logs`, and dispatches fair-play warning to in-game inbox.
+    - Added `telemetry` JSONB column on `public.arcade_sessions` for immutable post-mortem forensic review.
+  - **🚨 Client Fair-Play Warning Modal ([`src/js/core/anti-bot.js`](src/js/core/anti-bot.js))**:
+    - Displays high-contrast alert modal informing the user of the specific violation and cumulative warning count.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.792"` and synchronized all 12 cache busters.
+
 - **Anti-Cheat: Authoritative Single Active Game Session & Frictionless Auto-Retire (`v1.5.791`)**:
   - **🛡️ Server-Side Single Active Session Enforcement ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/enforce_single_active_arcade_session.sql`](supabase/enforce_single_active_arcade_session.sql))**:
     - When `start_arcade_session` is called, any prior unfinalized `in_progress` session for the player is automatically updated to `status = 'aborted'`.

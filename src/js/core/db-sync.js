@@ -1199,6 +1199,12 @@ export async function startArcadeSession(gameName) {
           profileCareerEl.innerText = appState.state.totalArcadePlays.toLocaleString();
         }
       }
+
+      // Universal Telemetry Sentinel (Step 1): Begin tracking hardware input & focus metrics
+      if (typeof window !== 'undefined' && window.arcadeSecurity && typeof window.arcadeSecurity.startTelemetryTracking === 'function') {
+        window.arcadeSecurity.startTelemetryTracking(data.session_id, gameName);
+      }
+
       return data.session_id;
     }
   } catch (err) {
@@ -1221,6 +1227,13 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
   const rawNft = nftMult || (1 + ((multis.nftGameMultiplier || 0) / 100));
   const verifiedNftMult = Math.max(1.0, Math.min(10.0, rawNft));
   const relicMult = (multis && (multis.isApexUnlocked || multis.isSeason1ApexUnlocked)) ? 1.5 : 1.0;
+
+  // Universal Telemetry Sentinel (Step 1): Finalize input & focus telemetry metrics
+  let telemetry = {};
+  if (typeof window !== 'undefined' && window.arcadeSecurity && typeof window.arcadeSecurity.stopTelemetryTracking === 'function') {
+    telemetry = window.arcadeSecurity.stopTelemetryTracking(sessionId);
+  }
+
   try {
     const { data, error } = await executeAuthenticatedRpc('end_arcade_session', {
       p_player_id: wallet,
@@ -1229,7 +1242,8 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
       p_bonus_items: Math.floor(bonusItems),
       p_bonus_tokens: Math.floor(bonusTokens),
       p_nft_multiplier: verifiedNftMult,
-      p_relic_multiplier: relicMult
+      p_relic_multiplier: relicMult,
+      p_telemetry: telemetry
     });
     if (!error && data && data.success) {
       const updateData = {};
@@ -1295,6 +1309,11 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
       return data;
     } else if (!error && data) {
       console.warn("[endArcadeSession] Server rejected arcade session:", data.error || data);
+      if (data.bot_warning) {
+        if (typeof window !== 'undefined' && window.antiBot && typeof window.antiBot.showBotWarningModal === 'function') {
+          window.antiBot.showBotWarningModal(data.bot_warning_count || 1, data.violation || data.error, data.game_name || 'Arcade Game');
+        }
+      }
       return data;
     } else if (error) {
       console.warn("[endArcadeSession] RPC error:", error.message || error.code || error, error);

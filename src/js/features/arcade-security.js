@@ -390,6 +390,126 @@ function cleanupModal() {
   }
 }
 
+// ==============================================================================
+// UNIVERSAL ARCADE TELEMETRY SENTINEL (STEP 1)
+// Collects client-side input provenance (isTrusted), window focus ratio,
+// and physical action counts across all arcade sessions to defeat bots & macros.
+// ==============================================================================
+let activeTelemetrySession = null;
+let telemetryListenersAttached = false;
+
+function onTelemetryInput(e) {
+  if (!activeTelemetrySession || !e) return;
+  const isTrusted = (e.isTrusted === true);
+  if (isTrusted) {
+    activeTelemetrySession.trustedInputs++;
+  } else {
+    activeTelemetrySession.syntheticInputs++;
+    console.warn(`[ArcadeSecurity] Untrusted synthetic ${e.type || 'DOM'} event detected during active arcade session!`);
+  }
+  activeTelemetrySession.totalInputs++;
+}
+
+function updateTelemetryFocus() {
+  if (!activeTelemetrySession) return;
+  const now = Date.now();
+  const currentlyFocused = (typeof document !== 'undefined')
+    ? (document.hasFocus() && document.visibilityState === 'visible')
+    : true;
+
+  if (activeTelemetrySession.isFocused) {
+    activeTelemetrySession.focusedTimeMs += Math.max(0, now - activeTelemetrySession.lastFocusChange);
+  }
+  activeTelemetrySession.lastFocusChange = now;
+  activeTelemetrySession.isFocused = currentlyFocused;
+}
+
+function attachTelemetryListeners() {
+  if (telemetryListenersAttached || typeof window === 'undefined') return;
+
+  const eventTypes = [
+    'keydown', 'keyup',
+    'pointerdown', 'pointerup',
+    'mousedown', 'mouseup',
+    'touchstart', 'touchend'
+  ];
+
+  eventTypes.forEach(evt => {
+    window.addEventListener(evt, onTelemetryInput, { capture: true, passive: true });
+  });
+
+  window.addEventListener('focus', updateTelemetryFocus, { passive: true });
+  window.addEventListener('blur', updateTelemetryFocus, { passive: true });
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', updateTelemetryFocus, { passive: true });
+  }
+
+  telemetryListenersAttached = true;
+}
+
+/**
+ * Starts collecting hardware input & focus telemetry for an active arcade session.
+ */
+export function startTelemetryTracking(sessionId, gameName = 'Arcade') {
+  if (!sessionId) return;
+  attachTelemetryListeners();
+
+  const now = Date.now();
+  const initiallyFocused = (typeof document !== 'undefined')
+    ? (document.hasFocus() && document.visibilityState === 'visible')
+    : true;
+
+  activeTelemetrySession = {
+    sessionId: String(sessionId),
+    gameName: gameName,
+    startTime: now,
+    lastFocusChange: now,
+    isFocused: initiallyFocused,
+    focusedTimeMs: 0,
+    totalInputs: 0,
+    trustedInputs: 0,
+    syntheticInputs: 0
+  };
+}
+
+/**
+ * Stops collecting telemetry and summarizes metrics for server validation.
+ */
+export function stopTelemetryTracking(sessionId) {
+  if (!activeTelemetrySession) {
+    return {
+      is_trusted_ratio: 1.0,
+      focus_ratio: 1.0,
+      input_count: 0,
+      synthetic_count: 0,
+      duration_ms: 0
+    };
+  }
+
+  updateTelemetryFocus();
+
+  const now = Date.now();
+  const durationMs = Math.max(1, now - activeTelemetrySession.startTime);
+  const totalInputs = activeTelemetrySession.totalInputs;
+  const trustedInputs = activeTelemetrySession.trustedInputs;
+  const syntheticInputs = activeTelemetrySession.syntheticInputs;
+  const focusedMs = activeTelemetrySession.focusedTimeMs;
+
+  const focusRatio = Math.min(1.0, Math.max(0.0, focusedMs / durationMs));
+  const isTrustedRatio = totalInputs > 0 ? Math.min(1.0, Math.max(0.0, trustedInputs / totalInputs)) : 1.0;
+
+  const telemetryResult = {
+    is_trusted_ratio: Number(isTrustedRatio.toFixed(3)),
+    focus_ratio: Number(focusRatio.toFixed(3)),
+    input_count: totalInputs,
+    synthetic_count: syntheticInputs,
+    duration_ms: durationMs
+  };
+
+  activeTelemetrySession = null;
+  return telemetryResult;
+}
+
 // Expose on window for global access across games
 export const arcadeSecurity = {
   getArcadePlayCount,
@@ -403,7 +523,9 @@ export const arcadeSecurity = {
   pauseAllArcadeGames,
   resumeAllArcadeGames,
   promptTurnstileChallenge,
-  abortVerification
+  abortVerification,
+  startTelemetryTracking,
+  stopTelemetryTracking
 };
 
 if (typeof window !== 'undefined') {
