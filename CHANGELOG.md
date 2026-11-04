@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Anti-Cheat: Authoritative Single Active Game Session & Frictionless Auto-Retire (`v1.5.791`)**:
+  - **🛡️ Server-Side Single Active Session Enforcement ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/enforce_single_active_arcade_session.sql`](supabase/enforce_single_active_arcade_session.sql))**:
+    - When `start_arcade_session` is called, any prior unfinalized `in_progress` session for the player is automatically updated to `status = 'aborted'`.
+    - Honest players who quit, refreshed, or closed a game without finishing can start a new game immediately with **zero wait time, zero friction, and zero errors**.
+    - If a bot or multi-tabber spawns parallel sessions (e.g. 15 tabs simultaneously), all previous sessions are instantly aborted, leaving only the active foreground game valid.
+    - Updated `end_arcade_session` to strictly require `status = 'in_progress'`. Any aborted or secondary concurrent session that attempts to submit a score is rejected with 0 PGT and 0 leaderboard points.
+  - **⚡ Client Tab Visibility Auto-Pause ([`src/js/features/games.js`](src/js/features/games.js))**:
+    - Added `visibilitychange` listener that automatically pauses running arcade games when the tab is hidden (`document.hidden = true`).
+    - Resumes smoothly when the tab is visible again, completely preventing automated background scripts from playing hidden games in secondary tabs.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.791"` and synchronized all 12 cache busters.
+
 - **Supabase Log Ingestion Reduction: Eliminate Multi-Tab Auth Sync Storm & Deduplicate Startup Queries (`v1.5.790`)**:
   - **🛡️ Auth Sync Deduplication & 60s Cooldown ([`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
     - Resolved cross-tab `SIGNED_IN` / `INITIAL_SESSION` broadcast storm where opening multiple tabs caused `syncAuthenticatedUser` to fire thousands of times per day (~44,000+ edge logs/day).

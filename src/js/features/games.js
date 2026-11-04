@@ -1201,3 +1201,28 @@ if (typeof window !== 'undefined') {
   window.openMyWeeklyStandingModal = openMyWeeklyStandingModal;
 }
 
+// 🛡️ Anti-Cheat & Fair Play: Auto-pause arcade games when tab is hidden
+// Prevents background automated loops (e.g. multi-tab driving or bot scripts) while tab is invisible
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      ARCADE_GAMES_LIST.forEach(g => {
+        const inst = window[g.windowInstance];
+        if (inst && inst[g.playingProp] && 'isPaused' in inst && !inst.isPaused) {
+          inst._wasAutoPausedByTab = true;
+          inst.isPaused = true;
+        }
+      });
+    } else {
+      ARCADE_GAMES_LIST.forEach(g => {
+        const inst = window[g.windowInstance];
+        if (inst && inst._wasAutoPausedByTab) {
+          inst._wasAutoPausedByTab = false;
+          inst.isPaused = false;
+        }
+      });
+    }
+  });
+}
+
+
