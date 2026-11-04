@@ -1086,7 +1086,7 @@ class CyberInvaders {
 
       if (isHyperActive) {
         // Hyper-Beam Piercing Mega Lasers (Sleek aerodynamic energy bolt)
-        this.bullets.push({ x: px + pw / 2 - 2, y: py - 18, w: 4, h: 16, vy: -12.0, vx: 0, isBeam: true });
+        this.bullets.push({ x: px + pw / 2 - 3.5, y: py - 20, w: 7, h: 22, vy: -12.0, vx: 0, isBeam: true });
 
       } else if (this.weaponLevel === 1) {
 
@@ -3113,15 +3113,15 @@ class CyberInvaders {
         else if (this.nftRarity.tier === 'Mythic') beamColor = 'rgba(255, 0, 85, 0.16)';
       }
       this.ctx.save();
-      // Outer translucent energy channel (Only 8px wide, gentle 6px glow for crystal-clear visibility)
+      // Outer translucent energy channel (12px wide, gentle 8px glow for clear playfield visibility)
       this.ctx.fillStyle = beamColor;
       this.ctx.shadowColor = beamShadow;
-      this.ctx.shadowBlur = 6;
-      this.ctx.fillRect(centerX - 4, 0, 8, this.player.y);
-      // Sleek razor laser needle (2px wide)
+      this.ctx.shadowBlur = 8;
+      this.ctx.fillRect(centerX - 6, 0, 12, this.player.y);
+      // Energetic laser core (3px wide)
       this.ctx.fillStyle = beamCore;
-      this.ctx.shadowBlur = 3;
-      this.ctx.fillRect(centerX - 1, 0, 2, this.player.y);
+      this.ctx.shadowBlur = 4;
+      this.ctx.fillRect(centerX - 1.5, 0, 3, this.player.y);
       this.ctx.restore();
     }
 
@@ -3156,13 +3156,13 @@ class CyberInvaders {
     this.ctx.save();
     for (const b of this.bullets) {
       if (b.isBeam) {
-        // Sleek aerodynamic piercing mega laser bolt
+        // High-energy piercing mega laser bolt (7x22px plasma javelin)
         this.ctx.fillStyle = bulletColor;
         this.ctx.shadowColor = bulletColor;
-        this.ctx.shadowBlur = 6;
+        this.ctx.shadowBlur = 10;
         this.ctx.fillRect(b.x - 1, b.y, b.w + 2, b.h);
         this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(b.x + Math.floor(b.w / 2) - 1, b.y + 2, 2, b.h - 4);
+        this.ctx.fillRect(b.x + 2, b.y + 2, Math.max(2, b.w - 4), b.h - 4);
       } else {
         this.ctx.fillStyle = bulletGlow;
         this.ctx.fillRect(b.x - 2, b.y - 2, b.w + 4, b.h + 4);

@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Invaders: Enhanced Piercing Laser Bolts (7x22px Plasma Javelin) (`v1.5.795`)**:
+  - **⚡ Scaled Piercing Laser Bolt Geometry ([`invaders.js`](invaders.js))**:
+    - Enlarged piercing mega laser bolts from `4x16px` to `7x22px` plasma javelins for greater visual impact and satisfying kinetic presence.
+    - Updated laser bolt glow (`shadowBlur: 10`) with a radiant white energy core (`3x18px`).
+    - Adjusted outer beam channel to 12px with 3px core, keeping background transparency intact so enemies and projectiles remain clearly visible.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.795"` and synchronized all cache busters.
+
 - **Cyber Invaders: Full EMP Bomb Block Scoring & Sleek Translucent Hyper-Beam (`v1.5.794`)**:
   - **💣 EMP Bomb Point & Combo Pipeline Overhaul ([`invaders.js`](invaders.js))**:
     - Fixed bomb detonation to award full points based on enemy type (Tanks: 30 pts, Splitters: 25 pts, Regular: 15 pts) scaled by the active combo multiplier (up to 5x).
