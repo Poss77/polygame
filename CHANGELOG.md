@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Fix: Resolve Player ID Mutation on Update & Telemetry Mouse/Touch Move Input Capture (`v1.5.793`)**:
+  - **🛡️ Fix Account Integrity Trigger (`trg_enforce_account_identity_integrity`)**:
+    - Strictly enforced `NEW.player_id := OLD.player_id;` on `UPDATE` operations so that `users.player_id` is permanently immutable after creation.
+    - Resolved foreign key violation (`user_stakes_player_id_fkey`) caused by the trigger attempting to re-evaluate `player_id` during faucet claims, arcade session updates, and staking actions.
+    - Fixed `start_arcade_session` so genuine player sessions are issued without obstruction.
+    - Cleared erroneous warning flags and restored affected player accounts to `bot_warning = 0`.
+  - **🕹️ Expanded Telemetry Hardware Input Listeners ([`src/js/features/arcade-security.js`](src/js/features/arcade-security.js))**:
+    - Added `mousemove` and `touchmove` events to the telemetry capture array.
+    - Ensures players who navigate games primarily through cursor / mouse motion (such as Astro-Dodge or touchpad dragging in Cyber Drift) have their genuine hardware inputs fully recorded and verified.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.793"` and synchronized all cache busters.
+
 - **Anti-Cheat: Universal Arcade Telemetry Sentinel (Hardware Inputs & Focus Integrity) (`v1.5.792`)**:
   - **🛡️ Universal Telemetry Collector ([`src/js/features/arcade-security.js`](src/js/features/arcade-security.js), [`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
     - Automatically attaches global capture listeners during every active arcade session across all 9 games (Cyber Drift, Astro-Dodge, Cyber Invaders, Cyber Stacker, Cyber Skeet, Cyber Defense, Cyber Runner, Cyber 2048, Cyber Tetris).

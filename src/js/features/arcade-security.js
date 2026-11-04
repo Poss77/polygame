@@ -431,7 +431,8 @@ function attachTelemetryListeners() {
     'keydown', 'keyup',
     'pointerdown', 'pointerup',
     'mousedown', 'mouseup',
-    'touchstart', 'touchend'
+    'touchstart', 'touchend',
+    'mousemove', 'touchmove'
   ];
 
   eventTypes.forEach(evt => {
