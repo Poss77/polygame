@@ -5,6 +5,19 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Invaders: Full EMP Bomb Block Scoring & Sleek Translucent Hyper-Beam (`v1.5.794`)**:
+  - **💣 EMP Bomb Point & Combo Pipeline Overhaul ([`invaders.js`](invaders.js))**:
+    - Fixed bomb detonation to award full points based on enemy type (Tanks: 30 pts, Splitters: 25 pts, Regular: 15 pts) scaled by the active combo multiplier (up to 5x).
+    - Added floating score indicators (`+pts`) above every destroyed enemy block so players clearly see their points accumulate.
+    - Added wave intercept bonuses (+100 pts), overdrive gauge charging, and powerup drop rolls for all bomb-destroyed invaders.
+    - Extended EMP blast to damage Bosses (-50 Boss HP) and eliminate UFOs with full rewards (+75 / +250 Golden UFO pts) and total score blast banners (`💣 TOTAL +XXX PTS!`).
+  - **⚡ Sleek Translucent Hyper-Beam Redesign ([`invaders.js`](invaders.js))**:
+    - Reduced outer beam width from 32px to 8px and outer glow blur from 25px to 6px, replacing the giant solid cyan pillar with an aerodynamic translucent energy lance.
+    - Razor-sharp 2px bright laser core with 84% background transparency so incoming enemy bullets, diving aliens, and background stars remain 100% visible while firing.
+    - Sleeker piercing mega-laser bolts (`w: 4, h: 16`) inside the beam channel.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.794"` and synchronized all cache busters.
+
 - **Fix: Resolve Player ID Mutation on Update & Telemetry Mouse/Touch Move Input Capture (`v1.5.793`)**:
   - **🛡️ Fix Account Integrity Trigger (`trg_enforce_account_identity_integrity`)**:
     - Strictly enforced `NEW.player_id := OLD.player_id;` on `UPDATE` operations so that `users.player_id` is permanently immutable after creation.
