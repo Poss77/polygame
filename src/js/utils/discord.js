@@ -399,53 +399,21 @@ export async function checkMultiAccountIP(playerIdOrAddress, linkedAddress = nul
     const isWhitelisted = WHITELISTED_ADMIN_IPS.has(ip) || 
       (window.appState?.state?.whitelistedIps && Array.isArray(window.appState.state.whitelistedIps) && window.appState.state.whitelistedIps.includes(ip));
 
-    // 2. Fetch IP records from user_ips table in Supabase
+    // 2. Sync IP record and check shared cluster via server-side SECURITY DEFINER RPC
     const client = supabase || window.supabase || window.supabaseClient;
-    if (!client || typeof client.from !== 'function') return;
+    if (!client || typeof client.rpc !== 'function') return;
 
-    let { data: ipRecords, error } = await client
-      .from('user_ips')
-      .select('*')
-      .eq('ip_address', ip);
+    let uniquePlayers = [normalizedPid];
+    const { data: rpcRes, error: rpcErr } = await client.rpc('sync_player_ip', {
+      p_player_id: normalizedPid,
+      p_ip_address: ip
+    });
 
-    if (error) {
-      // Table does not exist or not ready yet
+    if (!rpcErr && rpcRes && Array.isArray(rpcRes.shared_players)) {
+      uniquePlayers = [...new Set(rpcRes.shared_players.map(p => String(p || '').toLowerCase()).filter(Boolean))];
+    } else if (rpcErr) {
       return;
     }
-
-    // 3. Upsert current player_id & IP
-    const hasPlayerIdCol = ipRecords && ipRecords.length > 0 ? ('player_id' in ipRecords[0]) : true;
-
-    if (hasPlayerIdCol) {
-      const { error: upsertErr } = await client.from('user_ips').upsert({
-        player_id: normalizedPid,
-        ip_address: ip,
-        last_seen: new Date().toISOString()
-      }, { onConflict: 'player_id' });
-
-      if (upsertErr) {
-        // Fallback for legacy wallet_address column
-        await client.from('user_ips').upsert({
-          wallet_address: normalizedPid,
-          ip_address: ip,
-          last_seen: new Date().toISOString()
-        }, { onConflict: 'wallet_address' }).catch(() => {});
-      }
-    } else {
-      // Legacy wallet_address column
-      await client.from('user_ips').upsert({
-        wallet_address: normalizedPid,
-        ip_address: ip,
-        last_seen: new Date().toISOString()
-      }, { onConflict: 'wallet_address' }).catch(() => {});
-    }
-
-    // 4. Determine unique player accounts on this IP
-    const playerList = (ipRecords || []).map(r => (r.player_id || r.wallet_address || '').toLowerCase()).filter(Boolean);
-    if (!playerList.includes(normalizedPid)) {
-      playerList.push(normalizedPid);
-    }
-    const uniquePlayers = [...new Set(playerList)];
 
     // 5. If > 2 accounts share this IP address, send Admin Alert to Discord!
     if (uniquePlayers.length > 2) {

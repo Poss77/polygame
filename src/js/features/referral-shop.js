@@ -690,38 +690,33 @@ export async function executeReferralAdoption() {
     let updatedL4 = appState.state.referralsL4 || 0;
     let updatedTotal = (appState.state.referralsCount || 0) + adoptedCount;
 
-    if (client) {
-      try {
-        // Direct RPC guarded by anti-replay and anti-loop validation in PostgreSQL
-        const { data, error } = await client.rpc('adopt_referrals', {
-          p_buyer_id: buyerId,
-          p_l5: cartQuantities[5] || 0,
-          p_l4: cartQuantities[4] || 0,
-          p_l3: cartQuantities[3] || 0,
-          p_l2: cartQuantities[2] || 0,
-          p_l1: cartQuantities[1] || 0,
-          p_l0: cartQuantities[0] || 0,
-          p_recruit: cartQuantities['recruit'] || 0,
-          p_payment_method: 'POL',
-          p_pgt_cost: 0,
-          p_tx_hash: tx.hash,
-          p_pol_cost: disc.finalPricePOL
-        });
-
-        if (data && data.success) {
-          adoptedCount = data.adopted_count || totalCount;
-          if (data.referrals_l1 !== undefined) updatedL1 = data.referrals_l1;
-          if (data.referrals_l2 !== undefined) updatedL2 = data.referrals_l2;
-          if (data.referrals_l3 !== undefined) updatedL3 = data.referrals_l3;
-          if (data.referrals_l4 !== undefined) updatedL4 = data.referrals_l4;
-          if (data.referrals_count !== undefined) updatedTotal = data.referrals_count;
-        } else if (error) {
-          console.warn('[ReferralShop] POL RPC notice:', error.message);
-        } else if (data && !data.success) {
-          console.warn('[ReferralShop] RPC returned non-success:', data.error);
+    if (client && client.functions) {
+      triggerToast("Verifying on-chain POL transaction...", "info");
+      const { data, error } = await client.functions.invoke('adopt-referrals', {
+        body: {
+          txHash: tx.hash,
+          playerId: buyerId,
+          quantities: {
+            5: cartQuantities[5] || 0,
+            4: cartQuantities[4] || 0,
+            3: cartQuantities[3] || 0,
+            2: cartQuantities[2] || 0,
+            1: cartQuantities[1] || 0,
+            0: cartQuantities[0] || 0,
+            recruit: cartQuantities['recruit'] || 0
+          }
         }
-      } catch (rpcErr) {
-        console.warn('[ReferralShop] Verification error notice:', rpcErr);
+      });
+
+      if (data && data.success) {
+        adoptedCount = data.adopted_count || totalCount;
+        if (data.referrals_l1 !== undefined) updatedL1 = data.referrals_l1;
+        if (data.referrals_l2 !== undefined) updatedL2 = data.referrals_l2;
+        if (data.referrals_l3 !== undefined) updatedL3 = data.referrals_l3;
+        if (data.referrals_l4 !== undefined) updatedL4 = data.referrals_l4;
+        if (data.referrals_count !== undefined) updatedTotal = data.referrals_count;
+      } else {
+        throw new Error(data?.error || error?.message || "Failed to verify on-chain POL payment.");
       }
     }
 

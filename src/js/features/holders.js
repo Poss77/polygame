@@ -221,18 +221,7 @@ async function recordSupplySnapshotIfNeeded(total) {
     }
 
     if (rpcErr) {
-      const { data } = await supabase
-        .from('pgt_supply_history')
-        .select('id')
-        .gte('created_at', currentHourStr)
-        .limit(1);
-
-      if (!data || data.length === 0) {
-        await supabase.from('pgt_supply_history').insert({
-          created_at: currentHourStr,
-          total_supply: total
-        });
-      }
+      console.warn("Supply snapshot RPC notice:", rpcErr.message);
     }
   } catch (e) {
     console.warn("Supply snapshot insert error:", e);
@@ -265,7 +254,7 @@ export function renderHoldersPage(page) {
       if (isUser && appState.state.username) displayName = appState.state.username;
       
       const nameHtml = row.username || (isUser && appState.state.username) 
-        ? `<strong style="color:var(--color-primary);">${displayName}</strong> <span style="font-size:0.75rem; color:var(--text-dim);">(${shortAddr})</span>` 
+        ? `<strong style="color:var(--color-primary);">${escapeHtml(displayName)}</strong> <span style="font-size:0.75rem; color:var(--text-dim);">(${escapeHtml(shortAddr)})</span>` 
         : shortAddr;
       
       const primaryScore = holdersMode === 'total' ? row.totalWealth : row.staked;
@@ -708,7 +697,7 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
           item.innerHTML = `
             <div style="display: flex; align-items: center; gap: 0.5rem;">
               <span style="font-weight: bold; color: ${row.rank <= 3 ? 'var(--color-warning)' : 'var(--text-muted)'}; min-width: 1.5rem;">#${row.rank}</span>
-              <span style="font-family: monospace; font-size: 0.85rem; color: ${isUser ? '#fff' : 'var(--text-white)'}; font-weight: ${isUser ? 'bold' : 'normal'};">${displayName} ${isUser ? '<span style="color:var(--color-accent); font-size:0.75rem;">(You)</span>' : ''}</span>
+              <span style="font-family: monospace; font-size: 0.85rem; color: ${isUser ? '#fff' : 'var(--text-white)'}; font-weight: ${isUser ? 'bold' : 'normal'};">${escapeHtml(displayName)} ${isUser ? '<span style="color:var(--color-accent); font-size:0.75rem;">(You)</span>' : ''}</span>
             </div>
             <div style="display: flex; align-items: center; gap: 1rem;">
               <span style="font-size: 0.8rem; color: var(--text-dim);">Score: ${Number(scoreVal).toLocaleString()}</span>
