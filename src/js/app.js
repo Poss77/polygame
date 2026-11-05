@@ -1005,6 +1005,7 @@ export function switchTab(tabId, subcategory = null) {
     if (typeof renderDailyQuestsUI === 'function') renderDailyQuestsUI();
 
     if (typeof window.loadTopWeeklyArcadePlayers === 'function') window.loadTopWeeklyArcadePlayers();
+    if (typeof window.loadWeeklyWinsLeaderboard === 'function') window.loadWeeklyWinsLeaderboard();
 
 
 
@@ -1853,6 +1854,7 @@ export function initializeApp() {
 
 
   loadInvadersLeaderboard();
+  loadWeeklyWinsLeaderboard();
 
 
 

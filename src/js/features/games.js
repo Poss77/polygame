@@ -49,6 +49,9 @@ export function switchGameCategory(category) {
   } else if (category === 'bet' && tabBet && gridBet) {
     tabBet.classList.add('active');
     gridBet.style.display = 'block';
+    if (typeof window.loadWeeklyWinsLeaderboard === 'function') {
+      window.loadWeeklyWinsLeaderboard();
+    }
   }
 
   // Ensure game view is closed and all active panels hidden when switching category

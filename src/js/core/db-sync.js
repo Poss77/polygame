@@ -1891,6 +1891,9 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
         multiplier: mult
       });
     }
+    if (pay > 0 && typeof window.loadWeeklyWinsLeaderboard === 'function') {
+      window.loadWeeklyWinsLeaderboard(true);
+    }
   } catch (e) {
     // Non-blocking log catch
   }

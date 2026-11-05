@@ -734,7 +734,7 @@ export async function loadWeeklyWinsLeaderboard(forceRefresh = false) {
     const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
     let { data, error } = await supabase.from('bet_wins')
-      .select('wallet_address, game, payout, multiplier, created_at')
+      .select('wallet_address, player_id, game, bet_amount, payout, multiplier, outcome, created_at')
       .gte('created_at', lastWeek)
       .gt('payout', 0)
       .order('payout', { ascending: false })
@@ -742,7 +742,7 @@ export async function loadWeeklyWinsLeaderboard(forceRefresh = false) {
       
     if (error || !data) {
       const res = await supabase.from('bet_wins')
-        .select('wallet_address, game, payout, multiplier, created_at')
+        .select('wallet_address, player_id, game, payout, multiplier, created_at')
         .gt('payout', 0)
         .order('payout', { ascending: false })
         .limit(10);
@@ -762,13 +762,13 @@ export async function loadWeeklyWinsLeaderboard(forceRefresh = false) {
     }
 
     // Fetch user profiles ONLY for the specific winning addresses to slash DB reads
-    const rawAddrs = Array.from(new Set(data.map(r => (r.wallet_address || r.player_id || '').toLowerCase()).filter(Boolean)));
+    const rawAddrs = Array.from(new Set(data.map(r => (r.player_id || r.wallet_address || '').toLowerCase()).filter(Boolean)));
     const userMap = {};
     if (rawAddrs.length > 0) {
       try {
-        const orFilters = rawAddrs.map(a => `player_id.eq.${a},linked_wallet_address.eq.${a}`).join(',');
+        const orFilters = rawAddrs.map(a => `player_id.ilike.${a},linked_wallet_address.ilike.${a}`).join(',');
         const { data: userProfiles } = await supabase.from('users')
-          .select('player_id, linked_wallet_address, username, user_id')
+          .select('player_id, linked_wallet_address, username, user_id, vip_until, vip_level')
           .or(orFilters)
           .limit(20);
         if (userProfiles) {
@@ -792,46 +792,31 @@ export async function loadWeeklyWinsLeaderboard(forceRefresh = false) {
 }
 
 function renderWeeklyWinsRows(data, userMap, scoreboard) {
-  const activeSt = (typeof getAppState === 'function' ? getAppState() : (window.appState || null));
   scoreboard.innerHTML = '';
 
   data.forEach((row, idx) => {
     const rank = idx + 1;
     const item = document.createElement('div');
     
-    const rawAddr = (row.wallet_address || row.player_id || '').toLowerCase();
-    const matchedUser = userMap[rawAddr] || { player_id: rawAddr };
+    const rawAddr = (row.player_id || row.wallet_address || '').toLowerCase();
+    const matchedUser = userMap[rawAddr] || userMap[(row.wallet_address || '').toLowerCase()] || { player_id: rawAddr };
     const isUser = checkIsUserRow(matchedUser);
-
-    let displayName = matchedUser.username;
-    if (isUser && activeSt?.state?.username) {
-      displayName = activeSt.state.username;
-    }
-
-    let isCustomName = !!(displayName && displayName.trim() !== '');
-
-    if (!isCustomName) {
-      if (rawAddr.length >= 10) {
-        displayName = `${rawAddr.substring(0, 6)}...${rawAddr.substring(rawAddr.length - 4)}`;
-      } else if (rawAddr.length > 0) {
-        displayName = `Player_${rawAddr.substring(Math.max(0, rawAddr.length - 4))}`;
-      } else {
-        displayName = 'Player';
-      }
-    }
+    const formattedNameHtml = formatLeaderboardName(matchedUser, isUser);
+    const safeGame = typeof escapeHtml === 'function' ? escapeHtml(row.game || 'Casino') : (row.game || 'Casino');
+    const safeMult = Number(row.multiplier || 0).toFixed(2).replace(/\.00$/, '');
     
     item.style.cssText = `display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); ${isUser ? 'background: rgba(0, 240, 255, 0.1); border-radius: 4px;' : ''}`;
     
     item.innerHTML = `
       <div style="display: flex; align-items: center; gap: 0.5rem;">
         <span style="font-weight: bold; color: ${rank <= 3 ? 'var(--color-warning)' : 'var(--text-muted)'}; min-width: 1.5rem;">#${rank}</span>
-        <span style="font-size: 0.85rem; font-weight: ${isCustomName ? '700' : '400'}; ${!isCustomName ? 'font-family: monospace;' : ''} color: ${isUser ? '#fff' : 'var(--color-primary)'};">
-          ${displayName} ${isUser ? '<span style="font-size: 0.75rem; color: var(--color-accent); margin-left: 0.25rem;">(You)</span>' : ''}
+        <span style="font-size: 0.85rem;">
+          ${formattedNameHtml} ${isUser ? '<span style="font-size: 0.75rem; color: var(--color-accent); margin-left: 0.25rem; font-weight: 700;">(You)</span>' : ''}
         </span>
       </div>
       <div style="display: flex; flex-direction: column; align-items: flex-end;">
         <span style="font-weight: 800; color: var(--color-success); font-size: 0.95rem;">+${Number(row.payout).toLocaleString()} PGT</span>
-        <span style="font-size: 0.7rem; color: var(--color-accent);">${row.game} (${row.multiplier}x)</span>
+        <span style="font-size: 0.7rem; color: var(--color-accent);">${safeGame} (${safeMult}x)</span>
       </div>
     `;
     scoreboard.appendChild(item);
