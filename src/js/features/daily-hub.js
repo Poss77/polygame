@@ -175,6 +175,11 @@ export function updateHubUIFromStatus(status) {
       sudokuBadge.style.background = 'rgba(0, 230, 118, 0.2)';
       sudokuBadge.style.color = 'var(--color-success)';
       sudokuBadge.style.borderColor = 'var(--color-success)';
+    } else if (status.sudoku && status.sudoku.is_failed) {
+      sudokuBadge.innerText = 'FAILED (0/1)';
+      sudokuBadge.style.background = 'rgba(255, 0, 85, 0.2)';
+      sudokuBadge.style.color = 'var(--color-danger)';
+      sudokuBadge.style.borderColor = 'var(--color-danger)';
     } else if (status.sudoku && status.sudoku.difficulty) {
       sudokuBadge.innerText = `IN PROGRESS (${status.sudoku.difficulty.toUpperCase()})`;
       sudokuBadge.style.background = 'rgba(255, 170, 0, 0.2)';

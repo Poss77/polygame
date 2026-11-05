@@ -155,6 +155,53 @@ async function checkDailySudokuStatus() {
       updateSudokuHud();
       renderSudokuGrid();
       return;
+    } else if (s.is_failed) {
+      // Show locked failed board view
+      activeDifficulty = s.difficulty || 'medium';
+      timerSeconds = s.time_seconds || 0;
+      mistakes = s.mistakes || getMaxMistakes();
+      isGameCompleted = true;
+      selectedCellIndex = null;
+      activeHighlightedNumber = null;
+      hintsRemaining = 0;
+      stopSudokuTimer();
+
+      const today = new Date().toISOString().split('T')[0];
+      let localFailed = null;
+      try {
+        const raw = localStorage.getItem('polygame_sudoku_failed_' + today);
+        if (raw) localFailed = JSON.parse(raw);
+      } catch (e) {}
+
+      cluesMask = s.clues_mask || (localFailed && localFailed.cluesMask) || '';
+      if (!cluesMask) {
+        let hashVal = 0;
+        const seedStr = pid + activeDifficulty + 'sudoku_seed_v1' + today;
+        for (let i = 0; i < seedStr.length; i++) {
+          hashVal = ((hashVal << 5) - hashVal) + seedStr.charCodeAt(i);
+          hashVal |= 0;
+        }
+        const fallbackPuz = getSudokuPuzzleFallback(activeDifficulty, Math.abs(hashVal));
+        if (fallbackPuz) cluesMask = fallbackPuz.clues_mask;
+      }
+
+      playerBoard = new Array(81).fill(0);
+      notesBoard = Array.from({ length: 81 }, () => new Set());
+      if (localFailed && Array.isArray(localFailed.board) && localFailed.board.length === 81) {
+        playerBoard = localFailed.board.map(v => parseInt(v, 10) || 0);
+      }
+      for (let i = 0; i < 81; i++) {
+        const char = cluesMask[i] || '0';
+        if (char !== '0' && char !== '.') {
+          playerBoard[i] = parseInt(char, 10);
+        }
+      }
+
+      showSudokuPostgameCard(false, 0, activeDifficulty);
+      showPlayScreen(true);
+      updateSudokuHud();
+      renderSudokuGrid();
+      return;
     } else if (s.difficulty) {
       // In progress session: resume puzzle
       await startDailySudokuGame(s.difficulty);
@@ -269,6 +316,54 @@ export async function startDailySudokuGame(difficulty) {
       return;
     }
 
+    const today = new Date().toISOString().split('T')[0];
+    let localFailed = null;
+    try {
+      const raw = localStorage.getItem('polygame_sudoku_failed_' + today);
+      if (raw) localFailed = JSON.parse(raw);
+    } catch (e) {}
+
+    if (res.is_failed || (localFailed && localFailed.date === today)) {
+      cluesMask = res.clues_mask || (localFailed && localFailed.cluesMask) || '';
+      activeDifficulty = res.difficulty || (localFailed && localFailed.difficulty) || activeDifficulty;
+      timerSeconds = res.time_seconds || (localFailed && localFailed.timeSeconds) || 0;
+      mistakes = res.mistakes || (localFailed && localFailed.mistakes) || getMaxMistakes();
+      isGameCompleted = true;
+      selectedCellIndex = null;
+      activeHighlightedNumber = null;
+      hintsRemaining = 0;
+      stopSudokuTimer();
+
+      if (!cluesMask) {
+        let hashVal = 0;
+        const seedStr = pid + activeDifficulty + 'sudoku_seed_v1' + today;
+        for (let i = 0; i < seedStr.length; i++) {
+          hashVal = ((hashVal << 5) - hashVal) + seedStr.charCodeAt(i);
+          hashVal |= 0;
+        }
+        const fallbackPuz = getSudokuPuzzleFallback(activeDifficulty, Math.abs(hashVal));
+        if (fallbackPuz) cluesMask = fallbackPuz.clues_mask;
+      }
+
+      playerBoard = new Array(81).fill(0);
+      notesBoard = Array.from({ length: 81 }, () => new Set());
+      if (localFailed && Array.isArray(localFailed.board) && localFailed.board.length === 81) {
+        playerBoard = localFailed.board.map(v => parseInt(v, 10) || 0);
+      }
+      for (let i = 0; i < 81; i++) {
+        const char = cluesMask[i] || '0';
+        if (char !== '0' && char !== '.') {
+          playerBoard[i] = parseInt(char, 10);
+        }
+      }
+
+      showSudokuPostgameCard(false, 0, activeDifficulty);
+      showPlayScreen(true);
+      updateSudokuHud();
+      renderSudokuGrid();
+      return;
+    }
+
     cluesMask = res.clues_mask || '';
     knownSolution = res.solution || null;
     hintsRemaining = 3;
@@ -292,9 +387,18 @@ export async function startDailySudokuGame(difficulty) {
     // Try to restore saved draft from localStorage
     restoreLocalDraft();
 
-    showPlayScreen();
+    if (mistakes >= getMaxMistakes()) {
+      showPlayScreen(true);
+      updateSudokuHud();
+      renderSudokuGrid();
+      terminateSudokuGame();
+      return;
+    }
+
+    showPlayScreen(false);
     updateSudokuHud();
     renderSudokuGrid();
+    updateSudokuKeypadCounters();
     startSudokuTimer();
 
   } catch (err) {
@@ -457,12 +561,13 @@ export function inputSudokuNumber(num) {
   if (hasConflict) {
     mistakes++;
     updateSudokuHud();
+    saveLocalDraft();
     flashCellError(selectedCellIndex);
 
     if (sfx && typeof sfx.playBuzzer === 'function') sfx.playBuzzer();
 
     const maxM = getMaxMistakes();
-    if (mistakes > maxM) {
+    if (mistakes >= maxM) {
       terminateSudokuGame();
       return;
     }
@@ -654,25 +759,52 @@ async function submitSudokuSolution() {
   }
 }
 
-function terminateSudokuGame() {
+async function terminateSudokuGame() {
   isGameCompleted = true;
+  selectedCellIndex = null;
+  activeHighlightedNumber = null;
   stopSudokuTimer();
   localStorage.removeItem('polygame_sudoku_draft');
 
-  const card = document.getElementById('sudoku-postgame-card');
-  const title = document.getElementById('sudoku-postgame-title');
-  const payout = document.getElementById('sudoku-postgame-payout');
-  const timeEl = document.getElementById('sudoku-postgame-time');
-  if (card) {
-    card.style.display = 'block';
-    card.style.borderColor = 'var(--color-danger)';
-    if (title) title.innerText = '❌ MAXIMUM MISTAKES EXCEEDED';
-    if (payout) payout.innerText = '0 PGT Earned (Challenge locked until 00:00 UTC)';
-    if (timeEl) timeEl.innerText = 'Patience and precision are key to decrypting the grid.';
-  }
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    localStorage.setItem('polygame_sudoku_failed_' + today, JSON.stringify({
+      date: today,
+      difficulty: activeDifficulty,
+      cluesMask,
+      board: playerBoard,
+      timeSeconds: timerSeconds,
+      mistakes
+    }));
+  } catch (e) {}
+
+  const ctrl = document.querySelector('.sudoku-controls');
+  const keypad = document.querySelector('.sudoku-keypad');
+  if (ctrl) ctrl.style.display = 'none';
+  if (keypad) keypad.style.display = 'none';
+
+  highlightRelatedCells();
+  showSudokuPostgameCard(false, 0, activeDifficulty);
+
   const maxM = getMaxMistakes();
-  if (triggerToast) triggerToast(`Challenge failed: ${maxM} mistakes exceeded.`, 'error');
-  refreshDailyGamesHubStatus();
+  if (triggerToast) triggerToast(`Challenge failed: ${maxM}/${maxM} mistakes reached.`, 'error');
+
+  const pid = (appState && typeof appState.getPlayerId === 'function' && appState.getPlayerId()) ||
+              (appState && appState.state && appState.state.playerId) || '';
+  if (pid) {
+    try {
+      await executeAuthenticatedRpc('claim_daily_sudoku_reward', {
+        p_player_id: pid,
+        p_difficulty: activeDifficulty,
+        p_solution_submission: 'FAILED',
+        p_time_seconds: timerSeconds,
+        p_mistakes: mistakes
+      });
+    } catch (e) {
+      console.warn('[Sudoku] Failed session sync error:', e);
+    }
+  }
+  refreshDailyGamesHubStatus(true);
 }
 
 /**
@@ -739,6 +871,11 @@ function showPlayScreen(isCompleted = false) {
   if (s1) s1.style.display = 'none';
   if (s2) s2.style.display = 'flex';
 
+  if (!isCompleted) {
+    const card = document.getElementById('sudoku-postgame-card');
+    if (card) card.style.display = 'none';
+  }
+
   const ctrl = document.querySelector('.sudoku-controls');
   const keypad = document.querySelector('.sudoku-keypad');
   if (ctrl) ctrl.style.display = isCompleted ? 'none' : 'flex';
@@ -756,8 +893,19 @@ function showSudokuPostgameCard(isWin, pgt, diff) {
   if (isWin) {
     card.style.borderColor = 'var(--color-success)';
     if (title) title.innerText = `🎉 ${diff.toUpperCase()} SUDOKU SOLVED!`;
-    if (payout) payout.innerText = `+${pgt} PGT Awarded to Balance`;
+    if (payout) {
+      payout.style.color = 'var(--color-success)';
+      payout.innerText = `+${pgt} PGT Awarded to Balance`;
+    }
     if (timeEl) timeEl.innerText = `Completed in ${formatTime(timerSeconds)} with ${mistakes} mistakes.`;
+  } else {
+    card.style.borderColor = 'var(--color-danger)';
+    if (title) title.innerText = '❌ MAXIMUM MISTAKES EXCEEDED';
+    if (payout) {
+      payout.style.color = 'var(--color-danger)';
+      payout.innerText = '0 PGT Earned (Challenge locked until 00:00 UTC)';
+    }
+    if (timeEl) timeEl.innerText = 'Patience and precision are key to decrypting the grid.';
   }
 }
 
@@ -805,16 +953,17 @@ function restoreLocalDraft() {
       if (Array.isArray(draft.notes)) {
         notesBoard = draft.notes.map(arr => new Set(arr));
       }
-      timerSeconds = draft.timer || 0;
-      mistakes = draft.mistakes || 0;
+      timerSeconds = Math.max(timerSeconds, draft.timer || 0);
+      mistakes = Math.max(mistakes, draft.mistakes || 0);
     }
   } catch (e) {}
 }
 
 export function restartSudokuPuzzle() {
+  if (isGameCompleted) return;
+  const prevMistakes = mistakes;
+  const prevTimer = timerSeconds;
   localStorage.removeItem('polygame_sudoku_draft');
-  mistakes = 0;
-  timerSeconds = 0;
   playerBoard = new Array(81).fill(0);
   notesBoard = Array.from({ length: 81 }, () => new Set());
   moveHistory = [];
@@ -826,10 +975,13 @@ export function restartSudokuPuzzle() {
       playerBoard[i] = parseInt(char, 10);
     }
   }
+  mistakes = prevMistakes;
+  timerSeconds = prevTimer;
+  saveLocalDraft();
   renderSudokuGrid();
   updateSudokuHud();
   updateSudokuKeypadCounters();
-  if (triggerToast) triggerToast('Puzzle restarted fresh!', 'info');
+  if (triggerToast) triggerToast('Board cleared to initial clues!', 'info');
 }
 window.restartSudokuPuzzle = restartSudokuPuzzle;
 

@@ -5,6 +5,23 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Sudoku: Authoritative Mistake Limit Lockout & Session Persistence (`v1.5.798`)**:
+  - **🔒 Server & Client Mistake Lockout ([`src/js/features/sudoku.js`](src/js/features/sudoku.js), [`src/js/features/daily-hub.js`](src/js/features/daily-hub.js), [`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql))**:
+    - Reaching the maximum mistake limit (`5/5` on Easy, `3/3` on Medium/Hard) immediately locks the grid, hides the keypad and control buttons, saves the failed session to `public.daily_game_sessions` (`is_failed = true`), and updates the Daily Hub status badge to `FAILED (0/1)`.
+    - Re-entering Cyber Sudoku after failing now renders the locked postgame view until `00:00 UTC` instead of resetting mistakes to `0` and allowing puzzle completion.
+    - Hardened `restartSudokuPuzzle()` so clearing the board preserves accumulated mistakes and timer progress for the current daily puzzle.
+
+- **Casino Leaderboard: Top 10 Weekly Wins Auto-Load & Profile Resolution (`v1.5.797`)**:
+  - **🏆 Weekly Wins Leaderboard Loader ([`src/js/features/leaderboards.js`](src/js/features/leaderboards.js), [`src/js/features/games.js`](src/js/features/games.js), [`src/js/app.js`](src/js/app.js), [`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Wired `loadWeeklyWinsLeaderboard()` into game tab switches, casino category switches, initial boot, and bet win logging.
+    - Resolved `player_id` usernames and VIP badges in `renderWeeklyWinsRows()`.
+
+- **Full-Stack Security Audit & Hardening (`v1.5.796`)**:
+  - **🛡️ Edge Function, RPC, and RLS Hardening ([`supabase/migrations/20261104_security_audit_hardening.sql`](supabase/migrations/20261104_security_audit_hardening.sql))**:
+    - Sealed free referral adoption bypass by routing all referral purchases through the `adopt-referrals` Edge Function and locking `public.adopt_referrals` to `service_role`.
+    - Replaced client-side `user_ips` table queries with `SECURITY DEFINER` RPC `public.sync_player_ip` and removed public `SELECT`/`UPDATE` policies on `user_ips`.
+    - Hardened `withdraw-pgt` nonce binding, `discord-relay` DB verification, and RLS/grants across public tables.
+
 - **Cyber Invaders: Enhanced Piercing Laser Bolts (7x22px Plasma Javelin) (`v1.5.795`)**:
   - **⚡ Scaled Piercing Laser Bolt Geometry ([`invaders.js`](invaders.js))**:
     - Enlarged piercing mega laser bolts from `4x16px` to `7x22px` plasma javelins for greater visual impact and satisfying kinetic presence.
