@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Profile: Synchronize Combined Referral Multiplier with Additive Model (`v1.5.799`)**:
+  - **🔗 Profile Multiplier Alignment ([`src/js/features/profile.js`](src/js/features/profile.js), [`src/js/features/referral-shop.js`](src/js/features/referral-shop.js))**:
+    - Updated the Profile "Equipped Utility NFT Core" active multipliers card to source `multis.totalReferralMultiplier` instead of calculating an isolated multiplicative formula ($3.3 \times 1.5 \times 2.0 = 9.90\text{x}$).
+    - Synchronized Referral Commission display to exactly match the active additive model: $\text{Gold VIP (2.0)} + \text{Ambassador (1.5)} + \text{NFTs (3.30)} = \mathbf{6.80x}$.
+    - Updated Referral Adoption Shop yield estimator to utilize `multis.totalReferralMultiplier`.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.799"` and synchronized all script cache busters.
+
 - **Cyber Sudoku: Authoritative Mistake Limit Lockout & Session Persistence (`v1.5.798`)**:
   - **🔒 Server & Client Mistake Lockout ([`src/js/features/sudoku.js`](src/js/features/sudoku.js), [`src/js/features/daily-hub.js`](src/js/features/daily-hub.js), [`supabase/rpcs/13_daily_games.sql`](supabase/rpcs/13_daily_games.sql))**:
     - Reaching the maximum mistake limit (`5/5` on Easy, `3/3` on Medium/Hard) immediately locks the grid, hides the keypad and control buttons, saves the failed session to `public.daily_game_sessions` (`is_failed = true`), and updates the Daily Hub status badge to `FAILED (0/1)`.

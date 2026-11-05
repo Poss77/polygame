@@ -524,11 +524,7 @@ export function updateOrderSummary() {
       let bonusHtml = '';
       if (projectedBaseYield > 0) {
         const multis = typeof appState?.getMultipliers === 'function' ? appState.getMultipliers() : {};
-        const isVip = typeof appState?.isVipActive === 'function' && appState.isVipActive();
-        const rawNftMult = multis.rawNftReferralMultiplier || multis.nftReferralMultiplier || 1.0;
-        const ambMult = multis.ambReferralMultiplier || (appState?.state?.isAmbassador ? 1.5 : 1.0);
-        const vipMult = isVip ? 2.0 : 1.0;
-        const userRefMult = rawNftMult * ambMult * vipMult;
+        const userRefMult = multis.totalReferralMultiplier || 1.0;
 
         bonusHtml = `
           <div style="margin-top: 0.6rem; padding: 0.5rem 0.6rem; background: rgba(0, 255, 136, 0.06); border: 1px solid rgba(0, 255, 136, 0.22); border-radius: 6px;">

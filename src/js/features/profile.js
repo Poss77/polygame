@@ -335,9 +335,17 @@ export function syncProfileView() {
   if (isApex) totalArcadeMult *= apexMult;
 
   // 3. REFERRAL COMMISSION MULTIPLIER:
-  // (NFT Referral Multiplier) x (Ambassador 1.5) x (VIP factor)
+  // Additive model: VIP + Ambassador + NFTs (matching state.js and affiliate dashboard: e.g. 2.0 + 1.5 + 3.3 = 6.80x)
   const nftRefMult = (multis.rawNftReferralMultiplier || multis.nftReferralMultiplier) !== undefined ? (multis.rawNftReferralMultiplier || multis.nftReferralMultiplier) : (equippedNftObj ? (equippedNftObj.referralMultiplier || 1.0) : 1.0);
-  let totalReferralMult = nftRefMult * (isAmbassador ? 1.5 : 1.0) * vipReferralFactor;
+  let totalReferralMult = multis.totalReferralMultiplier !== undefined
+    ? multis.totalReferralMultiplier
+    : (() => {
+        let fallback = 0;
+        if (isAmbassador) fallback += 1.5;
+        if (isVip) fallback += (vipLevel >= 2 ? 2.0 : 1.2);
+        if (nftRefMult > 1.0) fallback += nftRefMult;
+        return fallback > 0 ? parseFloat(fallback.toFixed(2)) : 1.0;
+      })();
 
   // 4. STAKING APY BOOST MULTIPLIER:
   // (NFT Staking Boost) x (Ambassador 1.10) x (VIP factor)
