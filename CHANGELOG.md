@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Invaders: Anti-Cheat Velocity Rate-Clamp Calibration & Tiboryeah Leaderboard Restoration (`v1.5.801`)**:
+  - **👾 Cyber Invaders Rate Clamp Calibration ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/fix_cyber_invaders_velocity_rate_clamp_and_tiboryeah.sql`](supabase/fix_cyber_invaders_velocity_rate_clamp_and_tiboryeah.sql))**:
+    - Calibrated `end_arcade_session` velocity clamp for Cyber Invaders from `350 pts/sec` to `700 pts/sec` (aligned with AstroDodge), protected by the standard `500,000 pts` ceiling.
+    - Resolves an issue where rapid wave wipes, entrance intercept bonuses (`+100 pts`), 5x combos, and golden UFOs (`+250 pts`) legitimately reach `450–650 pts/sec`, causing honest high-score runs to be improperly truncated.
+  - **🏆 Player Remediation (Tiboryeah • `0xpgt310c0132`)**:
+    - Remediated session `6d9e92bb-ea9e-4873-9bd0-ec2cb64b76bc` (141s, 423 aliens killed): restored legitimate score from `49,350` to **`67,695 pts`**.
+    - Updated `public.users.invaders_highscore` to **`67,695 pts`**, elevating Tiboryeah to **#6 on the live weekly Cyber Invaders tournament leaderboard**.
+    - Recomputed session payout with Silver VIP (1.5x) from `48.67` to `58.31 PGT`, crediting the missing `+9.64 PGT` to `balance_pgt` and `total_earned`.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.801"` and synchronized all script cache busters.
+
 - **PolySpace: Align Sector Tactical Radar Outpost Raid Loot by Target (`v1.5.800`)**:
   - **🛰️ Target Reward Partitioning ([`space.js`](space.js), [`src/js/core/db-sync.js`](src/js/core/db-sync.js), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`supabase/migrations/20261105_fix_outpost_raid_drone_depot_no_pgt.sql`](supabase/migrations/20261105_fix_outpost_raid_drone_depot_no_pgt.sql))**:
     - Aligned Tactical Radar Outpost Raids so Target 0 (**Drone Depot**) and Target 1 (**Refinery Silo**) do **not** award PGT.
