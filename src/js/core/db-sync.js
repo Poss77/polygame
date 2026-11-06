@@ -1359,14 +1359,16 @@ export async function pokeAlliedOutpost() {
 }
 window.pokeAlliedOutpost = pokeAlliedOutpost;
 
-export async function launchOutpostRaid() {
+export async function launchOutpostRaid(target = 0) {
   if (!appState.isPlayerConnected() || !supabase) {
     return { success: false, error: "Please sign in or connect a wallet first." };
   }
   const wallet = (appState.getPlayerId() || appState.state.walletAddress || '').toLowerCase();
   try {
+    const targetIdx = typeof target === 'number' ? target : (parseInt(target, 10) || 0);
     const { data, error } = await executeAuthenticatedRpc('launch_outpost_raid', {
-      p_player_id: wallet
+      p_player_id: wallet,
+      p_target: targetIdx
     });
     if (error) {
       console.warn("[launchOutpostRaid] RPC error:", error);

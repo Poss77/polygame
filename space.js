@@ -3135,7 +3135,8 @@ class PolySpaceEngine {
         return;
       }
 
-      const res = await window.launchOutpostRaid().catch(e => {
+      const raidTarget = (typeof this._radarSelectedTarget === 'number') ? this._radarSelectedTarget : 0;
+      const res = await window.launchOutpostRaid(raidTarget).catch(e => {
         console.warn("[launchRaid exception]", e);
         return { success: false, error: e.message || "Network error during Outpost Raid" };
       });
@@ -3145,7 +3146,14 @@ class PolySpaceEngine {
           this.state = { ...this.state, ...res.space_state };
         }
         if (res.victory) {
-          if (window.triggerToast) window.triggerToast(`Raid Victory! Defeated Outpost (${res.enemy_power} Power) & Stole +${res.stolen_iron} Iron, +${res.stolen_titanium} Titanium & +${res.stolen_pgt} PGT!`, "success");
+          const rewards = [];
+          if (res.stolen_iron > 0) rewards.push(`+${res.stolen_iron} Iron`);
+          if (res.stolen_titanium > 0) rewards.push(`+${res.stolen_titanium} Titanium`);
+          if (res.stolen_quantum > 0) rewards.push(`+${res.stolen_quantum} Quantum`);
+          if (res.stolen_pgt_ore > 0) rewards.push(`+${res.stolen_pgt_ore} Rare PGT Ore`);
+          if (res.stolen_pgt > 0) rewards.push(`+${res.stolen_pgt} PGT`);
+          const lootText = rewards.length > 0 ? rewards.join(', ') : 'Resources Secured';
+          if (window.triggerToast) window.triggerToast(`Raid Victory! Defeated Outpost (${res.enemy_power} Power) & Stole ${lootText}!`, "success");
           if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
         } else {
           if (window.triggerToast) window.triggerToast(res.message || `Raid Defeated! Enemy Outpost defense (${res.enemy_power} Power) was too strong.`, "error");
@@ -5087,7 +5095,8 @@ class PolySpaceEngine {
     let raidResult = null;
     try {
       if (window.launchOutpostRaid) {
-        raidResult = await window.launchOutpostRaid().catch(e => {
+        const targetIdx = (typeof this._radarSelectedTarget === 'number') ? this._radarSelectedTarget : 0;
+        raidResult = await window.launchOutpostRaid(targetIdx).catch(e => {
           console.warn("[Radar Combat exception]", e);
           return { success: false, error: e.message || "Network error during Outpost Raid" };
         });
@@ -5352,23 +5361,58 @@ class PolySpaceEngine {
           descEl.innerText = `Outpost Defenses Overrun! Enemy Defense (${res.enemy_power || '120'} Power) Defeated.`;
         }
         if (lootGrid) {
-          lootGrid.innerHTML = `
-            <div style="background: rgba(0,255,102,0.1); border: 1px solid #00ff66; border-radius: 6px; padding: 0.4rem;">
-              <span style="font-size: 0.65rem; color: var(--text-muted); display: block;">Stolen Iron</span>
-              <strong style="color: #00ff66; font-size: 0.85rem;">+${res.stolen_iron || 0}</strong>
-            </div>
-            <div style="background: rgba(0,240,255,0.1); border: 1px solid #00f0ff; border-radius: 6px; padding: 0.4rem;">
-              <span style="font-size: 0.65rem; color: var(--text-muted); display: block;">Stolen Titanium</span>
-              <strong style="color: #00f0ff; font-size: 0.85rem;">+${res.stolen_titanium || 0}</strong>
-            </div>
-            <div style="background: rgba(255,170,0,0.1); border: 1px solid #ffaa00; border-radius: 6px; padding: 0.4rem;">
-              <span style="font-size: 0.65rem; color: var(--text-muted); display: block;">Stolen PGT</span>
-              <strong style="color: #ffaa00; font-size: 0.85rem;">+${res.stolen_pgt || 0}</strong>
-            </div>
-          `;
+          const cards = [];
+          if (res.stolen_iron > 0) {
+            cards.push(`
+              <div style="background: rgba(0,255,102,0.1); border: 1px solid #00ff66; border-radius: 6px; padding: 0.4rem;">
+                <span style="font-size: 0.65rem; color: var(--text-muted); display: block;">Stolen Iron</span>
+                <strong style="color: #00ff66; font-size: 0.85rem;">+${res.stolen_iron}</strong>
+              </div>
+            `);
+          }
+          if (res.stolen_titanium > 0) {
+            cards.push(`
+              <div style="background: rgba(0,240,255,0.1); border: 1px solid #00f0ff; border-radius: 6px; padding: 0.4rem;">
+                <span style="font-size: 0.65rem; color: var(--text-muted); display: block;">Stolen Titanium</span>
+                <strong style="color: #00f0ff; font-size: 0.85rem;">+${res.stolen_titanium}</strong>
+              </div>
+            `);
+          }
+          if (res.stolen_quantum > 0) {
+            cards.push(`
+              <div style="background: rgba(180,100,255,0.1); border: 1px solid #b464ff; border-radius: 6px; padding: 0.4rem;">
+                <span style="font-size: 0.65rem; color: var(--text-muted); display: block;">Quantum Crystals</span>
+                <strong style="color: #c084fc; font-size: 0.85rem;">+${res.stolen_quantum}</strong>
+              </div>
+            `);
+          }
+          if (res.stolen_pgt_ore > 0) {
+            cards.push(`
+              <div style="background: rgba(255,60,180,0.1); border: 1px solid #ff3cb4; border-radius: 6px; padding: 0.4rem;">
+                <span style="font-size: 0.65rem; color: var(--text-muted); display: block;">Rare PGT Ore</span>
+                <strong style="color: #ff3cb4; font-size: 0.85rem;">+${res.stolen_pgt_ore}</strong>
+              </div>
+            `);
+          }
+          if (res.stolen_pgt > 0) {
+            cards.push(`
+              <div style="background: rgba(255,170,0,0.1); border: 1px solid #ffaa00; border-radius: 6px; padding: 0.4rem;">
+                <span style="font-size: 0.65rem; color: var(--text-muted); display: block;">Stolen PGT</span>
+                <strong style="color: #ffaa00; font-size: 0.85rem;">+${res.stolen_pgt}</strong>
+              </div>
+            `);
+          }
+          lootGrid.innerHTML = cards.join('');
         }
         if (window.sfx && window.sfx.playSuccess) window.sfx.playSuccess();
-        if (window.triggerToast) window.triggerToast(`Raid Victory! Stole +${res.stolen_iron} Iron, +${res.stolen_titanium} Titanium, +${res.stolen_pgt} PGT!`, "success");
+        const toastRewards = [];
+        if (res.stolen_iron > 0) toastRewards.push(`+${res.stolen_iron} Iron`);
+        if (res.stolen_titanium > 0) toastRewards.push(`+${res.stolen_titanium} Titanium`);
+        if (res.stolen_quantum > 0) toastRewards.push(`+${res.stolen_quantum} Quantum Crystals`);
+        if (res.stolen_pgt_ore > 0) toastRewards.push(`+${res.stolen_pgt_ore} Rare PGT Ore`);
+        if (res.stolen_pgt > 0) toastRewards.push(`+${res.stolen_pgt} PGT`);
+        const toastStr = toastRewards.length > 0 ? toastRewards.join(', ') : 'Resources secured';
+        if (window.triggerToast) window.triggerToast(`Raid Victory! Stole ${toastStr}!`, "success");
       } else {
         if (titleEl) {
           titleEl.innerText = '💥 RAID REPULSED!';

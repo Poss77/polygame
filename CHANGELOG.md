@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Align Sector Tactical Radar Outpost Raid Loot by Target (`v1.5.800`)**:
+  - **🛰️ Target Reward Partitioning ([`space.js`](space.js), [`src/js/core/db-sync.js`](src/js/core/db-sync.js), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`supabase/migrations/20261105_fix_outpost_raid_drone_depot_no_pgt.sql`](supabase/migrations/20261105_fix_outpost_raid_drone_depot_no_pgt.sql))**:
+    - Aligned Tactical Radar Outpost Raids so Target 0 (**Drone Depot**) and Target 1 (**Refinery Silo**) do **not** award PGT.
+    - **Drone Depot (Low Risk • 85% Win)**: Awards Iron & Titanium only (`0 PGT`).
+    - **Refinery Silo (Med Risk • 65% Win)**: Awards Quantum Crystals + Iron & Titanium (`0 PGT`).
+    - **Rogue Dread (High Risk • 40% Win)**: Awards PGT (`18–30 PGT`), 35% chance for Rare PGT Ore, plus Iron & Titanium.
+    - Updated `space.js` `resolveRadarCombat()` and toast notifications to render dynamic loot cards and summaries matching only non-zero rewards.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.800"` and synchronized all script cache busters.
+
 - **Profile: Synchronize Combined Referral Multiplier with Additive Model (`v1.5.799`)**:
   - **🔗 Profile Multiplier Alignment ([`src/js/features/profile.js`](src/js/features/profile.js), [`src/js/features/referral-shop.js`](src/js/features/referral-shop.js))**:
     - Updated the Profile "Equipped Utility NFT Core" active multipliers card to source `multis.totalReferralMultiplier` instead of calculating an isolated multiplicative formula ($3.3 \times 1.5 \times 2.0 = 9.90\text{x}$).
