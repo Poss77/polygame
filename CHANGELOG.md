@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Fair-Play Advisory: Fix Post-Turnstile Focus False Positive, Friendly Warning UI & Tiboryeah Remediation (`v1.5.802`)**:
+  - **🛡️ Post-Turnstile Focus Tracking Fix ([`src/js/features/arcade-security.js`](src/js/features/arcade-security.js), [`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
+    - Resolved a false-positive `unfocused_background_session` check when starting an arcade game immediately after completing a Cloudflare Turnstile challenge (where browser focus remained inside the cross-origin Turnstile `<iframe>`).
+    - Restored `window.focus()` on Turnstile modal cleanup, initialized telemetry focus via `document.visibilityState === 'visible'`, and updated `onTelemetryInput()` so any hardware-trusted input (`e.isTrusted === true`) immediately marks the session as focused.
+    - Updated `end_arcade_session` on the server so runs with `synthetic_count = 0`, `is_trusted_ratio >= 0.90`, and active hardware inputs are never flagged for low `focus_ratio`.
+  - **💬 Non-Aggressive "Warning Only" Advisory UI ([`src/js/core/anti-bot.js`](src/js/core/anti-bot.js), [`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql))**:
+    - Redesigned the Fair-Play alert modal and inbox message from an aggressive red suspension threat into a calm cyan/amber **"Fair-Play Advisory (Warning Only)"** that reassures players their account is safe and in good standing.
+  - **🏆 Player Remediation (Tiboryeah • `0xpgt310c0132`) ([`supabase/fix_telemetry_focus_false_positive_and_remediate_tiboryeah.sql`](supabase/fix_telemetry_focus_false_positive_and_remediate_tiboryeah.sql))**:
+    - Restored voided Cyber Invaders session `10653744-1718-45ac-93a5-0df0a3ab4d09` (`34,135 pts`, `240` aliens, `+40.00 PGT`), credited `+40.00 PGT` to `balance_pgt` (`2,503.90 PGT`), reset `bot_warning` from `4` to `0`, and sent a confirmation notice to his inbox.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.802"` and synchronized all script cache busters.
+
 - **Cyber Invaders: Anti-Cheat Velocity Rate-Clamp Calibration & Tiboryeah Leaderboard Restoration (`v1.5.801`)**:
   - **👾 Cyber Invaders Rate Clamp Calibration ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql), [`supabase/fix_cyber_invaders_velocity_rate_clamp_and_tiboryeah.sql`](supabase/fix_cyber_invaders_velocity_rate_clamp_and_tiboryeah.sql))**:
     - Calibrated `end_arcade_session` velocity clamp for Cyber Invaders from `350 pts/sec` to `700 pts/sec` (aligned with AstroDodge), protected by the standard `500,000 pts` ceiling.

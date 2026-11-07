@@ -160,11 +160,11 @@ class AntiBotSentinel {
 
     modalEl.innerHTML = `
       <div style="
-        background: linear-gradient(145deg, #180510 0%, #120822 100%);
-        border: 2px solid #ff0055;
+        background: linear-gradient(145deg, #0d1526 0%, #11182c 100%);
+        border: 2px solid #00f0ff;
         border-radius: 14px;
-        box-shadow: 0 0 35px rgba(255, 0, 85, 0.45);
-        max-width: 520px;
+        box-shadow: 0 0 30px rgba(0, 240, 255, 0.25);
+        max-width: 500px;
         width: 100%;
         padding: 1.75rem;
         color: #fff;
@@ -172,72 +172,73 @@ class AntiBotSentinel {
         font-family: inherit;
         position: relative;
       ">
-        <div style="font-size: 3rem; margin-bottom: 0.5rem; filter: drop-shadow(0 0 10px rgba(255,0,85,0.8));">
-          🛡️⚠️
+        <div style="font-size: 2.6rem; margin-bottom: 0.45rem; filter: drop-shadow(0 0 8px rgba(0,240,255,0.5));">
+          🛡️ℹ️
         </div>
         <h3 style="
-          color: #ff0055;
-          font-size: 1.4rem;
+          color: #00f0ff;
+          font-size: 1.25rem;
           font-weight: 800;
-          letter-spacing: 0.05em;
-          margin: 0 0 0.5rem 0;
+          letter-spacing: 0.04em;
+          margin: 0 0 0.45rem 0;
           text-transform: uppercase;
         ">
-          Fair-Play Integrity Alert
+          Fair-Play Advisory (Warning Only)
         </h3>
 
         <div style="
           display: inline-block;
-          background: rgba(255, 0, 85, 0.18);
-          border: 1px solid #ff0055;
-          color: #ff3377;
-          font-weight: 800;
-          font-size: 0.9rem;
-          padding: 0.35rem 0.9rem;
+          background: rgba(0, 240, 255, 0.12);
+          border: 1px solid rgba(0, 240, 255, 0.45);
+          color: #7df9ff;
+          font-weight: 700;
+          font-size: 0.84rem;
+          padding: 0.3rem 0.85rem;
           border-radius: 999px;
-          margin-bottom: 1.25rem;
+          margin-bottom: 1.15rem;
         ">
-          ⚠️ Bot Warning Count: ${warningCount}
+          ℹ️ Advisory Notice #${warningCount} • Just a Warning (Account in Good Standing)
         </div>
 
         <div style="
-          background: rgba(0, 0, 0, 0.4);
-          border: 1px solid rgba(255, 0, 85, 0.3);
+          background: rgba(0, 0, 0, 0.35);
+          border: 1px solid rgba(0, 240, 255, 0.25);
           border-radius: 8px;
-          padding: 1rem;
-          margin-bottom: 1.25rem;
+          padding: 0.95rem 1rem;
+          margin-bottom: 1.1rem;
           text-align: left;
           font-size: 0.85rem;
           line-height: 1.5;
         ">
-          <div style="margin-bottom: 0.4rem;">
-            <span style="color: var(--text-dim, #888);">Game:</span>
+          <div style="margin-bottom: 0.35rem;">
+            <span style="color: var(--text-dim, #94a3b8);">Game:</span>
             <strong style="color: #00f0ff;">${gameName || 'Arcade Game'}</strong>
           </div>
-          <div style="margin-bottom: 0.4rem;">
-            <span style="color: var(--text-dim, #888);">Violation Detected:</span>
-            <strong style="color: #ff0055;">${readableReason}</strong>
+          <div style="margin-bottom: 0.45rem;">
+            <span style="color: var(--text-dim, #94a3b8);">Check Triggered:</span>
+            <strong style="color: #fbbf24;">${readableReason}</strong>
           </div>
-          <p style="color: #e0e0e0; margin: 0.5rem 0 0 0; font-size: 0.82rem;">
-            Automated bots, synthetic DOM dispatchers, console injectors, and autoclickers are strictly prohibited on Polygon Gaming.
+          <p style="color: #e2e8f0; margin: 0.45rem 0 0 0; font-size: 0.82rem;">
+            <strong>Don't worry — this is just an automated warning!</strong> Your account is completely safe and in good standing. To ensure your scores count cleanly, please keep the game window active in the foreground while playing.
           </p>
         </div>
 
         <div style="
-          background: rgba(255, 187, 0, 0.08);
-          border-left: 3px solid #ffbb00;
+          background: rgba(251, 191, 36, 0.08);
+          border-left: 3px solid #fbbf24;
           padding: 0.65rem 0.85rem;
           border-radius: 0 6px 6px 0;
-          margin-bottom: 1.5rem;
+          margin-bottom: 1.35rem;
           text-align: left;
-          font-size: 0.8rem;
-          color: #ffd700;
+          font-size: 0.79rem;
+          color: #fde68a;
+          line-height: 1.45;
         ">
-          <strong>Notice:</strong> Continued detected use of automation or synthetic scripts will result in an immediate permanent account suspension and token forfeiture.
+          <strong>Friendly Reminder:</strong> Occasional warnings can happen if a browser tab briefly loses focus, switches apps, or an extension interferes. Only repeated automated bot scripting leads to restrictions.
         </div>
 
         <button id="btn-ack-antibot" style="
-          background: linear-gradient(135deg, #ff0055 0%, #bb0033 100%);
+          background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
           color: #fff;
           font-weight: 800;
           border: none;
@@ -246,11 +247,11 @@ class AntiBotSentinel {
           font-size: 0.95rem;
           cursor: pointer;
           letter-spacing: 0.03em;
-          box-shadow: 0 0 15px rgba(255,0,85,0.4);
+          box-shadow: 0 0 15px rgba(0, 198, 255, 0.35);
           width: 100%;
           transition: transform 0.15s ease;
         ">
-          I Understand & Agree to Fair Play
+          Got It — Continue Playing
         </button>
       </div>
     `;
@@ -270,19 +271,19 @@ class AntiBotSentinel {
 
   formatReason(reason) {
     const map = {
-      'untrusted_input': 'Synthetic DOM Input (Script Event)',
-      'untrusted_mouse_input': 'Synthetic Mouse Event (Injected Click/Aim)',
-      'untrusted_touch_input': 'Synthetic Touch Event (Simulated Tap)',
-      'untrusted_keyboard_input': 'Synthetic Keyboard Event (Simulated Key)',
-      'direct_function_call': 'Direct Method Call (Console Script Execution)',
-      'score_limit_500k_exceeded': 'Score Limit Exceeded (> 500,000 pts)',
-      'autoclicker_timing_detected': 'Macro Pattern (Zero-Jitter Autoclicker)',
-      'automated_webdriver': 'Automated Headless Browser (navigator.webdriver)',
-      'synthetic_input_detected': 'Synthetic DOM Input (Automated Script Detected)',
-      'unfocused_background_session': 'Unfocused Background Play (Multi-Tab Scripting)',
-      'zero_input_anomaly': 'Zero-Input Anomaly (Automated / Memory Injection)'
+      'untrusted_input': 'Non-Standard Input Event',
+      'untrusted_mouse_input': 'Non-Standard Mouse Event',
+      'untrusted_touch_input': 'Non-Standard Touch Event',
+      'untrusted_keyboard_input': 'Non-Standard Keyboard Event',
+      'direct_function_call': 'Console Command Detected',
+      'score_limit_500k_exceeded': 'Score Ceiling Exceeded (> 500,000 pts)',
+      'autoclicker_timing_detected': 'Repetitive Input Timing',
+      'automated_webdriver': 'Automated Browser Environment',
+      'synthetic_input_detected': 'Automated Script / Extension Input',
+      'unfocused_background_session': 'Background Tab / Window Focus Loss',
+      'zero_input_anomaly': 'No Active Input Recorded During Run'
     };
-    return map[reason] || reason || 'Unverified Client Input';
+    return map[reason] || reason || 'Session Focus / Input Check';
   }
 
   // Convenient alias matching both naming conventions

@@ -388,6 +388,13 @@ function cleanupModal() {
   if (widgetContainer) {
     widgetContainer.innerHTML = '';
   }
+
+  // Restore focus to the top-level window after removing the cross-origin Turnstile iframe
+  if (typeof window !== 'undefined' && typeof window.focus === 'function') {
+    try {
+      window.focus();
+    } catch (e) {}
+  }
 }
 
 // ==============================================================================
@@ -403,6 +410,13 @@ function onTelemetryInput(e) {
   const isTrusted = (e.isTrusted === true);
   if (isTrusted) {
     activeTelemetrySession.trustedInputs++;
+    // Receiving a genuine physical hardware input while the tab is visible proves active foreground focus
+    // (fixes false-negative document.hasFocus() after closing a Turnstile iframe or on Mobile Safari canvas touch)
+    const isTabVisible = (typeof document !== 'undefined') ? (document.visibilityState === 'visible') : true;
+    if (isTabVisible && !activeTelemetrySession.isFocused) {
+      activeTelemetrySession.lastFocusChange = Date.now();
+      activeTelemetrySession.isFocused = true;
+    }
   } else {
     activeTelemetrySession.syntheticInputs++;
     console.warn(`[ArcadeSecurity] Untrusted synthetic ${e.type || 'DOM'} event detected during active arcade session!`);
@@ -456,8 +470,10 @@ export function startTelemetryTracking(sessionId, gameName = 'Arcade') {
   attachTelemetryListeners();
 
   const now = Date.now();
+  // Use visibilityState === 'visible' at session start because document.hasFocus() can be false
+  // immediately after removing a cross-origin Cloudflare Turnstile iframe or on iOS Safari.
   const initiallyFocused = (typeof document !== 'undefined')
-    ? (document.hasFocus() && document.visibilityState === 'visible')
+    ? (document.visibilityState === 'visible')
     : true;
 
   activeTelemetrySession = {
@@ -496,8 +512,15 @@ export function stopTelemetryTracking(sessionId) {
   const syntheticInputs = activeTelemetrySession.syntheticInputs;
   const focusedMs = activeTelemetrySession.focusedTimeMs;
 
-  const focusRatio = Math.min(1.0, Math.max(0.0, focusedMs / durationMs));
+  let focusRatio = Math.min(1.0, Math.max(0.0, focusedMs / durationMs));
   const isTrustedRatio = totalInputs > 0 ? Math.min(1.0, Math.max(0.0, trustedInputs / totalInputs)) : 1.0;
+
+  // Safeguard: If the player generated continuous 100%-trusted physical inputs (>= 0.5 inputs/sec, 0 synthetic),
+  // guarantee focusRatio is not falsely zeroed by iframe/Safari focus quirks.
+  const durationSec = Math.max(1, durationMs / 1000);
+  if (syntheticInputs === 0 && isTrustedRatio >= 0.95 && trustedInputs >= Math.max(15, Math.floor(durationSec * 0.5))) {
+    focusRatio = Math.max(focusRatio, 0.90);
+  }
 
   const telemetryResult = {
     is_trusted_ratio: Number(isTrustedRatio.toFixed(3)),
