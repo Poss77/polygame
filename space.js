@@ -6002,6 +6002,8 @@ class PolySpaceEngine {
 // Global instance initialization
 
 
+window.polySpace = new PolySpaceEngine();
+
 window.initPolySpace = function() {
   if (window.polySpace) {
     window.polySpace.init();

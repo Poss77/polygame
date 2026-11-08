@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace Engine Init Fix (`v1.5.804`)**:
+  - **🚀 PolySpace Instance Restoration ([`space.js`](space.js))**:
+    - Restored `window.polySpace = new PolySpaceEngine()` global instantiation which was inadvertently omitted during the previous radar harvest patch, ensuring the tactical radar canvas, fleet command box, and upgrade station load and render properly.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.804"` and refreshed cache busters across all script tags to ensure instant client cache invalidation.
+
 - **PolySpace Radar PGT Anomaly: Mining Laser Yield Multiplier & 45% Double Gamble (`v1.5.803`)**:
   - **🔬 Mining Laser Yield Multiplier Integration ([`space.js`](space.js), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`supabase/patch_radar_harvest_mining_laser_and_double_gamble.sql`](supabase/patch_radar_harvest_mining_laser_and_double_gamble.sql))**:
     - Connected the tactical radar cosmic PGT anomaly harvest directly to the player's PolySpace Mining Laser level (`space_state->>'laserLevel'`).
