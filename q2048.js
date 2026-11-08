@@ -863,7 +863,7 @@ class Cyber2048Game {
     const rawBase = Math.min(75.0, (((cleanScore / 2500.0) + (finalTokens * 0.5)) * 2.5) * globalEarnMult);
     const tokenPgt = finalTokens * 5.0;
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
-    const finalPgt = cleanScore > 0 ? Math.min(1000.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
+    const finalPgt = cleanScore > 0 ? Math.min(1500.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
 
     // Local Highscore check
     const prevHigh = (window.appState && window.appState.state) ? (window.appState.state.q2048HighScore || 0) : 0;

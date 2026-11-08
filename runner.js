@@ -2495,7 +2495,7 @@ class CyberRunnerGame {
     const rawBase = Math.min(150.0, ((((cleanScore / 2000.0) + (finalShards * 0.04)) * 5.0) * 0.70) * globalEarnMult);
     const tokenPgt = finalTokens * 5.0;
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
-    const finalPgt = cleanScore > 0 ? Math.min(1000.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
+    const finalPgt = cleanScore > 0 ? Math.min(1500.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
 
     // Local Highscore Check
     const prevHigh = (window.appState && window.appState.state) ? (window.appState.state.runnerHighScore || 0) : 0;

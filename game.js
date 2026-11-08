@@ -630,8 +630,8 @@ class NeonAstroDodge {
     const rawBase = Math.min(75.0, ((cleanScore / 2500.0) + (this.shardsCollected * 0.05)) * globalEarnMult);
     // Strict 100.00 PGT Bonus Token Cap
     const tokenPgt = Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0);
-    // Strict 1000.00 PGT Catastrophe Cap
-    let finalPgt = cleanScore > 0 ? Math.min(1000.0, parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2))) : 0;
+    // Strict 1500.00 PGT Catastrophe Cap
+    let finalPgt = cleanScore > 0 ? Math.min(1500.0, parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2))) : 0;
 
     // Check high score
     const currentHigh = (window.appState && window.appState.state) ? (window.appState.state.gameHighScore || 0) : 0;
@@ -1019,7 +1019,7 @@ class NeonAstroDodge {
       const playerMult = nftMult * vipMult * ambMult * relicMult * starshipMult;
       const globalEarnMult = (typeof appState !== 'undefined' && appState.state && appState.state.globalEarnMultiplier !== undefined) ? Number(appState.state.globalEarnMultiplier) : 1.0;
       const liveRawPgt = Math.min(75.0, ((this.score / 2500.0) + (this.shardsCollected * 0.05)) * globalEarnMult);
-      const liveFinalPgt = Math.min(1000.0, (liveRawPgt * playerMult) + Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0));
+      const liveFinalPgt = Math.min(1500.0, (liveRawPgt * playerMult) + Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0));
 
       if (!this._earnedEl) this._earnedEl = document.getElementById('game-live-earned');
       const earnedStr = liveFinalPgt.toFixed(2);

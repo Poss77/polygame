@@ -2456,7 +2456,7 @@ class CyberInvaders {
 
     const rawPgt = Math.min(75.0, ((cleanScore / 2000.0) + ((this.aliensKilled || 0) * 0.04)) * globalEarnMult);
 
-    const finalPgt = Math.min(1000.0, (rawPgt * playerMult) + Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0));
+    const finalPgt = Math.min(1500.0, (rawPgt * playerMult) + Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0));
 
     const earnedEl = document.getElementById('invaders-live-earned');
 
@@ -2642,9 +2642,9 @@ class CyberInvaders {
 
     const tokenPgt = Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0);
 
-    // Strict 1000.00 PGT Catastrophe Cap
+    // Strict 1500.00 PGT Catastrophe Cap
 
-    let finalPgt = cleanScore > 0 ? Math.min(1000.0, parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2))) : 0;
+    let finalPgt = cleanScore > 0 ? Math.min(1500.0, parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2))) : 0;
 
 
 

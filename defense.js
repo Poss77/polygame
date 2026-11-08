@@ -2919,8 +2919,8 @@ export class CyberDefenseEngine {
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
     // Strict 75.00 PGT Base Cap
     const rawBase = Math.min(75.0, ((cleanScore / 4000.0) + (this.creepsKilled * 0.025)) * globalEarnMult);
-    // Strict 1000.00 PGT Catastrophe Cap
-    const calculatedPgt = Math.min(1000.0, parseFloat((rawBase * playerMult).toFixed(2)));
+    // Strict 1500.00 PGT Catastrophe Cap
+    const calculatedPgt = Math.min(1500.0, parseFloat((rawBase * playerMult).toFixed(2)));
     let verifiedPgt = calculatedPgt;
 
     // Server End Session RPC

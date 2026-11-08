@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Arcade Economy: Raise Catastrophe Circuit-Breaker Ceiling to 1,500 PGT (`v1.5.810`)**:
+  - **🚀 Catastrophe Circuit-Breaker Expansion ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/patch_arcade_catastrophe_cap_1500.sql`](supabase/patch_arcade_catastrophe_cap_1500.sql))**:
+    - Raised server-side maximum arcade session payout cap (`v_final_pgt := LEAST(v_final_pgt, 1500.00);`) in `end_arcade_session` from 1,000.00 PGT to 1,500.00 PGT.
+    - Accommodates high-tier multiplier play (e.g. 26.3x+ stacking NFTs, Mythic Starships, Gold VIP 2.0x, Ambassador 2.0x, and Apex Relics 1.5x) so legitimate high-scoring runs are no longer artificially truncated at 1,000 PGT.
+    - Set `v_max_velocity_rate := 1.75` for `astrododge` in `end_arcade_session`.
+  - **🎮 Client Arcade Engine Synchronization ([`game.js`](game.js), [`invaders.js`](invaders.js), [`drift.js`](drift.js), [`stacker.js`](stacker.js), [`skeet.js`](skeet.js), [`defense.js`](defense.js), [`runner.js`](runner.js), [`q2048.js`](q2048.js), [`tetris.js`](tetris.js))**:
+    - Raised the client catastrophe cap from `1000.0` to `1500.0` across all arcade engines so live HUD tracking and game-over modals calculate and display the full earned amount accurately.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.810"` and refreshed all script cache busters.
+
 - **7-Day Streak Special Wheel: Mobile & iPhone Viewport Polish (`v1.5.809`)**:
   - **📱 Viewport & Safe-Area Optimization ([`src/css/modals.css`](src/css/modals.css), [`index.html`](index.html))**:
     - Added responsive wheel container styling (`width: min(290px, 68vw); height: min(290px, 68vw);` down to `260px` on screens $\le 480$px) to prevent vertical overflow and clipping on mobile devices.

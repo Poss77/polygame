@@ -1040,8 +1040,8 @@ class CyberStackerGame {
     const rawBase = Math.min(75.0, (((this.floors * 0.45) + (cleanScore / 1500.0)) * 0.70) * globalEarnMult);
     // Strict 100.00 PGT Golden Core Bonus Cap
     const tokenPgt = Math.min((this.goldenCoresCollected || 0) * 5.0, 100.0);
-    // Strict 1000.00 PGT Catastrophe Cap
-    const finalPgt = cleanScore > 0 ? Math.min(1000.0, parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2))) : 0;
+    // Strict 1500.00 PGT Catastrophe Cap
+    const finalPgt = cleanScore > 0 ? Math.min(1500.0, parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2))) : 0;
 
     let isNewHigh = (window.appState && cleanScore > (window.appState.state.stackerHighScore || window.appState.state.catcherHighScore || 0));
     const isPlayerConnected = (window.appState && typeof window.appState.isPlayerConnected === 'function') ? window.appState.isPlayerConnected() : false;

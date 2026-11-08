@@ -1226,7 +1226,7 @@ class CyberTetrisGame {
     const rawBase = Math.min(150.0, (((cleanScore / 2000.0) + (cleanLines * 0.05)) * 3.0) * globalEarnMult);
     const tokenPgt = bonusCoins * 5.0;
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
-    const finalPgt = cleanScore > 0 ? Math.min(1000.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
+    const finalPgt = cleanScore > 0 ? Math.min(1500.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
 
     // Local Highscore Check
     const prevHigh = (window.appState && window.appState.state) ? (window.appState.state.tetrisHighScore || 0) : 0;

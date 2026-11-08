@@ -1221,8 +1221,8 @@ class CyberDriftGame {
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
     // Strict 100.00 PGT Bonus Token Cap
     const tokenPgt = Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0);
-    // Strict 1000.00 PGT Catastrophe Cap
-    const finalPgt = cleanScore > 0 ? Math.min(1000.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
+    // Strict 1500.00 PGT Catastrophe Cap
+    const finalPgt = cleanScore > 0 ? Math.min(1500.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
 
     const isPlayerConnected = (window.appState && typeof window.appState.isPlayerConnected === 'function') ? window.appState.isPlayerConnected() : false;
     let verifiedPgt = this.sessionId ? finalPgt : (isPlayerConnected ? 0.0 : finalPgt);
