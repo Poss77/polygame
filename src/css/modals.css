@@ -404,3 +404,50 @@
 #hangar-fleet-strip::-webkit-scrollbar-thumb:hover {
   background: var(--color-primary);
 }
+
+/* --- 7-Day Streak Special Wheel Mobile Viewport Optimization --- */
+#modal-streak-wheel {
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+#modal-streak-wheel .modal-card {
+  max-width: 420px;
+  width: 92%;
+  max-height: 90vh;
+  max-height: 90dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 1.25rem 1rem;
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 24px));
+  box-sizing: border-box;
+  margin: auto;
+}
+
+#streak-wheel-visual-container {
+  width: min(290px, 68vw);
+  height: min(290px, 68vw);
+  margin: 0 auto 1rem auto;
+}
+
+@media (max-width: 480px) {
+  #modal-streak-wheel {
+    padding: 0.5rem !important;
+  }
+  #modal-streak-wheel .modal-card {
+    width: 96% !important;
+    padding: 1rem 0.85rem !important;
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 24px)) !important;
+  }
+  #streak-wheel-visual-container {
+    width: min(260px, 66vw) !important;
+    height: min(260px, 66vw) !important;
+    margin: 0 auto 0.75rem auto !important;
+  }
+  #btn-spin-streak-wheel,
+  #btn-streak-wheel-claim-close {
+    padding: 0.85rem !important;
+    font-size: 0.95rem !important;
+    min-height: 48px;
+  }
+}

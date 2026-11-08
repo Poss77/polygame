@@ -604,6 +604,8 @@ export function openStreakWheelModal() {
   _pendingCrateResult = null;
   const actionSec = document.getElementById('streak-wheel-action-section');
   const resultSec = document.getElementById('streak-wheel-result-section');
+  const wheelContainer = document.getElementById('streak-wheel-visual-container');
+  if (wheelContainer) wheelContainer.style.display = 'block';
   const btnSpin = document.getElementById('btn-spin-streak-wheel');
   const amountEl = document.getElementById('streak-wheel-prize-amount');
 
@@ -781,7 +783,9 @@ export function handleStreakWheelLanding(res, segmentIdx) {
   const titleEl = document.getElementById('streak-wheel-result-title');
   const descEl = document.getElementById('streak-wheel-result-desc');
 
+  const wheelContainer = document.getElementById('streak-wheel-visual-container');
   if (actionSec) actionSec.style.display = 'none';
+  if (wheelContainer) wheelContainer.style.display = 'none';
   if (resultSec) resultSec.style.display = 'block';
 
   if (iconEl) iconEl.innerText = slice.icon;
@@ -799,6 +803,9 @@ export function handleStreakWheelLanding(res, segmentIdx) {
       claimBtn.style.borderColor = '#66ffb3';
       claimBtn.style.color = '#02200f';
     }
+    setTimeout(() => {
+      try { claimBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch(e){}
+    }, 60);
   }
 
   if (amountEl) {
@@ -908,6 +915,8 @@ export function closeStreakWheelResult() {
   if (typeof closeModal === 'function') {
     closeModal('streak-wheel');
   }
+  const wheelContainer = document.getElementById('streak-wheel-visual-container');
+  if (wheelContainer) wheelContainer.style.display = 'block';
 
   if (_pendingCrateResult) {
     const crateData = _pendingCrateResult;

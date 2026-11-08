@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **7-Day Streak Special Wheel: Mobile & iPhone Viewport Polish (`v1.5.809`)**:
+  - **📱 Viewport & Safe-Area Optimization ([`src/css/modals.css`](src/css/modals.css), [`index.html`](index.html))**:
+    - Added responsive wheel container styling (`width: min(290px, 68vw); height: min(290px, 68vw);` down to `260px` on screens $\le 480$px) to prevent vertical overflow and clipping on mobile devices.
+    - Added `max-height: 90dvh; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch;` and `padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 24px))` to the Streak Wheel `.modal-card`, completely eliminating button clipping beneath the iOS Safari bottom toolbar and Home indicator.
+  - **🎉 Seamless Victory Reveal Transition ([`src/js/features/quests.js`](src/js/features/quests.js))**:
+    - Enhanced `handleStreakWheelLanding()` to hide the wheel container when the prize is landed, transforming the modal into a clean, compact Victory Card.
+    - Positioned the glowing `"Awesome! Collect Reward"` button prominently in the vertical center of the mobile screen with touch-safe height (`min-height: 48px;`) and automatic focus/scroll visibility.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.809"` and refreshed all script cache busters.
+
 - **Cyber Invaders & Arcade HUD: Live Bar & Endgame Modal PGT Harmonization & Alien Clamp Calibration (`v1.5.808`)**:
   - **👾 Cyber Invaders Alien Kill Clamp Calibration ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/patch_arcade_invaders_alien_clamp.sql`](supabase/patch_arcade_invaders_alien_clamp.sql))**:
     - Calibrated the server-side item velocity limit (`v_clamped_items`) for `Cyber Invaders` from `duration * 3` to `duration * 6` (with a minimum 15 grace buffer). In high-sector gameplay (e.g. Sector 40–50+), players legitimately clear 3 to 5+ aliens/sec using spread cannon power-ups and screen-clearing bombs. The previous `3/sec` clamp clipped legitimate kills (e.g. 1000 kills in 321s clamped to 963), resulting in a ~9.32 PGT discrepancy.
