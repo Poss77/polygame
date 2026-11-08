@@ -2702,6 +2702,10 @@ class CyberInvaders {
 
 
 
+    // Synchronize live top HUD with authoritative payout
+    const liveEarnedEl = document.getElementById('invaders-live-earned');
+    if (liveEarnedEl) liveEarnedEl.innerText = verifiedPgt.toFixed(2);
+
     if (typeof window.sendDiscordEarnAnnouncement === 'function' && verifiedPgt > 0 && isPlayerConnected) {
 
       window.sendDiscordEarnAnnouncement('Cyber Invaders', cleanScore, verifiedPgt);
@@ -2711,6 +2715,7 @@ class CyberInvaders {
 
 
     const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
+    const verifiedBase = (playerMult > 0 && verifiedPgt > 0) ? Math.max(0, (verifiedPgt - tokenPgt) / playerMult) : rawBase;
 
     const maxPlays = (window.appState && window.appState.state && window.appState.state.maxDailyPlaysPerGame) ? window.appState.state.maxDailyPlaysPerGame : 35;
 

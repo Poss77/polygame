@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Invaders & Arcade HUD: Live Bar & Endgame Modal PGT Harmonization & Alien Clamp Calibration (`v1.5.808`)**:
+  - **👾 Cyber Invaders Alien Kill Clamp Calibration ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/patch_arcade_invaders_alien_clamp.sql`](supabase/patch_arcade_invaders_alien_clamp.sql))**:
+    - Calibrated the server-side item velocity limit (`v_clamped_items`) for `Cyber Invaders` from `duration * 3` to `duration * 6` (with a minimum 15 grace buffer). In high-sector gameplay (e.g. Sector 40–50+), players legitimately clear 3 to 5+ aliens/sec using spread cannon power-ups and screen-clearing bombs. The previous `3/sec` clamp clipped legitimate kills (e.g. 1000 kills in 321s clamped to 963), resulting in a ~9.32 PGT discrepancy.
+    - Set `v_max_velocity_rate := 1.75` for `invaders` to align with fast-paced arcade action.
+  - **🖥️ Live HUD Top Bar & Endgame Modal Synchronization ([`invaders.js`](invaders.js), [`game.js`](game.js))**:
+    - Updated `gameOver()` in `invaders.js` to synchronize the top live HUD element (`#invaders-live-earned`) with the server-verified payout (`verifiedPgt.toFixed(2)`), preventing the top bar from freezing at pre-game-over speculative client estimates.
+    - Synchronized modal `Base PGT` calculation (`verifiedBase = (verifiedPgt - tokenPgt) / playerMult`) with server-verified payout, guaranteeing exact mathematical consistency (`Base * Multiplier + Bonus = Total`) across the entire screen.
+    - Also synchronized `#game-live-earned` in `game.js` (AstroDodge) upon game over for cross-game consistency.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.808"` and refreshed all script cache busters.
+
 - **PolySpace Radar Copy Polish (`v1.5.807`)**:
   - **📝 Subtitle Formatting ([`space.js`](space.js), [`index.html`](index.html))**:
     - Formatted tactical radar subtitle to: `Click token to harvest (${minYield} – ${maxYield} PGT) x 2 (45% chance)` across idle and active token interception states.

@@ -696,6 +696,10 @@ class NeonAstroDodge {
       console.warn("endArcadeSession error in AstroDodge:", err);
     }
 
+    // Synchronize live top HUD with authoritative payout
+    if (!this._earnedEl) this._earnedEl = document.getElementById('game-live-earned');
+    if (this._earnedEl) this._earnedEl.textContent = verifiedPgt.toFixed(2);
+
     const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
     const maxPlays = serverMaxPlays || (window.appState && typeof window.appState.getMaxDailyPlaysPerGame === 'function' ? window.appState.getMaxDailyPlaysPerGame() : ((window.appState && window.appState.state && window.appState.state.maxDailyPlaysPerGame) ? window.appState.state.maxDailyPlaysPerGame : 30));
     const playsDone = serverCompletedToday || maxPlays;
