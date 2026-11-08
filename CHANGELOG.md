@@ -5,6 +5,20 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace Radar PGT Anomaly: Mining Laser Yield Multiplier & 45% Double Gamble (`v1.5.803`)**:
+  - **🔬 Mining Laser Yield Multiplier Integration ([`space.js`](space.js), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`supabase/patch_radar_harvest_mining_laser_and_double_gamble.sql`](supabase/patch_radar_harvest_mining_laser_and_double_gamble.sql))**:
+    - Connected the tactical radar cosmic PGT anomaly harvest directly to the player's PolySpace Mining Laser level (`space_state->>'laserLevel'`).
+    - Laser multiplier formula (`1.0 + (lvl - 1) * 0.18` up to Lvl 20; `4.42 + (lvl - 20) * 0.25` beyond) multiplies the base anomaly reward (`0.50 – 10.00 PGT`). E.g. Lvl 10 laser grants `2.62x` (`1.31 – 26.20 PGT`), giving significant economic progression to laser upgrades.
+  - **⚡ 45% Double PGT Overcharge Gamble ([`space.js`](space.js), [`index.html`](index.html), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql))**:
+    - Added an optional 45% win chance Double-or-Nothing gamble protocol to radar anomaly harvesting (`claim_polyspace_radar_harvest(p_player_id, p_gamble_double)`).
+    - If overcharge succeeds (45% chance), payout doubles (`2x`); if it destabilizes (55% chance), 0 PGT is awarded.
+    - Added interactive **Tactical Anomaly Interceptor Modal** (`#modal-radar-harvest`) allowing players to choose between 🛡️ **Secure Harvest** (100% safe base × laser) and ⚡ **Hyper-Overcharge (2X)** (45% double), with a "Remember choice" option.
+    - Added a quick toggle switch in the Radar header (`⚡ 45% Double: OFF / ACTIVE (2X)`) for instant one-click double gambling.
+  - **🛡️ Auditability & Telemetry ([`supabase/patch_radar_harvest_mining_laser_and_double_gamble.sql`](supabase/patch_radar_harvest_mining_laser_and_double_gamble.sql))**:
+    - Added `is_gamble_double`, `gamble_won`, and `laser_multiplier` columns to `public.polyspace_radar_harvests` for full anti-exploit auditability.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.803"` and refreshed all cache busters.
+
 - **Fair-Play Advisory: Fix Post-Turnstile Focus False Positive, Friendly Warning UI & Tiboryeah Remediation (`v1.5.802`)**:
   - **🛡️ Post-Turnstile Focus Tracking Fix ([`src/js/features/arcade-security.js`](src/js/features/arcade-security.js), [`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/master_rpcs.sql`](supabase/master_rpcs.sql))**:
     - Resolved a false-positive `unfocused_background_session` check when starting an arcade game immediately after completing a Cloudflare Turnstile challenge (where browser focus remained inside the cross-origin Turnstile `<iframe>`).

@@ -153,7 +153,7 @@ class PolySpaceEngine {
           const dist = Math.hypot(clickX - tp.x, clickY - tp.y);
           if (dist <= Math.max(22, (tp.radius || 15) + 6)) {
             if (window.sfx && window.sfx.playClick) window.sfx.playClick();
-            this.claimRadarPgtHarvest();
+            this.handleRadarCoinClick();
             return;
           }
         }
@@ -5591,6 +5591,8 @@ class PolySpaceEngine {
     this._radarPgtClaimsToday = 0;
     this._radarPgtCoinSpawned = false;
     this._radarPgtClaimInProgress = false;
+    this._radarDoubleGambleMode = (typeof localStorage !== 'undefined' && localStorage.getItem('polygame_radar_double_mode') === '1');
+    this.updateDoubleGambleUI();
 
     await this.fetchRadarHarvestStatus();
 
@@ -5736,7 +5738,97 @@ class PolySpaceEngine {
     this.ctx.restore();
   }
 
-  async claimRadarPgtHarvest() {
+  handleRadarCoinClick() {
+    if (this._radarDoubleGambleMode) {
+      this.claimRadarPgtHarvest(true);
+      return;
+    }
+    const pref = (typeof localStorage !== 'undefined') ? localStorage.getItem('polygame_radar_harvest_pref') : null;
+    if (pref === 'double') {
+      this.claimRadarPgtHarvest(true);
+      return;
+    } else if (pref === 'secure') {
+      this.claimRadarPgtHarvest(false);
+      return;
+    }
+    this.openRadarHarvestModal();
+  }
+
+  openRadarHarvestModal() {
+    if (this._radarPgtClaimsToday >= 10) {
+      if (window.triggerToast) window.triggerToast("Daily limit of 10 radar PGT harvests reached!", "warning");
+      return;
+    }
+    const laserLvl = (this.state && this.state.laserLevel) || 1;
+    const mult = this.getLaserMultiplier(laserLvl);
+    const pct = Math.round((mult - 1.0) * 100);
+    const minYield = (0.5 * mult).toFixed(2);
+    const maxYield = (10.0 * mult).toFixed(2);
+
+    const laserInfoEl = document.getElementById('radar-modal-laser-info');
+    if (laserInfoEl) {
+      laserInfoEl.innerText = `Lvl ${laserLvl} (+${pct}% / ${mult.toFixed(2)}x)`;
+    }
+    const yieldRangeEl = document.getElementById('radar-modal-yield-range');
+    if (yieldRangeEl) {
+      yieldRangeEl.innerText = `${minYield} – ${maxYield} PGT`;
+    }
+
+    if (window.openModal) {
+      window.openModal('radar-harvest');
+    }
+  }
+
+  executeRadarHarvest(isDouble) {
+    const rememberBox = document.getElementById('radar-remember-choice');
+    if (rememberBox && rememberBox.checked) {
+      try {
+        localStorage.setItem('polygame_radar_harvest_pref', isDouble ? 'double' : 'secure');
+      } catch (e) {}
+    }
+    if (window.closeModal) {
+      window.closeModal('radar-harvest');
+    }
+    this.claimRadarPgtHarvest(Boolean(isDouble));
+  }
+
+  toggleDoubleGambleMode() {
+    this._radarDoubleGambleMode = !this._radarDoubleGambleMode;
+    try {
+      localStorage.setItem('polygame_radar_double_mode', this._radarDoubleGambleMode ? '1' : '0');
+    } catch (e) {}
+    this.updateDoubleGambleUI();
+    if (window.sfx && window.sfx.playClick) window.sfx.playClick();
+    if (window.triggerToast) {
+      if (this._radarDoubleGambleMode) {
+        window.triggerToast("⚡ 45% Double Mode ENABLED! Next radar harvest will gamble 2X!", "info");
+      } else {
+        window.triggerToast("🛡️ Standard Harvest Mode (100% Secure)", "info");
+      }
+    }
+  }
+
+  updateDoubleGambleUI() {
+    const label = document.getElementById('radar-double-mode-label');
+    const btn = document.getElementById('radar-double-toggle-btn');
+    if (label) {
+      label.innerText = this._radarDoubleGambleMode ? 'ACTIVE (2X)' : 'OFF';
+      label.style.color = this._radarDoubleGambleMode ? '#00ff88' : '#94a3b8';
+    }
+    if (btn) {
+      if (this._radarDoubleGambleMode) {
+        btn.style.background = 'rgba(168, 85, 247, 0.35)';
+        btn.style.borderColor = '#d8b4fe';
+        btn.style.boxShadow = '0 0 10px rgba(168, 85, 247, 0.5)';
+      } else {
+        btn.style.background = 'rgba(168, 85, 247, 0.15)';
+        btn.style.borderColor = 'rgba(168, 85, 247, 0.4)';
+        btn.style.boxShadow = 'none';
+      }
+    }
+  }
+
+  async claimRadarPgtHarvest(isDouble = false) {
     if (this._radarPgtClaimInProgress) return;
     if (this._radarPgtClaimsToday >= 10) {
       if (window.triggerToast) window.triggerToast("Daily limit of 10 radar PGT harvests reached!", "warning");
@@ -5762,7 +5854,8 @@ class PolySpaceEngine {
 
     try {
       const { data, error } = await sb.rpc('claim_polyspace_radar_harvest', {
-        p_player_id: String(pid).toLowerCase()
+        p_player_id: String(pid).toLowerCase(),
+        p_gamble_double: Boolean(isDouble)
       });
 
       if (!error && data && data.success) {
@@ -5776,23 +5869,49 @@ class PolySpaceEngine {
           window.appState.update({ balancePgt: parseFloat(parseFloat(data.new_balance).toFixed(2)) });
         }
 
-        try {
-          if (data.is_jackpot && window.confetti) {
-            window.confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
-          }
-          if (window.sfx && typeof window.sfx.playDeposit === 'function') {
-            window.sfx.playDeposit();
-          } else if (window.sfx && typeof window.sfx.playLaser === 'function') {
-            window.sfx.playLaser();
-          }
-        } catch (e) {}
-
         const rewardVal = parseFloat(data.reward_pgt || 0).toFixed(2);
-        const msg = data.is_jackpot 
-          ? `🌟 SUPERNOVA JACKPOT! +${rewardVal} PGT Harvested!` 
-          : `✨ Radar PGT Harvested: +${rewardVal} PGT!`;
-        if (window.triggerToast) {
-          window.triggerToast(msg, "success");
+        const laserMult = parseFloat(data.laser_mult || this.getLaserMultiplier(this.state.laserLevel || 1)).toFixed(2);
+
+        if (data.double_gamble) {
+          if (data.gamble_won) {
+            try {
+              if (window.confetti) window.confetti({ particleCount: 80, spread: 80, origin: { y: 0.6 } });
+              if (window.sfx && typeof window.sfx.playJackpot === 'function') {
+                window.sfx.playJackpot();
+              } else if (window.sfx && typeof window.sfx.playDeposit === 'function') {
+                window.sfx.playDeposit();
+              }
+            } catch (e) {}
+            if (window.triggerToast) {
+              window.triggerToast(`⚡ OVERCHARGE CRITICAL SUCCESS! +${rewardVal} PGT (2X DOUBLED)!`, "success");
+            }
+          } else {
+            try {
+              if (window.sfx && typeof window.sfx.playError === 'function') {
+                window.sfx.playError();
+              }
+            } catch (e) {}
+            if (window.triggerToast) {
+              window.triggerToast(`💥 ANOMALY OVERLOAD! The cosmic cluster destabilized and dissipated (0 PGT).`, "warning");
+            }
+          }
+        } else {
+          try {
+            if (data.is_jackpot && window.confetti) {
+              window.confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+            }
+            if (window.sfx && typeof window.sfx.playDeposit === 'function') {
+              window.sfx.playDeposit();
+            } else if (window.sfx && typeof window.sfx.playLaser === 'function') {
+              window.sfx.playLaser();
+            }
+          } catch (e) {}
+          const msg = data.is_jackpot 
+            ? `🌟 SUPERNOVA JACKPOT! +${rewardVal} PGT Harvested (x${laserMult} Laser Bonus)!` 
+            : `✨ Radar PGT Harvested: +${rewardVal} PGT (x${laserMult} Laser Bonus)!`;
+          if (window.triggerToast) {
+            window.triggerToast(msg, "success");
+          }
         }
 
         this.updateRadarHarvestUI(this._radarPgtClaimsToday, data.claims_remaining);
@@ -5825,6 +5944,17 @@ class PolySpaceEngine {
     const badgeEl = document.getElementById('radar-harvest-badge');
     const subtitleEl = document.getElementById('radar-harvest-subtitle');
     const indicatorEl = document.getElementById('radar-harvest-status-indicator');
+    const laserBadge = document.getElementById('radar-laser-badge');
+
+    const laserLvl = (this.state && this.state.laserLevel) || 1;
+    const mult = this.getLaserMultiplier(laserLvl);
+    const pct = Math.round((mult - 1.0) * 100);
+    const minYield = (0.5 * mult).toFixed(1);
+    const maxYield = (10.0 * mult).toFixed(1);
+
+    if (laserBadge) {
+      laserBadge.innerText = `🔬 Laser: Lvl ${laserLvl} (+${pct}% Yield / ${mult.toFixed(2)}x)`;
+    }
 
     if (countEl) countEl.innerText = claimsToday;
 
@@ -5855,9 +5985,9 @@ class PolySpaceEngine {
       }
       if (subtitleEl) {
         if (this._radarPgtCoinSpawned) {
-          subtitleEl.innerHTML = '<span style="color:#00ff88; font-weight:800;">✨ Cosmic PGT Token Detected!</span> Click token directly on the map to harvest (0.5 – 10 PGT)';
+          subtitleEl.innerHTML = `<span style="color:#00ff88; font-weight:800;">✨ Cosmic PGT Anomaly Intercepted!</span> Click token on map to harvest (${minYield} – ${maxYield} PGT) • 45% Double Available`;
         } else {
-          subtitleEl.innerText = 'Cosmic PGT tokens drift across the tactical radar • Click token on map to harvest (0.5 – 10 PGT)';
+          subtitleEl.innerText = `Cosmic PGT tokens drift across tactical radar • Click token to harvest (${minYield} – ${maxYield} PGT × Mining Laser) • 45% Double Available`;
           subtitleEl.style.color = 'var(--text-muted)';
         }
       }
@@ -5870,7 +6000,7 @@ class PolySpaceEngine {
 }
 
 // Global instance initialization
-window.polySpace = new PolySpaceEngine();
+
 
 window.initPolySpace = function() {
   if (window.polySpace) {
