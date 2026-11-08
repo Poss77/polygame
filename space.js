@@ -5896,7 +5896,7 @@ class PolySpaceEngine {
               }
             } catch (e) {}
             if (window.triggerToast) {
-              window.triggerToast(`💥 ANOMALY OVERLOAD! The cosmic cluster destabilized and dissipated (0 PGT).`, "warning");
+              window.triggerToast(`💥 ANOMALY OVERLOAD! Destabilized (0 PGT). Tip: Disable "45% Double" if you want guaranteed PGT every time!`, "warning");
             }
           }
         } else {

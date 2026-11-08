@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace Radar Loss Toast Clarification (`v1.5.806`)**:
+  - **💡 User Guidance On Gamble Loss ([`space.js`](space.js))**:
+    - Enhanced the 45% Double overload toast notification to inform players: `💥 ANOMALY OVERLOAD! Destabilized (0 PGT). Tip: Disable "45% Double" if you want guaranteed PGT every time!`
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.806"` and refreshed all script cache busters.
+
 - **PolySpace Radar Subtitle Polish (`v1.5.805`)**:
   - **✨ Redundancy Removal ([`space.js`](space.js), [`index.html`](index.html))**:
     - Removed redundant `"× Mining Laser"` suffix from the tactical radar subtitle (`(${minYield} – ${maxYield} PGT)`), as the displayed numerical range already computes the multiplied payout.
