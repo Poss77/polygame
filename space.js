@@ -5647,9 +5647,13 @@ class PolySpaceEngine {
     const dist = 50 + Math.random() * 80;
     this._radarPgtTokenNormalized = { angle, dist };
 
+    const laserLvl = (this.state && this.state.laserLevel) || 1;
+    const mult = this.getLaserMultiplier(laserLvl);
+    const minYield = (0.5 * mult).toFixed(1);
+    const maxYield = (10.0 * mult).toFixed(1);
     const subtitleEl = document.getElementById('radar-harvest-subtitle');
     if (subtitleEl) {
-      subtitleEl.innerHTML = '<span style="color:#00ff88; font-weight:800;">✨ Cosmic PGT Token Detected!</span> Click token directly on the map to harvest (0.5 – 10 PGT)';
+      subtitleEl.innerHTML = `<span style="color:#00ff88; font-weight:800;">✨ Cosmic PGT Anomaly Intercepted!</span> Click token on map to harvest (${minYield} – ${maxYield} PGT) • 45% Double Available`;
     }
     const indicatorEl = document.getElementById('radar-harvest-status-indicator');
     if (indicatorEl) {
@@ -5987,7 +5991,7 @@ class PolySpaceEngine {
         if (this._radarPgtCoinSpawned) {
           subtitleEl.innerHTML = `<span style="color:#00ff88; font-weight:800;">✨ Cosmic PGT Anomaly Intercepted!</span> Click token on map to harvest (${minYield} – ${maxYield} PGT) • 45% Double Available`;
         } else {
-          subtitleEl.innerText = `Cosmic PGT tokens drift across tactical radar • Click token to harvest (${minYield} – ${maxYield} PGT × Mining Laser) • 45% Double Available`;
+          subtitleEl.innerText = `Cosmic PGT tokens drift across tactical radar • Click token to harvest (${minYield} – ${maxYield} PGT) • 45% Double Available`;
           subtitleEl.style.color = 'var(--text-muted)';
         }
       }

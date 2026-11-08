@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace Radar Subtitle Polish (`v1.5.805`)**:
+  - **✨ Redundancy Removal ([`space.js`](space.js), [`index.html`](index.html))**:
+    - Removed redundant `"× Mining Laser"` suffix from the tactical radar subtitle (`(${minYield} – ${maxYield} PGT)`), as the displayed numerical range already computes the multiplied payout.
+    - Synchronized `spawnRadarPgtCoin` to dynamically compute and format the exact multiplied range on spawn.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.805"` and refreshed cache busters across all script tags.
+
 - **PolySpace Engine Init Fix (`v1.5.804`)**:
   - **🚀 PolySpace Instance Restoration ([`space.js`](space.js))**:
     - Restored `window.polySpace = new PolySpaceEngine()` global instantiation which was inadvertently omitted during the previous radar harvest patch, ensuring the tactical radar canvas, fleet command box, and upgrade station load and render properly.
