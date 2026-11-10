@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Community Benchmarks: Realistic PGT Balances, Weekly Payout Eligibility & Referral Market Shield (`v1.5.812`)**:
+  - **💰 Initial PGT Balances & Gameplay Earnings ([`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`supabase/patch_community_benchmarks_pgt_and_market_shield.sql`](supabase/patch_community_benchmarks_pgt_and_market_shield.sql))**:
+    - Benchmark accounts are now seeded with realistic initial balances (550.00 – 1,750.00 PGT) and credited with organic per-run session earnings (8.00 – 125.00 PGT) whenever scores are generated.
+    - Profiles track authentic total earned amounts, arcade play counts, and recent activity timestamps.
+  - **🏆 Weekly Leaderboard Payout Eligibility**:
+    - Re-enabled weekly tournament prize eligibility for benchmark players across all 9 arcade games in `distribute_weekly_arcade_prizes`. When they place in top spots, prizes are credited directly into their platform account, maintaining authentic tournament competition.
+  - **🛡️ Referral Adoption Marketplace Protection ([`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`src/js/features/referral-shop.js`](src/js/features/referral-shop.js))**:
+    - Added strict `AND COALESCE(is_simulated, FALSE) = FALSE` filters to `get_unreferred_census` and all 7 tier adoption loops in `adopt_unreferred_players`.
+    - Simulated accounts are 100% prevented from appearing in census counts or being purchased/adopted on the Referral Adoption Marketplace.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.812"` and refreshed all script cache busters.
+
 - **Community Leaderboard Benchmarks: 1-Click Realistic Daily Scores Engine (`v1.5.811`)**:
   - **👥 Community Leaderboard Benchmark RPCs ([`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`supabase/add_simulated_community_benchmarks.sql`](supabase/add_simulated_community_benchmarks.sql))**:
     - Created `public.admin_generate_community_scores(p_admin_passkey, p_count)` to simulate 2–3 organic daily scores across arcade games from a curated roster of 21 realistic identities (natural Google SSO names like *David Miller* and *Lucas Santos*, authentic Web3 Polygon wallet addresses `Player_0x...`, and casual gamer handles like *niko_b*).

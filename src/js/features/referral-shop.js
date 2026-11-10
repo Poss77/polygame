@@ -225,7 +225,7 @@ export async function fetchUnreferredCensus(forceRefresh = false) {
     if (!fetchedViaRpc) {
       const { data, error } = await client
         .from('users')
-        .select('player_id, weekly_active_tier, last_weekly_active_tier, is_banned, created_at')
+        .select('player_id, weekly_active_tier, last_weekly_active_tier, is_banned, is_simulated, created_at')
         .or('referred_by_l1.is.null,referred_by_l1.eq.');
 
       if (error) {
@@ -235,7 +235,7 @@ export async function fetchUnreferredCensus(forceRefresh = false) {
       if (Array.isArray(data)) {
         const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
         data.forEach(row => {
-          if (row.is_banned) return;
+          if (row.is_banned || row.is_simulated) return;
           if (row.player_id && row.player_id.toLowerCase().startsWith('test_')) return;
 
           // Fresh signup within the last 7 days -> Recruit

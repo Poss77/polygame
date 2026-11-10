@@ -1162,7 +1162,7 @@ export async function triggerAdminGenerateCommunityScores(count = 3) {
 
     if (error) throw error;
     if (data && data.success) {
-      const summary = (data.entries || []).map(e => `${e.display_name} (${e.game_title}: ${Number(e.score).toLocaleString()})`).join(', ');
+      const summary = (data.entries || []).map(e => `${e.display_name} (${e.game_title}: ${Number(e.score).toLocaleString()}${e.earned_pgt ? ` | +${Number(e.earned_pgt).toFixed(1)} PGT` : ''})`).join(', ');
       triggerToast(`🎲 Generated ${data.generated_count} scores: ${summary}`, 'success', 6000);
       if (statusEl) {
         statusEl.textContent = `✅ Successfully posted ${data.generated_count} scores: ${summary}`;
