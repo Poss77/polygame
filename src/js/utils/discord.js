@@ -238,7 +238,7 @@ window.setDiscordWinThreshold = setDiscordWinThreshold;
  * Helper to trigger Mini-Game (Earn) Announcements
  * Triggers ONLY if earnedPgt > DISCORD_MIN_EARN_THRESHOLD (default: 20 PGT)
  */
-export function sendDiscordEarnAnnouncement(gameName, score, earnedPgt) {
+export function sendDiscordEarnAnnouncement(gameName, score, earnedPgt, sessionId = null) {
   if (typeof window !== 'undefined' && window.appState && typeof window.appState.isPlayerConnected === 'function') {
     if (!window.appState.isPlayerConnected()) return;
   }
@@ -278,6 +278,7 @@ export function sendDiscordEarnAnnouncement(gameName, score, earnedPgt) {
   const scorePts = Math.floor(parseFloat(score || 0));
   const username = window.appState?.state?.username;
   const player = (username && username !== 'Anonymous Player') ? username : 'PolyGame Pilot';
+  const resolvedSessionId = sessionId || (typeof window !== 'undefined' ? window.lastCompletedArcadeSessionId : null) || null;
 
   relayDiscordNotification({
     action: 'earn_announcement',
@@ -285,7 +286,8 @@ export function sendDiscordEarnAnnouncement(gameName, score, earnedPgt) {
     gameName,
     score: scorePts,
     earnedPgt: pgtAmt,
-    player
+    player,
+    sessionId: resolvedSessionId
   });
 }
 window.sendDiscordEarnAnnouncement = sendDiscordEarnAnnouncement;

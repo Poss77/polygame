@@ -1246,6 +1246,9 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
       p_telemetry: telemetry
     });
     if (!error && data && data.success) {
+      if (typeof window !== 'undefined') {
+        window.lastCompletedArcadeSessionId = sessionId;
+      }
       const updateData = {};
       if (data.new_balance !== undefined && data.new_balance !== null) {
         updateData.balancePgt = parseFloat(parseFloat(data.new_balance).toFixed(2));

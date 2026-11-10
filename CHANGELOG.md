@@ -5,6 +5,21 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Discord Relay: Anti-Spoof Duration Fix & Session ID Verification (`v1.5.813`)**:
+  - **🛰️ Edge Function Anti-Spoof Duration Fix ([`supabase/functions/discord-relay/index.ts`](supabase/functions/discord-relay/index.ts))**:
+    - Resolved `POST /functions/v1/discord-relay 403 (Forbidden)` error occurring at the end of long arcade sessions. The previous anti-spoof check compared `created_at` against a 5-minute window; sessions lasting longer than 5 minutes (such as high-scoring AstroDodge runs) were falsely rejected because their start timestamp fell outside the window.
+    - Updated verification pipeline in `discord-relay` (v9 deployed):
+      1. **Exact Session ID Verification**: Queries `arcade_sessions` directly by `id = sessionId` when provided.
+      2. **Completed At Window**: Evaluates `completed_at >= (now - 30 minutes)` instead of session start time.
+      3. **Creation Fallback**: Evaluates `created_at >= (now - 2 hours)` as safety fallback.
+    - Switched non-critical verification rejection responses from HTTP 403 to HTTP 200 `{ success: false, error: ... }`, eliminating unsightly red network errors from the browser console.
+  - **🕹️ Client Session ID Propagation ([`game.js`](game.js), [`src/js/core/db-sync.js`](src/js/core/db-sync.js), [`src/js/utils/discord.js`](src/js/utils/discord.js))**:
+    - Stored `window.lastCompletedArcadeSessionId = sessionId` in `endArcadeSession()` upon successful completion.
+    - Updated `sendDiscordEarnAnnouncement()` in `discord.js` to accept `sessionId` and automatically fall back to `window.lastCompletedArcadeSessionId`.
+    - Explicitly forwarded `this.sessionId` from `game.js` on AstroDodge game-over.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.813"` and refreshed all script cache busters.
+
 - **Community Benchmarks: Realistic PGT Balances, Weekly Payout Eligibility & Referral Market Shield (`v1.5.812`)**:
   - **💰 Initial PGT Balances & Gameplay Earnings ([`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`supabase/patch_community_benchmarks_pgt_and_market_shield.sql`](supabase/patch_community_benchmarks_pgt_and_market_shield.sql))**:
     - Benchmark accounts are now seeded with realistic initial balances (550.00 – 1,750.00 PGT) and credited with organic per-run session earnings (8.00 – 125.00 PGT) whenever scores are generated.
