@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Community Leaderboard Benchmarks: 1-Click Realistic Daily Scores Engine (`v1.5.811`)**:
+  - **👥 Community Leaderboard Benchmark RPCs ([`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`supabase/add_simulated_community_benchmarks.sql`](supabase/add_simulated_community_benchmarks.sql))**:
+    - Created `public.admin_generate_community_scores(p_admin_passkey, p_count)` to simulate 2–3 organic daily scores across arcade games from a curated roster of 21 realistic identities (natural Google SSO names like *David Miller* and *Lucas Santos*, authentic Web3 Polygon wallet addresses `Player_0x...`, and casual gamer handles like *niko_b*).
+    - **Option C Score Calibration**: Benchmark scores are dynamically calibrated to sit naturally between 35% and 70% of the current top human player's score (placing in ranks 4–15). They are mathematically prevented from overtaking the top 3 podium spots.
+    - **Tournament Prize Shield**: Updated `distribute_weekly_arcade_prizes` across all 9 arcade games with `AND COALESCE(is_simulated, FALSE) = FALSE` so simulated players are 100% excluded from prize pool payouts. Real human players receive 100% of the weekly rewards.
+    - **1-Click Deactivation**: Added `public.admin_clear_community_scores(p_admin_passkey)` to instantly zero out all benchmark high scores across all arcade games, and `public.admin_toggle_community_scores` to enable/disable the engine in `public.global_settings`.
+  - **🎮 Admin Operations Portal & In-App Master Admin Controls ([`index.html`](index.html), [`src/js/features/profile.js`](src/js/features/profile.js), [`tools/admin/admin.html`](tools/admin/admin.html), [`tools/admin/admin.js`](tools/admin/admin.js))**:
+    - Added 1-click trigger buttons (`🎲 Generate Daily Scores (2-3 Players)` and `⏸️ Clear / Deactivate`) directly inside the Master Admin Card on the player profile (mobile & desktop) and in the local operations dashboard.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js))**:
+    - Incremented `APP_VERSION = "1.5.811"`.
+
 - **Arcade Economy: Raise Catastrophe Circuit-Breaker Ceiling to 1,500 PGT (`v1.5.810`)**:
   - **🚀 Catastrophe Circuit-Breaker Expansion ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`supabase/patch_arcade_catastrophe_cap_1500.sql`](supabase/patch_arcade_catastrophe_cap_1500.sql))**:
     - Raised server-side maximum arcade session payout cap (`v_final_pgt := LEAST(v_final_pgt, 1500.00);`) in `end_arcade_session` from 1,000.00 PGT to 1,500.00 PGT.

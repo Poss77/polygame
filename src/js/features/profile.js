@@ -1141,3 +1141,85 @@ export function switchProfileSubTab(subTab) {
 window.switchProfileSubTab = switchProfileSubTab;
 window.formatLeaderboardName = formatLeaderboardName;
 window.getLeaderboardStarshipBadge = getLeaderboardStarshipBadge;
+
+// Community Leaderboard Benchmark Engine (Option C & Option 2)
+export async function triggerAdminGenerateCommunityScores(count = 3) {
+  const statusEl = document.getElementById('admin-sim-score-status');
+  const btn = document.getElementById('btn-admin-gen-scores');
+  if (btn) btn.disabled = true;
+  if (statusEl) {
+    statusEl.style.display = 'block';
+    statusEl.textContent = '⏳ Generating community benchmark scores...';
+    statusEl.style.color = '#00f0ff';
+  }
+
+  try {
+    const adminWallet = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
+    const { data, error } = await supabase.rpc('admin_generate_community_scores', {
+      p_admin_passkey: adminWallet,
+      p_count: count
+    });
+
+    if (error) throw error;
+    if (data && data.success) {
+      const summary = (data.entries || []).map(e => `${e.display_name} (${e.game_title}: ${Number(e.score).toLocaleString()})`).join(', ');
+      triggerToast(`🎲 Generated ${data.generated_count} scores: ${summary}`, 'success', 6000);
+      if (statusEl) {
+        statusEl.textContent = `✅ Successfully posted ${data.generated_count} scores: ${summary}`;
+        statusEl.style.color = '#00ff88';
+      }
+    } else {
+      throw new Error(data?.error || 'Unknown error');
+    }
+  } catch (err) {
+    console.error("Failed to generate community scores:", err);
+    triggerToast(`Error: ${err.message || err}`, 'error');
+    if (statusEl) {
+      statusEl.textContent = `❌ ${err.message || err}`;
+      statusEl.style.color = '#ff3366';
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+window.triggerAdminGenerateCommunityScores = triggerAdminGenerateCommunityScores;
+
+export async function triggerAdminClearCommunityScores() {
+  if (!confirm("Are you sure you want to deactivate and clear all simulated benchmark scores?")) return;
+  const statusEl = document.getElementById('admin-sim-score-status');
+  const btn = document.getElementById('btn-admin-clear-scores');
+  if (btn) btn.disabled = true;
+  if (statusEl) {
+    statusEl.style.display = 'block';
+    statusEl.textContent = '⏳ Clearing simulated benchmark scores...';
+    statusEl.style.color = '#ffaa00';
+  }
+
+  try {
+    const adminWallet = (ADMIN_WALLET_ADDRESS || "0x10b9993990c9ef8a212c9557cb02ad94da9a654d").toLowerCase();
+    const { data, error } = await supabase.rpc('admin_clear_community_scores', {
+      p_admin_passkey: adminWallet
+    });
+
+    if (error) throw error;
+    if (data && data.success) {
+      triggerToast(`⏸️ Cleared scores for ${data.cleared_count} benchmark players.`, 'info');
+      if (statusEl) {
+        statusEl.textContent = `⏸️ Deactivated: Cleared high scores for ${data.cleared_count} benchmark players.`;
+        statusEl.style.color = '#ffaa00';
+      }
+    } else {
+      throw new Error(data?.error || 'Unknown error');
+    }
+  } catch (err) {
+    console.error("Failed to clear community scores:", err);
+    triggerToast(`Error: ${err.message || err}`, 'error');
+    if (statusEl) {
+      statusEl.textContent = `❌ ${err.message || err}`;
+      statusEl.style.color = '#ff3366';
+    }
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+window.triggerAdminClearCommunityScores = triggerAdminClearCommunityScores;
