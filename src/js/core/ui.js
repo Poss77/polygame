@@ -507,6 +507,9 @@ export function closeModal(modalId) {
     if (modalId === 'withdraw' && typeof window.resetWithdrawTurnstile === 'function') {
       window.resetWithdrawTurnstile();
     }
+    if (modalId === 'captcha' && typeof window.cleanupFaucetTurnstile === 'function') {
+      window.cleanupFaucetTurnstile();
+    }
     if (modalId === 'turnstile-arcade' && window.arcadeSecurity && typeof window.arcadeSecurity.abortVerification === 'function') {
       window.arcadeSecurity.abortVerification();
     }

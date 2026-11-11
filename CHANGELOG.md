@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Anti-Sybil IP Limits & Cloudflare Turnstile Faucet Protection (`v1.5.826`)**:
+  - **🛡️ Replaced Home-Made Faucet Captcha with Server-Verified Cloudflare Turnstile ([`index.html`](index.html), [`src/js/features/faucet.js`](src/js/features/faucet.js), [`src/js/core/ui.js`](src/js/core/ui.js), [`supabase/functions/verify-turnstile/index.ts`](supabase/functions/verify-turnstile/index.ts), [`supabase/rpcs/04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql))**:
+    - Non-VIP faucet claims now render Cloudflare Turnstile inside `#modal-captcha`, verify cryptographically via `verify-turnstile` (`v2`, logging caller IP and `last_faucet_turnstile_at`), and are strictly enforced server-side inside `claim_faucet()`. Active VIP members preserve instant Turnstile bypass.
+  - **🌐 2-Account-Per-IP Limit for Both Registration & Faucet Claims ([`supabase/rpcs/01_utility_identity.sql`](supabase/rpcs/01_utility_identity.sql), [`supabase/rpcs/04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql), [`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`src/js/core/db-sync.js`](src/js/core/db-sync.js))**:
+    - Added `extract_request_ip()`, `check_ip_signup_allowed()`, `enforce_ip_account_limit()` (`BEFORE INSERT` trigger), and `record_signup_ip_after_insert()` (`AFTER INSERT` trigger) to block creating a 3rd account from the same IP address (exempting whitelisted admin/local IPs).
+    - Enforced a 2-account-per-IP (24h window) cap inside `claim_faucet()`.
+  - **🧹 Sybil Cluster Cleanup Migration ([`supabase/delete_sybil_manuel_ferrer_accounts.sql`](supabase/delete_sybil_manuel_ferrer_accounts.sql), [`supabase/faucet_turnstile_and_ip_limits.sql`](supabase/faucet_turnstile_and_ip_limits.sql))**:
+    - Created cleanup migration to permanently delete the Manuel Ferrer Sybil cluster from `public.users`, activity tables, and `auth.users`.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.826"` and refreshed all stylesheet/script cache busters.
+
 - **Leaderboard Page Load & Payload Optimization (`v1.5.825`)**:
   - **⚡ Eliminated ~500 KB `space_state` Full-Table Download ([`src/js/features/holders.js`](src/js/features/holders.js))**:
     - Removed `space_state` (~496 KB JSONB across all accounts) from the `loadHoldersLeaderboard()` `users` query, since `get_global_space_missions_count()` already computes the authoritative total server-side.

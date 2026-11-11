@@ -1,22 +1,17 @@
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { openModal, closeModal, triggerToast } from '../core/ui.js';
-import { supabase, SUPABASE_URL, SUPABASE_KEY } from '../core/config.js';
+import { supabase, SUPABASE_URL, SUPABASE_KEY, TURNSTILE_SITE_KEY } from '../core/config.js';
 import { fetchUserTotalPgtLiquidity } from './dex.js';
 import { ensureValidSupabaseSession, executeAuthenticatedRpc } from '../core/auth-web3.js';
 
-  // --- Crypto Faucet human verification ---
+  // --- Crypto Faucet human verification (Cloudflare Turnstile for non-VIPs) ---
 
-import { getActiveSeasonalEvent, getSeasonalCaptchaSymbols, formatSeasonalCountdown, DEFAULT_CAPTCHA_SYMBOLS } from './seasonal-events.js';
+import { getActiveSeasonalEvent, formatSeasonalCountdown } from './seasonal-events.js';
 
 export const btnClaimFaucet = document.getElementById('btn-claim-faucet');
-export let captchaTarget = [];
-export let captchaInput = [];
-
-export function getActiveCaptchaSymbols() {
-  return getSeasonalCaptchaSymbols();
-}
-export const captchaSymbols = DEFAULT_CAPTCHA_SYMBOLS;
+let turnstileFaucetWidgetId = null;
+let isFaucetTurnstileVerifying = false;
 
 // Secure True Time query (uses Supabase server Date header, silent fallback)
 export async function fetchTrueTime() {
@@ -379,123 +374,144 @@ export function updateSeasonalCountdown() {
 }
 export const updateHalloweenCountdown = updateSeasonalCountdown;
 
+let isClaimInProgress = false;
+
+export function cleanupFaucetTurnstile() {
+  isFaucetTurnstileVerifying = false;
+  if (turnstileFaucetWidgetId !== null && typeof window.turnstile !== 'undefined') {
+    try {
+      window.turnstile.remove(turnstileFaucetWidgetId);
+    } catch (e) {}
+    turnstileFaucetWidgetId = null;
+  }
+  const container = document.getElementById('turnstile-faucet-widget');
+  if (container) container.innerHTML = '';
+}
+if (typeof window !== 'undefined') window.cleanupFaucetTurnstile = cleanupFaucetTurnstile;
+
 if (btnClaimFaucet) {
   btnClaimFaucet.addEventListener('click', () => {
     const stateObj = getFaucetAppState();
-    if (stateObj && typeof stateObj.isVipActive === 'function' && stateObj.isVipActive()) {
-      triggerToast("👑 VIP Perk: Instant Faucet Claim! Captcha Bypassed.", "success");
+    if (!stateObj || !stateObj.isPlayerConnected || !stateObj.isPlayerConnected()) {
+      triggerToast("Please sign in with Google or connect a wallet first.", "error");
+      return;
+    }
+    if (stateObj.isVipActive && stateObj.isVipActive()) {
+      triggerToast("👑 VIP Perk: Instant Faucet Claim! Turnstile Bypassed.", "success");
       executeFaucetClaim();
     } else {
-      openModal('captcha');
-      generateCaptchaChallenge();
+      openFaucetTurnstileModal();
     }
   });
 }
 
-// Generate captcha sequence
-export function generateCaptchaChallenge() {
-  captchaTarget = [];
-  captchaInput = [];
-  
-  // Choose 3 random symbols for sequence (dynamic Halloween symbols when event is active)
-  const currentSymbols = getActiveCaptchaSymbols();
-  const pool = [...currentSymbols];
-  for (let i = 0; i < 3; i++) {
-    const idx = Math.floor(Math.random() * pool.length);
-    captchaTarget.push(pool.splice(idx, 1)[0]);
+export function openFaucetTurnstileModal() {
+  if (isClaimInProgress || isFaucetTurnstileVerifying) return;
+  openModal('captcha');
+
+  const statusEl = document.getElementById('turnstile-faucet-status');
+  const container = document.getElementById('turnstile-faucet-widget');
+  if (statusEl) {
+    statusEl.innerText = 'Please complete the security check below to claim.';
+    statusEl.style.color = 'var(--text-muted)';
   }
 
-  // Draw target
-  const targetCont = document.getElementById('captcha-target-display');
-  targetCont.innerHTML = '';
-  captchaTarget.forEach(sym => {
-    const box = document.createElement('div');
-    box.className = 'captcha-sym-box';
-    box.innerText = sym;
-    targetCont.appendChild(box);
-  });
+  let sdkAttempts = 0;
+  function renderFaucetWidget() {
+    const modal = document.getElementById('modal-captcha');
+    if (!modal || !modal.classList.contains('active') || !container) return;
 
-  // Draw input display
-  drawCaptchaInputDisplay();
+    if (typeof window.turnstile !== 'undefined') {
+      if (turnstileFaucetWidgetId !== null) {
+        try { window.turnstile.remove(turnstileFaucetWidgetId); } catch (e) {}
+        turnstileFaucetWidgetId = null;
+      }
+      container.innerHTML = '';
+      try {
+        turnstileFaucetWidgetId = window.turnstile.render('#turnstile-faucet-widget', {
+          sitekey: TURNSTILE_SITE_KEY,
+          theme: 'dark',
+          appearance: 'always',
+          callback: async function (token) {
+            if (isFaucetTurnstileVerifying || isClaimInProgress) return;
+            isFaucetTurnstileVerifying = true;
+            if (statusEl) {
+              statusEl.innerText = '⏳ Verifying security token...';
+              statusEl.style.color = 'var(--color-primary)';
+            }
 
-  // Draw Keyboard options
-  const keyCont = document.getElementById('captcha-keyboard-pad');
-  keyCont.innerHTML = '';
-  
-  // Shuffle all symbols to generate keys
-  const shuffledKeys = [...currentSymbols].sort(() => Math.random() - 0.5);
-  shuffledKeys.forEach(sym => {
-    const key = document.createElement('button');
-    key.className = 'btn-captcha-key';
-    key.innerText = sym;
-    key.addEventListener('click', () => handleCaptchaKeyPress(sym));
-    keyCont.appendChild(key);
-  });
-}
+            try {
+              const stateObj = getFaucetAppState();
+              const playerId = (stateObj?.state?.playerId || stateObj?.state?.walletAddress || '').toLowerCase();
+              const { data: vData, error: vErr } = await supabase.functions.invoke('verify-turnstile', {
+                body: {
+                  playerId,
+                  turnstileToken: token,
+                  gameName: 'faucet'
+                }
+              });
 
-export function handleCaptchaKeyPress(sym) {
-  if (captchaInput.length >= 3 || isClaimInProgress) return;
-  sfx.playCoin();
-  captchaInput.push(sym);
-  drawCaptchaInputDisplay();
+              if (vErr || !vData || !vData.success) {
+                const msg = vData?.error || vErr?.message || 'Human verification failed. Please try again.';
+                isFaucetTurnstileVerifying = false;
+                if (statusEl) {
+                  statusEl.innerText = `❌ ${msg}`;
+                  statusEl.style.color = 'var(--color-danger)';
+                }
+                sfx.playError();
+                if (turnstileFaucetWidgetId !== null) {
+                  try { window.turnstile.reset(turnstileFaucetWidgetId); } catch (e) {}
+                }
+                return;
+              }
 
-  // Auto-verify sequence as soon as 3rd symbol is entered
-  if (captchaInput.length === 3) {
-    setTimeout(() => {
-      verifyCaptchaSequence();
-    }, 220);
+              sfx.playSuccess();
+              if (statusEl) {
+                statusEl.innerText = '✓ Verification confirmed! Claiming faucet...';
+                statusEl.style.color = 'var(--color-success)';
+              }
+              closeModal('captcha');
+              executeFaucetClaim();
+            } catch (err) {
+              isFaucetTurnstileVerifying = false;
+              if (statusEl) {
+                statusEl.innerText = '❌ Verification error. Please retry.';
+                statusEl.style.color = 'var(--color-danger)';
+              }
+            }
+          },
+          'expired-callback': function () {
+            isFaucetTurnstileVerifying = false;
+            if (statusEl) {
+              statusEl.innerText = '⚠️ Verification expired. Please check the box again.';
+              statusEl.style.color = 'var(--color-warning)';
+            }
+          },
+          'error-callback': function () {
+            isFaucetTurnstileVerifying = false;
+            if (statusEl) {
+              statusEl.innerText = '❌ Security check failed. Please retry or disable ad-blockers.';
+              statusEl.style.color = 'var(--color-danger)';
+            }
+          }
+        });
+      } catch (err) {
+        console.warn('[FaucetTurnstile] Render error:', err);
+      }
+    } else {
+      sdkAttempts++;
+      if (sdkAttempts > 40) {
+        if (statusEl) {
+          statusEl.innerText = '⚠️ Security check timed out. Check your connection or ad-blocker.';
+          statusEl.style.color = 'var(--color-warning)';
+        }
+        return;
+      }
+      setTimeout(renderFaucetWidget, 250);
+    }
   }
-}
 
-export function drawCaptchaInputDisplay() {
-  const display = document.getElementById('captcha-input-display');
-  display.innerHTML = '';
-  for (let i = 0; i < 3; i++) {
-    const box = document.createElement('div');
-    box.className = `captcha-sym-box ${captchaInput[i] ? 'active-selected' : ''}`;
-    box.innerText = captchaInput[i] || '';
-    display.appendChild(box);
-  }
-}
-
-export function verifyCaptchaSequence() {
-  if (isClaimInProgress) return;
-  if (captchaInput.length < 3) {
-    triggerToast("Incomplete sequence", "error");
-    return;
-  }
-
-  // Check sequence matches
-  const match = captchaTarget.every((val, index) => val === captchaInput[index]);
-  
-  if (match) {
-    sfx.playSuccess();
-    closeModal('captcha');
-    executeFaucetClaim();
-  } else {
-    sfx.playError();
-    triggerToast("❌ Incorrect sequence! Challenge reset.", "error");
-    captchaInput = [];
-    generateCaptchaChallenge();
-  }
-}
-
-const btnCaptchaReset = document.getElementById('btn-captcha-reset');
-if (btnCaptchaReset) {
-  btnCaptchaReset.addEventListener('click', () => {
-    captchaInput = [];
-    sfx.playError();
-    drawCaptchaInputDisplay();
-  });
-}
-
-let isClaimInProgress = false;
-
-const btnCaptchaVerify = document.getElementById('btn-captcha-verify');
-if (btnCaptchaVerify) {
-  btnCaptchaVerify.addEventListener('click', () => {
-    verifyCaptchaSequence();
-  });
+  renderFaucetWidget();
 }
 
 export async function executeFaucetClaim() {
@@ -535,6 +551,10 @@ export async function executeFaucetClaim() {
     if (Array.isArray(res)) res = res[0];
     if (error || !res.success) {
       triggerToast(error ? error.message : res.error, "error");
+      if (res && res.turnstile_required) {
+        setTimeout(() => openFaucetTurnstileModal(), 250);
+        return;
+      }
       if (res && res.next_claim) {
         const nextClaimMs = new Date(res.next_claim).getTime();
         const cooldownSec = getFaucetCooldownSec();
@@ -597,6 +617,7 @@ export async function executeFaucetClaim() {
     setFaucetClaimActive(true);
   } finally {
     isClaimInProgress = false;
+    isFaucetTurnstileVerifying = false;
   }
 }
 
@@ -1040,6 +1061,10 @@ export async function executeVipFaucetClaim() {
     if (Array.isArray(res)) res = res[0];
     if (error || !res.success) {
       triggerToast(error ? error.message : res.error, "error");
+      if (res && res.turnstile_required) {
+        setTimeout(() => openFaucetTurnstileModal(), 250);
+        return;
+      }
       if (res && res.next_claim) {
         const nextClaimMs = new Date(res.next_claim).getTime();
         const cooldownSec = getVipFaucetCooldownSec();

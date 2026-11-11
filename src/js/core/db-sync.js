@@ -725,7 +725,48 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           if (existingUser) {
             await supabase.from('users').update(initUserRecord).eq('player_id', existingUser.player_id || internalId);
           } else {
-            await supabase.from('users').insert(initUserRecord);
+            // Check 2-accounts-per-IP creation limit before inserting a new profile
+            let signupIp = (typeof window !== 'undefined' && window._userPublicIP) ? window._userPublicIP : null;
+            if (!signupIp) {
+              try {
+                const ipRes = await Promise.race([
+                  fetch('https://api.ipify.org?format=json'),
+                  new Promise((_, rej) => setTimeout(() => rej(new Error('ip_timeout')), 2000))
+                ]);
+                const ipJson = await ipRes.json();
+                if (ipJson && ipJson.ip) {
+                  signupIp = ipJson.ip;
+                  if (typeof window !== 'undefined') window._userPublicIP = signupIp;
+                }
+              } catch (_) {}
+            }
+
+            const { data: ipCheck } = await supabase.rpc('check_ip_signup_allowed', { p_ip_address: signupIp });
+            if (ipCheck && ipCheck.allowed === false) {
+              if (typeof triggerToast === 'function') {
+                triggerToast(`🚫 ${ipCheck.error || 'Maximum 2 accounts allowed per IP address.'}`, 'error', 9000);
+              }
+              try { await supabase.auth.signOut(); } catch (_) {}
+              activeAppState.update({ authUserId: null, playerId: null, walletAddress: null, linkedWalletAddress: null });
+              activeAppState.isSyncingWithDB = false;
+              if (typeof activeAppState.syncUI === 'function') activeAppState.syncUI();
+              return null;
+            }
+
+            const { error: insertErr } = await supabase.from('users').insert(initUserRecord);
+            if (insertErr) {
+              if (insertErr.message && (insertErr.message.includes('REGISTRATION_REJECTED') || insertErr.message.includes('maximum 2 accounts'))) {
+                if (typeof triggerToast === 'function') {
+                  triggerToast('🚫 Registration blocked: maximum 2 accounts are allowed per IP address.', 'error', 9000);
+                }
+                try { await supabase.auth.signOut(); } catch (_) {}
+                activeAppState.update({ authUserId: null, playerId: null, walletAddress: null, linkedWalletAddress: null });
+                activeAppState.isSyncingWithDB = false;
+                if (typeof activeAppState.syncUI === 'function') activeAppState.syncUI();
+                return null;
+              }
+              throw insertErr;
+            }
           }
         } catch (initErr) {
           console.error("Failed to create initial user record in Supabase:", initErr);

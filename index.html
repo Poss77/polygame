@@ -416,22 +416,22 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <!-- Direct parallel stylesheets (eliminates @import waterfall) -->
-  <link rel="stylesheet" href="src/css/variables.css?v=1.5.825">
-  <link rel="stylesheet" href="src/css/base.css?v=1.5.825">
-  <link rel="stylesheet" href="src/css/layout.css?v=1.5.825">
-  <link rel="stylesheet" href="src/css/sidebar.css?v=1.5.825">
-  <link rel="stylesheet" href="src/css/main_content.css?v=1.5.825">
-  <link rel="stylesheet" href="src/css/views.css?v=1.5.825">
-  <link rel="stylesheet" href="src/css/features/faucet.css?v=1.5.825">
-  <link rel="stylesheet" href="src/css/features/games.css?v=1.5.825">
-  <link rel="stylesheet" href="src/css/features/nft.css?v=1.5.825">
-  <link rel="stylesheet" href="src/css/features/staking.css?v=1.5.825">
-  <link rel="stylesheet" href="src/css/features/referrals.css?v=1.5.825">
-  <link rel="stylesheet" href="src/css/features/profile.css?v=1.5.825">
-  <link rel="stylesheet" href="src/css/modals.css?v=1.5.825">
-  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.825">
-  <link rel="stylesheet" href="src/css/animations.css?v=1.5.825">
-  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.825">
+  <link rel="stylesheet" href="src/css/variables.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/base.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/layout.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/sidebar.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/main_content.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/views.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/features/faucet.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/features/games.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/features/nft.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/features/staking.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/features/referrals.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/features/profile.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/modals.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/animations.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.826">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -5168,46 +5168,33 @@ twq('config','ri5fg');
     </div>
   </div>
 
-  <!-- Captcha Prompt Verification Modal -->
+  <!-- Cloudflare Turnstile Faucet Verification Modal -->
   <div class="modal-overlay" id="modal-captcha" style="display: none; pointer-events: none;">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 class="modal-title">Human Verification</h3>
-        <button class="btn-modal-close" onclick="closeModal('captcha')">&times;</button>
+    <div class="modal-content" style="max-width: 440px; background: #0c101d !important; border: 1px solid var(--border-cyan) !important; box-shadow: 0 0 40px rgba(0, 240, 255, 0.3); text-align: center; border-radius: 14px;">
+      <div class="modal-header" style="justify-content: center; position: relative; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 0.75rem;">
+        <h3 class="modal-title" style="color: var(--color-primary); display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+          🛡️ Human Verification
+        </h3>
+        <button class="btn-modal-close" onclick="closeModal('captcha')" style="position: absolute; right: 0; top: 0;">&times;</button>
       </div>
 
-      <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; margin-bottom: 1rem;">
-        Click the correct symbols below in sequential order matching the goal target sequence.
+      <p style="color: var(--text-dim); font-size: 0.88rem; text-align: center; margin: 1rem 0 1.15rem 0; line-height: 1.45;">
+        Complete the Cloudflare security check below to claim your Daily Faucet PGT. (👑 VIP Members bypass this check.)
       </p>
 
-      <div class="captcha-container">
-
-        <!-- Target Pattern to enter -->
-        <div>
-          <span class="stat-label" style="text-align: center; display: block; margin-bottom: 0.5rem;">Target Sequence</span>
-          <div class="captcha-symbols-display" id="captcha-target-display">
-            <!-- 3 SVG target symbols loaded by JS -->
-          </div>
-        </div>
-
-        <!-- Input Sequence display -->
-        <div>
-          <span class="stat-label" style="text-align: center; display: block; margin-bottom: 0.5rem;">Your Sequence</span>
-          <div style="display: flex; gap: 0.75rem; height: 50px;" id="captcha-input-display">
-            <!-- Drawn blocks indicating user answers -->
-          </div>
-        </div>
-
-        <!-- Pad buttons representing keys -->
-        <div class="captcha-keyboard" id="captcha-keyboard-pad">
-          <!-- 8 options generated by JS -->
-        </div>
-
-        <div style="display: flex; gap: 1rem; width: 100%; margin-top: 0.5rem;">
-          <button class="btn-secondary" style="flex: 1;" id="btn-captcha-reset">Reset</button>
-          <button class="btn-primary" style="flex: 1;" id="btn-captcha-verify">Verify</button>
-        </div>
+      <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: #050814 !important; border: 1px solid rgba(0, 240, 255, 0.35); border-radius: 10px; padding: 1rem 0.5rem; min-height: 85px; margin-bottom: 1rem;">
+        <div id="turnstile-faucet-widget" style="min-height: 65px; display: flex; align-items: center; justify-content: center;"></div>
+        <span id="turnstile-faucet-status" style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.5rem; display: block;">
+          Loading security check...
+        </span>
       </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-dim); margin-bottom: 1rem; padding: 0 0.25rem;">
+        <span>Max 2 accounts per IP • 24h cooldown</span>
+        <span style="color: var(--color-primary); font-weight: 700;">Cloudflare Turnstile</span>
+      </div>
+
+      <button class="btn-secondary" style="width: 100%;" onclick="closeModal('captcha')">Cancel</button>
     </div>
   </div>
 
@@ -5419,17 +5406,17 @@ twq('config','ri5fg');
     </div>
   </div>
 
-  <script defer src="game.js?v=1.5.825"></script>
-  <script defer src="invaders.js?v=1.5.825"></script>
-  <script defer src="drift.js?v=1.5.825"></script>
-  <script defer src="stacker.js?v=1.5.825"></script>
-  <script defer src="space.js?v=1.5.825"></script>
-  <script type="module" src="skeet.js?v=1.5.825"></script>
-  <script type="module" src="defense.js?v=1.5.825"></script>
-  <script type="module" src="runner.js?v=1.5.825"></script>
-  <script type="module" src="q2048.js?v=1.5.825"></script>
-  <script defer src="tetris.js?v=1.5.825"></script>
-  <script type="module" src="src/js/app.js?v=1.5.825"></script>
+  <script defer src="game.js?v=1.5.826"></script>
+  <script defer src="invaders.js?v=1.5.826"></script>
+  <script defer src="drift.js?v=1.5.826"></script>
+  <script defer src="stacker.js?v=1.5.826"></script>
+  <script defer src="space.js?v=1.5.826"></script>
+  <script type="module" src="skeet.js?v=1.5.826"></script>
+  <script type="module" src="defense.js?v=1.5.826"></script>
+  <script type="module" src="runner.js?v=1.5.826"></script>
+  <script type="module" src="q2048.js?v=1.5.826"></script>
+  <script defer src="tetris.js?v=1.5.826"></script>
+  <script type="module" src="src/js/app.js?v=1.5.826"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">
