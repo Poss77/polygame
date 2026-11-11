@@ -3376,24 +3376,57 @@ class PolySpaceEngine {
     }
   }
 
+  switchFleetLeaderboardMode(mode) {
+    this.fleetLbMode = (mode === 'mined') ? 'mined' : 'power';
+    const btnPower = document.getElementById('btn-space-lb-power');
+    const btnMined = document.getElementById('btn-space-lb-mined');
+    const titleEl = document.getElementById('space-lb-title');
+
+    if (btnPower && btnMined) {
+      if (this.fleetLbMode === 'power') {
+        btnPower.style.background = 'rgba(0,240,255,0.2)';
+        btnPower.style.color = '#00f0ff';
+        btnPower.style.fontWeight = '800';
+        btnMined.style.background = 'transparent';
+        btnMined.style.color = 'var(--text-dim)';
+        btnMined.style.fontWeight = '700';
+        if (titleEl) titleEl.innerText = '🏆 Top Fleet Power Leaderboard';
+      } else {
+        btnMined.style.background = 'rgba(255,215,0,0.2)';
+        btnMined.style.color = '#ffd700';
+        btnMined.style.fontWeight = '800';
+        btnPower.style.background = 'transparent';
+        btnPower.style.color = 'var(--text-dim)';
+        btnPower.style.fontWeight = '700';
+        if (titleEl) titleEl.innerText = '💎 Top PolySpace PGT Earners';
+      }
+    }
+
+    if (Array.isArray(this._fleetLbCachedMapped)) {
+      this.renderFleetPowerLeaderboard();
+    } else {
+      this.loadFleetPowerLeaderboard();
+    }
+  }
+
   async loadFleetPowerLeaderboard() {
     const listEl = document.getElementById('space-leaderboard-power');
     if (!listEl) return;
 
     const sbClient = this.getSupabaseClient();
-    
+
     let rawData = [];
     if (sbClient) {
       try {
-        // 1. Try dedicated fast RPC with server-side fleet power ordering
-        const { data: rpcData, error: rpcErr } = await sbClient.rpc('get_fleet_power_leaderboard', { p_limit: 100 });
+        // 1. Try dedicated fast RPC with server-side fleet power ordering (fetch up to 500 to cover miners & user standing)
+        const { data: rpcData, error: rpcErr } = await sbClient.rpc('get_fleet_power_leaderboard', { p_limit: 500 });
         if (rpcData && !rpcErr && Array.isArray(rpcData)) {
           rawData = rpcData;
         } else {
           // 2. Direct query fallback for all users with active space_state
           const { data, error } = await sbClient
             .from('users')
-            .select('player_id, linked_wallet_address, user_id, username, space_state')
+            .select('player_id, linked_wallet_address, user_id, username, vip_until, vip_level, equipped_starship, is_banned, space_state')
             .not('space_state', 'is', null)
             .limit(1000);
 
@@ -3417,11 +3450,13 @@ class PolySpaceEngine {
     const mapped = [];
 
     rawData.forEach(u => {
+      if (u.is_banned === true) return;
+
       let isUser = false;
       if (window.checkIsUserRow) {
         isUser = window.checkIsUserRow(u);
       }
-      
+
       // Inline check if checkIsUserRow module function is not yet loaded
       if (!isUser) {
         const uPid = (u.player_id || '').toLowerCase();
@@ -3438,74 +3473,218 @@ class PolySpaceEngine {
       if (identityKey && seenIdentities.has(identityKey)) return; // Skip duplicate records
       if (identityKey) seenIdentities.add(identityKey);
 
+      const ss = (u.space_state && typeof u.space_state === 'object') ? u.space_state : {};
       let power = 100;
       if (u.fleet_power !== undefined && u.fleet_power !== null) {
         power = parseInt(u.fleet_power, 10) || 100;
-      } else if (u.space_state && typeof u.space_state === 'object') {
-        power = parseInt(u.space_state.fleetPower, 10) || 100;
+      } else if (ss.fleetPower !== undefined && ss.fleetPower !== null) {
+        power = parseInt(ss.fleetPower, 10) || 100;
       }
 
-      if (isUser && this.state && typeof this.state.fleetPower === 'number') {
-        power = Math.max(power, this.state.fleetPower);
+      let warpLevel = Math.max(1, parseInt(ss.warpLevel, 10) || 1);
+      let laserLevel = Math.max(1, parseInt(ss.laserLevel, 10) || 1);
+      let cargoLevel = Math.max(1, parseInt(ss.cargoLevel, 10) || 1);
+      let pgtMined = Math.max(0, parseFloat(ss.pgtMinedTotal) || 0);
+      let raidsWon = Math.max(0, parseInt(ss.raidsWon, 10) || 0);
+
+      if (isUser && this.state) {
+        if (typeof this.state.fleetPower === 'number') power = Math.max(power, this.state.fleetPower);
+        if (typeof this.state.warpLevel === 'number') warpLevel = Math.max(warpLevel, this.state.warpLevel);
+        if (typeof this.state.laserLevel === 'number') laserLevel = Math.max(laserLevel, this.state.laserLevel);
+        if (typeof this.state.cargoLevel === 'number') cargoLevel = Math.max(cargoLevel, this.state.cargoLevel);
+        if (typeof this.state.pgtMinedTotal === 'number') pgtMined = Math.max(pgtMined, this.state.pgtMinedTotal);
+        if (typeof this.state.raidsWon === 'number') raidsWon = Math.max(raidsWon, this.state.raidsWon);
       }
 
-      const addr = u.linked_wallet_address || u.player_id || '';
-      let name = '';
-      if (window.formatLeaderboardName) {
-        name = window.formatLeaderboardName(u, isUser);
-      } else if (u.username && u.username.trim().length > 0) {
-        name = u.username;
-      } else if (addr.length >= 10) {
-        name = addr.substring(0, 6) + '...' + addr.substring(addr.length - 4);
-      } else {
-        name = addr || 'Commander';
-      }
-
-      mapped.push({ name: name, power: power, isUser: isUser });
+      mapped.push({
+        rawUser: u,
+        playerId: u.player_id || '',
+        power,
+        warpLevel,
+        laserLevel,
+        cargoLevel,
+        totalModulesLv: warpLevel + laserLevel + cargoLevel,
+        pgtMined,
+        raidsWon,
+        isUser
+      });
     });
 
     // If active user is playing/logged in and NOT found in DB list, append live local state entry
     if (!userFound && window.appState && window.appState.state && this.state) {
-      const isUser = true;
-      const power = typeof this.state.fleetPower === 'number' ? this.state.fleetPower : 100;
       const uState = window.appState.state;
       const fakeRow = {
         player_id: uState.playerId || uState.walletAddress || '',
         linked_wallet_address: uState.linkedWalletAddress || uState.walletAddress || '',
-        username: uState.username || ''
+        username: uState.username || '',
+        vip_until: uState.vipUntil || null,
+        vip_level: uState.vipLevel || 0,
+        equipped_starship: uState.equippedStarship || null
       };
-      const name = window.formatLeaderboardName ? window.formatLeaderboardName(fakeRow, isUser) : (uState.username || 'Commander');
-      mapped.push({ name: name, power: power, isUser: isUser });
+      const warpLevel = Math.max(1, Number(this.state.warpLevel) || 1);
+      const laserLevel = Math.max(1, Number(this.state.laserLevel) || 1);
+      const cargoLevel = Math.max(1, Number(this.state.cargoLevel) || 1);
+      mapped.push({
+        rawUser: fakeRow,
+        playerId: fakeRow.player_id,
+        power: typeof this.state.fleetPower === 'number' ? this.state.fleetPower : 100,
+        warpLevel,
+        laserLevel,
+        cargoLevel,
+        totalModulesLv: warpLevel + laserLevel + cargoLevel,
+        pgtMined: Math.max(0, Number(this.state.pgtMinedTotal) || 0),
+        raidsWon: Math.max(0, Number(this.state.raidsWon) || 0),
+        isUser: true
+      });
     }
 
-    const ranked = mapped
-      .sort((a, b) => b.power - a.power)
-      .slice(0, 10);
+    // Enrich top 15 by power & top 15 by mined PGT (+ active user) with VIP/Starship & ban status
+    if (sbClient && mapped.length > 0) {
+      try {
+        const topByPower = mapped.slice().sort((a, b) => b.power - a.power).slice(0, 15);
+        const topByMined = mapped.slice().sort((a, b) => b.pgtMined - a.pgtMined).slice(0, 15);
+        const userEntry = mapped.find(m => m.isUser);
+        const candidateIds = Array.from(new Set(
+          [...topByPower, ...topByMined, ...(userEntry ? [userEntry] : [])]
+            .map(m => m.playerId)
+            .filter(Boolean)
+        ));
 
+        if (candidateIds.length > 0) {
+          const { data: metaRows } = await sbClient
+            .from('users')
+            .select('player_id, vip_until, vip_level, equipped_starship, is_banned')
+            .in('player_id', candidateIds);
+
+          if (metaRows && Array.isArray(metaRows)) {
+            const metaById = new Map();
+            metaRows.forEach(r => {
+              if (r.player_id) metaById.set(r.player_id.toLowerCase(), r);
+            });
+            for (let i = mapped.length - 1; i >= 0; i--) {
+              const pidLower = (mapped[i].playerId || '').toLowerCase();
+              const meta = pidLower ? metaById.get(pidLower) : null;
+              if (meta) {
+                if (meta.is_banned === true) {
+                  mapped.splice(i, 1);
+                  continue;
+                }
+                mapped[i].rawUser = {
+                  ...mapped[i].rawUser,
+                  vip_until: meta.vip_until,
+                  vip_level: meta.vip_level,
+                  equipped_starship: meta.equipped_starship
+                };
+              }
+            }
+          }
+        }
+      } catch (_enrichErr) {}
+    }
+
+    this._fleetLbCachedMapped = mapped;
+    this.renderFleetPowerLeaderboard();
+  }
+
+  renderFleetPowerLeaderboard() {
+    const listEl = document.getElementById('space-leaderboard-power');
+    if (!listEl) return;
+
+    const mode = this.fleetLbMode === 'mined' ? 'mined' : 'power';
+    const mapped = Array.isArray(this._fleetLbCachedMapped) ? this._fleetLbCachedMapped.slice() : [];
+
+    mapped.sort((a, b) => {
+      if (mode === 'mined') {
+        if (b.pgtMined !== a.pgtMined) return b.pgtMined - a.pgtMined;
+        return b.power - a.power;
+      }
+      if (b.power !== a.power) return b.power - a.power;
+      return b.pgtMined - a.pgtMined;
+    });
+
+    const top10 = mapped.slice(0, 10);
     listEl.innerHTML = '';
-    if (ranked.length === 0) {
+
+    if (top10.length === 0) {
       listEl.innerHTML = '<div style="color:var(--text-dim); text-align:center; padding:1rem;">No registered commanders yet. Upgrade your ship to claim #1!</div>';
       return;
     }
 
-    ranked.forEach((player, idx) => {
-      const badge = idx === 0 ? '🥇 ' : idx === 1 ? '🥈 ' : idx === 2 ? '🥉 ' : `#${idx + 1} `;
-      const div = document.createElement('div');
-      div.style.display = 'flex';
-      div.style.justifyContent = 'space-between';
-      div.style.alignItems = 'center';
-      div.style.padding = '0.5rem 0.75rem';
-      div.style.background = player.isUser ? 'rgba(0, 240, 255, 0.12)' : 'rgba(255,255,255,0.03)';
-      div.style.border = player.isUser ? '1px solid var(--color-accent)' : '1px solid rgba(255,255,255,0.05)';
-      div.style.borderRadius = '6px';
-      div.style.fontSize = '0.85rem';
+    const buildRowHtml = (player, rank, isPinned = false) => {
+      const badge = rank === 1 ? '🥇 ' : rank === 2 ? '🥈 ' : rank === 3 ? '🥉 ' : `#${rank} `;
+      const u = player.rawUser || {};
+      const addr = u.linked_wallet_address || u.player_id || '';
+      let nameHtml = '';
+      if (window.formatLeaderboardName) {
+        nameHtml = window.formatLeaderboardName(u, player.isUser, true);
+      } else if (u.username && u.username.trim().length > 0) {
+        nameHtml = typeof window.escapeHtml === 'function' ? window.escapeHtml(u.username) : u.username;
+      } else if (addr.length >= 10) {
+        nameHtml = addr.substring(0, 6) + '...' + addr.substring(addr.length - 4);
+      } else {
+        nameHtml = addr || 'Commander';
+      }
 
-      div.innerHTML = `
-        <span>${badge}<strong>${player.name}</strong> ${player.isUser ? '<span style="color:var(--color-accent); font-size:0.75rem;">(You)</span>' : ''}</span>
-        <strong style="color:var(--color-accent);">⚡ ${player.power.toLocaleString()} Power</strong>
+      const minedFormatted = Number(player.pgtMined || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const primaryStat = (mode === 'mined')
+        ? `<strong style="color:#ffd700; font-size:0.9rem;">💎 ${minedFormatted} PGT</strong>`
+        : `<strong style="color:var(--color-accent); font-size:0.9rem;">⚡ ${player.power.toLocaleString()} Power</strong>`;
+      const secondaryStat = (mode === 'mined')
+        ? `<span style="color:var(--color-accent); font-size:0.73rem; font-weight:700;">⚡ ${player.power.toLocaleString()} Power</span>`
+        : `<span style="color:#ffd700; font-size:0.73rem; font-weight:700;">💎 ${minedFormatted} PGT</span>`;
+
+      const row = document.createElement('div');
+      const podiumBorder = rank === 1 ? 'rgba(255, 215, 0, 0.5)' : rank === 2 ? 'rgba(192, 192, 192, 0.4)' : rank === 3 ? 'rgba(205, 127, 50, 0.4)' : 'rgba(255,255,255,0.06)';
+      row.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.65rem;
+        padding: 0.58rem 0.78rem;
+        background: ${player.isUser ? 'rgba(0, 240, 255, 0.12)' : (rank <= 3 ? 'rgba(255, 255, 255, 0.045)' : 'rgba(255, 255, 255, 0.025)')};
+        border: 1px solid ${player.isUser ? 'var(--color-accent)' : podiumBorder};
+        border-radius: 8px;
+        font-size: 0.84rem;
+        flex-wrap: wrap;
+        ${isPinned ? 'opacity: 0.95;' : ''}
       `;
-      listEl.appendChild(div);
+
+      row.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 0.28rem; min-width: 170px; flex: 1 1 200px;">
+          <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem;">
+            <span style="font-weight: 800;">${badge}</span>
+            <span>${nameHtml}</span>
+            ${player.isUser ? '<span style="color:var(--color-accent); font-size:0.74rem; font-weight:800; margin-left:2px;">(You)</span>' : ''}
+          </div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem;">
+            <span title="Warp Drive Level" style="font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: rgba(0,240,255,0.1); border: 1px solid rgba(0,240,255,0.28); color: #67e8f9;">🚀 W${player.warpLevel}</span>
+            <span title="Mining Laser Level" style="font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: rgba(255,153,0,0.1); border: 1px solid rgba(255,153,0,0.3); color: #fdba74;">🔫 L${player.laserLevel}</span>
+            <span title="Quantum Cargo Level" style="font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.28); color: #86efac;">📦 C${player.cargoLevel}</span>
+            <span title="Combined Ship Module Level" style="font-size: 0.66rem; color: var(--text-dim); margin-left: 2px;">(Lv.${player.totalModulesLv})</span>
+            ${player.raidsWon > 0 ? `<span title="PvP Raids Won" style="font-size: 0.66rem; color: #f472b6; margin-left: 2px;">⚔️ ${player.raidsWon}</span>` : ''}
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap;">
+          ${primaryStat}
+          ${secondaryStat}
+        </div>
+      `;
+      return row;
+    };
+
+    top10.forEach((player, idx) => {
+      listEl.appendChild(buildRowHtml(player, idx + 1, false));
     });
+
+    // Pin connected user's standing if they are outside the Top 10
+    const userIdx = mapped.findIndex(p => p.isUser);
+    if (userIdx >= 10) {
+      const sep = document.createElement('div');
+      sep.style.cssText = 'font-size: 0.72rem; font-weight: 800; color: var(--color-accent); letter-spacing: 0.5px; margin-top: 0.45rem; padding-top: 0.45rem; border-top: 1px dashed rgba(0,240,255,0.25);';
+      sep.innerText = '⚡ YOUR STANDING';
+      listEl.appendChild(sep);
+      listEl.appendChild(buildRowHtml(mapped[userIdx], userIdx + 1, true));
+    }
   }
 
   // --- WEEKLY COSMIC WORLD BOSS RAID (QUANTUM LEVIATHAN) ---

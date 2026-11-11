@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Upgraded Fleet Power & PGT Mined Leaderboard (`v1.5.815`)**:
+  - **🚀 3 Core Module Levels & Total Lv Display ([`space.js`](space.js), [`index.html`](index.html))**:
+    - Each row on the PolySpace Fleet Power leaderboard now displays the commander's 3 core ship upgrade levels in color-coded pills (`🚀 W{warpLevel}`, `🔫 L{laserLevel}`, `📦 C{cargoLevel}`) alongside the combined total module level (`Lv. X`) and PvP Raids Won (`⚔️ X`) when > 0.
+  - **💎 PGT Earned & 2-Tab Leaderboard Toggle**:
+    - Added **`⚡ Power`** vs. **`💎 PGT Earned`** (`pgtMinedTotal`) toggle buttons in the card header with instant zero-refetch sorting.
+    - Displays both Fleet Power and total PolySpace PGT mined on every row, prioritizing whichever category is currently selected.
+  - **⚡ Pinned Standing, VIP / Starship Badges & Anti-Ban Filtering**:
+    - Connected commanders outside the Top 10 now see a pinned **`⚡ YOUR STANDING`** row at the bottom with their exact rank, module levels, power, and PGT earned.
+    - Batch-enriches Top 15 Power + Top 15 Miners + current player with VIP crowns, equipped Starship icons, and `is_banned` filtering.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.815"` and refreshed all script cache busters.
+
 - **Starship Leaderboard: Top 10 Upgraded Astro-Dodge Ships & Live OpenSea Listings (`v1.5.814`)**:
   - **🛸 Edge Function: Real-Time On-Chain Fleet & OpenSea Scanner ([`supabase/functions/starship-leaderboard/index.ts`](supabase/functions/starship-leaderboard/index.ts))**:
     - Deployed `starship-leaderboard` (v1) querying all minted Astro-Dodge NFT Starships on Polygon (`0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99`) via `totalSupply()` + `getBatchStarshipStats()`, ranking the **Top 10 Ships** by upgraded combat module level (`Rapid Fire + Plasma Beam + Overdrive Matrix + Micro-Missiles`, max Lv. 20), Ship Tier, and Rarity.
