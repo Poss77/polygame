@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Simulated User Test Mode & Leaderboard Guard (`v1.5.823`)**:
+  - **🧪 Exclude `test_mode` Games from Simulated Benchmarks ([`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`supabase/fix_simulated_test_mode_scores.sql`](supabase/fix_simulated_test_mode_scores.sql))**:
+    - Updated `admin_generate_community_scores` to read `global_settings.game_payout_settings` and skip any game with `test_mode: true` (such as Cyber Defense), since simulated players are not Ambassadors or verified testers.
+    - Updated `vip_only` handling in `admin_generate_community_scores` so VIP-only games (such as Cyber Stacker) only select VIP-tier simulated profiles, and added a cleanup block to zero out existing simulated high scores in `test_mode` games.
+  - **🛡️ Defense-in-Depth RPC & Leaderboard Display Guards ([`supabase/rpcs/02_arcade_sessions.sql`](supabase/rpcs/02_arcade_sessions.sql), [`src/js/features/leaderboards.js`](src/js/features/leaderboards.js))**:
+    - Added a `test_mode` and `is_simulated` check inside `end_arcade_session` to block non-testers and simulated accounts from finalizing sessions or high scores on test-mode games.
+    - Updated `fetchAndLoadGameLeaderboard` in `leaderboards.js` to exclude `is_simulated` entries whenever a game has `test_mode: true`.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.823"` and refreshed all stylesheet/script cache busters.
+
 - **Security Audit & Defense-in-Depth Hardening (`v1.5.822`)**:
   - **🔒 VIP Pass Legacy Consumption Fix ([`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`supabase/security_audit_hardening.sql`](supabase/security_audit_hardening.sql))**:
     - Fixed a subquery reference in `activate_vip_pass` (Priority C) where legacy `owned_nfts` pass consumption queried `v_user.crate_nfts` instead of `v_user.owned_nfts` when removing the consumed pass.

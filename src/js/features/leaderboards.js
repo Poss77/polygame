@@ -543,14 +543,14 @@ async function fetchAndLoadGameLeaderboard(gameKey, forceRefresh = false) {
 
   try {
     // Strip heavy columns (owned_nfts, crate_nfts, space_state) to slash API traffic by ~98%
-    let selectFields = `player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level, equipped_starship, is_banned`;
+    let selectFields = `player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level, equipped_starship, is_banned, is_simulated`;
     let { data, error } = await supabase.from('users')
       .select(selectFields)
       .gt(conf.scoreField, 0)
       .order(conf.scoreField, { ascending: false })
       .limit(100);
 
-    if (error && (error.code === 'PGRST204' || (error.message && error.message.includes('equipped_starship')))) {
+    if (error && (error.code === 'PGRST204' || (error.message && (error.message.includes('equipped_starship') || error.message.includes('is_simulated'))))) {
       const fallbackFields = `player_id, linked_wallet_address, ${conf.scoreField}, username, user_id, auth_provider, vip_until, vip_level, is_banned`;
       const res = await supabase.from('users')
         .select(fallbackFields)
@@ -571,8 +571,9 @@ async function fetchAndLoadGameLeaderboard(gameKey, forceRefresh = false) {
       throw error;
     }
 
-    // Filter out banned accounts so exploited scores never display
-    const cleanData = (data || []).filter(u => !u.is_banned);
+    // Filter out banned accounts and exclude simulated players from private test_mode games
+    const isTestMode = (gameConf.test_mode !== undefined) ? Boolean(gameConf.test_mode) : (gameKey === 'defense');
+    const cleanData = (data || []).filter(u => !u.is_banned && !(isTestMode && u.is_simulated));
 
     // Cache the clean dataset in memory with fresh timestamp
     leaderboardDataCache[gameKey] = {
