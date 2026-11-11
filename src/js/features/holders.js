@@ -96,10 +96,12 @@ export async function loadHoldersLeaderboard(initialMode = null) {
   }
 
   try {
-    const [{ data: allData, error }, { data: activeStakes, error: stakesErr }, { count: arcadeCount }] = await Promise.all([
+    const [{ data: allData, error }, { data: activeStakes, error: stakesErr }, { count: arcadeCount }, spaceMissionsRpcRes, { count: radarCount }] = await Promise.all([
       supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, username, user_id, auth_provider, total_claims, relics, space_state, total_arcade_plays, vip_until, vip_level, is_banned'),
       supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true),
-      supabase.from('arcade_sessions').select('id', { count: 'exact', head: true })
+      supabase.from('arcade_sessions').select('id', { count: 'exact', head: true }),
+      Promise.resolve(supabase.rpc('get_global_space_missions_count')).catch(() => ({ data: null })),
+      Promise.resolve(supabase.from('polyspace_radar_harvests').select('id', { count: 'exact', head: true })).catch(() => ({ count: 0 }))
     ]);
       
     if (error) throw error;
@@ -122,7 +124,7 @@ export async function loadHoldersLeaderboard(initialMode = null) {
     let globalTotalWealth = 0;
     let globalFaucetClaims = 0;
     let globalRelicsFound = 0;
-    let globalSpaceMissions = 0;
+    let globalSpaceMissionsFallback = (Number(radarCount) || 0);
     
     const activeUsers = (allData || []).filter(u => !u.is_banned);
     cachedHoldersData = activeUsers.map(u => {
@@ -152,17 +154,24 @@ export async function loadHoldersLeaderboard(initialMode = null) {
         });
       }
 
-      // Space missions completed
+      // Space missions completed (use uncapped missionsCompleted counter when available, plus raids & boss attacks)
       const spaceState = u.space_state || {};
       if (typeof spaceState === 'object' && spaceState !== null) {
         const logs = spaceState.missionLogs || spaceState.miningLogs || [];
-        if (Array.isArray(logs)) {
-          globalSpaceMissions += logs.length;
-        }
+        const logCount = Array.isArray(logs) ? logs.length : 0;
+        const expCount = Math.max(parseInt(spaceState.missionsCompleted, 10) || 0, logCount);
+        const raidsWon = parseInt(spaceState.raidsWon, 10) || 0;
+        const bossAttacks = parseInt(spaceState.bossAttacksCount, 10) || 0;
+        globalSpaceMissionsFallback += expCount + raidsWon + bossAttacks;
       }
 
       return { ...u, totalWealth: total, bal, staked };
     });
+
+    const rpcTotalMissions = (!spaceMissionsRpcRes?.error && spaceMissionsRpcRes?.data?.total_missions !== undefined)
+      ? Number(spaceMissionsRpcRes.data.total_missions || 0)
+      : 0;
+    const globalSpaceMissions = Math.max(rpcTotalMissions, globalSpaceMissionsFallback);
     
     let userArcadePlays = 0;
     let hasUserArcadePlays = false;

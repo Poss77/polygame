@@ -5,6 +5,15 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Fix Global Space Missions Counter (`v1.5.816`)**:
+  - **🚀 Uncapped Global Missions Counter ([`supabase/fix_space_missions_counter.sql`](supabase/fix_space_missions_counter.sql), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql))**:
+    - Previously, the Leaderboard `🚀 Space Missions` stat summed `space_state.missionLogs.length`, which is capped at the last 20 log entries per player (`944` total across 282 commanders).
+    - Added permanent cumulative `missionsCompleted` tracking inside `claim_polyspace_expedition` (protected against client rollback in `prevent_direct_balance_mutation()`), created `public.get_global_space_missions_count()` aggregating all fleet expeditions, PvP raids (`raidsWon`), world boss strikes (`bossAttacksCount`), and radar harvests (`polyspace_radar_harvests`), and backfilled verified historical expedition counts from `referral_commissions`.
+  - **📊 Authoritative Frontend Stat Integration ([`src/js/features/holders.js`](src/js/features/holders.js))**:
+    - Updated `loadHoldersLeaderboard()` to call `get_global_space_missions_count()` with automatic multi-metric fallback (`missionsCompleted` + `raidsWon` + `bossAttacksCount` + `radarCount`).
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.816"` and refreshed all script cache busters.
+
 - **PolySpace: Upgraded Fleet Power & PGT Mined Leaderboard (`v1.5.815`)**:
   - **🚀 3 Core Module Levels & Total Lv Display ([`space.js`](space.js), [`index.html`](index.html))**:
     - Each row on the PolySpace Fleet Power leaderboard now displays the commander's 3 core ship upgrade levels in color-coded pills (`🚀 W{warpLevel}`, `🔫 L{laserLevel}`, `📦 C{cargoLevel}`) alongside the combined total module level (`Lv. X`) and PvP Raids Won (`⚔️ X`) when > 0.
