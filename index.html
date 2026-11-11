@@ -411,11 +411,31 @@
 
   <link rel="canonical" href="https://polygongaming.io/">
   <link rel="icon" type="image/svg+xml" href="src/assets/logo.svg">
-  <link rel="stylesheet" href="src/css/main.css?v=1.5.820">
+  <!-- Preconnect to critical API & CDN origins -->
+  <link rel="preconnect" href="https://jgtfnsufemvqkyytscgl.supabase.co" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <!-- Direct parallel stylesheets (eliminates @import waterfall) -->
+  <link rel="stylesheet" href="src/css/variables.css?v=1.5.821">
+  <link rel="stylesheet" href="src/css/base.css?v=1.5.821">
+  <link rel="stylesheet" href="src/css/layout.css?v=1.5.821">
+  <link rel="stylesheet" href="src/css/sidebar.css?v=1.5.821">
+  <link rel="stylesheet" href="src/css/main_content.css?v=1.5.821">
+  <link rel="stylesheet" href="src/css/views.css?v=1.5.821">
+  <link rel="stylesheet" href="src/css/features/faucet.css?v=1.5.821">
+  <link rel="stylesheet" href="src/css/features/games.css?v=1.5.821">
+  <link rel="stylesheet" href="src/css/features/nft.css?v=1.5.821">
+  <link rel="stylesheet" href="src/css/features/staking.css?v=1.5.821">
+  <link rel="stylesheet" href="src/css/features/referrals.css?v=1.5.821">
+  <link rel="stylesheet" href="src/css/features/profile.css?v=1.5.821">
+  <link rel="stylesheet" href="src/css/modals.css?v=1.5.821">
+  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.821">
+  <link rel="stylesheet" href="src/css/animations.css?v=1.5.821">
+  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.821">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin="anonymous" defer></script>
   <!-- Cloudflare Turnstile Anti-Bot Security SDK -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 <!-- X conversion tracking base code -->
@@ -5399,17 +5419,17 @@ twq('config','ri5fg');
     </div>
   </div>
 
-  <script src="game.js?v=1.5.820"></script>
-  <script src="invaders.js?v=1.5.820"></script>
-  <script src="drift.js?v=1.5.820"></script>
-  <script src="stacker.js?v=1.5.820"></script>
-  <script src="space.js?v=1.5.820"></script>
-  <script type="module" src="skeet.js?v=1.5.820"></script>
-  <script type="module" src="defense.js?v=1.5.820"></script>
-  <script type="module" src="runner.js?v=1.5.820"></script>
-  <script type="module" src="q2048.js?v=1.5.820"></script>
-  <script src="tetris.js?v=1.5.820"></script>
-  <script type="module" src="src/js/app.js?v=1.5.820"></script>
+  <script defer src="game.js?v=1.5.821"></script>
+  <script defer src="invaders.js?v=1.5.821"></script>
+  <script defer src="drift.js?v=1.5.821"></script>
+  <script defer src="stacker.js?v=1.5.821"></script>
+  <script defer src="space.js?v=1.5.821"></script>
+  <script type="module" src="skeet.js?v=1.5.821"></script>
+  <script type="module" src="defense.js?v=1.5.821"></script>
+  <script type="module" src="runner.js?v=1.5.821"></script>
+  <script type="module" src="q2048.js?v=1.5.821"></script>
+  <script defer src="tetris.js?v=1.5.821"></script>
+  <script type="module" src="src/js/app.js?v=1.5.821"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

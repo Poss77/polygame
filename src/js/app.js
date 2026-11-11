@@ -484,35 +484,35 @@ export function initializeApp() {
   checkNewUpdateBadge();
   initPWA();
 
-  // Set up initial leaderboard data
-  loadAstroDodgeLeaderboard();
-  loadInvadersLeaderboard();
-  loadWeeklyWinsLeaderboard();
-
-  // Load initial jackpot data
+  // Load critical initial settings & wallet connection immediately
   syncJackpotData();
   syncGlobalSettings();
-  loadSitewideStats();
-
-  // Auto connect real wallet on load if already logged in
   autoConnectWeb3();
 
-  // Background pre-hydration of Quantum Relics Vault from DB
-  if (typeof window.hydrateAndRenderRelicsVault === 'function') {
-    window.hydrateAndRenderRelicsVault();
-  }
+  // Defer secondary leaderboard & background hydrations until browser is idle so first paint & active view load with zero contention
+  const runIdleHydration = typeof window.requestIdleCallback === 'function'
+    ? (fn) => window.requestIdleCallback(fn, { timeout: 1500 })
+    : (fn) => setTimeout(fn, 900);
 
-  // Pre-fetch player messages & unread notification badges (if already authenticated)
-  if (typeof window.loadPlayerMessages === 'function' && appState.isPlayerConnected()) {
-    window.loadPlayerMessages();
-  }
+  runIdleHydration(() => {
+    loadAstroDodgeLeaderboard();
+    loadInvadersLeaderboard();
+    loadWeeklyWinsLeaderboard();
 
-  // Initialize Daily Cyber Games Hub status & live UTC countdown (PLAN-020)
+    if (typeof window.hydrateAndRenderRelicsVault === 'function') {
+      window.hydrateAndRenderRelicsVault();
+    }
+    if (typeof window.loadPlayerMessages === 'function' && appState.isPlayerConnected()) {
+      window.loadPlayerMessages();
+    }
+    if (typeof window.refreshDailyGamesHubStatus === 'function' && appState.isPlayerConnected()) {
+      window.refreshDailyGamesHubStatus();
+    }
+  });
+
+  // Initialize Daily Cyber Games Hub live UTC countdown (PLAN-020)
   if (typeof window.startDailyHubCountdown === 'function') {
     window.startDailyHubCountdown();
-  }
-  if (typeof window.refreshDailyGamesHubStatus === 'function' && appState.isPlayerConnected()) {
-    window.refreshDailyGamesHubStatus();
   }
 
   startLeaderboardResetTimer();
@@ -553,6 +553,7 @@ function startLeaderboardResetTimer() {
   }
 
   function updateTimers() {
+    if (typeof document !== 'undefined' && document.hidden) return;
     if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) return;
     const now = new Date();
     const currentWeek = getUtcWeekIdentifier();

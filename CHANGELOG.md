@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Website Performance & Network Efficiency Optimization (`v1.5.821`)**:
+  - **⚡ Eliminated 16-File CSS `@import` Waterfall & Render-Blocking Scripts ([`index.html`](index.html))**:
+    - Replaced sequential `@import` chains in `main.css` with direct parallel `<link rel="stylesheet">` tags in `<head>`, plus `<link rel="preconnect">` hints for Supabase, jsDelivr, and cdnjs.
+    - Added `defer` to `chart.js` in `<head>` and to classic game engines (`game.js`, `invaders.js`, `drift.js`, `stacker.js`, `space.js`, `tetris.js`) so scripts download in parallel without blocking DOM parsing.
+  - **🚀 Idle-Deferred Boot Hydrations & Query Deduplication ([`src/js/app.js`](src/js/app.js), [`src/js/core/db-sync.js`](src/js/core/db-sync.js), [`src/js/features/holders.js`](src/js/features/holders.js))**:
+    - Added an in-flight Promise lock and 60-second memory TTL to `loadSitewideStats()` and a 45-second TTL to `loadHoldersLeaderboard()`, eliminating redundant full-table `users` scans on boot and tab switches.
+    - Deferred off-screen leaderboard and relics hydrations on boot via `requestIdleCallback` so the initial view renders with zero network contention, and paused background timer DOM updates when `document.hidden` is true.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.821"` and refreshed all stylesheet/script cache busters.
+
 - **Architecture & AI Telemetry Upgrade (`v1.5.820`)**:
   - **🩺 Live AI Diagnostics & RPC Telemetry Engine ([`src/js/core/diagnostics.js`](src/js/core/diagnostics.js), [`src/js/app.js`](src/js/app.js), [`index.html`](index.html))**:
     - Added `window.PolyDebug` (`initDiagnostics()`) which non-intrusively wraps `supabase.rpc` and `supabase.functions.invoke` plus global `onerror`/`unhandledrejection` listeners into a bounded ring buffer.

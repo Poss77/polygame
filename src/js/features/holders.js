@@ -16,6 +16,8 @@ let holdersChartInstance = null;
 let currentHoldersTotalSupply = 0;
 let holdersMode = 'total'; // 'total', 'staking', 'starships', or 'archive'
 let pendingHoldersMode = null;
+let lastHoldersFetchAt = 0;
+const HOLDERS_CACHE_TTL_MS = 45000; // 45s cache TTL for holders & global stats
 
 export function switchHoldersMode(mode) {
   holdersMode = mode;
@@ -82,7 +84,7 @@ export function switchHoldersMode(mode) {
   }
 }
 
-export async function loadHoldersLeaderboard(initialMode = null) {
+export async function loadHoldersLeaderboard(initialMode = null, force = false) {
   const targetMode = initialMode || pendingHoldersMode || 'total';
   pendingHoldersMode = null;
   holdersMode = targetMode;
@@ -92,6 +94,11 @@ export async function loadHoldersLeaderboard(initialMode = null) {
 
   if (!supabase) {
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
+    return;
+  }
+
+  const now = Date.now();
+  if (!force && cachedHoldersData.length > 0 && lastHoldersFetchAt && (now - lastHoldersFetchAt < HOLDERS_CACHE_TTL_MS)) {
     return;
   }
 
@@ -211,12 +218,13 @@ export async function loadHoldersLeaderboard(initialMode = null) {
     if (sitewideRelicsEl) sitewideRelicsEl.innerText = globalRelicsFound.toLocaleString();
     if (sitewideFaucetEl) sitewideFaucetEl.innerText = globalFaucetClaims.toLocaleString();
 
+    lastHoldersFetchAt = Date.now();
     try {
       localStorage.setItem('polygame_cached_sitewide_stats', JSON.stringify({
         arcadePlays: globalArcadePlays,
         relicsFound: globalRelicsFound,
         faucetClaims: globalFaucetClaims,
-        updatedAt: Date.now()
+        updatedAt: lastHoldersFetchAt
       }));
     } catch (e) {}
     

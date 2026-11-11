@@ -2057,78 +2057,97 @@ export function updateSitewideStatsUI(arcadePlays, relicsFound, faucetClaims) {
   }
 }
 
-export async function loadSitewideStats() {
+let _sitewideStatsInFlight = null;
+let _lastSitewideStatsFetchAt = 0;
+const SITEWIDE_STATS_TTL_MS = 60000; // 60s TTL to prevent duplicate full-table scans
+
+export async function loadSitewideStats(force = false) {
   // 1. Instant 0ms cache hydration
   hydrateSitewideStatsFromCache();
   if (!supabase) return;
 
-  try {
-    // 2. Fetch arcade plays count (exact, head only) and users stats in parallel
-    const sessionPromise = supabase
-      .from('arcade_sessions')
-      .select('id', { count: 'exact', head: true });
-
-    const usersPromise = supabase
-      .from('users')
-      .select('total_claims, relics, total_arcade_plays');
-
-    const [sessionRes, usersRes] = await Promise.allSettled([sessionPromise, usersPromise]);
-
-    let sessionArcadePlays = null;
-    if (sessionRes.status === 'fulfilled' && !sessionRes.value.error && typeof sessionRes.value.count === 'number') {
-      sessionArcadePlays = sessionRes.value.count;
-    }
-
-    let faucetClaims = 0;
-    let relicsFound = 0;
-    let usersArcadePlays = 0;
-    let hasUsersArcadePlays = false;
-    let usersLoaded = false;
-
-    if (usersRes.status === 'fulfilled' && !usersRes.value.error && Array.isArray(usersRes.value.data)) {
-      usersLoaded = true;
-      usersRes.value.data.forEach(u => {
-        if (u.total_arcade_plays !== undefined && u.total_arcade_plays !== null) {
-          hasUsersArcadePlays = true;
-          usersArcadePlays += (parseInt(u.total_arcade_plays) || 0);
-        }
-        faucetClaims += (parseInt(u.total_claims) || 0);
-        const relics = u.relics || {};
-        if (typeof relics === 'object' && relics !== null) {
-          Object.values(relics).forEach(r => {
-            if (r && typeof r === 'object') {
-              relicsFound += (parseInt(r.total) || ((parseInt(r.unminted) || 0) + (parseInt(r.onchain) || 0)));
-            }
-          });
-        }
-      });
-    }
-
-    let cached = {};
-    try {
-      cached = JSON.parse(localStorage.getItem('polygame_cached_sitewide_stats') || '{}');
-    } catch (e) {}
-
-    // Prefer prune-proof aggregate from users.total_arcade_plays; fallback to live arcade_sessions row count or cache
-    const finalArcadePlays = (hasUsersArcadePlays && usersArcadePlays > 0)
-      ? usersArcadePlays
-      : (sessionArcadePlays !== null ? sessionArcadePlays : (cached.arcadePlays ?? 0));
-    const finalRelicsFound = usersLoaded ? relicsFound : (cached.relicsFound ?? 0);
-    const finalFaucetClaims = usersLoaded ? faucetClaims : (cached.faucetClaims ?? 0);
-
-    updateSitewideStatsUI(finalArcadePlays, finalRelicsFound, finalFaucetClaims);
-
-    try {
-      localStorage.setItem('polygame_cached_sitewide_stats', JSON.stringify({
-        arcadePlays: finalArcadePlays,
-        relicsFound: finalRelicsFound,
-        faucetClaims: finalFaucetClaims,
-        updatedAt: Date.now()
-      }));
-    } catch (e) {}
-  } catch (err) {
-    console.warn('[loadSitewideStats] Failed to fetch sitewide stats:', err);
+  const now = Date.now();
+  if (!force && _lastSitewideStatsFetchAt && (now - _lastSitewideStatsFetchAt < SITEWIDE_STATS_TTL_MS)) {
+    return;
   }
+  if (_sitewideStatsInFlight) {
+    return _sitewideStatsInFlight;
+  }
+
+  _sitewideStatsInFlight = (async () => {
+    try {
+      // 2. Fetch arcade plays count (exact, head only) and users stats in parallel
+      const sessionPromise = supabase
+        .from('arcade_sessions')
+        .select('id', { count: 'exact', head: true });
+
+      const usersPromise = supabase
+        .from('users')
+        .select('total_claims, relics, total_arcade_plays');
+
+      const [sessionRes, usersRes] = await Promise.allSettled([sessionPromise, usersPromise]);
+
+      let sessionArcadePlays = null;
+      if (sessionRes.status === 'fulfilled' && !sessionRes.value.error && typeof sessionRes.value.count === 'number') {
+        sessionArcadePlays = sessionRes.value.count;
+      }
+
+      let faucetClaims = 0;
+      let relicsFound = 0;
+      let usersArcadePlays = 0;
+      let hasUsersArcadePlays = false;
+      let usersLoaded = false;
+
+      if (usersRes.status === 'fulfilled' && !usersRes.value.error && Array.isArray(usersRes.value.data)) {
+        usersLoaded = true;
+        usersRes.value.data.forEach(u => {
+          if (u.total_arcade_plays !== undefined && u.total_arcade_plays !== null) {
+            hasUsersArcadePlays = true;
+            usersArcadePlays += (parseInt(u.total_arcade_plays) || 0);
+          }
+          faucetClaims += (parseInt(u.total_claims) || 0);
+          const relics = u.relics || {};
+          if (typeof relics === 'object' && relics !== null) {
+            Object.values(relics).forEach(r => {
+              if (r && typeof r === 'object') {
+                relicsFound += (parseInt(r.total) || ((parseInt(r.unminted) || 0) + (parseInt(r.onchain) || 0)));
+              }
+            });
+          }
+        });
+      }
+
+      let cached = {};
+      try {
+        cached = JSON.parse(localStorage.getItem('polygame_cached_sitewide_stats') || '{}');
+      } catch (e) {}
+
+      // Prefer prune-proof aggregate from users.total_arcade_plays; fallback to live arcade_sessions row count or cache
+      const finalArcadePlays = (hasUsersArcadePlays && usersArcadePlays > 0)
+        ? usersArcadePlays
+        : (sessionArcadePlays !== null ? sessionArcadePlays : (cached.arcadePlays ?? 0));
+      const finalRelicsFound = usersLoaded ? relicsFound : (cached.relicsFound ?? 0);
+      const finalFaucetClaims = usersLoaded ? faucetClaims : (cached.faucetClaims ?? 0);
+
+      updateSitewideStatsUI(finalArcadePlays, finalRelicsFound, finalFaucetClaims);
+      _lastSitewideStatsFetchAt = Date.now();
+
+      try {
+        localStorage.setItem('polygame_cached_sitewide_stats', JSON.stringify({
+          arcadePlays: finalArcadePlays,
+          relicsFound: finalRelicsFound,
+          faucetClaims: finalFaucetClaims,
+          updatedAt: _lastSitewideStatsFetchAt
+        }));
+      } catch (e) {}
+    } catch (err) {
+      console.warn('[loadSitewideStats] Failed to fetch sitewide stats:', err);
+    } finally {
+      _sitewideStatsInFlight = null;
+    }
+  })();
+
+  return _sitewideStatsInFlight;
 }
 
 if (typeof window !== 'undefined') {
