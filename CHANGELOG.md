@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Security Audit & Defense-in-Depth Hardening (`v1.5.822`)**:
+  - **🔒 VIP Pass Legacy Consumption Fix ([`supabase/rpcs/08_withdrawals_store.sql`](supabase/rpcs/08_withdrawals_store.sql), [`supabase/security_audit_hardening.sql`](supabase/security_audit_hardening.sql))**:
+    - Fixed a subquery reference in `activate_vip_pass` (Priority C) where legacy `owned_nfts` pass consumption queried `v_user.crate_nfts` instead of `v_user.owned_nfts` when removing the consumed pass.
+  - **🛡️ Edge Function PostgREST `.or()` Filter Sanitization ([`supabase/functions/verify-vip-burn/index.ts`](supabase/functions/verify-vip-burn/index.ts), [`supabase/functions/adopt-referrals/index.ts`](supabase/functions/adopt-referrals/index.ts), [`supabase/functions/nft-referral/index.ts`](supabase/functions/nft-referral/index.ts), [`supabase/functions/sync-assets/index.ts`](supabase/functions/sync-assets/index.ts))**:
+    - Added strict alphanumeric/identifier sanitization (`replace(/[^a-zA-Z0-9_.-]/g, '')`) before interpolating `playerId`/`buyerWallet` into `.or(...)` PostgREST filter strings.
+  - **🔐 Database Least-Privilege Grants & Trigger `search_path` Hardening ([`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql), [`supabase/security_audit_hardening.sql`](supabase/security_audit_hardening.sql))**:
+    - Added `SET search_path = public, pg_temp` to `prevent_direct_balance_mutation()` (strictly preserving `SECURITY INVOKER`), revoked legacy direct write grants from `anon, authenticated` on 8 RPC-managed tables, and revoked `EXECUTE` on trigger-only functions.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.822"` and refreshed all stylesheet/script cache busters.
+
 - **Website Performance & Network Efficiency Optimization (`v1.5.821`)**:
   - **⚡ Eliminated 16-File CSS `@import` Waterfall & Render-Blocking Scripts ([`index.html`](index.html))**:
     - Replaced sequential `@import` chains in `main.css` with direct parallel `<link rel="stylesheet">` tags in `<head>`, plus `<link rel="preconnect">` hints for Supabase, jsDelivr, and cdnjs.
