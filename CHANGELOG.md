@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Compact Fleet Leaderboard Layout (`v1.5.819`)**:
+  - **✨ Space-Saving Row Polish ([`space.js`](space.js))**:
+    - Removed combined module level `(Lv.X)` and PvP raids won (`⚔️`) badges to keep rows clean and compact.
+    - Placed the rank medal/number inline with the player name so ranks no longer wrap onto a separate top line.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.819"` and refreshed all script cache busters.
+
 - **Starship Hangar: Top 10 NFT Ships Shortcut Link (`v1.5.818`)**:
   - **🏆 Quick Leaderboard Link ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
     - Added a **`🏆 Top 10 Ships`** button inside the Starship Hangar & Tuning Bay modal header that closes the Hangar and opens the **Top 10 NFT Starships** leaderboard & OpenSea market tab (`window.openStarshipLeaderboard()`).

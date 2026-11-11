@@ -3661,8 +3661,8 @@ class PolySpaceEngine {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 0.65rem;
-        padding: 0.58rem 0.78rem;
+        gap: 0.6rem;
+        padding: 0.52rem 0.75rem;
         background: ${player.isUser ? 'rgba(0, 240, 255, 0.12)' : (rank <= 3 ? 'rgba(255, 255, 255, 0.045)' : 'rgba(255, 255, 255, 0.025)')};
         border: 1px solid ${player.isUser ? 'var(--color-accent)' : podiumBorder};
         border-radius: 8px;
@@ -3672,18 +3672,14 @@ class PolySpaceEngine {
       `;
 
       row.innerHTML = `
-        <div style="display: flex; flex-direction: column; gap: 0.28rem; min-width: 170px; flex: 1 1 200px;">
-          <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem;">
-            <span style="font-weight: 800;">${badge}</span>
-            <span>${nameHtml}</span>
-            ${player.isUser ? '<span style="color:var(--color-accent); font-size:0.74rem; font-weight:800; margin-left:2px;">(You)</span>' : ''}
+        <div style="display: flex; flex-direction: column; gap: 0.3rem; min-width: 170px; flex: 1 1 200px;">
+          <div style="line-height: 1.35;">
+            <span style="font-weight: 800; margin-right: 4px;">${badge}</span>${nameHtml}${player.isUser ? ' <span style="color:var(--color-accent); font-size:0.74rem; font-weight:800;">(You)</span>' : ''}
           </div>
           <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem;">
             <span title="Warp Drive Level" style="font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: rgba(0,240,255,0.1); border: 1px solid rgba(0,240,255,0.28); color: #67e8f9;">🚀 W${player.warpLevel}</span>
             <span title="Mining Laser Level" style="font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: rgba(255,153,0,0.1); border: 1px solid rgba(255,153,0,0.3); color: #fdba74;">🔫 L${player.laserLevel}</span>
             <span title="Quantum Cargo Level" style="font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.28); color: #86efac;">📦 C${player.cargoLevel}</span>
-            <span title="Combined Ship Module Level" style="font-size: 0.66rem; color: var(--text-dim); margin-left: 2px;">(Lv.${player.totalModulesLv})</span>
-            ${player.raidsWon > 0 ? `<span title="PvP Raids Won" style="font-size: 0.66rem; color: #f472b6; margin-left: 2px;">⚔️ ${player.raidsWon}</span>` : ''}
           </div>
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap;">
