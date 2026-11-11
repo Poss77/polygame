@@ -36,58 +36,72 @@ function hookSupabaseTelemetry() {
   if (diagState.hookedSupabase || !supabase) return;
   diagState.hookedSupabase = true;
 
-  // 1. Wrap supabase.rpc
+  // 1. Wrap supabase.rpc (PostgrestFilterBuilder is a lazy thenable: NEVER call .then() eagerly,
+  // or it will execute the RPC twice! Intercept builder.then once instead.)
   if (typeof supabase.rpc === 'function') {
     const origRpc = supabase.rpc.bind(supabase);
     supabase.rpc = function wrappedRpc(fnName, params = {}, options = undefined) {
-      const start = performance.now();
-      const result = origRpc(fnName, params, options);
-      if (result && typeof result.then === 'function') {
-        result.then(
-          (res) => {
-            const durationMs = Math.round(performance.now() - start);
-            const hasErr = Boolean(res && res.error);
-            const entry = {
-              ts: new Date().toISOString(),
-              type: 'rpc',
-              name: fnName,
-              params: sanitizeParams(params),
-              durationMs,
-              ok: !hasErr,
-              error: hasErr ? (res.error.message || res.error.details || JSON.stringify(res.error)) : null,
-              code: hasErr ? res.error.code : null
-            };
-            pushBounded(diagState.networkLogs, entry, MAX_NETWORK_LOGS);
-            if (hasErr) {
-              pushBounded(diagState.errorLogs, {
-                ts: entry.ts,
-                source: `RPC:${fnName}`,
-                message: entry.error,
-                code: entry.code
-              }, MAX_ERROR_LOGS);
+      const builder = origRpc(fnName, params, options);
+      if (builder && typeof builder.then === 'function') {
+        const origThen = builder.then.bind(builder);
+        let telemetryRecorded = false;
+        builder.then = function wrappedThen(onFulfilled, onRejected) {
+          const start = performance.now();
+          return origThen(
+            (res) => {
+              if (!telemetryRecorded) {
+                telemetryRecorded = true;
+                const durationMs = Math.round(performance.now() - start);
+                const hasErr = Boolean(res && res.error);
+                const entry = {
+                  ts: new Date().toISOString(),
+                  type: 'rpc',
+                  name: fnName,
+                  params: sanitizeParams(params),
+                  durationMs,
+                  ok: !hasErr,
+                  error: hasErr ? (res.error.message || res.error.details || JSON.stringify(res.error)) : null,
+                  code: hasErr ? res.error.code : null
+                };
+                pushBounded(diagState.networkLogs, entry, MAX_NETWORK_LOGS);
+                if (hasErr) {
+                  pushBounded(diagState.errorLogs, {
+                    ts: entry.ts,
+                    source: `RPC:${fnName}`,
+                    message: entry.error,
+                    code: entry.code
+                  }, MAX_ERROR_LOGS);
+                }
+              }
+              return typeof onFulfilled === 'function' ? onFulfilled(res) : res;
+            },
+            (err) => {
+              if (!telemetryRecorded) {
+                telemetryRecorded = true;
+                const durationMs = Math.round(performance.now() - start);
+                const msg = err?.message || String(err);
+                pushBounded(diagState.networkLogs, {
+                  ts: new Date().toISOString(),
+                  type: 'rpc',
+                  name: fnName,
+                  params: sanitizeParams(params),
+                  durationMs,
+                  ok: false,
+                  error: msg
+                }, MAX_NETWORK_LOGS);
+                pushBounded(diagState.errorLogs, {
+                  ts: new Date().toISOString(),
+                  source: `RPC_REJECT:${fnName}`,
+                  message: msg
+                }, MAX_ERROR_LOGS);
+              }
+              if (typeof onRejected === 'function') return onRejected(err);
+              throw err;
             }
-          },
-          (err) => {
-            const durationMs = Math.round(performance.now() - start);
-            const msg = err?.message || String(err);
-            pushBounded(diagState.networkLogs, {
-              ts: new Date().toISOString(),
-              type: 'rpc',
-              name: fnName,
-              params: sanitizeParams(params),
-              durationMs,
-              ok: false,
-              error: msg
-            }, MAX_NETWORK_LOGS);
-            pushBounded(diagState.errorLogs, {
-              ts: new Date().toISOString(),
-              source: `RPC_REJECT:${fnName}`,
-              message: msg
-            }, MAX_ERROR_LOGS);
-          }
-        );
+          );
+        };
       }
-      return result;
+      return builder;
     };
   }
 

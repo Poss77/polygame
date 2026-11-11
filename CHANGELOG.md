@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Fix Double-Executed RPC Telemetry Wrapper (`v1.5.824`)**:
+  - **🐛 Eliminated Duplicate `supabase.rpc` Execution ([`src/js/core/diagnostics.js`](src/js/core/diagnostics.js))**:
+    - Fixed [`hookSupabaseTelemetry()`](src/js/core/diagnostics.js) where calling `.then()` eagerly on a Supabase `PostgrestFilterBuilder` lazy thenable triggered every RPC twice (`start_arcade_session` created duplicate sessions and `end_arcade_session` threw *"Session has already been finalized and claimed"* on the second execution).
+    - Replaced eager `.then()` spying with a single-execution `builder.then` wrapper so every RPC fires strictly once.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.824"` and refreshed all stylesheet/script cache busters.
+
 - **Simulated User Test Mode & Leaderboard Guard (`v1.5.823`)**:
   - **🧪 Exclude `test_mode` Games from Simulated Benchmarks ([`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql), [`supabase/fix_simulated_test_mode_scores.sql`](supabase/fix_simulated_test_mode_scores.sql))**:
     - Updated `admin_generate_community_scores` to read `global_settings.game_payout_settings` and skip any game with `test_mode: true` (such as Cyber Defense), since simulated players are not Ambassadors or verified testers.
