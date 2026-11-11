@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Architecture & AI Telemetry Upgrade (`v1.5.820`)**:
+  - **🩺 Live AI Diagnostics & RPC Telemetry Engine ([`src/js/core/diagnostics.js`](src/js/core/diagnostics.js), [`src/js/app.js`](src/js/app.js), [`index.html`](index.html))**:
+    - Added `window.PolyDebug` (`initDiagnostics()`) which non-intrusively wraps `supabase.rpc` and `supabase.functions.invoke` plus global `onerror`/`unhandledrejection` listeners into a bounded ring buffer.
+    - Added **"📋 Copy AI Debug Snapshot"** and **"🔍 Live Telemetry"** buttons inside `#profile-admin-card` on the Profile tab so admins can inspect live RPC latencies/errors or copy a 1-click JSON diagnostic snapshot to paste into chat.
+  - **🧹 Codebase De-Inflation & CRLF Normalization ([`index.html`](index.html), [`src/js/app.js`](src/js/app.js), [`src/js/core/state.js`](src/js/core/state.js), [`drift.js`](drift.js), [`invaders.js`](invaders.js), [`src/js/core/audio.js`](src/js/core/audio.js))**:
+    - Eliminated `\r\r\n` double-CR line-ending corruption and 7x blank-line inflation across core files, reducing `index.html` from 44,968 lines to 5,997 lines (-86.7%) with zero functional changes.
+  - **🛠️ Unified Pre-Flight CLI & AI Architecture Map ([`scripts/dev_check.py`](scripts/dev_check.py), [`.agents/ARCHITECTURE_MAP.md`](.agents/ARCHITECTURE_MAP.md))**:
+    - Added single-command release & verification script (`python scripts/dev_check.py --bump patch`) and indexed all views, controllers, RPCs, and Edge Functions.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.820"` and refreshed all script cache busters.
+
 - **PolySpace: Compact Fleet Leaderboard Layout (`v1.5.819`)**:
   - **✨ Space-Saving Row Polish ([`space.js`](space.js))**:
     - Removed combined module level `(Lv.X)` and PvP raids won (`⚔️`) badges to keep rows clean and compact.
