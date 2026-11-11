@@ -1491,14 +1491,17 @@ function renderHangarModalUI() {
           </span>
         </div>
       </div>
-      <div style="display: flex; align-items: center; gap: 0.45rem; padding-right: 2.2rem;">
+      <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.45rem; padding-right: 2.2rem;">
         <button onclick="window.PolyHangar.mintNewStarship()" style="padding: 0.38rem 0.8rem; font-size: 0.78rem; font-weight: 800; border-radius: 8px; cursor: pointer; background: linear-gradient(135deg, #00f0ff, #00ff88); color: #000; border: none; box-shadow: 0 0 12px rgba(0,240,255,0.4); display: flex; align-items: center; gap: 0.35rem; transition: transform 0.15s ease;" title="Mint a new procedural starship on Polygon (2.0 POL)">
           <span>🚀 Mint (2.0 POL)</span>
+        </button>
+        <button type="button" onclick="if(window.PolyHangar) window.PolyHangar.closeHangarModal(); if(window.openStarshipLeaderboard) window.openStarshipLeaderboard(); else if(window.switchTab) window.switchTab('holders');" title="View Top 10 Upgraded Starship NFTs &amp; OpenSea Listings" style="padding: 0.38rem 0.65rem; font-size: 0.78rem; font-weight: 800; border-radius: 8px; cursor: pointer; background: rgba(255, 215, 0, 0.14); border: 1px solid rgba(255, 215, 0, 0.45); color: #ffd700; display: flex; align-items: center; gap: 0.3rem;">
+          <span>🏆 Top 10 Ships</span>
         </button>
         <button onclick="window.PolyHangar.syncFleetFromChain(null, true)" title="Query Polygon blockchain to refresh your fleet (syncs OpenSea buys/sales)" style="padding: 0.38rem 0.65rem; font-size: 0.78rem; font-weight: 700; border-radius: 8px; cursor: pointer; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; display: flex; align-items: center; gap: 0.3rem;">
           <span>🔄 Sync</span>
         </button>
-        <a href="https://opensea.io/assets/polygon/0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99" target="_blank" rel="noopener noreferrer" title="View Starship Fleet on OpenSea" style="padding: 0.38rem 0.65rem; font-size: 0.78rem; font-weight: 700; border-radius: 8px; text-decoration: none; background: rgba(32, 129, 226, 0.15); border: 1px solid rgba(32, 129, 226, 0.4); color: #2081e2; display: flex; align-items: center; gap: 0.3rem;">
+        <a href="https://opensea.io/collection/polygame-starship-fleet" target="_blank" rel="noopener noreferrer" title="View Starship Fleet on OpenSea" style="padding: 0.38rem 0.65rem; font-size: 0.78rem; font-weight: 700; border-radius: 8px; text-decoration: none; background: rgba(32, 129, 226, 0.15); border: 1px solid rgba(32, 129, 226, 0.4); color: #2081e2; display: flex; align-items: center; gap: 0.3rem;">
           <span>⛵ OpenSea ↗</span>
         </a>
       </div>

@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Hangar: Top 10 NFT Ships Shortcut Link (`v1.5.818`)**:
+  - **🏆 Quick Leaderboard Link ([`src/js/features/hangar.js`](src/js/features/hangar.js))**:
+    - Added a **`🏆 Top 10 Ships`** button inside the Starship Hangar & Tuning Bay modal header that closes the Hangar and opens the **Top 10 NFT Starships** leaderboard & OpenSea market tab (`window.openStarshipLeaderboard()`).
+    - Updated the Hangar's **OpenSea ↗** button to point directly to `https://opensea.io/collection/polygame-starship-fleet`.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.818"` and refreshed all script cache busters.
+
 - **PolySpace: Add Minerals Mined 3rd Tab to Fleet Leaderboard (`v1.5.817`)**:
   - **🪨 3-Tab Fleet Leaderboard Toggle ([`index.html`](index.html), [`space.js`](space.js))**:
     - Added the **`🪨 Minerals`** tab (`switchFleetLeaderboardMode('minerals')`) alongside **`⚡ Power`** and **`💎 PGT Earned`**.
