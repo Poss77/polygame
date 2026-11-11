@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace: Add Minerals Mined 3rd Tab to Fleet Leaderboard (`v1.5.817`)**:
+  - **🪨 3-Tab Fleet Leaderboard Toggle ([`index.html`](index.html), [`space.js`](space.js))**:
+    - Added the **`🪨 Minerals`** tab (`switchFleetLeaderboardMode('minerals')`) alongside **`⚡ Power`** and **`💎 PGT Earned`**.
+    - Extracts `space_state.mineralsMinedTotal`, sorts Top 10 mineral extractors (with VIP/Starship enrichment & pinned user standing), and shows all 3 metrics cleanly on every commander row (`Power`, `PGT Mined`, and `Minerals Mined`).
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.817"` and refreshed all script cache busters.
+
 - **PolySpace: Fix Global Space Missions Counter (`v1.5.816`)**:
   - **🚀 Uncapped Global Missions Counter ([`supabase/fix_space_missions_counter.sql`](supabase/fix_space_missions_counter.sql), [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql))**:
     - Previously, the Leaderboard `🚀 Space Missions` stat summed `space_state.missionLogs.length`, which is capped at the last 20 log entries per player (`944` total across 282 commanders).

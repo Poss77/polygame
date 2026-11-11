@@ -3377,29 +3377,34 @@ class PolySpaceEngine {
   }
 
   switchFleetLeaderboardMode(mode) {
-    this.fleetLbMode = (mode === 'mined') ? 'mined' : 'power';
+    this.fleetLbMode = (mode === 'mined' || mode === 'minerals') ? mode : 'power';
     const btnPower = document.getElementById('btn-space-lb-power');
     const btnMined = document.getElementById('btn-space-lb-mined');
+    const btnMinerals = document.getElementById('btn-space-lb-minerals');
     const titleEl = document.getElementById('space-lb-title');
 
-    if (btnPower && btnMined) {
-      if (this.fleetLbMode === 'power') {
-        btnPower.style.background = 'rgba(0,240,255,0.2)';
-        btnPower.style.color = '#00f0ff';
-        btnPower.style.fontWeight = '800';
-        btnMined.style.background = 'transparent';
-        btnMined.style.color = 'var(--text-dim)';
-        btnMined.style.fontWeight = '700';
-        if (titleEl) titleEl.innerText = '🏆 Top Fleet Power Leaderboard';
-      } else {
-        btnMined.style.background = 'rgba(255,215,0,0.2)';
-        btnMined.style.color = '#ffd700';
-        btnMined.style.fontWeight = '800';
-        btnPower.style.background = 'transparent';
-        btnPower.style.color = 'var(--text-dim)';
-        btnPower.style.fontWeight = '700';
-        if (titleEl) titleEl.innerText = '💎 Top PolySpace PGT Earners';
-      }
+    [btnPower, btnMined, btnMinerals].forEach(b => {
+      if (!b) return;
+      b.style.background = 'transparent';
+      b.style.color = 'var(--text-dim)';
+      b.style.fontWeight = '700';
+    });
+
+    if (this.fleetLbMode === 'power' && btnPower) {
+      btnPower.style.background = 'rgba(0,240,255,0.2)';
+      btnPower.style.color = '#00f0ff';
+      btnPower.style.fontWeight = '800';
+      if (titleEl) titleEl.innerText = '🏆 Top Fleet Power Leaderboard';
+    } else if (this.fleetLbMode === 'mined' && btnMined) {
+      btnMined.style.background = 'rgba(255,215,0,0.2)';
+      btnMined.style.color = '#ffd700';
+      btnMined.style.fontWeight = '800';
+      if (titleEl) titleEl.innerText = '💎 Top PolySpace PGT Earners';
+    } else if (this.fleetLbMode === 'minerals' && btnMinerals) {
+      btnMinerals.style.background = 'rgba(0,255,136,0.2)';
+      btnMinerals.style.color = '#00ff88';
+      btnMinerals.style.fontWeight = '800';
+      if (titleEl) titleEl.innerText = '🪨 Top PolySpace Mineral Miners';
     }
 
     if (Array.isArray(this._fleetLbCachedMapped)) {
@@ -3485,6 +3490,7 @@ class PolySpaceEngine {
       let laserLevel = Math.max(1, parseInt(ss.laserLevel, 10) || 1);
       let cargoLevel = Math.max(1, parseInt(ss.cargoLevel, 10) || 1);
       let pgtMined = Math.max(0, parseFloat(ss.pgtMinedTotal) || 0);
+      let mineralsMined = Math.max(0, parseInt(ss.mineralsMinedTotal, 10) || 0);
       let raidsWon = Math.max(0, parseInt(ss.raidsWon, 10) || 0);
 
       if (isUser && this.state) {
@@ -3493,6 +3499,7 @@ class PolySpaceEngine {
         if (typeof this.state.laserLevel === 'number') laserLevel = Math.max(laserLevel, this.state.laserLevel);
         if (typeof this.state.cargoLevel === 'number') cargoLevel = Math.max(cargoLevel, this.state.cargoLevel);
         if (typeof this.state.pgtMinedTotal === 'number') pgtMined = Math.max(pgtMined, this.state.pgtMinedTotal);
+        if (typeof this.state.mineralsMinedTotal === 'number') mineralsMined = Math.max(mineralsMined, this.state.mineralsMinedTotal);
         if (typeof this.state.raidsWon === 'number') raidsWon = Math.max(raidsWon, this.state.raidsWon);
       }
 
@@ -3505,6 +3512,7 @@ class PolySpaceEngine {
         cargoLevel,
         totalModulesLv: warpLevel + laserLevel + cargoLevel,
         pgtMined,
+        mineralsMined,
         raidsWon,
         isUser
       });
@@ -3533,19 +3541,21 @@ class PolySpaceEngine {
         cargoLevel,
         totalModulesLv: warpLevel + laserLevel + cargoLevel,
         pgtMined: Math.max(0, Number(this.state.pgtMinedTotal) || 0),
+        mineralsMined: Math.max(0, parseInt(this.state.mineralsMinedTotal, 10) || 0),
         raidsWon: Math.max(0, Number(this.state.raidsWon) || 0),
         isUser: true
       });
     }
 
-    // Enrich top 15 by power & top 15 by mined PGT (+ active user) with VIP/Starship & ban status
+    // Enrich top 15 by power, top 15 by mined PGT & top 15 by minerals (+ active user) with VIP/Starship & ban status
     if (sbClient && mapped.length > 0) {
       try {
         const topByPower = mapped.slice().sort((a, b) => b.power - a.power).slice(0, 15);
         const topByMined = mapped.slice().sort((a, b) => b.pgtMined - a.pgtMined).slice(0, 15);
+        const topByMinerals = mapped.slice().sort((a, b) => b.mineralsMined - a.mineralsMined).slice(0, 15);
         const userEntry = mapped.find(m => m.isUser);
         const candidateIds = Array.from(new Set(
-          [...topByPower, ...topByMined, ...(userEntry ? [userEntry] : [])]
+          [...topByPower, ...topByMined, ...topByMinerals, ...(userEntry ? [userEntry] : [])]
             .map(m => m.playerId)
             .filter(Boolean)
         ));
@@ -3590,13 +3600,17 @@ class PolySpaceEngine {
     const listEl = document.getElementById('space-leaderboard-power');
     if (!listEl) return;
 
-    const mode = this.fleetLbMode === 'mined' ? 'mined' : 'power';
+    const mode = (this.fleetLbMode === 'mined' || this.fleetLbMode === 'minerals') ? this.fleetLbMode : 'power';
     const mapped = Array.isArray(this._fleetLbCachedMapped) ? this._fleetLbCachedMapped.slice() : [];
 
     mapped.sort((a, b) => {
       if (mode === 'mined') {
         if (b.pgtMined !== a.pgtMined) return b.pgtMined - a.pgtMined;
         return b.power - a.power;
+      }
+      if (mode === 'minerals') {
+        if (b.mineralsMined !== a.mineralsMined) return b.mineralsMined - a.mineralsMined;
+        return b.pgtMined - a.pgtMined;
       }
       if (b.power !== a.power) return b.power - a.power;
       return b.pgtMined - a.pgtMined;
@@ -3626,12 +3640,20 @@ class PolySpaceEngine {
       }
 
       const minedFormatted = Number(player.pgtMined || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      const primaryStat = (mode === 'mined')
-        ? `<strong style="color:#ffd700; font-size:0.9rem;">💎 ${minedFormatted} PGT</strong>`
-        : `<strong style="color:var(--color-accent); font-size:0.9rem;">⚡ ${player.power.toLocaleString()} Power</strong>`;
-      const secondaryStat = (mode === 'mined')
-        ? `<span style="color:var(--color-accent); font-size:0.73rem; font-weight:700;">⚡ ${player.power.toLocaleString()} Power</span>`
-        : `<span style="color:#ffd700; font-size:0.73rem; font-weight:700;">💎 ${minedFormatted} PGT</span>`;
+      const mineralsFormatted = Number(player.mineralsMined || 0).toLocaleString();
+
+      let primaryStat = '';
+      let secondaryStat = '';
+      if (mode === 'mined') {
+        primaryStat = `<strong style="color:#ffd700; font-size:0.9rem;">💎 ${minedFormatted} PGT</strong>`;
+        secondaryStat = `<span style="color:var(--text-muted); font-size:0.71rem; font-weight:700;"><span style="color:var(--color-accent);">⚡ ${player.power.toLocaleString()}</span> &bull; <span style="color:#86efac;">🪨 ${mineralsFormatted}</span></span>`;
+      } else if (mode === 'minerals') {
+        primaryStat = `<strong style="color:#00ff88; font-size:0.9rem;">🪨 ${mineralsFormatted} Minerals</strong>`;
+        secondaryStat = `<span style="color:var(--text-muted); font-size:0.71rem; font-weight:700;"><span style="color:#ffd700;">💎 ${minedFormatted} PGT</span> &bull; <span style="color:var(--color-accent);">⚡ ${player.power.toLocaleString()}</span></span>`;
+      } else {
+        primaryStat = `<strong style="color:var(--color-accent); font-size:0.9rem;">⚡ ${player.power.toLocaleString()} Power</strong>`;
+        secondaryStat = `<span style="color:var(--text-muted); font-size:0.71rem; font-weight:700;"><span style="color:#ffd700;">💎 ${minedFormatted} PGT</span> &bull; <span style="color:#86efac;">🪨 ${mineralsFormatted}</span></span>`;
+      }
 
       const row = document.createElement('div');
       const podiumBorder = rank === 1 ? 'rgba(255, 215, 0, 0.5)' : rank === 2 ? 'rgba(192, 192, 192, 0.4)' : rank === 3 ? 'rgba(205, 127, 50, 0.4)' : 'rgba(255,255,255,0.06)';
