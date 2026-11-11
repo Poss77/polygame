@@ -5,6 +5,17 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Starship Leaderboard: Top 10 Upgraded Astro-Dodge Ships & Live OpenSea Listings (`v1.5.814`)**:
+  - **🛸 Edge Function: Real-Time On-Chain Fleet & OpenSea Scanner ([`supabase/functions/starship-leaderboard/index.ts`](supabase/functions/starship-leaderboard/index.ts))**:
+    - Deployed `starship-leaderboard` (v1) querying all minted Astro-Dodge NFT Starships on Polygon (`0xDa8D9a452Ac8e7f3F29d0980fD1c642AeB036F99`) via `totalSupply()` + `getBatchStarshipStats()`, ranking the **Top 10 Ships** by upgraded combat module level (`Rapid Fire + Plasma Beam + Overdrive Matrix + Micro-Missiles`, max Lv. 20), Ship Tier, and Rarity.
+    - Integrated live **OpenSea v2 Marketplace API** polling for `polygame-starship-fleet` listings and collection stats (floor price, owners, active listings), enriched with on-chain upgrade stats, SVG previews, and PolyGame pilot profiles.
+  - **🏆 Leaderboard UI Integration & Quick Buy Links ([`index.html`](index.html), [`src/js/features/holders.js`](src/js/features/holders.js), [`src/js/core/games-registry.js`](src/js/core/games-registry.js))**:
+    - Added **`🛸 Top 10 NFT Starships`** tab inside the Leaderboards view (`view-holders`) showing live SVG artwork, rank, rarity, Tier, Astro-Dodge multiplier, module level breakdown (`RF / PL / OD / MS`), and clickable pilot profile links.
+    - Added **Buy / Mint New Ship (`2.0 POL`)** direct Hangar trigger button, **OpenSea Collection** button, and dedicated **Starships on Sale on OpenSea** section with live pricing and direct purchase links.
+    - Added shortcut buttons directly below the Astro-Dodge High Scores leaderboard card (`🛸 Top 10 Upgraded Ships & OpenSea ↗` and `🚀 Buy Ship`).
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.814"` and refreshed all script cache busters.
+
 - **Discord Relay: Anti-Spoof Duration Fix & Session ID Verification (`v1.5.813`)**:
   - **🛰️ Edge Function Anti-Spoof Duration Fix ([`supabase/functions/discord-relay/index.ts`](supabase/functions/discord-relay/index.ts))**:
     - Resolved `POST /functions/v1/discord-relay 403 (Forbidden)` error occurring at the end of long arcade sessions. The previous anti-spoof check compared `created_at` against a 5-minute window; sessions lasting longer than 5 minutes (such as high-scoring AstroDodge runs) were falsely rejected because their start timestamp fell outside the window.

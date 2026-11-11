@@ -303,6 +303,17 @@ export function initArcadeLeaderboardCards() {
     // Only populate if not already rendered
     if (colEl.querySelector(`#${game.lbContainerId}`)) continue;
 
+    const starshipQuickLinks = (game.key === 'astrododge') ? `
+      <div style="margin-top: 1rem; padding-top: 0.85rem; border-top: 1px solid rgba(255,255,255,0.08); display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: space-between; align-items: center;">
+        <button type="button" onclick="if(window.openStarshipLeaderboard){window.openStarshipLeaderboard();}else{switchTab('holders');}" class="btn-secondary" style="flex: 1 1 auto; padding: 0.48rem 0.75rem; font-size: 0.78rem; font-weight: 800; border-color: rgba(0,240,255,0.45); color: var(--color-primary); background: rgba(0,240,255,0.08); cursor: pointer;">
+          🛸 Top 10 Upgraded Ships &amp; OpenSea ↗
+        </button>
+        <button type="button" onclick="if(window.PolyHangar && typeof window.PolyHangar.openHangarModal==='function'){window.PolyHangar.openHangarModal();}" class="btn-secondary" style="padding: 0.48rem 0.75rem; font-size: 0.78rem; font-weight: 800; border-color: rgba(0,255,136,0.45); color: #00ff88; background: rgba(0,255,136,0.08); cursor: pointer;">
+          🚀 Buy Ship
+        </button>
+      </div>
+    ` : '';
+
     colEl.innerHTML = `
       <h3 class="card-title" style="margin-bottom: 1rem; color: ${game.lbCardColor};" data-i18n="lb.title.${game.key}">${game.lbCardTitle}</h3>
       <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;" data-i18n="lb.subtitle.${game.key}">${game.lbSubtitle}</p>
@@ -313,6 +324,7 @@ export function initArcadeLeaderboardCards() {
       <div class="leaderboard-list" id="${game.lbContainerId}">
         <div style="text-align: center; padding: 1.5rem; color: var(--text-dim);">Loading leaderboard...</div>
       </div>
+      ${starshipQuickLinks}
     `;
   }
 }

@@ -4,7 +4,7 @@
 // ============================================================
 
 import { ARCADE_GAMES_REGISTRY, ARCADE_GAMES_LIST } from '../core/games-registry.js';
-import { supabase, ADMIN_WALLET_ADDRESS, TOKEN_CONTRACT_ADDRESS } from '../core/config.js';
+import { supabase, SUPABASE_URL, SUPABASE_KEY, ADMIN_WALLET_ADDRESS, TOKEN_CONTRACT_ADDRESS, STARSHIP_CONTRACT_ADDRESS } from '../core/config.js';
 import { appState } from '../core/state.js';
 import { escapeHtml } from '../core/ui.js';
 import { checkIsUserRow, formatLeaderboardName, getLeaderboardStarshipBadge } from './leaderboards.js';
@@ -14,55 +14,79 @@ const holdersPerPage = 20;
 let cachedHoldersData = [];
 let holdersChartInstance = null;
 let currentHoldersTotalSupply = 0;
-let holdersMode = 'total'; // 'total' or 'staking'
+let holdersMode = 'total'; // 'total', 'staking', 'starships', or 'archive'
+let pendingHoldersMode = null;
 
 export function switchHoldersMode(mode) {
   holdersMode = mode;
   const tabTotal = document.getElementById('tab-holders-total');
   const tabStaking = document.getElementById('tab-holders-staking');
+  const tabStarships = document.getElementById('tab-holders-starships');
   const tabArchive = document.getElementById('tab-holders-archive');
   const descEl = document.getElementById('holders-desc-text');
   const totalSupplyBanner = document.getElementById('total-onsite-pgt-display');
+  const globalStatsGrid = document.getElementById('holders-global-stats-grid');
   const paginationControls = document.getElementById('holders-pagination-container');
   const archiveSelector = document.getElementById('holders-archive-selector-wrapper');
+  const pgtContainer = document.getElementById('leaderboard-pgt-container');
+  const starshipsWrapper = document.getElementById('leaderboard-starships-wrapper');
 
-  if (tabTotal && tabStaking && tabArchive) {
-    tabTotal.classList.remove('active');
-    tabStaking.classList.remove('active');
-    tabArchive.classList.remove('active');
+  [tabTotal, tabStaking, tabStarships, tabArchive].forEach(t => {
+    if (t) t.classList.remove('active');
+  });
 
-    if (mode === 'total') {
-      tabTotal.classList.add('active');
-      if (descEl) descEl.innerText = 'Global ranking of wallets by total wealth (Wallet + Staked PGT).';
-      if (totalSupplyBanner) totalSupplyBanner.style.display = 'block';
-      if (paginationControls) paginationControls.style.display = 'flex';
-      if (archiveSelector) archiveSelector.style.display = 'none';
-      cachedHoldersData.sort((a, b) => b.totalWealth - a.totalWealth);
-      holdersCurrentPage = 1;
-      renderHoldersPage(holdersCurrentPage);
-    } else if (mode === 'staking') {
-      tabStaking.classList.add('active');
-      if (descEl) descEl.innerText = 'Global ranking of wallets by PGT locked in Staking Vaults.';
-      if (totalSupplyBanner) totalSupplyBanner.style.display = 'block';
-      if (paginationControls) paginationControls.style.display = 'flex';
-      if (archiveSelector) archiveSelector.style.display = 'none';
-      cachedHoldersData.sort((a, b) => b.staked - a.staked);
-      holdersCurrentPage = 1;
-      renderHoldersPage(holdersCurrentPage);
-    } else if (mode === 'archive') {
-      tabArchive.classList.add('active');
-      if (descEl) descEl.innerText = 'Historical snapshot archive of weekly arcade tournament prize pool winners from past weekly resets.';
-      if (totalSupplyBanner) totalSupplyBanner.style.display = 'none';
-      if (paginationControls) paginationControls.style.display = 'none';
-      if (archiveSelector) archiveSelector.style.display = 'flex';
-      loadPastWeeklyArchive(document.getElementById('weekly-archive-select-week')?.value || null);
-    }
+  if (mode === 'total') {
+    if (tabTotal) tabTotal.classList.add('active');
+    if (descEl) descEl.innerText = 'Global ranking of wallets by total wealth (Wallet + Staked PGT).';
+    if (totalSupplyBanner) totalSupplyBanner.style.display = 'block';
+    if (globalStatsGrid) globalStatsGrid.style.display = 'grid';
+    if (pgtContainer) pgtContainer.style.display = '';
+    if (starshipsWrapper) starshipsWrapper.style.display = 'none';
+    if (paginationControls) paginationControls.style.display = 'flex';
+    if (archiveSelector) archiveSelector.style.display = 'none';
+    cachedHoldersData.sort((a, b) => b.totalWealth - a.totalWealth);
+    holdersCurrentPage = 1;
+    renderHoldersPage(holdersCurrentPage);
+  } else if (mode === 'staking') {
+    if (tabStaking) tabStaking.classList.add('active');
+    if (descEl) descEl.innerText = 'Global ranking of wallets by PGT locked in Staking Vaults.';
+    if (totalSupplyBanner) totalSupplyBanner.style.display = 'block';
+    if (globalStatsGrid) globalStatsGrid.style.display = 'grid';
+    if (pgtContainer) pgtContainer.style.display = '';
+    if (starshipsWrapper) starshipsWrapper.style.display = 'none';
+    if (paginationControls) paginationControls.style.display = 'flex';
+    if (archiveSelector) archiveSelector.style.display = 'none';
+    cachedHoldersData.sort((a, b) => b.staked - a.staked);
+    holdersCurrentPage = 1;
+    renderHoldersPage(holdersCurrentPage);
+  } else if (mode === 'starships') {
+    if (tabStarships) tabStarships.classList.add('active');
+    if (descEl) descEl.innerText = 'Top 10 On-Chain Astro-Dodge NFT Starships ranked by upgraded combat module levels & live OpenSea secondary market listings.';
+    if (totalSupplyBanner) totalSupplyBanner.style.display = 'none';
+    if (globalStatsGrid) globalStatsGrid.style.display = 'none';
+    if (pgtContainer) pgtContainer.style.display = 'none';
+    if (paginationControls) paginationControls.style.display = 'none';
+    if (archiveSelector) archiveSelector.style.display = 'none';
+    if (starshipsWrapper) starshipsWrapper.style.display = 'block';
+    loadStarshipLeaderboard();
+  } else if (mode === 'archive') {
+    if (tabArchive) tabArchive.classList.add('active');
+    if (descEl) descEl.innerText = 'Historical snapshot archive of weekly arcade tournament prize pool winners from past weekly resets.';
+    if (totalSupplyBanner) totalSupplyBanner.style.display = 'none';
+    if (globalStatsGrid) globalStatsGrid.style.display = 'grid';
+    if (pgtContainer) pgtContainer.style.display = '';
+    if (starshipsWrapper) starshipsWrapper.style.display = 'none';
+    if (paginationControls) paginationControls.style.display = 'none';
+    if (archiveSelector) archiveSelector.style.display = 'flex';
+    loadPastWeeklyArchive(document.getElementById('weekly-archive-select-week')?.value || null);
   }
 }
 
-export async function loadHoldersLeaderboard() {
-  holdersMode = 'total';
-  if (typeof window.switchHoldersMode === 'function') window.switchHoldersMode('total');
+export async function loadHoldersLeaderboard(initialMode = null) {
+  const targetMode = initialMode || pendingHoldersMode || 'total';
+  pendingHoldersMode = null;
+  holdersMode = targetMode;
+  if (typeof window.switchHoldersMode === 'function') window.switchHoldersMode(targetMode);
   const scoreboard = document.getElementById('leaderboard-pgt-container');
   if (!scoreboard) return;
 
@@ -189,12 +213,14 @@ export async function loadHoldersLeaderboard() {
     
     if (holdersMode === 'total') {
       cachedHoldersData.sort((a, b) => b.totalWealth - a.totalWealth);
-    } else {
+    } else if (holdersMode === 'staking') {
       cachedHoldersData.sort((a, b) => b.staked - a.staked);
     }
     holdersCurrentPage = 1;
 
-    renderHoldersPage(holdersCurrentPage);
+    if (holdersMode === 'total' || holdersMode === 'staking') {
+      renderHoldersPage(holdersCurrentPage);
+    }
     await recordSupplySnapshotIfNeeded(globalTotalWealth);
     renderHoldersSupplyChart('day', currentHoldersTotalSupply || globalTotalWealth);
     // Note: loadPastWeeklyArchive is only invoked when mode === 'archive'
@@ -719,5 +745,367 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
   }
 }
 window.loadPastWeeklyArchive = loadPastWeeklyArchive;
+
+// ============================================================
+// ASTRO-DODGE NFT STARSHIPS LEADERBOARD & OPENSEA MARKET
+// ============================================================
+let cachedStarshipLeaderboard = null;
+let lastStarshipFetchAt = 0;
+const STARSHIP_LB_CACHE_TTL_MS = 60 * 1000;
+
+export function openStarshipLeaderboard() {
+  pendingHoldersMode = 'starships';
+  const viewHolders = document.getElementById('view-holders');
+  const isAlreadyOnHolders = viewHolders && viewHolders.classList.contains('active');
+  if (isAlreadyOnHolders) {
+    pendingHoldersMode = null;
+    switchHoldersMode('starships');
+  } else if (typeof window.switchTab === 'function') {
+    window.switchTab('holders');
+  }
+}
+window.openStarshipLeaderboard = openStarshipLeaderboard;
+
+function formatStarshipOwnerHtml(ownerAddress, ownerUser) {
+  const addrLower = (ownerAddress || '').toLowerCase();
+  const myPid = (appState?.state?.playerId || '').toLowerCase();
+  const myWallet = (appState?.state?.walletAddress || '').toLowerCase();
+  const myLinked = (appState?.state?.linkedWalletAddress || '').toLowerCase();
+
+  const isMine = Boolean(
+    addrLower && (
+      (myWallet && addrLower === myWallet) ||
+      (myLinked && addrLower === myLinked) ||
+      (myPid && addrLower === myPid)
+    )
+  ) || Boolean(ownerUser && checkIsUserRow(ownerUser));
+
+  if (ownerUser) {
+    const formatted = formatLeaderboardName(ownerUser, isMine, false);
+    return `${formatted}${isMine ? ' <span class="badge-you" style="color:var(--color-accent); font-size:0.75rem; font-weight:700;">(You)</span>' : ''}`;
+  }
+
+  if (addrLower && addrLower.length >= 10) {
+    const shortAddr = `${addrLower.substring(0, 6)}...${addrLower.substring(addrLower.length - 4)}`;
+    const safeShort = escapeHtml(shortAddr);
+    const safeClick = encodeURIComponent(addrLower);
+    return `<span style="font-family:monospace; color:var(--color-primary); cursor:pointer; text-decoration:underline; text-decoration-color:rgba(0,240,255,0.3);" onclick="openPublicProfile('${safeClick}')" title="Click to inspect wallet">${safeShort}</span>${isMine ? ' <span class="badge-you" style="color:var(--color-accent); font-size:0.75rem; font-weight:700;">(You)</span>' : ''}`;
+  }
+
+  return '<span style="color:var(--text-dim);">Unresolved Pilot</span>';
+}
+
+export async function loadStarshipLeaderboard(forceRefresh = false) {
+  const container = document.getElementById('leaderboard-starships-wrapper');
+  if (!container) return;
+
+  const now = Date.now();
+  if (!forceRefresh && cachedStarshipLeaderboard && (now - lastStarshipFetchAt < STARSHIP_LB_CACHE_TTL_MS)) {
+    renderStarshipLeaderboard(cachedStarshipLeaderboard, container);
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="text-align: center; padding: 2.25rem 1rem; color: var(--text-dim);">
+      <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">🛸</div>
+      <div>Scanning Polygon blockchain &amp; OpenSea fleet listings...</div>
+    </div>
+  `;
+
+  try {
+    const endpoint = `${SUPABASE_URL}/functions/v1/starship-leaderboard${forceRefresh ? '?refresh=1' : ''}`;
+    const res = await fetch(endpoint, {
+      method: 'GET',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      }
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const payload = await res.json();
+    if (!payload || !payload.success) {
+      throw new Error(payload?.error || 'Failed to retrieve Starship leaderboard');
+    }
+
+    cachedStarshipLeaderboard = payload;
+    lastStarshipFetchAt = Date.now();
+    renderStarshipLeaderboard(payload, container);
+  } catch (err) {
+    console.warn('[loadStarshipLeaderboard] Edge function error, falling back to cached DB data:', err);
+    await renderStarshipLeaderboardFallback(container);
+  }
+}
+window.loadStarshipLeaderboard = loadStarshipLeaderboard;
+
+async function renderStarshipLeaderboardFallback(container) {
+  const collectionUrl = 'https://opensea.io/collection/polygame-starship-fleet';
+  try {
+    const { data: usersData } = await supabase
+      .from('users')
+      .select('player_id, username, linked_wallet_address, vip_until, vip_level, equipped_starship, is_banned')
+      .not('equipped_starship', 'is', null)
+      .limit(200);
+
+    const ships = [];
+    const seen = new Set();
+    for (const u of (usersData || [])) {
+      if (u.is_banned) continue;
+      const s = u.equipped_starship;
+      const tid = Number(s?.tokenId || 0);
+      if (!s || s.isDemo || tid <= 0 || seen.has(tid)) continue;
+      seen.add(tid);
+
+      const rf = Number(s.rapidFireLevel || 1);
+      const pl = Number(s.plasmaDamageLevel || 1);
+      const od = Number(s.overdriveLevel || 1);
+      const ms = Number(s.missilePodLevel || 1);
+      const tier = Number(s.shipTier || 1);
+      const totalLevel = rf + pl + od + ms;
+      const rarity = String(s.rarity || 'Rare');
+      const rNorm = rarity.toLowerCase();
+      const rarityColor = rNorm === 'mythic' ? '#ff0055' : rNorm === 'legendary' ? '#ffd700' : rNorm === 'epic' ? '#bd00ff' : '#00f0ff';
+      const baseMult = Number(s.baseEarnMultiplier || (rNorm === 'mythic' ? 1.5 : rNorm === 'legendary' ? 1.3 : rNorm === 'epic' ? 1.2 : 1.1));
+      const isT3 = tier >= 3 || (rf >= 3 && pl >= 3 && od >= 3 && ms >= 3);
+
+      ships.push({
+        tokenId: tid,
+        dna: Number(s.dna || 0),
+        name: s.name || `Starship #${tid}`,
+        rapidFireLevel: rf,
+        plasmaDamageLevel: pl,
+        overdriveLevel: od,
+        missilePodLevel: ms,
+        shipTier: tier,
+        totalLevel,
+        maxTotalLevel: 20,
+        rarity,
+        rarityColor,
+        rarityBg: 'rgba(0,240,255,0.14)',
+        rarityBorder: rarityColor,
+        effectiveMultiplier: isT3 ? parseFloat((baseMult * 1.5).toFixed(2)) : baseMult,
+        imageUrl: `https://jgtfnsufemvqkyytscgl.supabase.co/functions/v1/starship-metadata/images/${tid}.svg?dna=${s.dna || 0}&t=${tier}`,
+        openSeaUrl: `https://opensea.io/assets/matic/${STARSHIP_CONTRACT_ADDRESS}/${tid}`,
+        ownerAddress: (u.linked_wallet_address || u.player_id || '').toLowerCase(),
+        ownerUser: u
+      });
+    }
+
+    ships.sort((a, b) => (b.totalLevel - a.totalLevel) || (b.shipTier - a.shipTier) || (a.tokenId - b.tokenId));
+
+    renderStarshipLeaderboard({
+      totalSupply: ships.length,
+      upgradedShipsCount: ships.filter(s => s.totalLevel > 4 || s.shipTier > 1).length,
+      mintFeePol: '2.0',
+      collectionUrl,
+      collectionStats: null,
+      topShips: ships.slice(0, 10),
+      openSeaListings: []
+    }, container);
+  } catch (fallbackErr) {
+    console.error('Starship fallback render error:', fallbackErr);
+    container.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Unable to load Starship rankings right now.</div>';
+  }
+}
+
+export function renderStarshipLeaderboard(payload, container) {
+  if (!container) return;
+
+  const topShips = Array.isArray(payload?.topShips) ? payload.topShips : [];
+  const listings = Array.isArray(payload?.openSeaListings) ? payload.openSeaListings : [];
+  const totalSupply = Number(payload?.totalSupply || 0);
+  const upgradedCount = Number(payload?.upgradedShipsCount || 0);
+  const uniqueOwners = payload?.collectionStats?.num_owners ?? '--';
+  const mintFee = payload?.mintFeePol || '2.0';
+  const collectionUrl = payload?.collectionUrl || 'https://opensea.io/collection/polygame-starship-fleet';
+
+  const buyActionCode = `if(window.PolyHangar && typeof window.PolyHangar.openHangarModal==='function'){window.PolyHangar.openHangarModal();}else if(window.switchTab){window.switchTab('games');}`;
+
+  let html = `
+    <!-- Top Banner: Mint / Buy Ship & OpenSea Market Actions -->
+    <div style="background: linear-gradient(135deg, rgba(0, 240, 255, 0.08), rgba(189, 0, 255, 0.08)); border: 1px solid rgba(0, 240, 255, 0.35); border-radius: 12px; padding: 1.15rem; margin-bottom: 1.35rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div>
+        <div style="font-size: 1.05rem; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.35rem;">
+          <span>🚀</span> <span>Astro-Dodge On-Chain Starship Fleet</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.65rem; font-size: 0.78rem; color: var(--text-muted);">
+          <span>🛸 Minted: <strong style="color: var(--color-primary);">${totalSupply.toLocaleString()}</strong></span>
+          <span>•</span>
+          <span>⚡ Upgraded Ships: <strong style="color: var(--color-warning);">${upgradedCount.toLocaleString()}</strong></span>
+          <span>•</span>
+          <span>👥 Owners: <strong style="color: #fff;">${uniqueOwners}</strong></span>
+          <span>•</span>
+          <span>⛵ Listed on OpenSea: <strong style="color: var(--color-success);">${listings.length}</strong></span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.6rem;">
+        <button type="button" onclick="${buyActionCode}" class="btn-primary" style="padding: 0.55rem 1rem; font-size: 0.85rem; font-weight: 800; background: linear-gradient(135deg, #00f0ff, #0077ff); color: #000; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 0 14px rgba(0,240,255,0.3); display: inline-flex; align-items: center; gap: 0.35rem;">
+          🚀 Buy / Mint New Ship (${escapeHtml(String(mintFee))} POL)
+        </button>
+        <a href="${escapeHtml(collectionUrl)}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 0.52rem 0.95rem; font-size: 0.84rem; font-weight: 700; text-decoration: none; border-color: rgba(32, 129, 226, 0.7); color: #60b5ff; background: rgba(32, 129, 226, 0.12); border-radius: 8px; display: inline-flex; align-items: center; gap: 0.35rem;">
+          ⛵ OpenSea Collection ↗
+        </a>
+        <button type="button" onclick="window.loadStarshipLeaderboard(true)" class="btn-secondary" title="Refresh on-chain &amp; OpenSea data" style="padding: 0.52rem 0.75rem; font-size: 0.82rem; border-radius: 8px; cursor: pointer;">
+          🔄
+        </button>
+      </div>
+    </div>
+
+    <!-- Section 1: Top 10 Upgraded Ships -->
+    <div style="margin-bottom: 1.75rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+        <h4 style="margin: 0; font-size: 0.98rem; color: var(--color-warning); display: flex; align-items: center; gap: 0.45rem;">
+          <span>🏆</span> <span>Top 10 Upgraded Astro-Dodge Starships</span>
+        </h4>
+        <span style="font-size: 0.75rem; color: var(--text-dim);">Ranked by Total Module Level (Max Lv. 20) &amp; Ship Tier</span>
+      </div>
+  `;
+
+  if (topShips.length === 0) {
+    html += `<div style="text-align:center; padding:1.5rem; color:var(--text-dim); background:rgba(0,0,0,0.2); border-radius:8px;">No minted NFT Starships found yet.</div>`;
+  } else {
+    html += `<div class="leaderboard-list" style="display: flex; flex-direction: column; gap: 0.65rem;">`;
+
+    topShips.forEach((ship, idx) => {
+      const rank = idx + 1;
+      const rankContent = rank === 1 ? '🥇 1' : rank === 2 ? '🥈 2' : rank === 3 ? '🥉 3' : `#${rank}`;
+      const podiumRowClass = rank === 1 ? 'podium-row-1' : rank === 2 ? 'podium-row-2' : rank === 3 ? 'podium-row-3' : '';
+      const rankClass = `leaderboard-rank rank-${rank} ${rank <= 3 ? `podium-rank podium-rank-${rank}` : ''}`;
+
+      const safeName = escapeHtml(ship.name || `Starship #${ship.tokenId}`);
+      const safeRarity = escapeHtml(ship.rarity || 'Rare');
+      const rColor = ship.rarityColor || '#00f0ff';
+      const rBg = ship.rarityBg || 'rgba(0,240,255,0.15)';
+      const rBorder = ship.rarityBorder || 'rgba(0,240,255,0.45)';
+      const pct = Math.min(100, Math.round(((ship.totalLevel || 4) / (ship.maxTotalLevel || 20)) * 100));
+      const ownerHtml = formatStarshipOwnerHtml(ship.ownerAddress, ship.ownerUser);
+      const isListedOnOs = listings.some(l => Number(l.tokenId) === Number(ship.tokenId));
+
+      html += `
+        <div class="leaderboard-row ${podiumRowClass}" style="display: flex; align-items: center; justify-content: space-between; gap: 0.85rem; padding: 0.75rem 0.9rem; border-radius: 10px; background: rgba(15, 23, 42, 0.55); border: 1px solid ${rank <= 3 ? rBorder : 'rgba(255,255,255,0.08)'}; flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 220px; flex: 1 1 260px;">
+            <span class="${rankClass}" style="min-width: 2.1rem; font-weight: 900; font-size: ${rank <= 3 ? '1.05rem' : '0.9rem'};">${rankContent}</span>
+            <a href="${escapeHtml(ship.openSeaUrl)}" target="_blank" rel="noopener noreferrer" title="View ${safeName} on OpenSea" style="flex-shrink: 0; display: block; width: 52px; height: 52px; border-radius: 8px; overflow: hidden; border: 1.5px solid ${rBorder}; box-shadow: 0 0 10px ${rBg}; background: #030712;">
+              <img src="${escapeHtml(ship.imageUrl)}" alt="${safeName}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+            </a>
+            <div style="min-width: 0;">
+              <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.2rem;">
+                <strong style="color: #fff; font-size: 0.94rem;">${safeName}</strong>
+                <span style="font-size: 0.65rem; font-weight: 800; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; color: ${rColor}; background: ${rBg}; border: 1px solid ${rBorder};">${safeRarity}</span>
+                <span style="font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; color: #ffd700; background: rgba(255,215,0,0.12); border: 1px solid rgba(255,215,0,0.4);">TIER ${ship.shipTier || 1}</span>
+                <span style="font-size: 0.65rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; color: #00ff88; background: rgba(0,255,136,0.12); border: 1px solid rgba(0,255,136,0.35);">⚡ ${ship.effectiveMultiplier}x</span>
+                ${isListedOnOs ? `<span style="font-size: 0.64rem; font-weight: 800; padding: 1px 6px; border-radius: 4px; color: #60b5ff; background: rgba(32,129,226,0.2); border: 1px solid rgba(32,129,226,0.6);">⛵ ON SALE</span>` : ''}
+              </div>
+              <div style="font-size: 0.78rem; color: var(--text-muted); display: flex; align-items: center; flex-wrap: wrap; gap: 0.35rem;">
+                <span>Pilot:</span> ${ownerHtml}
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem; flex: 0 1 auto;">
+            <div style="display: flex; align-items: center; gap: 0.6rem; width: 100%; justify-content: flex-end;">
+              <div style="width: 90px; height: 6px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden;">
+                <div style="width: ${pct}%; height: 100%; background: linear-gradient(90deg, ${rColor}, #00ff88); border-radius: 99px;"></div>
+              </div>
+              <span style="font-weight: 900; font-size: 0.92rem; color: #fff;">Lv. ${ship.totalLevel} <span style="font-size: 0.74rem; color: var(--text-dim); font-weight: 600;">/ ${ship.maxTotalLevel || 20}</span></span>
+              <a href="${escapeHtml(ship.openSeaUrl)}" target="_blank" rel="noopener noreferrer" title="Inspect on OpenSea" style="font-size: 0.72rem; font-weight: 700; color: #60b5ff; text-decoration: none; padding: 2px 7px; border-radius: 5px; background: rgba(32,129,226,0.14); border: 1px solid rgba(32,129,226,0.38); white-space: nowrap;">
+                ⛵ OpenSea ↗
+              </a>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.3rem; justify-content: flex-end;">
+              <span style="font-size: 0.67rem; padding: 1px 5px; border-radius: 4px; background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.22); color: #7dd3fc;" title="Rapid Fire Level">⚡ RF Lv.${ship.rapidFireLevel}</span>
+              <span style="font-size: 0.67rem; padding: 1px 5px; border-radius: 4px; background: rgba(255,85,0,0.08); border: 1px solid rgba(255,85,0,0.25); color: #fdba74;" title="Plasma Beam Level">🔥 PL Lv.${ship.plasmaDamageLevel}</span>
+              <span style="font-size: 0.67rem; padding: 1px 5px; border-radius: 4px; background: rgba(189,0,255,0.09); border: 1px solid rgba(189,0,255,0.25); color: #e9d5ff;" title="Overdrive Matrix Level">⏱️ OD Lv.${ship.overdriveLevel}</span>
+              <span style="font-size: 0.67rem; padding: 1px 5px; border-radius: 4px; background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.25); color: #86efac;" title="Micro-Missiles Level">🚀 MS Lv.${ship.missilePodLevel}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+
+  // Section 2: Ships on Sale on OpenSea
+  html += `
+    <div style="border-top: 1px solid var(--border-glass); padding-top: 1.35rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+        <h4 style="margin: 0; font-size: 0.98rem; color: #60b5ff; display: flex; align-items: center; gap: 0.45rem;">
+          <span>⛵</span> <span>Starships on Sale on OpenSea</span>
+          <span style="font-size: 0.72rem; font-weight: 800; padding: 2px 8px; border-radius: 99px; background: rgba(32,129,226,0.2); border: 1px solid rgba(32,129,226,0.5); color: #93c5fd;">${listings.length} Listed</span>
+        </h4>
+        <a href="${escapeHtml(collectionUrl)}" target="_blank" rel="noopener noreferrer" style="font-size: 0.8rem; color: #60b5ff; font-weight: 700; text-decoration: none;">
+          View All on OpenSea ↗
+        </a>
+      </div>
+  `;
+
+  if (listings.length === 0) {
+    html += `
+      <div style="background: rgba(32, 129, 226, 0.06); border: 1px dashed rgba(32, 129, 226, 0.35); border-radius: 10px; padding: 1.35rem; text-align: center;">
+        <div style="font-size: 1.4rem; margin-bottom: 0.35rem;">⛵</div>
+        <div style="color: #fff; font-weight: 700; font-size: 0.92rem; margin-bottom: 0.3rem;">No Astro-Dodge NFT Starships are currently listed on OpenSea</div>
+        <div style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 1rem;">All ${totalSupply.toLocaleString()} minted ships are currently held in player fleets! You can mint a brand-new procedural Starship directly or place a collection offer on OpenSea.</div>
+        <div style="display: flex; justify-content: center; gap: 0.65rem; flex-wrap: wrap;">
+          <button type="button" onclick="${buyActionCode}" class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.82rem; font-weight: 800; background: linear-gradient(135deg, #00f0ff, #0077ff); color: #000; border: none; border-radius: 7px; cursor: pointer;">
+            🚀 Mint New Starship (${escapeHtml(String(mintFee))} POL)
+          </button>
+          <a href="${escapeHtml(collectionUrl)}" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.82rem; font-weight: 700; text-decoration: none; border-color: rgba(32,129,226,0.6); color: #60b5ff; border-radius: 7px;">
+            ⛵ Make Collection Offer on OpenSea ↗
+          </a>
+        </div>
+      </div>
+    `;
+  } else {
+    html += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.85rem;">`;
+    listings.forEach(item => {
+      const safeName = escapeHtml(item.name || `Starship #${item.tokenId}`);
+      const safeRarity = escapeHtml(item.rarity || 'Rare');
+      const rColor = item.rarityColor || '#00f0ff';
+      const rBg = item.rarityBg || 'rgba(0,240,255,0.15)';
+      const rBorder = item.rarityBorder || 'rgba(0,240,255,0.45)';
+      const sellerHtml = formatStarshipOwnerHtml(item.sellerAddress, item.sellerUser);
+
+      html += `
+        <div style="background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(32, 129, 226, 0.45); border-radius: 10px; padding: 0.85rem; display: flex; flex-direction: column; gap: 0.65rem; justify-content: space-between;">
+          <div style="display: flex; gap: 0.75rem; align-items: center;">
+            <a href="${escapeHtml(item.openSeaUrl)}" target="_blank" rel="noopener noreferrer" style="width: 60px; height: 60px; border-radius: 8px; overflow: hidden; border: 1.5px solid ${rBorder}; flex-shrink: 0; background: #030712;">
+              <img src="${escapeHtml(item.imageUrl)}" alt="${safeName}" loading="lazy" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+            </a>
+            <div style="min-width: 0; flex: 1;">
+              <div style="display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap; margin-bottom: 0.2rem;">
+                <strong style="color: #fff; font-size: 0.92rem;">${safeName}</strong>
+                <span style="font-size: 0.64rem; font-weight: 800; padding: 1px 5px; border-radius: 4px; color: ${rColor}; background: ${rBg}; border: 1px solid ${rBorder};">${safeRarity}</span>
+              </div>
+              <div style="font-size: 0.76rem; color: var(--text-muted);">
+                Tier ${item.shipTier || 1} &bull; <strong style="color: #fff;">Lv. ${item.totalLevel || 4}/20</strong> &bull; <span style="color: #00ff88;">⚡ ${item.effectiveMultiplier || 1.1}x</span>
+              </div>
+              <div style="font-size: 0.73rem; color: var(--text-dim); margin-top: 2px;">
+                Seller: ${sellerHtml}
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 0.55rem; border-top: 1px solid rgba(255,255,255,0.07); gap: 0.5rem;">
+            <div>
+              <div style="font-size: 0.66rem; color: var(--text-dim); text-transform: uppercase;">OpenSea Price</div>
+              <div style="font-size: 0.98rem; font-weight: 900; color: #60b5ff;">${escapeHtml(String(item.priceFormatted || '0'))} ${escapeHtml(String(item.currency || 'WETH'))}</div>
+            </div>
+            <a href="${escapeHtml(item.openSeaUrl)}" target="_blank" rel="noopener noreferrer" class="btn-primary" style="padding: 0.45rem 0.85rem; font-size: 0.78rem; font-weight: 800; text-decoration: none; background: linear-gradient(135deg, #2081e2, #00c6ff); color: #fff; border-radius: 7px; white-space: nowrap;">
+              Buy on OpenSea ↗
+            </a>
+          </div>
+        </div>
+      `;
+    });
+    html += `</div>`;
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+window.renderStarshipLeaderboard = renderStarshipLeaderboard;
+
 
 
