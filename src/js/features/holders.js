@@ -17,6 +17,7 @@ let currentHoldersTotalSupply = 0;
 let holdersMode = 'total'; // 'total', 'staking', 'starships', or 'archive'
 let pendingHoldersMode = null;
 let lastHoldersFetchAt = 0;
+let _holdersInFlight = null;
 const HOLDERS_CACHE_TTL_MS = 45000; // 45s cache TTL for holders & global stats
 
 export function switchHoldersMode(mode) {
@@ -101,151 +102,151 @@ export async function loadHoldersLeaderboard(initialMode = null, force = false) 
   if (!force && cachedHoldersData.length > 0 && lastHoldersFetchAt && (now - lastHoldersFetchAt < HOLDERS_CACHE_TTL_MS)) {
     return;
   }
+  if (_holdersInFlight) {
+    return _holdersInFlight;
+  }
 
-  try {
-    const [{ data: allData, error }, { data: activeStakes, error: stakesErr }, { count: arcadeCount }, spaceMissionsRpcRes, { count: radarCount }] = await Promise.all([
-      supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, username, user_id, auth_provider, total_claims, relics, space_state, total_arcade_plays, vip_until, vip_level, is_banned'),
-      supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true),
-      supabase.from('arcade_sessions').select('id', { count: 'exact', head: true }),
-      Promise.resolve(supabase.rpc('get_global_space_missions_count')).catch(() => ({ data: null })),
-      Promise.resolve(supabase.from('polyspace_radar_harvests').select('id', { count: 'exact', head: true })).catch(() => ({ count: 0 }))
-    ]);
-      
-    if (error) throw error;
-    if (stakesErr) console.warn("[loadHoldersLeaderboard] user_stakes query warning:", stakesErr);
-    
-    // Map active stakes from user_stakes table by lowercase wallet_address / player_id
-    const stakesMap = {};
-    let globalTotalStaked = 0;
-    if (activeStakes && Array.isArray(activeStakes)) {
-      activeStakes.forEach(s => {
-        if (s.pool === 'pgt' || !s.pool) {
-          const key = (s.wallet_address || '').toLowerCase().trim();
-          const amt = parseFloat(s.amount) || 0;
-          if (key) stakesMap[key] = (stakesMap[key] || 0) + amt;
-          globalTotalStaked += amt;
-        }
-      });
-    }
+  _holdersInFlight = (async () => {
+    try {
+      // Strip heavy space_state (~500 KB) — get_global_space_missions_count() computes exact missions server-side (~75ms)
+      const [{ data: allData, error }, { data: activeStakes, error: stakesErr }, spaceMissionsRpcRes] = await Promise.all([
+        supabase.from('users').select('player_id, linked_wallet_address, balance_pgt, username, user_id, auth_provider, total_claims, relics, total_arcade_plays, vip_until, vip_level, is_banned'),
+        supabase.from('user_stakes').select('wallet_address, amount, pool').eq('active', true),
+        Promise.resolve(supabase.rpc('get_global_space_missions_count')).catch(() => ({ data: null }))
+      ]);
 
-    let globalTotalWealth = 0;
-    let globalFaucetClaims = 0;
-    let globalRelicsFound = 0;
-    let globalSpaceMissionsFallback = (Number(radarCount) || 0);
-    
-    const activeUsers = (allData || []).filter(u => !u.is_banned);
-    cachedHoldersData = activeUsers.map(u => {
-      const bal = parseFloat(u.balance_pgt) || 0;
-      const pidKey = (u.player_id || '').toLowerCase().trim();
-      const walletKey = (u.linked_wallet_address || '').toLowerCase().trim();
-      
-      // Calculate active staked PGT strictly from user_stakes table
-      let staked = 0;
-      if (stakesMap[pidKey] !== undefined || (walletKey && stakesMap[walletKey] !== undefined)) {
-        staked = (stakesMap[pidKey] || 0) + (walletKey && walletKey !== pidKey ? (stakesMap[walletKey] || 0) : 0);
-      }
-      
-      const total = bal + staked;
-      globalTotalWealth += total;
+      if (error) throw error;
+      if (stakesErr) console.warn("[loadHoldersLeaderboard] user_stakes query warning:", stakesErr);
 
-      // Faucet claims
-      globalFaucetClaims += (parseInt(u.total_claims) || 0);
-
-      // Quantum Relics found
-      const relics = u.relics || {};
-      if (typeof relics === 'object' && relics !== null) {
-        Object.values(relics).forEach(r => {
-          if (r && typeof r === 'object') {
-            globalRelicsFound += (parseInt(r.total) || ((parseInt(r.unminted) || 0) + (parseInt(r.onchain) || 0)));
+      // Map active stakes from user_stakes table by lowercase wallet_address / player_id
+      const stakesMap = {};
+      let globalTotalStaked = 0;
+      if (activeStakes && Array.isArray(activeStakes)) {
+        activeStakes.forEach(s => {
+          if (s.pool === 'pgt' || !s.pool) {
+            const key = (s.wallet_address || '').toLowerCase().trim();
+            const amt = parseFloat(s.amount) || 0;
+            if (key) stakesMap[key] = (stakesMap[key] || 0) + amt;
+            globalTotalStaked += amt;
           }
         });
       }
 
-      // Space missions completed (use uncapped missionsCompleted counter when available, plus raids & boss attacks)
-      const spaceState = u.space_state || {};
-      if (typeof spaceState === 'object' && spaceState !== null) {
-        const logs = spaceState.missionLogs || spaceState.miningLogs || [];
-        const logCount = Array.isArray(logs) ? logs.length : 0;
-        const expCount = Math.max(parseInt(spaceState.missionsCompleted, 10) || 0, logCount);
-        const raidsWon = parseInt(spaceState.raidsWon, 10) || 0;
-        const bossAttacks = parseInt(spaceState.bossAttacksCount, 10) || 0;
-        globalSpaceMissionsFallback += expCount + raidsWon + bossAttacks;
+      let globalTotalWealth = 0;
+      let globalFaucetClaims = 0;
+      let globalRelicsFound = 0;
+
+      const activeUsers = (allData || []).filter(u => !u.is_banned);
+      cachedHoldersData = activeUsers.map(u => {
+        const bal = parseFloat(u.balance_pgt) || 0;
+        const pidKey = (u.player_id || '').toLowerCase().trim();
+        const walletKey = (u.linked_wallet_address || '').toLowerCase().trim();
+
+        // Calculate active staked PGT strictly from user_stakes table
+        let staked = 0;
+        if (stakesMap[pidKey] !== undefined || (walletKey && stakesMap[walletKey] !== undefined)) {
+          staked = (stakesMap[pidKey] || 0) + (walletKey && walletKey !== pidKey ? (stakesMap[walletKey] || 0) : 0);
+        }
+
+        const total = bal + staked;
+        globalTotalWealth += total;
+
+        // Faucet claims
+        globalFaucetClaims += (parseInt(u.total_claims) || 0);
+
+        // Quantum Relics found
+        const relics = u.relics || {};
+        if (typeof relics === 'object' && relics !== null) {
+          Object.values(relics).forEach(r => {
+            if (r && typeof r === 'object') {
+              globalRelicsFound += (parseInt(r.total) || ((parseInt(r.unminted) || 0) + (parseInt(r.onchain) || 0)));
+            }
+          });
+        }
+
+        return { ...u, totalWealth: total, bal, staked };
+      });
+
+      const globalSpaceMissions = (!spaceMissionsRpcRes?.error && spaceMissionsRpcRes?.data?.total_missions !== undefined)
+        ? Number(spaceMissionsRpcRes.data.total_missions || 0)
+        : 0;
+
+      let userArcadePlays = 0;
+      activeUsers.forEach(u => {
+        if (u.total_arcade_plays !== undefined && u.total_arcade_plays !== null) {
+          userArcadePlays += (parseInt(u.total_arcade_plays) || 0);
+        }
+      });
+
+      let globalArcadePlays = userArcadePlays;
+      if (globalArcadePlays <= 0) {
+        const { count: arcadeCount } = await supabase.from('arcade_sessions').select('id', { count: 'exact', head: true });
+        globalArcadePlays = arcadeCount || 0;
       }
 
-      return { ...u, totalWealth: total, bal, staked };
-    });
+      // Populate Global Stat Cards UI
+      const totalPgtEl = document.getElementById('global-stat-total-pgt');
+      const legacyTotalPgtEl = document.getElementById('total-onsite-pgt-value');
+      const stakedPgtEl = document.getElementById('global-stat-staked-pgt');
+      const arcadeGamesEl = document.getElementById('global-stat-arcade-games');
+      const spaceMissionsEl = document.getElementById('global-stat-space-missions');
+      const relicsFoundEl = document.getElementById('global-stat-relics-found');
+      const faucetClaimsEl = document.getElementById('global-stat-faucet-claims');
 
-    const rpcTotalMissions = (!spaceMissionsRpcRes?.error && spaceMissionsRpcRes?.data?.total_missions !== undefined)
-      ? Number(spaceMissionsRpcRes.data.total_missions || 0)
-      : 0;
-    const globalSpaceMissions = Math.max(rpcTotalMissions, globalSpaceMissionsFallback);
-    
-    let userArcadePlays = 0;
-    let hasUserArcadePlays = false;
-    activeUsers.forEach(u => {
-      if (u.total_arcade_plays !== undefined && u.total_arcade_plays !== null) {
-        hasUserArcadePlays = true;
-        userArcadePlays += (parseInt(u.total_arcade_plays) || 0);
+      const formattedTotalPgt = globalTotalWealth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' PGT';
+      if (totalPgtEl) totalPgtEl.innerText = formattedTotalPgt;
+      if (legacyTotalPgtEl) legacyTotalPgtEl.innerText = formattedTotalPgt;
+
+      if (stakedPgtEl) stakedPgtEl.innerText = globalTotalStaked.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' PGT';
+      if (arcadeGamesEl) arcadeGamesEl.innerText = globalArcadePlays.toLocaleString();
+      if (spaceMissionsEl && spaceMissionsRpcRes?.data?.total_missions !== undefined) {
+        spaceMissionsEl.innerText = globalSpaceMissions.toLocaleString();
       }
-    });
+      if (relicsFoundEl) relicsFoundEl.innerText = globalRelicsFound.toLocaleString();
+      if (faucetClaimsEl) faucetClaimsEl.innerText = globalFaucetClaims.toLocaleString();
 
-    const globalArcadePlays = (hasUserArcadePlays && userArcadePlays > 0) ? userArcadePlays : (arcadeCount || 0);
+      // Also update Dashboard Sitewide Stats Badges
+      const sitewideArcadeEl = document.getElementById('sitewide-stat-arcade-plays');
+      const sitewideRelicsEl = document.getElementById('sitewide-stat-relics-found');
+      const sitewideFaucetEl = document.getElementById('sitewide-stat-faucet-claims');
+      if (sitewideArcadeEl) sitewideArcadeEl.innerText = globalArcadePlays.toLocaleString();
+      if (sitewideRelicsEl) sitewideRelicsEl.innerText = globalRelicsFound.toLocaleString();
+      if (sitewideFaucetEl) sitewideFaucetEl.innerText = globalFaucetClaims.toLocaleString();
 
-    // Populate Global Stat Cards UI
-    const totalPgtEl = document.getElementById('global-stat-total-pgt');
-    const legacyTotalPgtEl = document.getElementById('total-onsite-pgt-value');
-    const stakedPgtEl = document.getElementById('global-stat-staked-pgt');
-    const arcadeGamesEl = document.getElementById('global-stat-arcade-games');
-    const spaceMissionsEl = document.getElementById('global-stat-space-missions');
-    const relicsFoundEl = document.getElementById('global-stat-relics-found');
-    const faucetClaimsEl = document.getElementById('global-stat-faucet-claims');
+      lastHoldersFetchAt = Date.now();
+      try {
+        localStorage.setItem('polygame_cached_sitewide_stats', JSON.stringify({
+          arcadePlays: globalArcadePlays,
+          relicsFound: globalRelicsFound,
+          faucetClaims: globalFaucetClaims,
+          updatedAt: lastHoldersFetchAt
+        }));
+      } catch (e) {}
 
-    const formattedTotalPgt = globalTotalWealth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' PGT';
-    if (totalPgtEl) totalPgtEl.innerText = formattedTotalPgt;
-    if (legacyTotalPgtEl) legacyTotalPgtEl.innerText = formattedTotalPgt;
+      if (holdersMode === 'total') {
+        cachedHoldersData.sort((a, b) => b.totalWealth - a.totalWealth);
+      } else if (holdersMode === 'staking') {
+        cachedHoldersData.sort((a, b) => b.staked - a.staked);
+      }
+      holdersCurrentPage = 1;
 
-    if (stakedPgtEl) stakedPgtEl.innerText = globalTotalStaked.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' PGT';
-    if (arcadeGamesEl) arcadeGamesEl.innerText = globalArcadePlays.toLocaleString();
-    if (spaceMissionsEl) spaceMissionsEl.innerText = globalSpaceMissions.toLocaleString();
-    if (relicsFoundEl) relicsFoundEl.innerText = globalRelicsFound.toLocaleString();
-    if (faucetClaimsEl) faucetClaimsEl.innerText = globalFaucetClaims.toLocaleString();
+      if (holdersMode === 'total' || holdersMode === 'staking') {
+        renderHoldersPage(holdersCurrentPage);
+      }
+      // Record snapshot & render supply chart in parallel instead of chaining sequentially
+      recordSupplySnapshotIfNeeded(globalTotalWealth);
+      renderHoldersSupplyChart('day', currentHoldersTotalSupply || globalTotalWealth);
+      // Note: loadPastWeeklyArchive is only invoked when mode === 'archive'
 
-    // Also update Dashboard Sitewide Stats Badges
-    const sitewideArcadeEl = document.getElementById('sitewide-stat-arcade-plays');
-    const sitewideRelicsEl = document.getElementById('sitewide-stat-relics-found');
-    const sitewideFaucetEl = document.getElementById('sitewide-stat-faucet-claims');
-    if (sitewideArcadeEl) sitewideArcadeEl.innerText = globalArcadePlays.toLocaleString();
-    if (sitewideRelicsEl) sitewideRelicsEl.innerText = globalRelicsFound.toLocaleString();
-    if (sitewideFaucetEl) sitewideFaucetEl.innerText = globalFaucetClaims.toLocaleString();
-
-    lastHoldersFetchAt = Date.now();
-    try {
-      localStorage.setItem('polygame_cached_sitewide_stats', JSON.stringify({
-        arcadePlays: globalArcadePlays,
-        relicsFound: globalRelicsFound,
-        faucetClaims: globalFaucetClaims,
-        updatedAt: lastHoldersFetchAt
-      }));
-    } catch (e) {}
-    
-    if (holdersMode === 'total') {
-      cachedHoldersData.sort((a, b) => b.totalWealth - a.totalWealth);
-    } else if (holdersMode === 'staking') {
-      cachedHoldersData.sort((a, b) => b.staked - a.staked);
+    } catch (err) {
+      console.error("Failed to load holders leaderboard:", err);
+      scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
+    } finally {
+      _holdersInFlight = null;
     }
-    holdersCurrentPage = 1;
+  })();
 
-    if (holdersMode === 'total' || holdersMode === 'staking') {
-      renderHoldersPage(holdersCurrentPage);
-    }
-    await recordSupplySnapshotIfNeeded(globalTotalWealth);
-    renderHoldersSupplyChart('day', currentHoldersTotalSupply || globalTotalWealth);
-    // Note: loadPastWeeklyArchive is only invoked when mode === 'archive'
-
-  } catch (err) {
-    console.error("Failed to load holders leaderboard:", err);
-    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading leaderboard.</div>';
-  }
+  return _holdersInFlight;
 }
 
 async function recordSupplySnapshotIfNeeded(total) {
@@ -350,27 +351,27 @@ export async function renderHoldersSupplyChart(timeframe = 'day', currentTotal =
   else if (timeframe === 'month') sinceDate.setDate(sinceDate.getDate() - 30);
   else if (timeframe === 'year') sinceDate.setFullYear(sinceDate.getFullYear() - 1);
 
-  // Query real historical supply snapshots from Supabase database
+  // Query real historical supply snapshots from Supabase database (in parallel)
   if (supabase) {
     try {
-      // 1. Fetch the most recent snapshot immediately before sinceDate to establish accurate baseline
-      const { data: prior } = await supabase
-        .from('pgt_supply_history')
-        .select('created_at, total_supply')
-        .lt('created_at', sinceDate.toISOString())
-        .order('created_at', { ascending: false })
-        .limit(1);
+      const sinceIso = sinceDate.toISOString();
+      const [{ data: prior }, { data: history, error }] = await Promise.all([
+        supabase
+          .from('pgt_supply_history')
+          .select('created_at, total_supply')
+          .lt('created_at', sinceIso)
+          .order('created_at', { ascending: false })
+          .limit(1),
+        supabase
+          .from('pgt_supply_history')
+          .select('created_at, total_supply')
+          .gte('created_at', sinceIso)
+          .order('created_at', { ascending: true })
+      ]);
 
       if (prior && prior.length > 0 && prior[0].total_supply !== null) {
         priorBaseline = parseFloat(prior[0].total_supply);
       }
-
-      // 2. Fetch history records within the window
-      const { data: history, error } = await supabase
-        .from('pgt_supply_history')
-        .select('created_at, total_supply')
-        .gte('created_at', sinceDate.toISOString())
-        .order('created_at', { ascending: true });
 
       if (!error && history) {
         dbHistory = history;

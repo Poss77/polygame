@@ -5,6 +5,14 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Leaderboard Page Load & Payload Optimization (`v1.5.825`)**:
+  - **⚡ Eliminated ~500 KB `space_state` Full-Table Download ([`src/js/features/holders.js`](src/js/features/holders.js))**:
+    - Removed `space_state` (~496 KB JSONB across all accounts) from the `loadHoldersLeaderboard()` `users` query, since `get_global_space_missions_count()` already computes the authoritative total server-side.
+    - Removed redundant `polyspace_radar_harvests` and unconditional `arcade_sessions` `head: true` count queries, and added an in-flight Promise lock (`_holdersInFlight`).
+    - Made `pgt_supply_history` baseline & window queries run in parallel inside `renderHoldersSupplyChart()` without blocking behind `recordSupplySnapshotIfNeeded()`.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.825"` and refreshed all stylesheet/script cache busters.
+
 - **Fix Double-Executed RPC Telemetry Wrapper (`v1.5.824`)**:
   - **🐛 Eliminated Duplicate `supabase.rpc` Execution ([`src/js/core/diagnostics.js`](src/js/core/diagnostics.js))**:
     - Fixed [`hookSupabaseTelemetry()`](src/js/core/diagnostics.js) where calling `.then()` eagerly on a Supabase `PostgrestFilterBuilder` lazy thenable triggered every RPC twice (`start_arcade_session` created duplicate sessions and `end_arcade_session` threw *"Session has already been finalized and claimed"* on the second execution).
