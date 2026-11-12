@@ -45,6 +45,9 @@ export class RetroSynth {
     } else {
       this.stopBgm();
     }
+    if (typeof window !== 'undefined' && window.PolyArcadeHost && typeof window.PolyArcadeHost.syncMuteUI === 'function') {
+      window.PolyArcadeHost.syncMuteUI();
+    }
     return this.enabled;
   }
 

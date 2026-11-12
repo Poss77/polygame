@@ -184,6 +184,39 @@
         };
       }
     });
+
+    // Early Arcade Host Safety Stubs (Mute & Multiplier Breakdown)
+    if (typeof window.toggleArcadeHostMute !== 'function') {
+      window.toggleArcadeHostMute = function() {
+        if (window.PolyArcadeHost && typeof window.PolyArcadeHost.toggleMute === 'function') {
+          return window.PolyArcadeHost.toggleMute();
+        }
+        if (window.sfx && typeof window.sfx.toggle === 'function') {
+          var enabled = window.sfx.toggle();
+          ['arcade-host-mute-btn', 'btn-fullscreen-mute'].forEach(function(id) {
+            var btn = document.getElementById(id);
+            if (btn) {
+              btn.innerHTML = enabled ? '🔊' : '🔇';
+              btn.classList.toggle('is-muted', !enabled);
+            }
+          });
+          if (window.triggerToast) {
+            window.triggerToast(enabled ? '🔊 Game Audio Enabled' : '🔇 Game Audio Muted', 'info');
+          }
+          return enabled;
+        }
+      };
+    }
+    if (typeof window.showArcadeMultiplierInfo !== 'function') {
+      window.showArcadeMultiplierInfo = function() {
+        if (window.PolyArcadeHost && typeof window.PolyArcadeHost.showMultiplierBreakdownToast === 'function') {
+          return window.PolyArcadeHost.showMultiplierBreakdownToast();
+        }
+        var pill = document.getElementById('arcade-host-mult-pill');
+        var msg = (pill && pill.getAttribute('data-mult-breakdown')) || '⚡ Active Earn Multiplier Boost';
+        if (window.triggerToast) window.triggerToast(msg, 'info');
+      };
+    }
   </script>
 
   <!-- SEO Meta Tags -->
@@ -416,22 +449,22 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <!-- Direct parallel stylesheets (eliminates @import waterfall) -->
-  <link rel="stylesheet" href="src/css/variables.css?v=1.5.826">
-  <link rel="stylesheet" href="src/css/base.css?v=1.5.826">
-  <link rel="stylesheet" href="src/css/layout.css?v=1.5.826">
-  <link rel="stylesheet" href="src/css/sidebar.css?v=1.5.826">
-  <link rel="stylesheet" href="src/css/main_content.css?v=1.5.826">
-  <link rel="stylesheet" href="src/css/views.css?v=1.5.826">
-  <link rel="stylesheet" href="src/css/features/faucet.css?v=1.5.826">
-  <link rel="stylesheet" href="src/css/features/games.css?v=1.5.826">
-  <link rel="stylesheet" href="src/css/features/nft.css?v=1.5.826">
-  <link rel="stylesheet" href="src/css/features/staking.css?v=1.5.826">
-  <link rel="stylesheet" href="src/css/features/referrals.css?v=1.5.826">
-  <link rel="stylesheet" href="src/css/features/profile.css?v=1.5.826">
-  <link rel="stylesheet" href="src/css/modals.css?v=1.5.826">
-  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.826">
-  <link rel="stylesheet" href="src/css/animations.css?v=1.5.826">
-  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.826">
+  <link rel="stylesheet" href="src/css/variables.css?v=1.5.828">
+  <link rel="stylesheet" href="src/css/base.css?v=1.5.828">
+  <link rel="stylesheet" href="src/css/layout.css?v=1.5.828">
+  <link rel="stylesheet" href="src/css/sidebar.css?v=1.5.828">
+  <link rel="stylesheet" href="src/css/main_content.css?v=1.5.828">
+  <link rel="stylesheet" href="src/css/views.css?v=1.5.828">
+  <link rel="stylesheet" href="src/css/features/faucet.css?v=1.5.828">
+  <link rel="stylesheet" href="src/css/features/games.css?v=1.5.828">
+  <link rel="stylesheet" href="src/css/features/nft.css?v=1.5.828">
+  <link rel="stylesheet" href="src/css/features/staking.css?v=1.5.828">
+  <link rel="stylesheet" href="src/css/features/referrals.css?v=1.5.828">
+  <link rel="stylesheet" href="src/css/features/profile.css?v=1.5.828">
+  <link rel="stylesheet" href="src/css/modals.css?v=1.5.828">
+  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.828">
+  <link rel="stylesheet" href="src/css/animations.css?v=1.5.828">
+  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.828">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -1542,13 +1575,23 @@ twq('config','ri5fg');
         <div class="games-dashboard" id="active-game-container" style="display: none;">
 
           <!-- Left Column: Active Game Panel -->
-          <div class="game-window-container" id="game-window-container">
-            <button class="btn-fullscreen-close" onclick="exitGameFullscreen()" title="Exit Fullscreen">&times;</button>
+          <div class="game-window-container" id="game-window-container" data-active-game="astrododge" data-aspect-preset="landscape">
+            <button type="button" id="btn-fullscreen-mute" class="btn-fullscreen-mute" onclick="window.toggleArcadeHostMute()" title="Toggle Game Audio" aria-label="Toggle Game Audio">🔊</button>
+            <button type="button" class="btn-fullscreen-close" onclick="exitGameFullscreen()" title="Exit Fullscreen" aria-label="Exit Fullscreen">&times;</button>
 
-            <div class="game-header-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; width:100%; max-width:640px;">
-              <button class="btn-secondary" onclick="closeGameView()" style="padding:0.5rem 1rem;">&larr; Back to Grid</button>
-              <button class="btn-secondary" onclick="toggleGameFullscreen()" style="padding:0.5rem 1rem; color:var(--color-accent); border-color:var(--color-accent); font-weight:700;">⛶ Fullscreen</button>
-              <button class="btn-primary" onclick="closeGameView()" style="background:var(--color-danger); color:white; padding:0.5rem 1rem; border:none; cursor:pointer;">X Quit</button>
+            <div class="game-header-bar arcade-host-header-bar" id="arcade-host-header-bar">
+              <div class="arcade-host-header-left">
+                <button type="button" class="btn-secondary arcade-host-btn-back" onclick="closeGameView()" title="Back to Arcade Lobby">&larr; Lobby</button>
+                <div class="arcade-host-game-badge" id="arcade-host-game-badge">
+                  <span class="arcade-host-badge-icon">🚀</span> <span class="arcade-host-badge-title">Astro-Dodge</span>
+                </div>
+              </div>
+              <div class="arcade-host-header-right">
+                <button type="button" class="arcade-host-mult-pill" id="arcade-host-mult-pill" onclick="window.showArcadeMultiplierInfo()" title="Click to view your active multiplier breakdown">⚡ <span>1.0x Boost</span></button>
+                <button type="button" class="btn-secondary arcade-host-icon-btn" id="arcade-host-mute-btn" onclick="window.toggleArcadeHostMute()" title="Mute Game Audio" aria-label="Mute Game Audio">🔊</button>
+                <button type="button" class="btn-secondary arcade-host-btn-fs" id="arcade-host-fs-btn" onclick="toggleGameFullscreen()" title="Toggle Fullscreen Mode">⛶ Fullscreen</button>
+                <button type="button" class="btn-primary arcade-host-btn-quit" onclick="closeGameView()" title="Quit Game">&times;</button>
+              </div>
             </div>
 
             <!-- Panel A: Astro-Dodge Canvas -->
@@ -1623,6 +1666,13 @@ twq('config','ri5fg');
                 <span>Lives: <strong id="invaders-live-lives" style="color: var(--color-danger);">3</strong></span>
                 <span>Earned PGT: <strong id="invaders-live-earned" style="color: var(--color-success);">0.00</strong></span>
                 <span>Earn Multiplier: <strong id="invaders-nft-boost-label" style="color: var(--color-secondary);">1.0x</strong></span>
+              </div>
+
+              <!-- Mobile Controls Bar (PLAN-021 left_right_action Deck) -->
+              <div id="invaders-controls-hud" style="display: none; gap: 0.75rem; width: 100%; max-width: 640px; justify-content: space-between; margin-top: 0.25rem;">
+                <button type="button" id="invaders-btn-left" class="btn-secondary" style="flex: 1; padding: 0.9rem 0.5rem; font-size: 1.05rem; font-weight: 900; background: rgba(0, 240, 255, 0.12); border-color: var(--color-primary); color: var(--color-primary);">◀ LEFT</button>
+                <button type="button" id="invaders-btn-fire" class="btn-secondary" style="flex: 1.15; padding: 0.9rem 0.5rem; font-size: 1rem; font-weight: 900; background: rgba(255, 0, 127, 0.2); border-color: #ff007f; color: #ff007f;">🔥 FIRE / BEAM</button>
+                <button type="button" id="invaders-btn-right" class="btn-secondary" style="flex: 1; padding: 0.9rem 0.5rem; font-size: 1.05rem; font-weight: 900; background: rgba(0, 240, 255, 0.12); border-color: var(--color-primary); color: var(--color-primary);">RIGHT ▶</button>
               </div>
             </div>
 
@@ -5406,17 +5456,17 @@ twq('config','ri5fg');
     </div>
   </div>
 
-  <script defer src="game.js?v=1.5.826"></script>
-  <script defer src="invaders.js?v=1.5.826"></script>
-  <script defer src="drift.js?v=1.5.826"></script>
-  <script defer src="stacker.js?v=1.5.826"></script>
-  <script defer src="space.js?v=1.5.826"></script>
-  <script type="module" src="skeet.js?v=1.5.826"></script>
-  <script type="module" src="defense.js?v=1.5.826"></script>
-  <script type="module" src="runner.js?v=1.5.826"></script>
-  <script type="module" src="q2048.js?v=1.5.826"></script>
-  <script defer src="tetris.js?v=1.5.826"></script>
-  <script type="module" src="src/js/app.js?v=1.5.826"></script>
+  <script defer src="game.js?v=1.5.828"></script>
+  <script defer src="invaders.js?v=1.5.828"></script>
+  <script defer src="drift.js?v=1.5.828"></script>
+  <script defer src="stacker.js?v=1.5.828"></script>
+  <script defer src="space.js?v=1.5.828"></script>
+  <script type="module" src="skeet.js?v=1.5.828"></script>
+  <script type="module" src="defense.js?v=1.5.828"></script>
+  <script type="module" src="runner.js?v=1.5.828"></script>
+  <script type="module" src="q2048.js?v=1.5.828"></script>
+  <script defer src="tetris.js?v=1.5.828"></script>
+  <script type="module" src="src/js/app.js?v=1.5.828"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

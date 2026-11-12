@@ -33,7 +33,10 @@ export const ARCADE_GAMES_REGISTRY = {
     lbPoolColor: 'var(--color-warning)',
     lbSubtitle: 'Top players win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).',
     archiveTitle: '🚀 Astro-Dodge Tournament Pool',
-    archiveScoreField: 'astrododge_score'
+    archiveScoreField: 'astrododge_score',
+    aspectPreset: 'landscape',
+    frameMaxWidth: '640px',
+    touchPreset: 'pointer_touch'
   },
   invaders: {
     key: 'invaders',
@@ -63,7 +66,11 @@ export const ARCADE_GAMES_REGISTRY = {
     lbPoolColor: 'var(--color-warning)',
     lbSubtitle: 'Top defenders win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).',
     archiveTitle: '👾 Cyber Invaders Tournament Pool',
-    archiveScoreField: 'invaders_score'
+    archiveScoreField: 'invaders_score',
+    aspectPreset: 'landscape',
+    frameMaxWidth: '640px',
+    touchPreset: 'left_right_action',
+    controlsHudId: 'invaders-controls-hud'
   },
   drift: {
     key: 'drift',
@@ -94,7 +101,11 @@ export const ARCADE_GAMES_REGISTRY = {
     lbPoolColor: 'var(--color-warning)',
     lbSubtitle: 'Top racers win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).',
     archiveTitle: '🏎️ Cyber Drift Tournament Pool',
-    archiveScoreField: 'drift_score'
+    archiveScoreField: 'drift_score',
+    aspectPreset: 'landscape',
+    frameMaxWidth: '640px',
+    touchPreset: 'left_right_action',
+    controlsHudId: 'drift-controls-hud'
   },
   stacker: {
     key: 'stacker',
@@ -129,7 +140,11 @@ export const ARCADE_GAMES_REGISTRY = {
     lbPoolColor: 'var(--color-warning)',
     lbSubtitle: 'Top architects win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).',
     archiveTitle: '👑 Cyber Stacker Tournament Pool',
-    archiveScoreField: 'stacker_score'
+    archiveScoreField: 'stacker_score',
+    aspectPreset: 'classic',
+    frameMaxWidth: '640px',
+    touchPreset: 'pointer_touch',
+    controlsHudId: 'stacker-controls-hud'
   },
   skeet: {
     key: 'skeet',
@@ -160,7 +175,11 @@ export const ARCADE_GAMES_REGISTRY = {
     lbPoolColor: 'var(--color-accent)',
     lbSubtitle: 'Top sharpshooters win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).',
     archiveTitle: '🎯 Cyber Skeet Tournament Pool',
-    archiveScoreField: 'skeet_score'
+    archiveScoreField: 'skeet_score',
+    aspectPreset: 'landscape',
+    frameMaxWidth: '800px',
+    touchPreset: 'pointer_touch',
+    controlsHudId: 'skeet-touchpad'
   },
   defense: {
     key: 'defense',
@@ -191,7 +210,11 @@ export const ARCADE_GAMES_REGISTRY = {
     lbPoolColor: 'var(--color-primary)',
     lbSubtitle: 'Top tactical commanders win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).',
     archiveTitle: '🛡️ Cyber Defense Tournament Pool',
-    archiveScoreField: 'defense_score'
+    archiveScoreField: 'defense_score',
+    aspectPreset: 'landscape',
+    frameMaxWidth: '800px',
+    touchPreset: 'pointer_touch',
+    controlsHudId: 'defense-turret-bar'
   },
   runner: {
     key: 'runner',
@@ -222,7 +245,11 @@ export const ARCADE_GAMES_REGISTRY = {
     lbPoolColor: 'var(--color-primary)',
     lbSubtitle: 'Top parkour runners win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).',
     archiveTitle: '🏃 Cyber Runner Tournament Pool',
-    archiveScoreField: 'runner_score'
+    archiveScoreField: 'runner_score',
+    aspectPreset: 'landscape',
+    frameMaxWidth: '640px',
+    touchPreset: 'swipe',
+    controlsHudId: 'runner-controls-hud'
   },
   q2048: {
     key: 'q2048',
@@ -253,7 +280,11 @@ export const ARCADE_GAMES_REGISTRY = {
     lbPoolColor: 'var(--color-accent)',
     lbSubtitle: 'Top quantum puzzle masters win bonus PGT weekly! Pool resets every Sunday (reset can be delayed by a few hours).',
     archiveTitle: '🧩 Cyber 2048 Tournament Pool',
-    archiveScoreField: 'q2048_score'
+    archiveScoreField: 'q2048_score',
+    aspectPreset: 'portrait',
+    frameMaxWidth: '500px',
+    touchPreset: 'swipe',
+    controlsHudId: 'q2048-controls-hud'
   },
   tetris: {
     key: 'tetris',
@@ -285,7 +316,11 @@ export const ARCADE_GAMES_REGISTRY = {
     lbPoolColor: '#d500f9',
     lbSubtitle: 'Top falling-block matrix architects win weekly tournament prizes! Pool resets every Sunday (reset can be delayed by a few hours).',
     archiveTitle: '🧱 Cyber Tetris Tournament Pool',
-    archiveScoreField: 'tetris_score'
+    archiveScoreField: 'tetris_score',
+    aspectPreset: 'portrait',
+    frameMaxWidth: '500px',
+    touchPreset: 'dpad_action',
+    controlsHudId: 'tetris-controls-hud'
   }
 };
 

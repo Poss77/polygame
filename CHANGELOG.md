@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Unified Arcade Host, Top HUD Bar & Mobile Touch Ergonomics — PLAN-021 Lite (`v1.5.828`)**:
+  - **🕹️ Unified Arcade Host & SDK ([`src/js/core/arcade-host.js`](src/js/core/arcade-host.js), [`src/js/core/games-registry.js`](src/js/core/games-registry.js), [`src/js/features/games.js`](src/js/features/games.js), [`src/js/core/audio.js`](src/js/core/audio.js))**:
+    - Created `PolyArcadeHost` and `PolyGameSDK` (`getPointer(e, canvas)`, `getActiveMultiplier(gameKey)`, `bindTouchControls(container, preset, handlers, options)`).
+    - Enriched `ARCADE_GAMES_REGISTRY` with `aspectPreset` (`landscape`, `classic`, `portrait`), `frameMaxWidth` (`640px`, `800px`, `500px`), `touchPreset`, and `controlsHudId`.
+  - **⚡ Unified Arcade Top HUD Bar & Fullscreen Audio Mute ([`index.html`](index.html), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Upgraded `.game-header-bar` (`#arcade-host-header-bar`) with dynamic game icon/title badge (`#arcade-host-game-badge`), clickable Active Multiplier Pill (`#arcade-host-mult-pill` showing live NFT × VIP × Relic × Ambassador × Starship boost breakdown), inline Audio Mute toggle (`#arcade-host-mute-btn`), and Fullscreen toggle (`#arcade-host-fs-btn`).
+    - Added a floating Fullscreen Audio Mute button (`#btn-fullscreen-mute`) alongside the Fullscreen Close (`×`) button so mobile and fullscreen players can mute/unmute audio without exiting fullscreen.
+  - **📱 Cyber Invaders Mobile Touch Deck ([`index.html`](index.html), [`invaders.js`](invaders.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Added the `left_right_action` mobile touch control bar (`#invaders-controls-hud`: `◀ LEFT`, `🔥 FIRE / BEAM`, `RIGHT ▶`) with `e.isTrusted === true` anti-bot verification and floating bottom fullscreen positioning.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.828"` and refreshed all stylesheet/script cache busters.
+
 - **Anti-Sybil IP Limits & Cloudflare Turnstile Faucet Protection (`v1.5.826`)**:
   - **🛡️ Replaced Home-Made Faucet Captcha with Server-Verified Cloudflare Turnstile ([`index.html`](index.html), [`src/js/features/faucet.js`](src/js/features/faucet.js), [`src/js/core/ui.js`](src/js/core/ui.js), [`supabase/functions/verify-turnstile/index.ts`](supabase/functions/verify-turnstile/index.ts), [`supabase/rpcs/04_faucets_vip_yields.sql`](supabase/rpcs/04_faucets_vip_yields.sql))**:
     - Non-VIP faucet claims now render Cloudflare Turnstile inside `#modal-captcha`, verify cryptographically via `verify-turnstile` (`v2`, logging caller IP and `last_faucet_turnstile_at`), and are strictly enforced server-side inside `claim_faucet()`. Active VIP members preserve instant Turnstile bypass.

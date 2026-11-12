@@ -1,4 +1,5 @@
 import { initArcadeLeaderboardCards } from './core/games-registry.js';
+import { initArcadeHost } from './core/arcade-host.js';
 import { initDiagnostics } from './core/diagnostics.js';
 import { renderDailyQuestsUI, trackQuestProgress, syncDailyQuests } from './features/quests.js';
 import { sfx } from './core/audio.js';
@@ -45,6 +46,7 @@ window.launchPolySpace = launchPolySpace;
 window.supabaseClient = supabase;
 initDiagnostics();
 initArcadeLeaderboardCards();
+initArcadeHost();
 
 // --- Master View Switcher (Router) ---
 

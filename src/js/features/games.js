@@ -1,4 +1,5 @@
 import { ARCADE_GAMES_REGISTRY, ARCADE_GAMES_LIST, initArcadeLeaderboardCards } from '../core/games-registry.js';
+import { PolyArcadeHost, PolyGameSDK } from '../core/arcade-host.js';
 export const ARCADE_GAMES = ARCADE_GAMES_LIST;
 // ============================================================
 // POLYGAME: ARCADE GAMES VIEW & TAB NAVIGATION ROUTER
@@ -103,6 +104,8 @@ export function closeGameView() {
         if (el) el.style.display = 'none';
       }
     }
+    const controlsInvaders = document.getElementById('invaders-controls-hud');
+    if (controlsInvaders) controlsInvaders.style.display = 'none';
     const controlsDrift = document.getElementById('drift-controls-hud');
     if (controlsDrift) controlsDrift.style.display = 'none';
     const turretBarDefense = document.getElementById('defense-turret-bar');
@@ -606,6 +609,11 @@ export function switchGameModeView(mode) {
       panelSudoku.style.display = 'flex';
     }
     if (typeof window.initSudokuGame === 'function') window.initSudokuGame();
+  }
+
+  // Synchronize Unified Arcade Top HUD Bar (Game Badge, Active Multiplier Pill, Audio Mute, Aspect Frame)
+  if (PolyArcadeHost && typeof PolyArcadeHost.syncHeaderBar === 'function') {
+    PolyArcadeHost.syncHeaderBar(mode);
   }
 
   // Automatically trigger full screen mode on mobile screens (≤768px width or landscape mobile ≤500px height)
