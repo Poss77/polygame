@@ -1989,6 +1989,56 @@ class PolySpaceEngine {
     }
   }
 
+  async executePolySpaceClaimRpc(canonicalId, expeditionId = 'ALL') {
+    const sbClient = this.getSupabaseClient();
+    let res = await this.executeRpc('claim_polyspace_expedition', {
+      p_player_id: canonicalId,
+      p_expedition_id: expeditionId || 'ALL'
+    });
+
+    if (res?.data && !res.data.success && res.data.turnstile_required) {
+      if (window.triggerToast && res.data.error) {
+        window.triggerToast(`🛡️ ${res.data.error}`, 'warning');
+      }
+      if (window.arcadeSecurity && typeof window.arcadeSecurity.promptTurnstileChallenge === 'function') {
+        const challengeRes = await window.arcadeSecurity.promptTurnstileChallenge('PolySpace Fleet');
+        const isVerified = (typeof challengeRes === 'object' && challengeRes !== null)
+          ? challengeRes.verified
+          : Boolean(challengeRes);
+        const token = (typeof challengeRes === 'object' && challengeRes !== null && challengeRes.token)
+          ? challengeRes.token
+          : (window.arcadeSecurity.getLastVerifiedToken ? window.arcadeSecurity.getLastVerifiedToken() : null);
+
+        if (!isVerified || !token || !sbClient) {
+          return { data: { success: false, error: 'Human verification cancelled or incomplete.' }, error: null };
+        }
+
+        const { data: vData, error: vErr } = await sbClient.functions.invoke('verify-turnstile', {
+          body: {
+            playerId: canonicalId,
+            turnstileToken: token,
+            gameName: 'PolySpace'
+          }
+        });
+
+        if (vErr || (vData && !vData.success)) {
+          return { data: { success: false, error: vData?.error || vErr?.message || 'Human verification failed.' }, error: vErr };
+        }
+
+        if (typeof window.arcadeSecurity.clearLastVerifiedToken === 'function') {
+          window.arcadeSecurity.clearLastVerifiedToken();
+        }
+
+        res = await this.executeRpc('claim_polyspace_expedition', {
+          p_player_id: canonicalId,
+          p_expedition_id: expeditionId || 'ALL'
+        });
+      }
+    }
+
+    return res;
+  }
+
   async claimExpeditionLoot(expId, isBatch = false) {
     const sbClient = this.getSupabaseClient();
     const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
@@ -1997,10 +2047,7 @@ class PolySpaceEngine {
     // 1. ATOMIC SERVER-SIDE CLAIM (Anti-Cheat & Multi-Window Mutex)
     if (sbClient && isPlayerConnected && canonicalId) {
       try {
-        const { data, error } = await this.executeRpc('claim_polyspace_expedition', {
-          p_player_id: canonicalId,
-          p_expedition_id: expId || 'ALL'
-        });
+        const { data, error } = await this.executePolySpaceClaimRpc(canonicalId, expId || 'ALL');
 
         if (!error && data && data.success) {
           const { earned_iron, earned_tit, earned_quant, earned_pgt_ore, earned_pgt, is_critical, discovered_relic, exp_name, new_balance, new_space_state } = data;
@@ -2272,10 +2319,7 @@ class PolySpaceEngine {
     // 1. Atomic Server-Side Batch Claim
     if (sbClient && isPlayerConnected && canonicalId) {
       try {
-        const { data, error } = await this.executeRpc('claim_polyspace_expedition', {
-          p_player_id: canonicalId,
-          p_expedition_id: 'ALL'
-        });
+        const { data, error } = await this.executePolySpaceClaimRpc(canonicalId, 'ALL');
 
         if (!error && data && data.success) {
           const { claimed_count, earned_iron, earned_tit, earned_quant, earned_pgt_ore, earned_pgt, new_balance, new_space_state, discovered_relic } = data;

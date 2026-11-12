@@ -240,11 +240,15 @@ export function promptTurnstileChallenge(gameName = 'Arcade') {
 
   const frequency = appState?.state?.turnstileArcadeFrequency || 3;
   if (freqHintEl) {
-    freqHintEl.innerText = `Periodic security check every ${frequency} games`;
+    freqHintEl.innerText = gameName === 'PolySpace Fleet'
+      ? 'Fair-Play anti-macro verification check'
+      : `Periodic security check every ${frequency} games`;
   }
 
   if (statusEl) {
-    statusEl.innerText = 'Please complete the verification check below to start your run.';
+    statusEl.innerText = gameName === 'PolySpace Fleet'
+      ? 'Please complete the verification check below to claim your fleet rewards.'
+      : 'Please complete the verification check below to start your run.';
     statusEl.style.color = 'var(--text-muted)';
     statusEl.style.display = 'block';
   }

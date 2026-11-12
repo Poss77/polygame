@@ -5,6 +5,13 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace Fleet 5-Mission Macro Cadence Guard & Turnstile Shield (`v1.5.830`)**:
+  - **Deterministic Flight Durations (`supabase/rpcs/06_polyspace_fleet.sql`)**: Kept deterministic `start_polyspace_expedition` durations so fixed-period auto-clickers remain phase-locked instead of skipping cycles and hiding their constant click period.
+  - **5-Cycle Robotic Timing Cadence Detector (`claim_polyspace_expedition`)**: Tracks rolling claim intervals (`recentClaimIntervals`) and post-completion claim lags (`recentClaimLags`) inside `space_state`. Only after **5 consecutive** mission cycles showing fixed-interval periodicity (`120s–2400s` with `MAX - MIN <= 4.5s`) or instant-finish automation (`<= 1.2s` after `endTime`), increments `bot_warning` (`+1`), logs to `bot_security_logs`, delivers a PolySpace timing advisory inbox message via `record_bot_warning`, and gates the claim behind **Cloudflare Turnstile** (escalating ignored bot retry loops at `>= 10` consecutive or `>= 15` daily unverified attempts).
+  - **Client Telemetry Sealing (`supabase/rpcs/06_polyspace_fleet.sql`, `supabase/rpcs/12_anticheat_triggers.sql`)**: Protected `lastClaimTimestampMs`, `recentClaimIntervals`, and `recentClaimLags` inside `save_polyspace_state` and `prevent_direct_balance_mutation()` (`SECURITY INVOKER`).
+  - **Frontend Turnstile Challenge Flow (`space.js`, `src/js/features/arcade-security.js`)**: Routed expedition claims through `executePolySpaceClaimRpc` to catch `turnstile_required`, display the `'PolySpace Fleet'` verification modal via `promptTurnstileChallenge`, and auto-retry once verified.
+  - **Migration**: Added [`supabase/polyspace_randomized_cooldown_and_cadence_guard.sql`](supabase/polyspace_randomized_cooldown_and_cadence_guard.sql).
+
 - **Remove Cyber Invaders On-Screen Touch Button Deck (`v1.5.829`)**:
   - **📱 Direct Swipe Restoration ([`index.html`](index.html), [`invaders.js`](invaders.js), [`src/js/core/games-registry.js`](src/js/core/games-registry.js), [`src/js/features/games.js`](src/js/features/games.js), [`src/css/features/games.css`](src/css/features/games.css))**:
     - Removed `#invaders-controls-hud` (`◀ LEFT`, `🔥 FIRE / BEAM`, `RIGHT ▶`) and its button listeners/fullscreen CSS rules so Cyber Invaders uses unobstructed direct canvas swipe-and-auto-fire controls on mobile, and updated `ARCADE_GAMES_REGISTRY.invaders.touchPreset` back to `'pointer_touch'`.
