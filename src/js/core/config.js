@@ -10,7 +10,7 @@ export const WALLETCONNECT_PROJECT_ID = "00950c9a536e980dd84dbc015411baa7";
 export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // Master Admin Wallet
 export const VAULT_RECEIVER_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // 50% Treasury Pool (Master Admin)
 export const BURN_RECEIVER_ADDRESS = "0x000000000000000000000000000000000000dEaD"; // 50% Deflationary Burn
-export const APP_VERSION = "1.5.828"; // Direct app.js import & early fallback stubs for Unified Arcade Host
+export const APP_VERSION = "1.5.829"; // Remove Cyber Invaders mobile touch button deck in favor of direct swipe controls
 
 // Development / Debug Flag
 export const POLY_DEBUG = (typeof window !== 'undefined' && (Boolean(window.POLY_DEBUG) || window.location?.search?.includes('debug=true')));

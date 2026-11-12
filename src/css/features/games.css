@@ -792,9 +792,7 @@ body.game-fullscreen-open .games-dashboard {
   display: none !important;
 }
 
-/* Floating Steer / Action Controls in Fullscreen Mode for Cyber Invaders & Cyber Drift */
-.game-window-container.fullscreen-active #panel-game-invaders:not([style*="display: none"]):not([style*="display:none"]) #invaders-controls-hud,
-.mobile-fullscreen-active #panel-game-invaders:not([style*="display: none"]):not([style*="display:none"]) #invaders-controls-hud,
+/* Floating Steer / Action Controls in Fullscreen Mode for Cyber Drift */
 .game-window-container.fullscreen-active #panel-game-drift:not([style*="display: none"]):not([style*="display:none"]) #drift-controls-hud,
 .mobile-fullscreen-active #panel-game-drift:not([style*="display: none"]):not([style*="display:none"]) #drift-controls-hud {
   position: fixed !important;
@@ -808,7 +806,6 @@ body.game-fullscreen-open .games-dashboard {
   box-sizing: border-box !important;
 }
 
-#invaders-controls-hud button,
 #drift-controls-hud button {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;

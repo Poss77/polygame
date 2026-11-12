@@ -133,77 +133,9 @@ class CyberInvaders {
 
     containerEl.addEventListener('touchend', (e) => {
       if (!this.isPlaying) return;
-      if (e && e.target && e.target.closest && e.target.closest('#invaders-controls-hud')) return;
       this.keys[" "] = false;
     });
 
-    // Dedicated Mobile Touch Control Bar (#invaders-controls-hud)
-    const btnLeft = document.getElementById('invaders-btn-left');
-    const btnRight = document.getElementById('invaders-btn-right');
-    const btnFire = document.getElementById('invaders-btn-fire');
-
-    if (btnLeft) {
-      btnLeft.addEventListener('touchstart', (e) => {
-        if (!e || e.isTrusted !== true) {
-          if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Invaders', 'untrusted_touch_input');
-          return;
-        }
-        e.preventDefault();
-        this.keys.ArrowLeft = true;
-        this.keys[" "] = true;
-      }, { passive: false });
-      btnLeft.addEventListener('touchend', (e) => { e.preventDefault(); this.keys.ArrowLeft = false; });
-      btnLeft.addEventListener('touchcancel', (e) => { e.preventDefault(); this.keys.ArrowLeft = false; });
-      btnLeft.addEventListener('mousedown', (e) => {
-        if (!e || e.isTrusted !== true) return;
-        this.keys.ArrowLeft = true;
-        this.keys[" "] = true;
-      });
-      btnLeft.addEventListener('mouseup', () => { this.keys.ArrowLeft = false; });
-      btnLeft.addEventListener('mouseleave', () => { this.keys.ArrowLeft = false; });
-    }
-
-    if (btnRight) {
-      btnRight.addEventListener('touchstart', (e) => {
-        if (!e || e.isTrusted !== true) {
-          if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Invaders', 'untrusted_touch_input');
-          return;
-        }
-        e.preventDefault();
-        this.keys.ArrowRight = true;
-        this.keys[" "] = true;
-      }, { passive: false });
-      btnRight.addEventListener('touchend', (e) => { e.preventDefault(); this.keys.ArrowRight = false; });
-      btnRight.addEventListener('touchcancel', (e) => { e.preventDefault(); this.keys.ArrowRight = false; });
-      btnRight.addEventListener('mousedown', (e) => {
-        if (!e || e.isTrusted !== true) return;
-        this.keys.ArrowRight = true;
-        this.keys[" "] = true;
-      });
-      btnRight.addEventListener('mouseup', () => { this.keys.ArrowRight = false; });
-      btnRight.addEventListener('mouseleave', () => { this.keys.ArrowRight = false; });
-    }
-
-    if (btnFire) {
-      btnFire.addEventListener('touchstart', (e) => {
-        if (!e || e.isTrusted !== true) {
-          if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Invaders', 'untrusted_touch_input');
-          return;
-        }
-        e.preventDefault();
-        if (this.overdrive >= 100) this.triggerOverdrive();
-        this.keys[" "] = true;
-      }, { passive: false });
-      btnFire.addEventListener('touchend', (e) => { e.preventDefault(); this.keys[" "] = false; });
-      btnFire.addEventListener('touchcancel', (e) => { e.preventDefault(); this.keys[" "] = false; });
-      btnFire.addEventListener('mousedown', (e) => {
-        if (!e || e.isTrusted !== true) return;
-        if (this.overdrive >= 100) this.triggerOverdrive();
-        this.keys[" "] = true;
-      });
-      btnFire.addEventListener('mouseup', () => { this.keys[" "] = false; });
-      btnFire.addEventListener('mouseleave', () => { this.keys[" "] = false; });
-    }
   }
 
   startGame() {
@@ -254,10 +186,8 @@ class CyberInvaders {
     // Build 4 Quantum Energy Bunkers
     this.initBunkers();
 
-    // Hide menu overlay & show mobile controls HUD
+    // Hide menu overlay
     this.overlay.style.display = 'none';
-    const controlsHud = document.getElementById('invaders-controls-hud');
-    if (controlsHud) controlsHud.style.display = 'flex';
 
     // Player Ship config
     this.player = {
@@ -1344,8 +1274,6 @@ class CyberInvaders {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
     }
-    const controlsHud = document.getElementById('invaders-controls-hud');
-    if (controlsHud) controlsHud.style.display = 'none';
     this.bullets = [];
     this.missiles = [];
     this.enemyBullets = [];
@@ -1379,8 +1307,6 @@ class CyberInvaders {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
     }
-    const controlsHud = document.getElementById('invaders-controls-hud');
-    if (controlsHud) controlsHud.style.display = 'none';
     if (window.sfx && window.sfx.playExplosion) window.sfx.playExplosion();
 
     const multis = window.appState ? window.appState.getMultipliers() : {nftGameMultiplier: 0};

@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Remove Cyber Invaders On-Screen Touch Button Deck (`v1.5.829`)**:
+  - **📱 Direct Swipe Restoration ([`index.html`](index.html), [`invaders.js`](invaders.js), [`src/js/core/games-registry.js`](src/js/core/games-registry.js), [`src/js/features/games.js`](src/js/features/games.js), [`src/css/features/games.css`](src/css/features/games.css))**:
+    - Removed `#invaders-controls-hud` (`◀ LEFT`, `🔥 FIRE / BEAM`, `RIGHT ▶`) and its button listeners/fullscreen CSS rules so Cyber Invaders uses unobstructed direct canvas swipe-and-auto-fire controls on mobile, and updated `ARCADE_GAMES_REGISTRY.invaders.touchPreset` back to `'pointer_touch'`.
+  - **🔄 Version Increment ([`src/js/core/config.js`](src/js/core/config.js), [`index.html`](index.html))**:
+    - Incremented `APP_VERSION = "1.5.829"` and refreshed all stylesheet/script cache busters.
+
 - **Unified Arcade Host, Top HUD Bar & Mobile Touch Ergonomics — PLAN-021 Lite (`v1.5.828`)**:
   - **🕹️ Unified Arcade Host & SDK ([`src/js/core/arcade-host.js`](src/js/core/arcade-host.js), [`src/js/core/games-registry.js`](src/js/core/games-registry.js), [`src/js/features/games.js`](src/js/features/games.js), [`src/js/core/audio.js`](src/js/core/audio.js))**:
     - Created `PolyArcadeHost` and `PolyGameSDK` (`getPointer(e, canvas)`, `getActiveMultiplier(gameKey)`, `bindTouchControls(container, preset, handlers, options)`).

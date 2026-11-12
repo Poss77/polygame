@@ -69,8 +69,7 @@ export const ARCADE_GAMES_REGISTRY = {
     archiveScoreField: 'invaders_score',
     aspectPreset: 'landscape',
     frameMaxWidth: '640px',
-    touchPreset: 'left_right_action',
-    controlsHudId: 'invaders-controls-hud'
+    touchPreset: 'pointer_touch'
   },
   drift: {
     key: 'drift',

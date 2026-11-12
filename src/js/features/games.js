@@ -104,8 +104,6 @@ export function closeGameView() {
         if (el) el.style.display = 'none';
       }
     }
-    const controlsInvaders = document.getElementById('invaders-controls-hud');
-    if (controlsInvaders) controlsInvaders.style.display = 'none';
     const controlsDrift = document.getElementById('drift-controls-hud');
     if (controlsDrift) controlsDrift.style.display = 'none';
     const turretBarDefense = document.getElementById('defense-turret-bar');
