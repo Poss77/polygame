@@ -214,7 +214,8 @@ class BubbleTroubleGame {
     const vipLevel = (window.appState && typeof window.appState.getVipLevel === 'function') ? window.appState.getVipLevel() : (isVip ? 2 : 0);
     const vipMult = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
     const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
-    const totalBoost = nftMult * vipMult * ambMult;
+    const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
+    const totalBoost = nftMult * vipMult * ambMult * relicMult;
     const boostLabel = document.getElementById('bubble-nft-boost-label');
     if (boostLabel) boostLabel.innerText = `${parseFloat(totalBoost || 1).toFixed(1)}x`;
 
