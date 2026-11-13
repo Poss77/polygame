@@ -712,7 +712,11 @@ class BubbleTroubleGame {
       window.appState.update({ bubbleHighScore: cleanScore });
     }
     if (window.submitHighScoreToDB && cleanScore > 0) {
-      window.submitHighScoreToDB('bubble', cleanScore);
+      try {
+        await window.submitHighScoreToDB('bubble', cleanScore);
+      } catch (e) {
+        console.warn('Bubble high score submit error:', e);
+      }
     }
 
     const isPlayerConnected = window.appState && typeof window.appState.isPlayerConnected === 'function' ? window.appState.isPlayerConnected() : false;
@@ -734,6 +738,9 @@ class BubbleTroubleGame {
 
     const liveEarnedEl = document.getElementById('bubble-live-earned');
     if (liveEarnedEl) liveEarnedEl.innerText = verifiedPgt.toFixed(2);
+    if (typeof window.loadBubbleLeaderboard === 'function') {
+      window.loadBubbleLeaderboard(true);
+    }
     if (typeof window.sendDiscordEarnAnnouncement === 'function' && verifiedPgt > 0 && isPlayerConnected) {
       window.sendDiscordEarnAnnouncement('Cyber Bubble', cleanScore, verifiedPgt);
     }
