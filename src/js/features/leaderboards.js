@@ -21,8 +21,8 @@ export function checkIsUserRow(row) {
   const rowPrimary = (row.player_id || '').toLowerCase();
   const rowLinked = (row.linked_wallet_address || '').toLowerCase();
 
-  if (authId && rowAuthId && authId === rowAuthId) return true;
-  if (playerId && rowPrimary && playerId === rowPrimary) return true;
+  if (authId && rowAuthId) return authId === rowAuthId;
+  if (playerId && rowPrimary) return playerId === rowPrimary;
   if (playerId && rowLinked && playerId === rowLinked) return true;
   if (primary && rowPrimary && primary === rowPrimary) return true;
   if (linked && rowLinked && linked === rowLinked) return true;
