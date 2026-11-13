@@ -466,11 +466,14 @@ export class PolyState {
       this._lastSavedPayloadSignature = payloadSignature;
       this._lastSavedTimestamp = now;
 
+      const updatePayload = { ...dbPayload };
+      delete updatePayload.player_id;
+
       let saveRes;
       if (canonicalId) {
-        saveRes = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId).select('player_id');
+        saveRes = await supabase.from('users').update(updatePayload).eq('player_id', canonicalId).select('player_id');
       } else {
-        saveRes = await supabase.from('users').update(dbPayload).eq('user_id', activeAuthUid).select('player_id');
+        saveRes = await supabase.from('users').update(updatePayload).eq('user_id', activeAuthUid).select('player_id');
       }
       if (!saveRes.error && (!saveRes.data || saveRes.data.length === 0)) {
         // Guard: Verify if linked_wallet_address or canonicalId is already registered to an existing account before blindly inserting
@@ -485,8 +488,7 @@ export class PolyState {
           if (existingUser && existingUser.length > 0) {
             const realPid = existingUser[0].player_id;
             this.state.playerId = realPid;
-            dbPayload.player_id = realPid;
-            saveRes = await supabase.from('users').update(dbPayload).eq('player_id', realPid).select('player_id');
+            saveRes = await supabase.from('users').update(updatePayload).eq('player_id', realPid).select('player_id');
             return;
           }
         }
@@ -524,11 +526,13 @@ export class PolyState {
           delete dbPayload.wallet_address;
         }
         
+        const retryPayload = { ...dbPayload };
+        delete retryPayload.player_id;
         let res2;
         if (canonicalId) {
-          res2 = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId);
+          res2 = await supabase.from('users').update(retryPayload).eq('player_id', canonicalId);
         } else {
-          res2 = await supabase.from('users').update(dbPayload).eq('user_id', activeAuthUid);
+          res2 = await supabase.from('users').update(retryPayload).eq('user_id', activeAuthUid);
         }
         error = res2 ? res2.error : null;
         
@@ -536,14 +540,14 @@ export class PolyState {
         if (error && error.code === 'PGRST204') {
           const secondMatch = error.message ? error.message.match(/Could not find the '([^']+)' column/i) : null;
           if (secondMatch && secondMatch[1]) {
-            delete dbPayload[secondMatch[1]];
-            delete dbPayload.skeet_highscore;
-            delete dbPayload.alltime_skeet_highscore;
+            delete retryPayload[secondMatch[1]];
+            delete retryPayload.skeet_highscore;
+            delete retryPayload.alltime_skeet_highscore;
             if (canonicalId) {
-              const res3 = await supabase.from('users').update(dbPayload).eq('player_id', canonicalId);
+              const res3 = await supabase.from('users').update(retryPayload).eq('player_id', canonicalId);
               error = res3 ? res3.error : null;
             } else {
-              const res3 = await supabase.from('users').update(dbPayload).eq('user_id', activeAuthUid);
+              const res3 = await supabase.from('users').update(retryPayload).eq('user_id', activeAuthUid);
               error = res3 ? res3.error : null;
             }
           }
