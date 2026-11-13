@@ -52,7 +52,7 @@ export function formatLeaderboardName(row, isUser = false, includeStarship = fal
     displayName = appState.state.username;
   }
 
-  const clickAddr = realAddr || row.player_id || '';
+  const clickAddr = row.player_id || realAddr || '';
   const safeDisplayName = typeof escapeHtml === 'function' ? escapeHtml(displayName) : (displayName || '');
   const safeShortAddr = typeof escapeHtml === 'function' ? escapeHtml(shortAddr) : (shortAddr || '');
   const safeClickAddr = encodeURIComponent(clickAddr);

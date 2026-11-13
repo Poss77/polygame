@@ -468,6 +468,7 @@ export class PolyState {
 
       const updatePayload = { ...dbPayload };
       delete updatePayload.player_id;
+      delete updatePayload.linked_wallet_address;
 
       let saveRes;
       if (canonicalId) {
@@ -528,6 +529,7 @@ export class PolyState {
         
         const retryPayload = { ...dbPayload };
         delete retryPayload.player_id;
+        delete retryPayload.linked_wallet_address;
         let res2;
         if (canonicalId) {
           res2 = await supabase.from('users').update(retryPayload).eq('player_id', canonicalId);
