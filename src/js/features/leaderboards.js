@@ -269,6 +269,14 @@ const GAME_LEADERBOARDS_CONFIG = {
     stateScoreKey: 'tetrisHighScore',
     defaultPool: 50000,
     settingKey: 'tetris'
+  },
+  bubble: {
+    containerId: 'leaderboard-bubble-container',
+    poolElId: 'lb-pool-bubble',
+    scoreField: 'bubble_highscore',
+    stateScoreKey: 'bubbleHighScore',
+    defaultPool: 50000,
+    settingKey: 'bubble'
   }
 };
 
@@ -281,7 +289,8 @@ const gameLeaderboardsState = {
   defense: { data: [], page: 1, pool: 25000 },
   runner: { data: [], page: 1, pool: 50000 },
   q2048: { data: [], page: 1, pool: 50000 },
-  tetris: { data: [], page: 1, pool: 50000 }
+  tetris: { data: [], page: 1, pool: 50000 },
+  bubble: { data: [], page: 1, pool: 50000 }
 };
 window.gameLeaderboardsState = gameLeaderboardsState;
 
@@ -638,6 +647,11 @@ export async function loadTetrisLeaderboard(forceRefresh = false) {
   return fetchAndLoadGameLeaderboard('tetris', forceRefresh);
 }
 window.loadTetrisLeaderboard = loadTetrisLeaderboard;
+
+export async function loadBubbleLeaderboard(forceRefresh = false) {
+  return fetchAndLoadGameLeaderboard('bubble', forceRefresh);
+}
+window.loadBubbleLeaderboard = loadBubbleLeaderboard;
 window.loadGameLeaderboard = fetchAndLoadGameLeaderboard;
 
 let cachedRefLeaderboardData = null;
@@ -846,6 +860,7 @@ if (typeof window !== 'undefined') {
   window.loadRunnerLeaderboard = loadRunnerLeaderboard;
   window.loadQ2048Leaderboard = loadQ2048Leaderboard;
   window.loadTetrisLeaderboard = loadTetrisLeaderboard;
+  window.loadBubbleLeaderboard = loadBubbleLeaderboard;
   window.loadGameLeaderboard = fetchAndLoadGameLeaderboard;
   window.loadReferralLeaderboard = loadReferralLeaderboard;
   window.loadWeeklyWinsLeaderboard = loadWeeklyWinsLeaderboard;

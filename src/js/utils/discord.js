@@ -268,7 +268,10 @@ export function sendDiscordEarnAnnouncement(gameName, score, earnedPgt, sessionI
     'cyber runner': 'runner',
     'runner': 'runner',
     'cyber tetris': 'tetris',
-    'tetris': 'tetris'
+    'tetris': 'tetris',
+    'cyber bubble': 'bubble',
+    'bubble trouble': 'bubble',
+    'bubble': 'bubble'
   };
   const normKey = gameKeyMap[(gameName || '').toLowerCase().trim()];
   if (normKey && window.appState?.state?.gamePayoutSettings?.[normKey]?.test_mode === true) {

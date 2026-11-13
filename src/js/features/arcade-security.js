@@ -177,6 +177,7 @@ export function pauseAllArcadeGames() {
   if (window.cyberRunner && typeof window.cyberRunner === 'object') window.cyberRunner.isPaused = true;
   if (window.cyber2048 && typeof window.cyber2048 === 'object') window.cyber2048.isPaused = true;
   if (window.cyberTetrisGame && typeof window.cyberTetrisGame === 'object') window.cyberTetrisGame.isPaused = true;
+  if (window.bubbleGame && typeof window.bubbleGame === 'object') window.bubbleGame.isPaused = true;
 }
 
 /**
@@ -193,6 +194,7 @@ export function resumeAllArcadeGames() {
   if (window.cyberRunner && typeof window.cyberRunner === 'object') window.cyberRunner.isPaused = false;
   if (window.cyber2048 && typeof window.cyber2048 === 'object') window.cyber2048.isPaused = false;
   if (window.cyberTetrisGame && typeof window.cyberTetrisGame === 'object') window.cyberTetrisGame.isPaused = false;
+  if (window.bubbleGame && typeof window.bubbleGame === 'object') window.bubbleGame.isPaused = false;
 }
 
 /**

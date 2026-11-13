@@ -17,6 +17,7 @@ const GAME_CONFIG = {
   runner: { name: 'Cyber Runner', emoji: '🏃‍♂️', hashtag: '#CyberRunner' },
   q2048: { name: 'Quantum 2048', emoji: '🧩', hashtag: '#Quantum2048' },
   tetris: { name: 'Cyber Tetris', emoji: '🧱', hashtag: '#CyberTetris' },
+  bubble: { name: 'Cyber Bubble', emoji: '🫧', hashtag: '#CyberBubble' },
   skeet: { name: 'Cyber Skeet', emoji: '🎯', hashtag: '#CyberSkeet' },
   defense: { name: 'Cyber Defense', emoji: '🛡️', hashtag: '#CyberDefense' },
   wordle: { name: 'Cyber Wordle', emoji: '🟩🟨⬛', hashtag: '#CyberWordle' },
@@ -202,6 +203,7 @@ if (typeof window !== 'undefined') {
         'Cyber Runner': 'runner-final-score',
         'Quantum 2048': 'q2048-final-score',
         'Cyber Tetris': 'tetris-final-score',
+        'Cyber Bubble': 'bubble-final-score',
         'Cyber Skeet': 'skeet-res-score',
         'Cyber Defense': 'defense-res-score'
       };

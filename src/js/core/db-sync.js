@@ -336,6 +336,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         const prevAlltimeRunner = activeAppState.state.alltimeRunnerHighScore || cachedAlltime.runner || 0;
         const prevAlltimeQ2048 = activeAppState.state.alltimeQ2048HighScore || cachedAlltime.q2048 || 0;
         const prevAlltimeTetris = activeAppState.state.alltimeTetrisHighScore || cachedAlltime.tetris || 0;
+        const prevAlltimeBubble = activeAppState.state.alltimeBubbleHighScore || cachedAlltime.bubble || 0;
 
         activeAppState.state.gameHighScore = parseInt(data.game_highscore || 0, 10);
         activeAppState.state.invadersHighScore = parseInt(data.invaders_highscore || 0, 10);
@@ -348,6 +349,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.runnerHighScore = parseInt(data.runner_highscore || 0, 10);
         activeAppState.state.q2048HighScore = parseInt(data.q2048_highscore || 0, 10);
         activeAppState.state.tetrisHighScore = parseInt(data.tetris_highscore || 0, 10);
+        activeAppState.state.bubbleHighScore = parseInt(data.bubble_highscore || 0, 10);
 
         // Strictly preserve MAX between DB all-time, current weekly, and existing memory/local cache
         const dbAllGame = parseInt(data.alltime_game_highscore || 0, 10);
@@ -359,6 +361,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         const dbAllRunner = parseInt(data.alltime_runner_highscore || 0, 10);
         const dbAllQ2048 = parseInt(data.alltime_q2048_highscore || 0, 10);
         const dbAllTetris = parseInt(data.alltime_tetris_highscore || 0, 10);
+        const dbAllBubble = parseInt(data.alltime_bubble_highscore || 0, 10);
         const prevAlltimeDefense = parseInt(activeAppState.state.alltimeDefenseHighScore || 0, 10);
 
         activeAppState.state.alltimeGameHighScore = Math.max(prevAlltimeGame, dbAllGame, activeAppState.state.gameHighScore);
@@ -371,6 +374,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
         activeAppState.state.alltimeRunnerHighScore = Math.max(prevAlltimeRunner, dbAllRunner, activeAppState.state.runnerHighScore);
         activeAppState.state.alltimeQ2048HighScore = Math.max(prevAlltimeQ2048, dbAllQ2048, activeAppState.state.q2048HighScore);
         activeAppState.state.alltimeTetrisHighScore = Math.max(prevAlltimeTetris, dbAllTetris, activeAppState.state.tetrisHighScore);
+        activeAppState.state.alltimeBubbleHighScore = Math.max(prevAlltimeBubble, dbAllBubble, activeAppState.state.bubbleHighScore);
 
         // Auto-recover career best from tournament archive history if all-time is currently 0
         if (activeAppState.state.alltimeStackerHighScore === 0 && canonicalId) {
@@ -1324,6 +1328,7 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
           if (s.includes('runner')) return 'runner';
           if (s.includes('2048')) return 'q2048';
           if (s.includes('tetris')) return 'tetris';
+          if (s.includes('bubble')) return 'bubble';
           return null;
         };
 
@@ -2328,6 +2333,9 @@ export async function submitHighScoreToDB(gameType, score) {
   } else if (gameType === 'tetris') {
     appState.state.tetrisHighScore = Math.max(appState.state.tetrisHighScore || 0, cleanScore);
     appState.state.alltimeTetrisHighScore = Math.max(appState.state.alltimeTetrisHighScore || 0, cleanScore);
+  } else if (gameType === 'bubble') {
+    appState.state.bubbleHighScore = Math.max(appState.state.bubbleHighScore || 0, cleanScore);
+    appState.state.alltimeBubbleHighScore = Math.max(appState.state.alltimeBubbleHighScore || 0, cleanScore);
   }
   appState.save();
 
@@ -2335,7 +2343,7 @@ export async function submitHighScoreToDB(gameType, score) {
   if (!appState.isPlayerConnected()) return;
 
   try {
-    let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, stacker_highscore, skeet_highscore, defense_highscore, runner_highscore, q2048_highscore, tetris_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_stacker_highscore, alltime_skeet_highscore, defense_alltime_best, alltime_runner_highscore, alltime_q2048_highscore, alltime_tetris_highscore');
+    let query = supabase.from('users').select('player_id, user_id, game_highscore, invaders_highscore, drift_highscore, stacker_highscore, skeet_highscore, defense_highscore, runner_highscore, q2048_highscore, tetris_highscore, bubble_highscore, alltime_game_highscore, alltime_invaders_highscore, alltime_drift_highscore, alltime_stacker_highscore, alltime_skeet_highscore, defense_alltime_best, alltime_runner_highscore, alltime_q2048_highscore, alltime_tetris_highscore, alltime_bubble_highscore');
     if (appState.state.authUserId) {
       query = query.eq('user_id', appState.state.authUserId);
     } else if (pid) {
@@ -2434,6 +2442,15 @@ export async function submitHighScoreToDB(gameType, score) {
           hasUpdate = true;
         }
       }
+      if (gameType === 'bubble') {
+        const dbWeekly = userRow.bubble_highscore || 0;
+        appState.state.bubbleHighScore = Math.max(cleanScore, dbWeekly);
+        if (cleanScore > dbWeekly) {
+          dbUpdate.bubble_highscore = cleanScore;
+          dbUpdate.alltime_bubble_highscore = Math.max(userRow.alltime_bubble_highscore || 0, cleanScore);
+          hasUpdate = true;
+        }
+      }
 
       // NOTE: Tournament & all-time high scores are authoritatively recorded and updated in public.users
       // by the end_arcade_session RPC at the conclusion of every arcade run. Direct table updates and
@@ -2467,6 +2484,8 @@ export async function submitHighScoreToDB(gameType, score) {
       window.loadQ2048Leaderboard(true);
     } else if (gameType === 'tetris' && typeof window.loadTetrisLeaderboard === 'function') {
       window.loadTetrisLeaderboard(true);
+    } else if (gameType === 'bubble' && typeof window.loadBubbleLeaderboard === 'function') {
+      window.loadBubbleLeaderboard(true);
     }
     if (typeof window.invalidateGrandPrixCache === 'function') {
       window.invalidateGrandPrixCache();
@@ -2935,6 +2954,8 @@ async function syncAuthenticatedUser(user, force = false) {
       const alltimeQ2048High = Math.max(parseInt(userRow.alltime_q2048_highscore || 0, 10), q2048High);
       const tetrisHigh = parseInt(userRow.tetris_highscore || 0, 10);
       const alltimeTetrisHigh = Math.max(parseInt(userRow.alltime_tetris_highscore || 0, 10), tetrisHigh);
+      const bubbleHigh = parseInt(userRow.bubble_highscore || 0, 10);
+      const alltimeBubbleHigh = Math.max(parseInt(userRow.alltime_bubble_highscore || 0, 10), bubbleHigh);
 
       activeAppState.state.playerId = userPid;
       activeAppState.state.vipUntil = userRow.vip_until || null;
@@ -2950,6 +2971,7 @@ async function syncAuthenticatedUser(user, force = false) {
       activeAppState.state.runnerHighScore = runnerHigh;
       activeAppState.state.q2048HighScore = q2048High;
       activeAppState.state.tetrisHighScore = tetrisHigh;
+      activeAppState.state.bubbleHighScore = bubbleHigh;
       activeAppState.state.alltimeGameHighScore = alltimeGameHigh;
       activeAppState.state.alltimeInvadersHighScore = alltimeInvHigh;
       activeAppState.state.alltimeDriftHighScore = alltimeDriftHigh;
@@ -2960,6 +2982,7 @@ async function syncAuthenticatedUser(user, force = false) {
       activeAppState.state.alltimeRunnerHighScore = alltimeRunnerHigh;
       activeAppState.state.alltimeQ2048HighScore = alltimeQ2048High;
       activeAppState.state.alltimeTetrisHighScore = alltimeTetrisHigh;
+      activeAppState.state.alltimeBubbleHighScore = alltimeBubbleHigh;
 
       activeAppState.state.weeklyFaucetClaims = parseInt(userRow.weekly_faucet_claims || 0, 10);
       activeAppState.state.weeklyGamesPlayed = parseInt(userRow.weekly_games_played || 0, 10);
@@ -3053,6 +3076,7 @@ async function syncAuthenticatedUser(user, force = false) {
         runnerHighScore: runnerHigh,
         q2048HighScore: q2048High,
         tetrisHighScore: tetrisHigh,
+        bubbleHighScore: bubbleHigh,
         alltimeGameHighScore: alltimeGameHigh,
         alltimeInvadersHighScore: alltimeInvHigh,
         alltimeDriftHighScore: alltimeDriftHigh,
@@ -3062,7 +3086,8 @@ async function syncAuthenticatedUser(user, force = false) {
         alltimeDefenseHighScore: alltimeDefenseHigh,
         alltimeRunnerHighScore: alltimeRunnerHigh,
         alltimeQ2048HighScore: alltimeQ2048High,
-        alltimeTetrisHighScore: alltimeTetrisHigh
+        alltimeTetrisHighScore: alltimeTetrisHigh,
+        alltimeBubbleHighScore: alltimeBubbleHigh
       });
 
       if (typeof window.checkFaucetCooldown === 'function') {

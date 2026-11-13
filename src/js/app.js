@@ -849,4 +849,13 @@ window.addEventListener('keydown', (e) => {
     if (typeof window.startCyberTetris === 'function') window.startCyberTetris();
     return;
   }
+
+  // 8. Cyber Bubble (Enter only so Spacebar shooting doesn't skip the end screen)
+  const bubbleOver = document.getElementById('bubble-ui-overlay');
+  const bubbleRestartBtn = document.getElementById('btn-restart-bubble');
+  if (e.key === 'Enter' && bubbleOver && bubbleOver.style.display !== 'none' && bubbleRestartBtn && !bubbleRestartBtn.disabled) {
+    e.preventDefault();
+    if (typeof window.startBubbleGame === 'function') window.startBubbleGame();
+    return;
+  }
 });

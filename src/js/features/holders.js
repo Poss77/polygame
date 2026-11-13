@@ -629,7 +629,8 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
       'defense': '🛡️ Cyber Defense Tournament Pool',
       'runner': '🏃 Cyber Runner Tournament Pool',
       'q2048': '🧩 Cyber 2048 Tournament Pool',
-      'tetris': '🧱 Cyber Tetris Tournament Pool'
+      'tetris': '🧱 Cyber Tetris Tournament Pool',
+      'bubble': '🫧 Cyber Bubble Tournament Pool'
     };
 
     Object.keys(weeksMap).forEach(weekLabel => {
@@ -653,6 +654,7 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
           else if ((r.runner_score || 0) > 0) gKey = 'runner';
           else if ((r.q2048_score || 0) > 0) gKey = 'q2048';
           else if ((r.tetris_score || 0) > 0) gKey = 'tetris';
+          else if ((r.bubble_score || 0) > 0) gKey = 'bubble';
           else return; // Ignore unclassifiable rows
         }
         if (!gameTitles[gKey]) return; // Strictly ignore overall/unknown categories
@@ -669,14 +671,14 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
         const playerBestMap = new Map();
         gameGroupMap[gKey].forEach(r => {
           const pid = (r.player_id || r.wallet_address || '').toLowerCase();
-          const score = Number(r.best_score || r.runner_score || r.q2048_score || r.tetris_score || r.defense_score || r.skeet_score || r.stacker_score || r.astrododge_score || r.invaders_score || r.drift_score || 0);
+          const score = Number(r.best_score || r.runner_score || r.q2048_score || r.tetris_score || r.bubble_score || r.defense_score || r.skeet_score || r.stacker_score || r.astrododge_score || r.invaders_score || r.drift_score || 0);
           const prize = Number(r.prize_pgt || 0);
 
           if (!playerBestMap.has(pid)) {
             playerBestMap.set(pid, r);
           } else {
             const existing = playerBestMap.get(pid);
-            const existScore = Number(existing.best_score || existing.runner_score || existing.q2048_score || existing.tetris_score || existing.defense_score || existing.skeet_score || existing.stacker_score || existing.astrododge_score || existing.invaders_score || existing.drift_score || 0);
+            const existScore = Number(existing.best_score || existing.runner_score || existing.q2048_score || existing.tetris_score || existing.bubble_score || existing.defense_score || existing.skeet_score || existing.stacker_score || existing.astrododge_score || existing.invaders_score || existing.drift_score || 0);
             if (score > existScore || (score === existScore && prize > (Number(existing.prize_pgt) || 0))) {
               playerBestMap.set(pid, r);
             }
@@ -684,8 +686,8 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
         });
 
         const sortedRows = Array.from(playerBestMap.values()).sort((a, b) => {
-          const scoreA = Number(a.best_score || a.runner_score || a.q2048_score || a.tetris_score || a.defense_score || a.skeet_score || a.stacker_score || a.astrododge_score || a.invaders_score || a.drift_score || 0);
-          const scoreB = Number(b.best_score || b.runner_score || b.q2048_score || b.tetris_score || b.defense_score || b.skeet_score || b.stacker_score || b.astrododge_score || b.invaders_score || b.drift_score || 0);
+          const scoreA = Number(a.best_score || a.runner_score || a.q2048_score || a.tetris_score || a.bubble_score || a.defense_score || a.skeet_score || a.stacker_score || a.astrododge_score || a.invaders_score || a.drift_score || 0);
+          const scoreB = Number(b.best_score || b.runner_score || b.q2048_score || b.tetris_score || b.bubble_score || b.defense_score || b.skeet_score || b.stacker_score || b.astrododge_score || b.invaders_score || b.drift_score || 0);
           if (scoreB !== scoreA) return scoreB - scoreA;
           return (Number(a.rank) || 0) - (Number(b.rank) || 0);
         });
@@ -736,7 +738,7 @@ export async function loadPastWeeklyArchive(targetWeekLabel = null) {
             }
           }
 
-          const scoreVal = row.best_score || row.runner_score || row.q2048_score || row.tetris_score || row.defense_score || row.skeet_score || row.stacker_score || row.astrododge_score || row.invaders_score || row.drift_score || 0;
+          const scoreVal = row.best_score || row.runner_score || row.q2048_score || row.tetris_score || row.bubble_score || row.defense_score || row.skeet_score || row.stacker_score || row.astrododge_score || row.invaders_score || row.drift_score || 0;
 
           item.innerHTML = `
             <div style="display: flex; align-items: center; gap: 0.5rem;">

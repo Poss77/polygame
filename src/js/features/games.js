@@ -220,7 +220,8 @@ export function updateGameTileBadges(settings) {
   }
   const defaultFallback = {
     stacker: { vip_only: true, test_mode: false, harvest_enabled: true },
-    defense: { vip_only: false, test_mode: true, harvest_enabled: true }
+    defense: { vip_only: false, test_mode: true, harvest_enabled: true },
+    bubble: { vip_only: false, test_mode: true, harvest_enabled: true }
   };
   const activeSettings = Object.assign({}, defaultFallback, settings || {});
 
@@ -285,7 +286,7 @@ export function switchGameModeView(mode) {
   const isAdmin = window.appState && window.appState.state && window.appState.state.isAdmin;
 
   const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
-  const gameKeyMap = { 'arcade': 'astrododge', 'invaders': 'invaders', 'drift': 'drift', 'catcher': 'stacker', 'stacker': 'stacker', 'skeet': 'skeet', 'defense': 'defense', 'runner': 'runner', 'q2048': 'q2048', 'tetris': 'tetris', 'roshambo': 'roshambo', 'spinner': 'spinner', 'plinko': 'plinko', 'crash': 'crash', 'mines': 'mines', 'wordle': 'wordle', 'sudoku': 'sudoku' };
+  const gameKeyMap = { 'arcade': 'astrododge', 'invaders': 'invaders', 'drift': 'drift', 'catcher': 'stacker', 'stacker': 'stacker', 'skeet': 'skeet', 'defense': 'defense', 'runner': 'runner', 'q2048': 'q2048', 'tetris': 'tetris', 'bubble': 'bubble', 'roshambo': 'roshambo', 'spinner': 'spinner', 'plinko': 'plinko', 'crash': 'crash', 'mines': 'mines', 'wordle': 'wordle', 'sudoku': 'sudoku' };
   const gKey = gameKeyMap[mode] || mode;
 
   // Test Mode Whitelist Guard (Blocks non-testers from launching test_mode games)
@@ -339,6 +340,7 @@ export function switchGameModeView(mode) {
   const panelRunner = document.getElementById('panel-game-runner');
   const panelQ2048 = document.getElementById('panel-game-q2048');
   const panelTetris = document.getElementById('panel-game-tetris');
+  const panelBubble = document.getElementById('panel-game-bubble');
   const panelRoshambo = document.getElementById('panel-game-roshambo');
   const panelSpinner = document.getElementById('panel-game-spinner');
   const panelCrash = document.getElementById('panel-game-crash');
@@ -356,6 +358,7 @@ export function switchGameModeView(mode) {
   const lbRunner = document.getElementById('leaderboard-col-runner');
   const lbQ2048 = document.getElementById('leaderboard-col-q2048');
   const lbTetris = document.getElementById('leaderboard-col-tetris');
+  const lbBubble = document.getElementById('leaderboard-col-bubble');
 
   const allPanels = [
     { el: panelArcade, key: 'arcade' },
@@ -367,6 +370,7 @@ export function switchGameModeView(mode) {
     { el: panelRunner, key: 'runner' },
     { el: panelQ2048, key: 'q2048' },
     { el: panelTetris, key: 'tetris' },
+    { el: panelBubble, key: 'bubble' },
     { el: panelRoshambo, key: 'roshambo' },
     { el: panelSpinner, key: 'spinner' },
     { el: panelCrash, key: 'crash' },
@@ -561,6 +565,19 @@ export function switchGameModeView(mode) {
     }
     if (typeof window.loadTetrisLeaderboard === 'function') window.loadTetrisLeaderboard();
     else if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('tetris');
+  } else if (mode === 'bubble') {
+    if (panelBubble) {
+      panelBubble.style.removeProperty('display');
+      panelBubble.style.display = 'flex';
+    }
+    if (lbBubble) lbBubble.style.display = 'block';
+    const overlay = document.getElementById('bubble-ui-overlay');
+    if (overlay) {
+      overlay.style.removeProperty('display');
+      overlay.style.display = 'flex';
+    }
+    if (typeof window.loadBubbleLeaderboard === 'function') window.loadBubbleLeaderboard();
+    else if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('bubble');
   } else if (mode === 'roshambo') {
     if (panelRoshambo) {
       panelRoshambo.style.removeProperty('display');
