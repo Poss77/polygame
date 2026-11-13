@@ -695,9 +695,13 @@ class BubbleTroubleGame {
     const isVip = window.appState && window.appState.isVipActive();
     const vipLevel = (window.appState && typeof window.appState.getVipLevel === 'function') ? window.appState.getVipLevel() : (isVip ? 2 : 0);
     const vipMult = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
-    const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
+    const isAmb = !!(window.appState && window.appState.state && window.appState.state.isAmbassador);
+    const ambMult = isAmb ? 2.0 : 1.0;
     const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
     const playerMult = nftMult * vipMult * ambMult * relicMult;
+    const vipBadgeStr = (isVip ? (vipLevel >= 2 ? ' 🔥 <span style="color:var(--color-warning); font-size:0.8rem;">(Gold VIP 2.0x)</span>' : ' 🥈 <span style="color:#c0c0c0; font-size:0.8rem;">(Silver VIP 1.5x)</span>') : '') +
+      (isAmb ? ' 🎖️ <span style="color:var(--color-warning); font-size:0.8rem;">(Ambassador 2.0x)</span>' : '') +
+      (multis && multis.isApexUnlocked ? ' 🏺 <span style="color:#ffd700; font-size:0.8rem;">(Relics 1.5x)</span>' : '');
 
     const cleanScore = Math.floor(this.score || 0);
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined)
@@ -749,23 +753,34 @@ class BubbleTroubleGame {
       const mins = Math.floor(this.elapsedSec / 60);
       const secs = Math.floor(this.elapsedSec % 60);
       const timeStr = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-      const statusMsg = isHarvestDisabled
-        ? `<div style="color: var(--color-warning); font-size: 0.78rem; margin-bottom: 0.6rem;">Harvesting paused by admin. Score still counts for Leaderboard!</div>`
-        : isDailyLimitReached
-          ? `<div style="color: var(--color-warning); font-size: 0.78rem; margin-bottom: 0.6rem;">Daily PGT earn limit reached. Still ranked on Leaderboard!</div>`
-          : '';
+      const gamePgt = Math.max(0, verifiedPgt - tokenPgt);
+      let payoutDisplay = `+${verifiedPgt.toFixed(2)} PGT`;
+      if (isHarvestDisabled) {
+        payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-danger); font-size:0.75rem; margin-top:2px;">🚫 In-Game Harvest Paused by Admin</span>`;
+      } else if (isDailyLimitReached) {
+        payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit Reached • Rewards Paused</span>`;
+      } else if (isPlayerConnected && !this.sessionId && cleanScore > 0) {
+        payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Session Not Verified • Rewards Paused</span>`;
+      } else if (tokenPgt > 0 && verifiedPgt > 0) {
+        payoutDisplay = `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.9em; font-weight:700;">+ ${tokenPgt.toFixed(2)} PGT Bonus</span>`;
+      }
 
       this.overlay.innerHTML = `
-        <div style="background: rgba(8, 12, 26, 0.94); border: 2px solid #ff2a85; border-radius: 12px; padding: 1.15rem; text-align: center; max-width: 390px; width: 92%; box-shadow: 0 0 28px rgba(255, 42, 133, 0.35);">
+        <div style="background: rgba(8, 12, 26, 0.94); border: 2px solid #ff2a85; border-radius: 12px; padding: 1.15rem; text-align: center; max-width: 440px; width: 92%; box-shadow: 0 0 28px rgba(255, 42, 133, 0.35);">
           <div class="game-title" style="color: #ff2a85; font-size: 1.4rem; margin-bottom: 0.35rem;">🫧 Run Complete!</div>
           ${isNewHigh ? '<div style="color: #ffd700; font-weight: 800; font-size: 0.85rem; margin-bottom: 0.35rem;">🏆 NEW PERSONAL BEST!</div>' : ''}
-          <div style="font-size: 1rem; color: #e2e8f0; margin-bottom: 0.25rem;">Score: <strong style="color: #00f0ff;">${cleanScore.toLocaleString()}</strong></div>
-          <div style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 0.5rem;">Wave ${this.wave} • ${this.ballsPopped} Balls Popped • ${timeStr}</div>
-          <div style="font-size: 1.35rem; font-weight: 900; color: var(--color-success); margin-bottom: 0.55rem;">+${verifiedPgt.toFixed(2)} PGT</div>
-          ${statusMsg}
-          <div style="display:flex; gap:0.5rem; justify-content:center; margin-bottom:0.75rem;">
-            <button type="button" onclick="if(window.shareCurrentGameScore)window.shareCurrentGameScore('Cyber Bubble', ${cleanScore}, ${verifiedPgt})" class="btn-secondary" style="font-size:0.75rem; padding:0.35rem 0.65rem;">Share 𝕏</button>
-            <button type="button" onclick="if(window.shareCurrentGameScoreTg)window.shareCurrentGameScoreTg('Cyber Bubble', ${cleanScore}, ${verifiedPgt})" class="btn-secondary" style="font-size:0.75rem; padding:0.35rem 0.65rem;">Telegram</button>
+          <div style="font-size: 1rem; color: #e2e8f0; margin-bottom: 0.25rem;">Score: <strong style="color: #00f0ff;">${cleanScore.toLocaleString()}</strong> | Popped: <strong style="color: var(--color-accent);">${this.ballsPopped}</strong> • ${timeStr}</div>
+          <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.45rem; line-height: 1.4;">Base: ${rawBase.toFixed(2)} PGT • Multiplier: <strong style="color: var(--color-secondary);">${playerMult.toFixed(1)}x</strong> (${multis.nftGameMultiplier || 0}% NFT${vipBadgeStr})</div>
+          <div style="font-size: 1.1rem; font-weight: 800; color: var(--color-success); display: inline-flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; margin-bottom: 0.75rem;">
+            <span>Final Payout: ${payoutDisplay}</span>
+            <span style="display: inline-flex; align-items: center; gap: 4px; margin-left: 4px;">
+              <button type="button" onclick="if(window.shareCurrentGameScore)window.shareCurrentGameScore('Cyber Bubble', ${cleanScore}, ${verifiedPgt})" title="Share score on 𝕏" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #fff; padding: 0;">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </button>
+              <button type="button" onclick="if(window.shareCurrentGameScoreTg)window.shareCurrentGameScoreTg('Cyber Bubble', ${cleanScore}, ${verifiedPgt})" title="Share score on Telegram" style="background: rgba(0,136,204,0.18); border: 1px solid rgba(0,136,204,0.45); border-radius: 6px; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #00b0ff; padding: 0; font-size: 0.75rem;">
+                ✈️
+              </button>
+            </span>
           </div>
           <button class="btn-play-game" id="btn-restart-bubble" disabled style="width:100%; opacity:0.6;">Play Again</button>
         </div>
