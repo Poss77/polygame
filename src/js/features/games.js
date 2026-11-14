@@ -221,7 +221,7 @@ export function updateGameTileBadges(settings) {
   const defaultFallback = {
     stacker: { vip_only: true, test_mode: false, harvest_enabled: true },
     defense: { vip_only: false, test_mode: true, harvest_enabled: true },
-    bubble: { vip_only: false, test_mode: true, harvest_enabled: true }
+    bubble: { vip_only: false, test_mode: false, harvest_enabled: true }
   };
   const activeSettings = Object.assign({}, defaultFallback, settings || {});
 

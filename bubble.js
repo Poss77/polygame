@@ -704,7 +704,7 @@ class BubbleTroubleGame {
     } else if (p.type === 'coin') {
       this.bonusTokensCollected = Math.min(20, this.bonusTokensCollected + 1);
       this.score += 400;
-      this.floatingTexts.push({ x: p.x, y: p.y - 16, text: '🪙 +2.5 PGT COIN!', color: '#ffd700', life: 1.2, maxLife: 1.2 });
+      this.floatingTexts.push({ x: p.x, y: p.y - 16, text: '🪙 +1.25 PGT COIN!', color: '#ffd700', life: 1.2, maxLife: 1.2 });
     }
   }
 
@@ -753,7 +753,7 @@ class BubbleTroubleGame {
     if (waveEl) waveEl.innerText = String(this.wave);
     if (livesEl) livesEl.innerText = String(Math.max(0, this.lives));
     if (earnedEl) {
-      const estBase = Math.min(37.5, ((this.score / 2400) + (this.ballsPopped * 0.04)));
+      const estBase = Math.min(18.75, ((this.score / 2400) + (this.ballsPopped * 0.04)) * 0.5);
       earnedEl.innerText = estBase.toFixed(2);
     }
   }
@@ -778,8 +778,8 @@ class BubbleTroubleGame {
     const cleanScore = Math.floor(this.score || 0);
     const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined)
       ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
-    const rawBase = Math.min(37.5, ((cleanScore / 2400.0) + ((this.ballsPopped || 0) * 0.04)) * globalEarnMult);
-    const tokenPgt = Math.min((this.bonusTokensCollected || 0) * 2.5, 50.0);
+    const rawBase = Math.min(18.75, (((cleanScore / 2400.0) + ((this.ballsPopped || 0) * 0.04)) * 0.50) * globalEarnMult);
+    const tokenPgt = Math.min((this.bonusTokensCollected || 0) * 1.25, 25.0);
     let finalPgt = cleanScore > 0 ? Math.min(1500.0, parseFloat(((rawBase * playerMult) + tokenPgt).toFixed(2))) : 0;
 
     const currentHigh = (window.appState && window.appState.state) ? (window.appState.state.bubbleHighScore || 0) : 0;
