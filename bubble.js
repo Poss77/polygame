@@ -47,7 +47,13 @@ class BubbleTroubleGame {
     // Controls
     this.keys = { a: false, d: false, ArrowLeft: false, ArrowRight: false };
     this.touchActive = false;
-    this.touchTargetX = null;
+    this.touchPointerId = null;
+    this.touchStartX = 0;
+    this.touchStartY = 0;
+    this.touchLastX = 0;
+    this.touchMoved = false;
+    this.touchMoveTimer = 0;
+    this.secondaryTouchPointers = new Map();
 
     // Entities
     this.player = { x: this.width / 2, y: this.floorY, w: 28, h: 42, speed: 300, facing: 1, walkPhase: 0, shootAnim: 0 };
@@ -121,43 +127,99 @@ class BubbleTroubleGame {
       }
     });
 
-    const getCanvasX = (clientX) => {
+    const getCanvasPos = (clientX, clientY) => {
       const rect = this.canvas.getBoundingClientRect();
-      if (!rect || rect.width <= 0) return this.width / 2;
-      return ((clientX - rect.left) / rect.width) * this.width;
+      if (!rect || rect.width <= 0 || rect.height <= 0) {
+        return { x: this.width / 2, y: this.height / 2 };
+      }
+      return {
+        x: ((clientX - rect.left) / rect.width) * this.width,
+        y: ((clientY - rect.top) / rect.height) * this.height
+      };
     };
 
-    this.canvas.addEventListener('pointerdown', (e) => {
+    const TAP_SLOP_PX = 7;
+
+    window.addEventListener('pointerdown', (e) => {
       if (!this.isPlaying || this.isPaused) return;
       if (e.isTrusted !== true) return;
-      const cx = getCanvasX(e.clientX);
-      if (e.pointerType === 'touch') {
-        if (this.touchPointerId === null || this.touchPointerId === undefined) {
-          this.touchPointerId = e.pointerId;
-          this.touchActive = true;
-          this.touchTargetX = cx;
-        }
-      }
-      this.shootArrow();
-    });
-
-    this.canvas.addEventListener('pointermove', (e) => {
-      if (!this.isPlaying || this.isPaused) return;
-      if (e.pointerType === 'touch' && this.touchActive && e.pointerId === this.touchPointerId) {
-        this.touchTargetX = getCanvasX(e.clientX);
-      }
-    });
-
-    const clearTouch = (e) => {
-      if (e && e.pointerId !== undefined && this.touchPointerId !== null && e.pointerId !== this.touchPointerId) {
+      if (e.pointerType !== 'touch') {
+        if (e.target === this.canvas) this.shootArrow();
         return;
       }
-      this.touchPointerId = null;
-      this.touchActive = false;
-      this.touchTargetX = null;
+
+      if (!this.canvas || this.canvas.offsetParent === null) return;
+      const targetEl = e.target && e.target.closest ? e.target : null;
+      if (targetEl && targetEl.closest('button, a, input, select, textarea, [role="button"], .game-overlay, .modal, .nav-item, .tab-btn')) {
+        return;
+      }
+
+      const pos = getCanvasPos(e.clientX, e.clientY);
+      if (this.touchPointerId === null || this.touchPointerId === undefined) {
+        this.touchPointerId = e.pointerId;
+        this.touchStartX = pos.x;
+        this.touchStartY = pos.y;
+        this.touchLastX = pos.x;
+        this.touchMoved = false;
+        this.touchActive = false;
+      } else if (e.pointerId !== this.touchPointerId) {
+        this.secondaryTouchPointers.set(e.pointerId, {
+          startX: pos.x,
+          startY: pos.y,
+          moved: false
+        });
+      }
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!this.isPlaying || this.isPaused) return;
+      if (e.pointerType !== 'touch') return;
+
+      const pos = getCanvasPos(e.clientX, e.clientY);
+      if (e.pointerId === this.touchPointerId) {
+        if (!this.touchMoved && Math.hypot(pos.x - this.touchStartX, pos.y - this.touchStartY) > TAP_SLOP_PX) {
+          this.touchMoved = true;
+        }
+        if (this.touchMoved) {
+          const dx = pos.x - this.touchLastX;
+          if (Math.abs(dx) > 0.1) {
+            const halfW = this.player.w / 2;
+            this.player.x = Math.max(halfW + 10, Math.min(this.width - halfW - 10, this.player.x + dx));
+            this.player.facing = dx > 0 ? 1 : -1;
+            this.player.walkPhase += Math.abs(dx) * 0.25;
+            this.touchActive = true;
+            this.touchMoveTimer = 0.08;
+          }
+        }
+        this.touchLastX = pos.x;
+      } else if (this.secondaryTouchPointers.has(e.pointerId)) {
+        const sec = this.secondaryTouchPointers.get(e.pointerId);
+        if (!sec.moved && Math.hypot(pos.x - sec.startX, pos.y - sec.startY) > TAP_SLOP_PX) {
+          sec.moved = true;
+        }
+      }
+    });
+
+    const endTouch = (e, cancelled) => {
+      if (!e || e.pointerType !== 'touch') return;
+      if (e.pointerId === this.touchPointerId) {
+        if (!cancelled && !this.touchMoved && this.isPlaying && !this.isPaused) {
+          this.shootArrow();
+        }
+        this.touchPointerId = null;
+        this.touchActive = false;
+        this.touchMoved = false;
+        this.touchMoveTimer = 0;
+      } else if (this.secondaryTouchPointers.has(e.pointerId)) {
+        const sec = this.secondaryTouchPointers.get(e.pointerId);
+        this.secondaryTouchPointers.delete(e.pointerId);
+        if (!cancelled && !sec.moved && this.isPlaying && !this.isPaused) {
+          this.shootArrow();
+        }
+      }
     };
-    window.addEventListener('pointerup', clearTouch);
-    window.addEventListener('pointercancel', clearTouch);
+    window.addEventListener('pointerup', (e) => endTouch(e, false));
+    window.addEventListener('pointercancel', (e) => endTouch(e, true));
   }
 
   startGame() {
@@ -174,6 +236,7 @@ class BubbleTroubleGame {
 
     this.isPlaying = true;
     this.isPaused = false;
+    this.setGlobalTouchLock(true);
     this.score = 0;
     this.lives = 3;
     this.wave = 1;
@@ -192,7 +255,10 @@ class BubbleTroubleGame {
 
     this.keys = { a: false, d: false, ArrowLeft: false, ArrowRight: false };
     this.touchActive = false;
-    this.touchTargetX = null;
+    this.touchPointerId = null;
+    this.touchMoved = false;
+    this.touchMoveTimer = 0;
+    if (this.secondaryTouchPointers) this.secondaryTouchPointers.clear();
 
     this.player = { x: this.width / 2, y: this.floorY, w: 28, h: 42, speed: 310, facing: 1, walkPhase: 0, shootAnim: 0 };
     this.arrows = [];
@@ -230,8 +296,16 @@ class BubbleTroubleGame {
     this.animFrameId = requestAnimationFrame((ts) => this.loop(ts));
   }
 
+  setGlobalTouchLock(locked) {
+    if (typeof document === 'undefined') return;
+    const val = locked ? 'none' : '';
+    if (document.documentElement) document.documentElement.style.touchAction = val;
+    if (document.body) document.body.style.touchAction = val;
+  }
+
   stop() {
     this.isPlaying = false;
+    this.setGlobalTouchLock(false);
     if (this.animFrameId) {
       cancelAnimationFrame(this.animFrameId);
       this.animFrameId = null;
@@ -361,7 +435,12 @@ class BubbleTroubleGame {
     if (this.invincibleTimer > 0) this.invincibleTimer = Math.max(0, this.invincibleTimer - dt);
     if (this.player.shootAnim > 0) this.player.shootAnim = Math.max(0, this.player.shootAnim - dt);
 
-    // 1. Player Movement (Keyboard or Touch drag)
+    if (this.touchMoveTimer > 0) {
+      this.touchMoveTimer = Math.max(0, this.touchMoveTimer - dt);
+      if (this.touchMoveTimer === 0) this.touchActive = false;
+    }
+
+    // 1. Player Movement (Keyboard; touch swipe is applied 1:1 in pointermove)
     let moveDir = 0;
     if (this.keys.a || this.keys.ArrowLeft) moveDir -= 1;
     if (this.keys.d || this.keys.ArrowRight) moveDir += 1;
@@ -370,14 +449,6 @@ class BubbleTroubleGame {
       this.player.x += moveDir * this.player.speed * dt;
       this.player.facing = moveDir;
       this.player.walkPhase += dt * 15;
-    } else if (this.touchActive && this.touchTargetX !== null) {
-      const diff = this.touchTargetX - this.player.x;
-      if (Math.abs(diff) > 3) {
-        const step = Math.sign(diff) * Math.min(Math.abs(diff), this.player.speed * 1.15 * dt);
-        this.player.x += step;
-        this.player.facing = Math.sign(diff);
-        this.player.walkPhase += dt * 15;
-      }
     }
     const halfW = this.player.w / 2;
     this.player.x = Math.max(halfW + 10, Math.min(this.width - halfW - 10, this.player.x));
