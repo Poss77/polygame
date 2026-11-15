@@ -797,7 +797,7 @@ export function renderRelicsVault() {
         </div>
         <div style="background: ${s2Progress.isComplete ? 'rgba(0,255,136,0.18)' : 'rgba(255,255,255,0.05)'}; border: 1px solid ${s2Progress.isComplete ? '#00ff88' : 'var(--border-glass)'}; border-radius: 8px; padding: 8px 14px; text-align: center;">
           <div style="font-size: 0.7rem; text-transform: uppercase; font-weight: 700; color: ${s2Progress.isComplete ? '#00ff88' : 'var(--text-muted)'};">
-            ${s2Progress.isComplete ? '🛸 POLYSPACE BONUS' : '🔒 POLYSPACE BONUS'}
+            ${s2Progress.isComplete ? '🛸 POLYSPACE & FAUCET' : '🔒 POLYSPACE & FAUCET'}
           </div>
           <div style="font-size: 1.1rem; font-weight: 900; color: ${s2Progress.isComplete ? '#00ff88' : 'var(--text-muted)'};">
             ${s2Progress.isComplete ? '1.5x ACTIVE' : '1.5x LOCKED'}

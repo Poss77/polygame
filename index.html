@@ -449,22 +449,22 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <!-- Direct parallel stylesheets (eliminates @import waterfall) -->
-  <link rel="stylesheet" href="src/css/variables.css?v=1.5.853">
-  <link rel="stylesheet" href="src/css/base.css?v=1.5.853">
-  <link rel="stylesheet" href="src/css/layout.css?v=1.5.853">
-  <link rel="stylesheet" href="src/css/sidebar.css?v=1.5.853">
-  <link rel="stylesheet" href="src/css/main_content.css?v=1.5.853">
-  <link rel="stylesheet" href="src/css/views.css?v=1.5.853">
-  <link rel="stylesheet" href="src/css/features/faucet.css?v=1.5.853">
-  <link rel="stylesheet" href="src/css/features/games.css?v=1.5.853">
-  <link rel="stylesheet" href="src/css/features/nft.css?v=1.5.853">
-  <link rel="stylesheet" href="src/css/features/staking.css?v=1.5.853">
-  <link rel="stylesheet" href="src/css/features/referrals.css?v=1.5.853">
-  <link rel="stylesheet" href="src/css/features/profile.css?v=1.5.853">
-  <link rel="stylesheet" href="src/css/modals.css?v=1.5.853">
-  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.853">
-  <link rel="stylesheet" href="src/css/animations.css?v=1.5.853">
-  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.853">
+  <link rel="stylesheet" href="src/css/variables.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/base.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/layout.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/sidebar.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/main_content.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/views.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/features/faucet.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/features/games.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/features/nft.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/features/staking.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/features/referrals.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/features/profile.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/modals.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/animations.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.854">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -1205,11 +1205,14 @@ twq('config','ri5fg');
                 <span class="multiplier-value" id="faucet-multiplier-streak">+0%</span>
               </div>
 
-              <div class="multiplier-item" id="faucet-multiplier-relics-row">
+              <div class="multiplier-item" id="faucet-multiplier-relics-row" style="flex-wrap: wrap; gap: 0.2rem 0.5rem;">
                 <span class="multiplier-name">
-                  🏺 Serie 1 Apex Relics
+                  🏺 Relics Boost
                 </span>
-                <span class="multiplier-value" id="faucet-multiplier-relics" style="color: var(--text-muted);">+0% (0/17)</span>
+                <span class="multiplier-value" id="faucet-multiplier-relics" style="color: var(--text-muted);">+0% (S1: 0/17 • S2: 0/18)</span>
+                <div style="width: 100%; font-size: 0.7rem; color: var(--text-dim); line-height: 1.35;">
+                  Complete 1 Relic Set (Serie 1 or Serie 2) for <strong style="color: #ffd700;">1.5x</strong>, 2 Sets for <strong style="color: #00ff88;">1.75x</strong>, or 3 Sets for <strong style="color: #00f0ff;">2.0x</strong> Faucet rewards.
+                </div>
               </div>
 
               <div class="multiplier-item" id="faucet-multiplier-vip-row" title="Active VIP members receive a 1.5x (Silver) or 2.5x (Gold) multiplier boost on both PGT and POL faucets">
@@ -4231,7 +4234,7 @@ twq('config','ri5fg');
             <!-- Combined Multipliers Breakdown -->
             <div>
               <span style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">
-                ⚡ Total Active Multipliers (NFT + VIP + Ambassador)
+                ⚡ Total Active Multipliers (NFT + VIP + Ambassador + Relics)
               </span>
               <div class="profile-multiplier-grid">
                 <div class="profile-multiplier-chip" id="chip-mult-faucet">
@@ -4255,6 +4258,9 @@ twq('config','ri5fg');
                   <span class="profile-mult-val" id="profile-mult-leaderboard">1.00x</span>
                 </div>
               </div>
+              <p style="margin: 0.6rem 0 0 0; font-size: 0.76rem; color: var(--text-dim); line-height: 1.4;">
+                🏺 <strong style="color: #ffd700;">Relics Boost:</strong> Complete any <strong>1 Relic Set</strong> (Serie 1 or Serie 2) for <strong>1.5x</strong> Faucet Boost, <strong>2 Sets</strong> for <strong>1.75x</strong>, and <strong>3 Sets</strong> for <strong>2.0x</strong> (Serie 1 also unlocks <strong>1.5x Arcade</strong>; Serie 2 also unlocks <strong>1.5x PolySpace</strong>).
+              </p>
             </div>
           </div>
 
@@ -5504,18 +5510,18 @@ twq('config','ri5fg');
     </div>
   </div>
 
-  <script defer src="game.js?v=1.5.853"></script>
-  <script defer src="invaders.js?v=1.5.853"></script>
-  <script defer src="drift.js?v=1.5.853"></script>
-  <script defer src="stacker.js?v=1.5.853"></script>
-  <script defer src="space.js?v=1.5.853"></script>
-  <script type="module" src="skeet.js?v=1.5.853"></script>
-  <script type="module" src="defense.js?v=1.5.853"></script>
-  <script type="module" src="runner.js?v=1.5.853"></script>
-  <script type="module" src="q2048.js?v=1.5.853"></script>
-  <script defer src="tetris.js?v=1.5.853"></script>
-  <script defer src="bubble.js?v=1.5.853"></script>
-  <script type="module" src="src/js/app.js?v=1.5.853"></script>
+  <script defer src="game.js?v=1.5.854"></script>
+  <script defer src="invaders.js?v=1.5.854"></script>
+  <script defer src="drift.js?v=1.5.854"></script>
+  <script defer src="stacker.js?v=1.5.854"></script>
+  <script defer src="space.js?v=1.5.854"></script>
+  <script type="module" src="skeet.js?v=1.5.854"></script>
+  <script type="module" src="defense.js?v=1.5.854"></script>
+  <script type="module" src="runner.js?v=1.5.854"></script>
+  <script type="module" src="q2048.js?v=1.5.854"></script>
+  <script defer src="tetris.js?v=1.5.854"></script>
+  <script defer src="bubble.js?v=1.5.854"></script>
+  <script type="module" src="src/js/app.js?v=1.5.854"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">
