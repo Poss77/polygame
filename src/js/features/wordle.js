@@ -541,40 +541,24 @@ export async function openWordleStatsModal() {
     // Render Histogram
     const distContainer = document.getElementById('wordle-dist-container');
     if (distContainer && Array.isArray(s.dist)) {
-      const maxCount = Math.max(1, ...s.dist);
+      const missed = Math.max(0, played - wins);
+      const maxCount = Math.max(1, ...s.dist, missed);
       distContainer.innerHTML = '';
 
       // Highlight winning attempt if the puzzle was solved today
       const currentWinningAttempt = (isGameOver && isGameWon) ? (winAttemptCount || boardGuesses.length) : null;
 
-      s.dist.forEach((count, idx) => {
-        const rowNum = idx + 1;
+      const appendDistRow = (label, count, barBg, textColor, title = '') => {
         const pct = count > 0 ? Math.max(8, Math.round((count / maxCount) * 100)) : 8;
-        const isCurrentWinRow = (currentWinningAttempt === rowNum);
-
-        let barBg;
-        let textColor;
-        if (count > 0) {
-          if (isCurrentWinRow) {
-            barBg = 'var(--color-success, #00ff66)';
-            textColor = '#000';
-          } else {
-            barBg = 'var(--color-primary, #00f0ff)';
-            textColor = '#000';
-          }
-        } else {
-          barBg = 'rgba(255, 255, 255, 0.08)';
-          textColor = 'var(--text-dim, #94a3b8)';
-        }
-
         const rowDiv = document.createElement('div');
         rowDiv.style.display = 'flex';
         rowDiv.style.alignItems = 'center';
         rowDiv.style.gap = '8px';
         rowDiv.style.fontSize = '0.85rem';
+        if (title) rowDiv.title = title;
 
         rowDiv.innerHTML = `
-          <span style="width: 14px; font-weight: 800; color: var(--text-dim);">${rowNum}</span>
+          <span style="width: 14px; font-weight: 800; color: ${label === 'X' && count > 0 ? 'var(--color-danger, #ff4d6d)' : 'var(--text-dim)'};">${label}</span>
           <div style="flex: 1; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; height: 22px;">
             <div style="width: ${pct}%; height: 100%; background: ${barBg}; display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-weight: 800; font-size: 0.75rem; color: ${textColor}; border-radius: 4px; transition: width 0.3s ease;">
               ${count}
@@ -582,7 +566,32 @@ export async function openWordleStatsModal() {
           </div>
         `;
         distContainer.appendChild(rowDiv);
+      };
+
+      s.dist.forEach((count, idx) => {
+        const rowNum = idx + 1;
+        const isCurrentWinRow = (currentWinningAttempt === rowNum);
+
+        let barBg;
+        let textColor;
+        if (count > 0) {
+          barBg = isCurrentWinRow ? 'var(--color-success, #00ff66)' : 'var(--color-primary, #00f0ff)';
+          textColor = '#000';
+        } else {
+          barBg = 'rgba(255, 255, 255, 0.08)';
+          textColor = 'var(--text-dim, #94a3b8)';
+        }
+
+        appendDistRow(rowNum, count, barBg, textColor);
       });
+
+      // Last line: number of times missed (X/6)
+      const isCurrentLoss = (isGameOver && !isGameWon);
+      const missedBarBg = missed > 0
+        ? (isCurrentLoss ? 'var(--color-danger, #ff4d6d)' : 'rgba(255, 77, 109, 0.85)')
+        : 'rgba(255, 255, 255, 0.08)';
+      const missedTextColor = missed > 0 ? '#fff' : 'var(--text-dim, #94a3b8)';
+      appendDistRow('X', missed, missedBarBg, missedTextColor, 'Missed (Failed in 6 guesses)');
     }
   } catch (err) {
     console.warn('[WordleStats] Error fetching stats:', err);

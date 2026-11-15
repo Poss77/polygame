@@ -5,6 +5,9 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Wordle Missed Count Row (`v1.5.840`)**:
+  - Added an `X` (Missed) bar as the last row in the Cyber Wordle Statistics guess distribution histogram (`openWordleStatsModal()` in `src/js/features/wordle.js`), displaying `played - wins`.
+
 - **Multi-Device Daily Quests & Streak Sync Fix (`v1.5.839`)**:
   - Added shared `restoreDailyQuestsFromDb()` helper in `src/js/core/db-sync.js` and wired it into `syncAuthenticatedUser()` (replacing the broken `window.renderQuests()` call) so Google OAuth logins on mobile/other devices restore `userRow.daily_quests` and trigger `syncDailyQuests(true)`.
   - Fixed `restoreDailyQuestsFromDb()` and `syncDailyQuests()` (`src/js/features/quests.js`) so server-reset `streak_days: 0` (after claiming the 7-day gift) and claim flags are never overwritten by stale `localStorage` values (`!synced.streak_days` or `Math.max(db, local)`).
