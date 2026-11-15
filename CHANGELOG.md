@@ -5,6 +5,9 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Bubble Mobile Press-to-Shoot (`v1.5.843`)**:
+  - Fired `shootArrow()` immediately on touch `pointerdown` in `bubble.js` (instead of waiting for a stationary `pointerup`) so pressing and swiping launches an arrow right away while allowing continuous movement.
+
 - **Astro-Dodge Frame Pacing & GPU Performance Optimization (`v1.5.842`)**:
   - Updated `game.js` to use `getContext('2d', { alpha: false })`, added a `0.8ms` VSync snap and skipped redundant 0-update `draw()` calls in `loop()` to eliminate 60Hz frame-pacing judder, cached player/global/rarity multipliers on `startGame()`, and removed `shadowBlur` calls from Boss rendering.
   - Removed `backdrop-filter: blur(...)` from fullscreen HUD overlays in `src/css/features/games.css` to avoid per-frame GPU blur recompositing over live canvases.

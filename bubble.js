@@ -162,12 +162,14 @@ class BubbleTroubleGame {
         this.touchLastX = pos.x;
         this.touchMoved = false;
         this.touchActive = false;
+        this.shootArrow();
       } else if (e.pointerId !== this.touchPointerId) {
         this.secondaryTouchPointers.set(e.pointerId, {
           startX: pos.x,
           startY: pos.y,
           moved: false
         });
+        this.shootArrow();
       }
     });
 
@@ -203,19 +205,12 @@ class BubbleTroubleGame {
     const endTouch = (e, cancelled) => {
       if (!e || e.pointerType !== 'touch') return;
       if (e.pointerId === this.touchPointerId) {
-        if (!cancelled && !this.touchMoved && this.isPlaying && !this.isPaused) {
-          this.shootArrow();
-        }
         this.touchPointerId = null;
         this.touchActive = false;
         this.touchMoved = false;
         this.touchMoveTimer = 0;
       } else if (this.secondaryTouchPointers.has(e.pointerId)) {
-        const sec = this.secondaryTouchPointers.get(e.pointerId);
         this.secondaryTouchPointers.delete(e.pointerId);
-        if (!cancelled && !sec.moved && this.isPlaying && !this.isPaused) {
-          this.shootArrow();
-        }
       }
     };
     window.addEventListener('pointerup', (e) => endTouch(e, false));
