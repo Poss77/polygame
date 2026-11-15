@@ -5,6 +5,16 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Season 2 Relics Vault & Profile Resolution Fix (`v1.5.846`)**:
+  - Updated `hydrateAndRenderRelicsVault()` in [`src/js/features/relics.js`](src/js/features/relics.js) to check both `getSeason1Progress` and `getSeason2Progress` before skipping hydration, prioritize non-simulated player accounts (`!r.is_simulated`), merge live on-chain Polygon relics via `getOwnedRelicsFromChain()`, and display combined `X/35` progress in `#relics-progress-badge`.
+  - Updated `syncProfileView()` and `openPublicProfile()` in [`src/js/features/profile.js`](src/js/features/profile.js) to prioritize non-simulated rows and compute the combined Serie 1 + Serie 2 count (`X/35`) in `#relics-progress-badge`.
+  - Updated `resyncPlayerNftsFromAdmin()` and `bulkResyncAllPlayersNfts()` in [`tools/admin/admin.js`](tools/admin/admin.js) as well as `resolve_player_id`, `sync_onchain_nfts`, and `admin_sync_player_onchain_assets` (`supabase/rpcs/` & [`supabase/admin_resync_nfts_fix.sql`](supabase/admin_resync_nfts_fix.sql)) to deprioritize `is_simulated` bot accounts when resolving wallet addresses.
+
+- **Admin NFT & Quantum Relic Resync Security Fix (`v1.5.845`)**:
+  - Added `SECURITY DEFINER` RPC `public.admin_sync_player_onchain_assets` in `supabase/rpcs/11_admin_automation.sql` (strictly authenticated via `service_role`, salted `verify_admin_passkey()`, or authenticated Master Admin `auth.uid()`) so the Admin panel never executes direct client `UPDATE`s on `public.users`.
+  - Updated `resyncPlayerNftsFromAdmin()`, `bulkResyncAllPlayersNfts()`, `mintAdminRelic()` (`nft_` branch), and `grantAdminTestRelic()` in `tools/admin/admin.js` to persist verified on-chain Utility NFTs, Quantum Relics, and DEX Liquidity via `admin_sync_player_onchain_assets` with automatic fallback to the `sync-assets` Edge Function, and handle unregistered recipient wallets gracefully.
+  - Added `nft_relic_seeker` to `v_allowed_chain_nfts` in `sync_onchain_nfts` (`supabase/rpcs/08_withdrawals_store.sql`), upgraded `supabase/functions/sync-assets/index.ts` to use `tokensOfOwner` + Multicall3 `getRelicType` fast-path for Quantum Relics, and added standalone migration [`supabase/admin_resync_nfts_fix.sql`](supabase/admin_resync_nfts_fix.sql).
+
 - **Cyber Bubble Mobile Press-to-Shoot (`v1.5.843`)**:
   - Fired `shootArrow()` immediately on touch `pointerdown` in `bubble.js` (instead of waiting for a stationary `pointerup`) so pressing and swiping launches an arrow right away while allowing continuous movement.
 

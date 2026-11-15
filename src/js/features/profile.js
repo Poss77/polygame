@@ -374,7 +374,8 @@ export function syncProfileView() {
   const relicProgressBadge = document.getElementById('relics-progress-badge');
   if (relicProgressBadge) {
     const s1Prog = getSeason1Progress(appState.state.relics || {});
-    relicProgressBadge.innerText = `${s1Prog.ownedCount}/${s1Prog.totalCount}`;
+    const s2Prog = getSeason2Progress(appState.state.relics || {});
+    relicProgressBadge.innerText = `${s1Prog.ownedCount + s2Prog.ownedCount}/${s1Prog.totalCount + s2Prog.totalCount}`;
   }
   if (typeof hydrateAndRenderRelicsVault === 'function') {
     hydrateAndRenderRelicsVault();
@@ -760,10 +761,11 @@ export async function openPublicProfile(walletAddress) {
       .select('*')
       .or(`player_id.ilike.${normAddr},linked_wallet_address.ilike.${normAddr}`)
       .order('created_at', { ascending: true })
-      .limit(1);
+      .limit(10);
 
     if (error) throw error;
-    const user = (Array.isArray(rows) && rows.length > 0) ? rows[0] : null;
+    const rowList = Array.isArray(rows) ? rows : [];
+    const user = rowList.length > 0 ? (rowList.find(r => !r.is_simulated) || rowList[0]) : null;
 
     if (!user) {
       if (usernameEl) usernameEl.innerText = "Anonymous Player";
@@ -1086,7 +1088,8 @@ export async function openPublicProfile(walletAddress) {
       const relicProgressBadge = document.getElementById('relics-progress-badge');
       if (relicProgressBadge) {
         const s1ProgLocal = getSeason1Progress(appState.state.relics);
-        relicProgressBadge.innerText = `${s1ProgLocal.ownedCount}/${s1ProgLocal.totalCount}`;
+        const s2ProgLocal = getSeason2Progress(appState.state.relics);
+        relicProgressBadge.innerText = `${s1ProgLocal.ownedCount + s2ProgLocal.ownedCount}/${s1ProgLocal.totalCount + s2ProgLocal.totalCount}`;
       }
       if (typeof renderRelicsVault === 'function') {
         renderRelicsVault();

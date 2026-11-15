@@ -610,7 +610,8 @@ export async function hydrateAndRenderRelicsVault(force = false) {
 
   try {
     const s1Prog = getSeason1Progress(appState?.state?.relics || {});
-    if (!force && s1Prog.isComplete) {
+    const s2Prog = getSeason2Progress(appState?.state?.relics || {});
+    if (!force && s1Prog.isComplete && s2Prog.isComplete) {
       _isHydratingRelics = false;
       return;
     }
@@ -636,7 +637,7 @@ export async function hydrateAndRenderRelicsVault(force = false) {
       if (!candidates.includes(ethAddr)) candidates.push(ethAddr);
     }
 
-    let query = supabase.from('users').select('player_id, linked_wallet_address, username, relics');
+    let query = supabase.from('users').select('player_id, linked_wallet_address, username, relics, is_simulated');
     if (candidates.length > 0) {
       const orFilter = candidates.map(c => `player_id.ilike.${c},linked_wallet_address.ilike.${c}`).join(',');
       query = query.or(orFilter);
@@ -647,25 +648,57 @@ export async function hydrateAndRenderRelicsVault(force = false) {
       return;
     }
 
-    const { data: rows, error } = await query.order('created_at', { ascending: true }).limit(1);
-    if (!error && Array.isArray(rows) && rows.length > 0) {
-      const user = rows[0];
-      if (user && user.relics && typeof user.relics === 'object' && Object.keys(user.relics).length > 0) {
-        appState.state.relics = mergeRelicsObjects(user.relics, appState.state.relics);
-        if (typeof appState.save === 'function') {
-          appState.save();
+    const { data: rows, error } = await query.order('created_at', { ascending: true }).limit(10);
+    const rowList = (!error && Array.isArray(rows)) ? rows : [];
+    const user = rowList.find(r => !r.is_simulated) || rowList[0] || null;
+
+    let mergedRelics = (user && user.relics && typeof user.relics === 'object')
+      ? mergeRelicsObjects(user.relics, appState?.state?.relics || {})
+      : normalizeRelicsObject(appState?.state?.relics || {});
+
+    // Also hydrate directly from Polygon via Multicall3 if an EVM wallet is linked/connected
+    const rawEvmCandidate = (
+      user?.linked_wallet_address ||
+      appState?.state?.linkedWalletAddress ||
+      appState?.state?.walletAddress ||
+      (typeof window !== 'undefined' && window.ethereum?.selectedAddress) ||
+      ''
+    ).trim();
+    const lowerEvm = rawEvmCandidate.toLowerCase();
+    const isValidEvm = /^0x[a-f0-9]{40}$/.test(lowerEvm) && !lowerEvm.startsWith('0xpgt') && !lowerEvm.startsWith('0xg');
+
+    if (isValidEvm) {
+      const chainRelics = await getOwnedRelicsFromChain(rawEvmCandidate).catch(() => ({}));
+      if (chainRelics && typeof chainRelics === 'object' && Object.keys(chainRelics).length > 0) {
+        const dbKeyCount = Object.keys(user?.relics || {}).length;
+        mergedRelics = mergeRelicsObjects(chainRelics, mergedRelics);
+        if (Object.keys(mergedRelics).length > dbKeyCount) {
+          supabase.functions.invoke('sync-assets', {
+            body: {
+              playerId: user?.player_id || appState?.state?.playerId || rawEvmCandidate,
+              walletAddress: rawEvmCandidate
+            }
+          }).catch(() => {});
         }
-        // Sync badge
-        const relicProgressBadge = document.getElementById('relics-progress-badge');
-        if (relicProgressBadge) {
-          const updatedProg = getSeason1Progress(appState.state.relics);
-          relicProgressBadge.innerText = `${updatedProg.ownedCount}/${updatedProg.totalCount}`;
-        }
-        // Re-render vault with fresh DB relics
-        renderRelicsVault();
-        if (typeof appState.syncUI === 'function') {
-          appState.syncUI();
-        }
+      }
+    }
+
+    if (Object.keys(mergedRelics).length > 0) {
+      appState.state.relics = mergedRelics;
+      if (typeof appState.save === 'function') {
+        appState.save();
+      }
+      // Sync combined Serie 1 + Serie 2 badge
+      const relicProgressBadge = document.getElementById('relics-progress-badge');
+      if (relicProgressBadge) {
+        const newS1 = getSeason1Progress(appState.state.relics);
+        const newS2 = getSeason2Progress(appState.state.relics);
+        relicProgressBadge.innerText = `${newS1.ownedCount + newS2.ownedCount}/${newS1.totalCount + newS2.totalCount}`;
+      }
+      // Re-render vault with fresh DB + on-chain relics
+      renderRelicsVault();
+      if (typeof appState.syncUI === 'function') {
+        appState.syncUI();
       }
     }
   } catch (err) {
