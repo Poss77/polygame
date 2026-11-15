@@ -73,6 +73,7 @@ class CyberInvaders {
         return;
       }
       if (this.keys.hasOwnProperty(e.key)) {
+        if (this.isPaused) return;
         this.keys[e.key] = true;
         if (e.key === " " && this.isPlaying) {
           e.preventDefault();
@@ -94,7 +95,7 @@ class CyberInvaders {
     let touchStartX = 0;
 
     containerEl.addEventListener('touchstart', (e) => {
-      if (!this.isPlaying || !e.touches || e.touches.length === 0) return;
+      if (!this.isPlaying || this.isPaused || !e.touches || e.touches.length === 0) return;
       if (!e || e.isTrusted !== true) {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Invaders', 'untrusted_touch_input');
         return;
@@ -107,7 +108,7 @@ class CyberInvaders {
     }, { passive: false });
 
     containerEl.addEventListener('touchmove', (e) => {
-      if (!this.isPlaying || !e.touches || e.touches.length === 0) return;
+      if (!this.isPlaying || this.isPaused || !e.touches || e.touches.length === 0) return;
       if (!e || e.isTrusted !== true) {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Invaders', 'untrusted_touch_input');
         return;
@@ -1300,6 +1301,7 @@ class CyberInvaders {
   }
 
   async gameOver() {
+    if (!this.isPlaying) return;
     if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
     this.isPlaying = false;
     this.isDying = false;

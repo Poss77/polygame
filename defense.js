@@ -515,12 +515,17 @@ export class CyberDefenseEngine {
     this.updateHUD();
   }
 
+  get isPlaying() {
+    return this.state === 'PLAYING';
+  }
+
   // --- Start Cyber Defense Session ---
   async start() {
     if (this.isStarting) return;
     this.isStarting = true;
 
     // Reset Game State
+    this.isPaused = false;
     this.state = 'PLAYING';
     this.coreHp = 10;
     this.energy = 250; // Starting energy (calibrated for comfortable early-game foundation)
@@ -837,6 +842,12 @@ export class CyberDefenseEngine {
   // --- Main Game Loop with Physics Sub-Stepping ---
   loop(timestamp) {
     if (this.state !== 'PLAYING') return;
+    if (this.isPaused) {
+      this.lastTime = timestamp;
+      this.draw();
+      this.animationFrameId = requestAnimationFrame((t) => this.loop(t));
+      return;
+    }
 
     const rawDt = Math.min((timestamp - this.lastTime) / 1000, 0.1);
     this.lastTime = timestamp;
@@ -2855,6 +2866,7 @@ export class CyberDefenseEngine {
 
   // --- End Session & PGT Payout Handshake ---
   async endSession(victory = false) {
+    if (this.state !== 'PLAYING') return;
     this.state = victory ? 'VICTORY' : 'GAMEOVER';
     if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
 

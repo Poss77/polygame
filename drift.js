@@ -104,7 +104,7 @@ class CyberDriftGame {
 
   bindEvents() {
     window.addEventListener('keydown', (e) => {
-      if (!this.isRunning) return;
+      if (!this.isRunning || this.isPaused) return;
       if (!e || e.isTrusted !== true) {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Drift', 'untrusted_keyboard_input');
         return;
@@ -206,7 +206,7 @@ class CyberDriftGame {
     const containerEl = document.getElementById('game-window-container') || this.canvas;
 
     const handleDriftTouchStart = (e) => {
-      if (!this.isRunning || !e.touches || e.touches.length === 0) return;
+      if (!this.isRunning || this.isPaused || !e.touches || e.touches.length === 0) return;
       if (!e || e.isTrusted !== true) {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Drift', 'untrusted_touch_input');
         return;
@@ -231,7 +231,7 @@ class CyberDriftGame {
     };
 
     const handleDriftTouchMove = (e) => {
-      if (!this.isRunning || !e.touches || e.touches.length === 0) return;
+      if (!this.isRunning || this.isPaused || !e.touches || e.touches.length === 0) return;
       if (e.target.closest('#drift-controls-hud') || e.target.closest('.btn-fullscreen-close') || e.target.closest('button')) return;
       e.preventDefault();
       
@@ -1173,6 +1173,7 @@ class CyberDriftGame {
   }
 
   async gameOver() {
+    if (!this.isRunning) return;
     if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
     this.isRunning = false;
     if (this.animationId) cancelAnimationFrame(this.animationId);

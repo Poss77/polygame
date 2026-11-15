@@ -23,11 +23,12 @@ export function pauseActiveArcadeGames() {
     if (window.invadersGame && window.invadersGame.isPlaying) window.invadersGame.isPaused = true;
     if (window.cyberDrift && window.cyberDrift.isRunning) window.cyberDrift.isPaused = true;
     if (window.cyberStacker && window.cyberStacker.isPlaying) window.cyberStacker.isPaused = true;
-    if (window.skeetEngine && window.skeetEngine.isRunning) window.skeetEngine.isPaused = true;
-    if (window.bubbleGame && window.bubbleGame.isRunning) window.bubbleGame.isPaused = true;
+    if (window.skeetEngine && window.skeetEngine.state === 'PLAYING') window.skeetEngine.isPaused = true;
+    if (window.defenseEngine && window.defenseEngine.state === 'PLAYING') window.defenseEngine.isPaused = true;
+    if (window.bubbleGame && window.bubbleGame.isPlaying) window.bubbleGame.isPaused = true;
     if (window.cyberRunner && window.cyberRunner.isRunning) window.cyberRunner.isPaused = true;
-    if (window.cyberTetrisGame && window.cyberTetrisGame.isRunning) window.cyberTetrisGame.isPaused = true;
-    if (window.cyber2048 && window.cyber2048.isRunning) window.cyber2048.isPaused = true;
+    if (window.cyberTetrisGame && window.cyberTetrisGame.isPlaying) window.cyberTetrisGame.isPaused = true;
+    if (window.cyber2048 && window.cyber2048.isPlaying) window.cyber2048.isPaused = true;
   } catch (e) {
     console.warn("[Relic Celebration] Pause games error:", e);
   }
@@ -38,34 +39,43 @@ export function pauseActiveArcadeGames() {
  */
 export function resumeActiveArcadeGames() {
   try {
+    const now = performance.now();
     if (window.dodgeGame && window.dodgeGame.isPlaying) {
       window.dodgeGame.isPaused = false;
-      window.dodgeGame.lastTime = performance.now();
+      window.dodgeGame.lastFrameTime = now;
     }
     if (window.invadersGame && window.invadersGame.isPlaying) {
       window.invadersGame.isPaused = false;
-      window.invadersGame.lastFrameTimestamp = performance.now();
+      window.invadersGame.lastFrameTimestamp = now;
     }
     if (window.cyberDrift && window.cyberDrift.isRunning) {
       window.cyberDrift.isPaused = false;
+      window.cyberDrift.lastFrameTime = now;
     }
     if (window.cyberStacker && window.cyberStacker.isPlaying) {
       window.cyberStacker.isPaused = false;
     }
-    if (window.skeetEngine && window.skeetEngine.isRunning) {
+    if (window.skeetEngine && window.skeetEngine.state === 'PLAYING') {
       window.skeetEngine.isPaused = false;
-      window.skeetEngine.lastTime = performance.now();
+      window.skeetEngine.lastTime = now;
     }
-    if (window.bubbleGame && window.bubbleGame.isRunning) {
+    if (window.defenseEngine && window.defenseEngine.state === 'PLAYING') {
+      window.defenseEngine.isPaused = false;
+      window.defenseEngine.lastTime = now;
+    }
+    if (window.bubbleGame && window.bubbleGame.isPlaying) {
       window.bubbleGame.isPaused = false;
+      window.bubbleGame.lastTimestamp = now;
     }
     if (window.cyberRunner && window.cyberRunner.isRunning) {
       window.cyberRunner.isPaused = false;
+      window.cyberRunner.lastFrameTime = now;
     }
-    if (window.cyberTetrisGame && window.cyberTetrisGame.isRunning) {
+    if (window.cyberTetrisGame && window.cyberTetrisGame.isPlaying) {
       window.cyberTetrisGame.isPaused = false;
+      window.cyberTetrisGame.lastTime = now;
     }
-    if (window.cyber2048 && window.cyber2048.isRunning) {
+    if (window.cyber2048 && window.cyber2048.isPlaying) {
       window.cyber2048.isPaused = false;
     }
   } catch (e) {

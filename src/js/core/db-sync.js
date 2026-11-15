@@ -1265,8 +1265,11 @@ export async function startArcadeSession(gameName) {
       }
 
       // Universal Telemetry Sentinel (Step 1): Begin tracking hardware input & focus metrics
-      if (typeof window !== 'undefined' && window.arcadeSecurity && typeof window.arcadeSecurity.startTelemetryTracking === 'function') {
-        window.arcadeSecurity.startTelemetryTracking(data.session_id, gameName);
+      if (typeof window !== 'undefined') {
+        window.currentArcadeSessionId = data.session_id;
+        if (window.arcadeSecurity && typeof window.arcadeSecurity.startTelemetryTracking === 'function') {
+          window.arcadeSecurity.startTelemetryTracking(data.session_id, gameName);
+        }
       }
 
       return data.session_id;
@@ -1294,8 +1297,13 @@ export async function endArcadeSession(sessionId, score = 0, bonusItems = 0, bon
 
   // Universal Telemetry Sentinel (Step 1): Finalize input & focus telemetry metrics
   let telemetry = {};
-  if (typeof window !== 'undefined' && window.arcadeSecurity && typeof window.arcadeSecurity.stopTelemetryTracking === 'function') {
-    telemetry = window.arcadeSecurity.stopTelemetryTracking(sessionId);
+  if (typeof window !== 'undefined') {
+    if (window.currentArcadeSessionId === sessionId) {
+      window.currentArcadeSessionId = null;
+    }
+    if (window.arcadeSecurity && typeof window.arcadeSecurity.stopTelemetryTracking === 'function') {
+      telemetry = window.arcadeSecurity.stopTelemetryTracking(sessionId);
+    }
   }
 
   try {

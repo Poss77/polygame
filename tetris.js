@@ -865,7 +865,8 @@ class CyberTetrisGame {
               rarity: 'rare',
               season: 2,
               gameName: 'Cyber Tetris',
-              image: 'metadata/images/relics/relic_tetris_block.jpg'
+              image: 'metadata/images/relics/relic_tetris_block.jpg',
+              sessionId: this.sessionId
             });
           }
         }

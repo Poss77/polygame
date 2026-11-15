@@ -71,7 +71,7 @@ class CyberStackerGame {
     // Keyboard Listeners
     window.addEventListener('keydown', (e) => {
       if (!e || !e.key || typeof e.key !== 'string') return;
-      if ([' ', 'ArrowDown', 's', 'S', 'Enter'].includes(e.key) && this.isPlaying) {
+      if ([' ', 'ArrowDown', 's', 'S', 'Enter'].includes(e.key) && this.isPlaying && !this.isPaused) {
         if (e.isTrusted !== true) {
           if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Stacker', 'untrusted_keyboard_input');
           return;
@@ -96,7 +96,7 @@ class CyberStackerGame {
 
       // Click / Tap on Canvas to drop block
       const handleDropInput = (e) => {
-        if (!this.isPlaying) return;
+        if (!this.isPlaying || this.isPaused) return;
         if (!e || e.isTrusted !== true) {
           if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Stacker', 'untrusted_input');
           return;
@@ -113,7 +113,7 @@ class CyberStackerGame {
 
       // Fullscreen Outside Tap / Click Drop Handler:
       const handleFullscreenOutsideDrop = (e) => {
-        if (!this.isPlaying) return;
+        if (!this.isPlaying || this.isPaused) return;
         if (!e || e.isTrusted !== true) {
           if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Stacker', 'untrusted_input');
           return;
@@ -162,6 +162,7 @@ class CyberStackerGame {
     if (btnDropHud && !btnDropHud._hasStackerListener) {
       btnDropHud._hasStackerListener = true;
       const onDrop = (e) => {
+        if (!this.isPlaying || this.isPaused) return;
         if (!e || e.isTrusted !== true) {
           if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Stacker', 'untrusted_input');
           return;
@@ -992,6 +993,7 @@ class CyberStackerGame {
   }
 
   async gameOver() {
+    if (!this.isPlaying) return;
     this.isPlaying = false;
     if (this.animationId) cancelAnimationFrame(this.animationId);
 

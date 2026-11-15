@@ -87,6 +87,10 @@ export class CyberSkeetEngine {
     this.initEvents();
   }
 
+  get isPlaying() {
+    return this.state === 'PLAYING';
+  }
+
   // --- Input & Sensor Event Listeners ---
   initEvents() {
     if (!this.canvas) return;
@@ -132,7 +136,7 @@ export class CyberSkeetEngine {
     };
 
     window.addEventListener('mousemove', (e) => {
-      if (this.state !== 'PLAYING') return;
+      if (this.state !== 'PLAYING' || this.isPaused) return;
       if (!e || e.isTrusted !== true) {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'untrusted_mouse_input');
         return;
@@ -143,7 +147,7 @@ export class CyberSkeetEngine {
     });
 
     window.addEventListener('mousedown', (e) => {
-      if (e.button === 0 && this.state === 'PLAYING') {
+      if (e.button === 0 && this.state === 'PLAYING' && !this.isPaused) {
         if (!e || e.isTrusted !== true) {
           if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'untrusted_mouse_input');
           return;
@@ -152,7 +156,7 @@ export class CyberSkeetEngine {
         const panel = document.getElementById('panel-game-skeet');
         if (!panel || panel.style.display === 'none') return;
         // Ignore clicks on interactive UI buttons or modal dialogs
-        if (e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('#skeet-overlay-gameover') || e.target.closest('.btn-fullscreen-close'))) {
+        if (e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('#quantum-relic-discovery-overlay') || e.target.closest('#global-jackpot-celebration-overlay') || e.target.closest('#skeet-overlay-gameover') || e.target.closest('.btn-fullscreen-close'))) {
           return;
         }
         syncMouseCrosshair(e);
@@ -162,7 +166,7 @@ export class CyberSkeetEngine {
 
     // 2. Global Touch & Swipe Controls (Works anywhere on screen & outside canvas window)
     window.addEventListener('touchstart', (e) => {
-      if (this.state !== 'PLAYING') return;
+      if (this.state !== 'PLAYING' || this.isPaused) return;
       if (!e || e.isTrusted !== true) {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'untrusted_touch_input');
         return;
@@ -172,7 +176,7 @@ export class CyberSkeetEngine {
       if (!panel || panel.style.display === 'none') return;
 
       // Ignore touches on interactive UI buttons or modal dialogs
-      if (e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('#skeet-overlay-gameover'))) {
+      if (e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('#quantum-relic-discovery-overlay') || e.target.closest('#global-jackpot-celebration-overlay') || e.target.closest('#skeet-overlay-gameover'))) {
         return;
       }
 
@@ -192,7 +196,7 @@ export class CyberSkeetEngine {
     }, { passive: false });
 
     window.addEventListener('touchmove', (e) => {
-      if (this.state !== 'PLAYING') return;
+      if (this.state !== 'PLAYING' || this.isPaused) return;
       if (!e || e.isTrusted !== true) {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'untrusted_touch_input');
         return;
@@ -227,7 +231,7 @@ export class CyberSkeetEngine {
     }, { passive: false });
 
     window.addEventListener('touchend', (e) => {
-      if (this.state !== 'PLAYING') return;
+      if (this.state !== 'PLAYING' || this.isPaused) return;
       if (!e || e.isTrusted !== true) {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'untrusted_touch_input');
         return;
@@ -235,7 +239,7 @@ export class CyberSkeetEngine {
       this._lastTrustedInputTime = Date.now();
 
       // Ignore touches on interactive UI buttons
-      if (e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('#skeet-overlay-gameover'))) {
+      if (e.target && (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.closest('.modal-content') || e.target.closest('#quantum-relic-discovery-overlay') || e.target.closest('#global-jackpot-celebration-overlay') || e.target.closest('#skeet-overlay-gameover'))) {
         return;
       }
 
@@ -259,14 +263,15 @@ export class CyberSkeetEngine {
     // 3. Keyboard Aim & Fire
     window.addEventListener('keydown', (e) => {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyW', 'KeyS', 'KeyA', 'KeyD', 'Enter'].includes(e.code)) {
-        if (this.state === 'PLAYING') e.preventDefault();
+        if (this.state !== 'PLAYING' || this.isPaused) return;
+        e.preventDefault();
         if (!e || e.isTrusted !== true) {
           if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Skeet', 'untrusted_keyboard_input');
           return;
         }
         this._lastTrustedInputTime = Date.now();
         this.keys[e.code] = true;
-        if ((e.code === 'Space' || e.code === 'Enter') && this.state === 'PLAYING' && !e.repeat) {
+        if ((e.code === 'Space' || e.code === 'Enter') && !e.repeat) {
           this.fireShot();
         }
       }
@@ -770,7 +775,7 @@ export class CyberSkeetEngine {
 
   // --- Firing Blaster ---
   fireShot() {
-    if (this.state !== 'PLAYING') return;
+    if (this.state !== 'PLAYING' || this.isPaused) return;
 
     // Anti-Bot: Verify that a genuine trusted hardware input occurred recently (< 450ms)
     const timeSinceTrusted = Date.now() - (this._lastTrustedInputTime || 0);
@@ -911,7 +916,8 @@ export class CyberSkeetEngine {
             rarity: 'rare',
             season: 2,
             gameName: 'Cyber Skeet',
-            image: 'metadata/images/relics/relic_skeet_clay.jpg'
+            image: 'metadata/images/relics/relic_skeet_clay.jpg',
+            sessionId: this.sessionId
           });
         }
       }
@@ -975,6 +981,7 @@ export class CyberSkeetEngine {
 
   // --- Heart Loss & Game Over ---
   loseHeart(reason = '') {
+    if (this.state !== 'PLAYING') return;
     this.lives = Math.max(0, this.lives - 1);
     this.consecutiveHits = 0;
     this.comboMultiplier = 1;
@@ -1006,6 +1013,7 @@ export class CyberSkeetEngine {
 
   // --- Game Over & Payout ---
   async gameOver() {
+    if (this.state !== 'PLAYING') return;
     this.state = 'GAMEOVER';
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);

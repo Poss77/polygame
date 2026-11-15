@@ -614,7 +614,8 @@ class Cyber2048Game {
               rarity: 'rare',
               season: 2,
               gameName: 'Cyber 2048',
-              image: 'metadata/images/relics/relic_2048_tile.jpg'
+              image: 'metadata/images/relics/relic_2048_tile.jpg',
+              sessionId: this.sessionId
             });
           }
         }

@@ -76,7 +76,7 @@ class NeonAstroDodge {
       }
       if (!e.key || typeof e.key !== 'string') return;
       if (e.key === ' ' || e.key === 'Spacebar') {
-        if (this.isPlaying) {
+        if (this.isPlaying && !this.isPaused) {
           e.preventDefault();
           this.keys[' '] = true;
           if (document.activeElement && typeof document.activeElement.blur === 'function') {
@@ -85,7 +85,7 @@ class NeonAstroDodge {
           this.shootPlasma();
         }
       } else if (e.key === 'Shift' || e.key === 'c' || e.key === 'C') {
-        if (this.isPlaying) {
+        if (this.isPlaying && !this.isPaused) {
           e.preventDefault();
           this.performDash();
         }
@@ -138,7 +138,7 @@ class NeonAstroDodge {
     };
 
     this.canvas.addEventListener('mousemove', (e) => {
-      if (!this.isPlaying) return;
+      if (!this.isPlaying || this.isPaused) return;
       if (!e || e.isTrusted !== true) {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('AstroDodge', 'untrusted_mouse_input');
         return;
@@ -152,7 +152,7 @@ class NeonAstroDodge {
     });
 
     this.canvas.addEventListener('mousedown', (e) => {
-      if (!this.isPlaying) return;
+      if (!this.isPlaying || this.isPaused) return;
       if (!e || e.isTrusted !== true) {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('AstroDodge', 'untrusted_mouse_input');
         return;
@@ -192,7 +192,7 @@ class NeonAstroDodge {
     // cachedRect and getCachedRect defined above and shared across mouse and touch
 
     const handleTouchStart = (e) => {
-      if (!this.isPlaying || !e.touches || e.touches.length === 0) return;
+      if (!this.isPlaying || this.isPaused || !e.touches || e.touches.length === 0) return;
       if (!e || e.isTrusted !== true) {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('AstroDodge', 'untrusted_touch_input');
         return;
@@ -225,7 +225,7 @@ class NeonAstroDodge {
     };
 
     const handleTouchMove = (e) => {
-      if (!this.isPlaying || !e.touches || e.touches.length === 0) return;
+      if (!this.isPlaying || this.isPaused || !e.touches || e.touches.length === 0) return;
       if (!e || e.isTrusted !== true) {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('AstroDodge', 'untrusted_touch_input');
         return;
@@ -566,6 +566,7 @@ class NeonAstroDodge {
   }
 
   async gameOver() {
+    if (!this.isPlaying) return;
     if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
     this.isPlaying = false;
     if (this.animationId) {

@@ -314,7 +314,7 @@ class CyberRunnerGame {
   // --- Input Binding ---
   bindInputs() {
     window.addEventListener('keydown', (e) => {
-      if (!this.isRunning) return;
+      if (!this.isRunning || this.isPaused) return;
       const code = e.code || '';
       const key = e.key || '';
       if (code === 'ArrowLeft' || key === 'ArrowLeft' || code === 'KeyA' || key.toLowerCase() === 'a') {
@@ -340,7 +340,7 @@ class CyberRunnerGame {
 
     const isRunnerActive = () => {
       const panel = document.getElementById('panel-game-runner');
-      return Boolean(this.isRunning && panel && panel.style.display !== 'none' && !panel.classList.contains('game-panel-hidden'));
+      return Boolean(this.isRunning && !this.isPaused && panel && panel.style.display !== 'none' && !panel.classList.contains('game-panel-hidden'));
     };
 
     const isInteractiveTarget = (target) => {
@@ -879,7 +879,8 @@ class CyberRunnerGame {
             rarity: 'rare',
             season: 2,
             gameName: 'Cyber Runner',
-            image: 'metadata/images/relics/relic_runner_sneakers.jpg'
+            image: 'metadata/images/relics/relic_runner_sneakers.jpg',
+            sessionId: this.sessionId
           });
         }
       }

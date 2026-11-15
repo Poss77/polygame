@@ -105,7 +105,7 @@ class BubbleTroubleGame {
 
   initEvents() {
     window.addEventListener('keydown', (e) => {
-      if (!this.isPlaying) return;
+      if (!this.isPlaying || this.isPaused) return;
       if (!e || e.isTrusted !== true) {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Bubble', 'untrusted_keyboard_input');
         return;
@@ -647,7 +647,8 @@ class BubbleTroubleGame {
             rarity: 'rare',
             season: 2,
             gameName: 'Cyber Bubble',
-            image: 'metadata/images/relics/relic_bubble_orb.jpg'
+            image: 'metadata/images/relics/relic_bubble_orb.jpg',
+            sessionId: this.sessionId
           });
         }
       }
@@ -791,6 +792,7 @@ class BubbleTroubleGame {
   }
 
   async gameOver() {
+    if (!this.isPlaying) return;
     if (window.trackQuestProgress) window.trackQuestProgress('games', 1);
     this.stop();
 
