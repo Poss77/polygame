@@ -220,6 +220,17 @@ class BubbleTroubleGame {
     };
     window.addEventListener('pointerup', (e) => endTouch(e, false));
     window.addEventListener('pointercancel', (e) => endTouch(e, true));
+
+    // Prevent browser scroll/pan from firing pointercancel when swiping outside the canvas on mobile
+    window.addEventListener('touchmove', (e) => {
+      if (!this.isPlaying || this.isPaused) return;
+      if (!this.canvas || this.canvas.offsetParent === null) return;
+      const targetEl = e.target && e.target.closest ? e.target : null;
+      if (targetEl && targetEl.closest('button, a, input, select, textarea, [role="button"], .game-overlay, .modal, .nav-item, .tab-btn')) {
+        return;
+      }
+      e.preventDefault();
+    }, { passive: false });
   }
 
   startGame() {
@@ -299,8 +310,14 @@ class BubbleTroubleGame {
   setGlobalTouchLock(locked) {
     if (typeof document === 'undefined') return;
     const val = locked ? 'none' : '';
-    if (document.documentElement) document.documentElement.style.touchAction = val;
-    if (document.body) document.body.style.touchAction = val;
+    if (document.documentElement) {
+      document.documentElement.style.touchAction = val;
+      document.documentElement.classList.toggle('bubble-touch-lock', !!locked);
+    }
+    if (document.body) {
+      document.body.style.touchAction = val;
+      document.body.classList.toggle('bubble-touch-lock', !!locked);
+    }
   }
 
   stop() {

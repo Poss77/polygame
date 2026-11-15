@@ -5,6 +5,9 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Cyber Bubble Full-Screen Mobile Swipe Fix (`v1.5.841`)**:
+  - Added `bubble-touch-lock` CSS class (`touch-action: none !important` on all non-modal descendants in `src/css/mobile.css`) and a non-passive `touchmove` `preventDefault()` guard in `bubble.js` during active gameplay so swiping outside the game window on mobile no longer triggers browser scrolling/`pointercancel`.
+
 - **Cyber Wordle Missed Count Row (`v1.5.840`)**:
   - Added an `X` (Missed) bar as the last row in the Cyber Wordle Statistics guess distribution histogram (`openWordleStatsModal()` in `src/js/features/wordle.js`), displaying `played - wins`.
 

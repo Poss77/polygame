@@ -291,3 +291,10 @@
     touch-action: none; /* Prevent scrolling when dragging on canvas */
   }
 }
+
+/* Global touch-action lock during active Cyber Bubble gameplay so swiping anywhere outside the canvas works */
+html.bubble-touch-lock,
+body.bubble-touch-lock,
+body.bubble-touch-lock *:not(.modal):not(.modal *) {
+  touch-action: none !important;
+}
