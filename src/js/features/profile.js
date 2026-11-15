@@ -324,7 +324,8 @@ export function syncProfileView() {
   if (isPgtOnchainWhale) totalFaucetMult *= 1.10;
   totalFaucetMult *= vipFaucetFactor;
   if (isAmbassador) totalFaucetMult *= 2.0;
-  if (isApex) totalFaucetMult *= apexMult;
+  const faucetRelicMult = multis.faucetRelicMultiplier || apexMult;
+  if (faucetRelicMult > 1.0) totalFaucetMult *= faucetRelicMult;
 
   // 2. ARCADE MULTIPLIER:
   // (1 + NFT Game Boost%) x (VIP factor) x (Ambassador 2.0) x (Apex 1.5)

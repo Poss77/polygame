@@ -585,6 +585,20 @@ export function isSeason2ApexUnlocked(userRelics) {
 }
 export const isSerie2ApexUnlocked = isSeason2ApexUnlocked;
 
+// Tiered Faucet Relic Set Multiplier: 1 set = 1.5x, 2 sets = 1.75x, 3+ sets = 2.0x
+export function getFaucetRelicMultiplier(userRelics) {
+  const s1Complete = isSeason1ApexUnlocked(userRelics);
+  const s2Complete = isSeason2ApexUnlocked(userRelics);
+  const completedSets = (s1Complete ? 1 : 0) + (s2Complete ? 1 : 0);
+
+  let multiplier = 1.0;
+  if (completedSets >= 3) multiplier = 2.0;
+  else if (completedSets === 2) multiplier = 1.75;
+  else if (completedSets === 1) multiplier = 1.5;
+
+  return { multiplier, completedSets, s1Complete, s2Complete };
+}
+
 let _isHydratingRelics = false;
 let _hasHydratedRelicsOnce = false;
 
@@ -742,7 +756,7 @@ export function renderRelicsVault() {
           <h3 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">Quantum Relics Vault — Serie 1</h3>
         </div>
         <p style="margin: 0; color: var(--text-muted); font-size: 0.88rem; line-height: 1.4;">
-          Collect all 17 Serie 1 Relics across S1 arcade games & PolySpace mining to unlock the permanent <strong>1.5x Apex Arcade & Faucet Multiplier</strong>!
+          Collect all 17 Serie 1 Relics across S1 arcade games & PolySpace mining to unlock the permanent <strong>1.5x Apex Arcade Multiplier</strong> + tiered <strong>Faucet Set Boost</strong> (1 Set: 1.5x • 2 Sets: 1.75x • 3 Sets: 2.0x)!
         </p>
       </div>
       <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
@@ -771,7 +785,7 @@ export function renderRelicsVault() {
           <h3 style="font-size: 1.1rem; font-weight: 800; color: #f0abfc; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">Serie 2 — PolySpace Frontier</h3>
         </div>
         <p style="margin: 0; color: var(--text-muted); font-size: 0.88rem; line-height: 1.4;">
-          Collect all 18 Serie 2 Relics across S2 arcade games (Cyber Skeet, Bubble, Runner, Tetris, 2048) to unlock a permanent <strong>1.5x PolySpace Mission Rewards Multiplier (Ore + PGT)</strong>!
+          Collect all 18 Serie 2 Relics across S2 arcade games (Cyber Skeet, Bubble, Runner, Tetris, 2048) to unlock a permanent <strong>1.5x PolySpace Mission Rewards Multiplier (Ore + PGT)</strong> + count toward the tiered <strong>Faucet Set Boost</strong> (1 Set: 1.5x • 2 Sets: 1.75x • 3 Sets: 2.0x)!
         </p>
       </div>
       <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
@@ -1040,6 +1054,7 @@ window.getSeason1Progress = getSeason1Progress;
 window.getSeason2Progress = getSeason2Progress;
 window.isSeason1ApexUnlocked = isSeason1ApexUnlocked;
 window.isSeason2ApexUnlocked = isSeason2ApexUnlocked;
+window.getFaucetRelicMultiplier = getFaucetRelicMultiplier;
 
 const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
 const MULTICALL3_ABI = [

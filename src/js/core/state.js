@@ -7,7 +7,7 @@ import { triggerToast, escapeHtml } from './ui.js';
 import { renderStakingLedger, activeStakingTier, activeStakingPool, updateStakingLockCountdownUI } from '../features/staking.js';
 import { syncProfileView } from '../features/profile.js';
 import { updateRoshamboWagerLabels } from '../features/roshambo.js';
-import { isSeason1ApexUnlocked, getSeason1Progress, normalizeRelicsObject } from '../features/relics.js';
+import { isSeason1ApexUnlocked, getSeason1Progress, getSeason2Progress, getFaucetRelicMultiplier, normalizeRelicsObject } from '../features/relics.js';
 import { getActiveSeasonalEvent } from '../features/seasonal-events.js';
 
 // --- Guest Session Address Generator ---
@@ -768,9 +768,14 @@ export class PolyState {
     const ambassadorStakingBoost = isAmb ? 1.10 : 1.0;
     const ambReferralMultiplier = isAmb ? 1.5 : 1.0;
 
-    // Serie 1 Apex Multiplier (Owning >= 1 of all 17 Serie 1 Relics grants permanent 1.5x)
+    // Serie 1 Apex Multiplier (Owning >= 1 of all 17 Serie 1 Relics grants permanent 1.5x Arcade)
     const isApexUnlocked = isSeason1ApexUnlocked(this.state.relics || {});
     const apexMultiplier = isApexUnlocked ? 1.5 : 1.0;
+
+    // Tiered Faucet Relic Set Multiplier (1 set = 1.5x, 2 sets = 1.75x, 3+ sets = 2.0x)
+    const faucetRelicInfo = getFaucetRelicMultiplier(this.state.relics || {});
+    const faucetRelicMultiplier = faucetRelicInfo.multiplier;
+    const completedRelicSets = faucetRelicInfo.completedSets;
 
     // Quantum Relic Seeker NFT (Doubles Relic spawn probability)
     const hasRelicSeeker = uniqueNftIds.includes('nft_relic_seeker');
@@ -811,6 +816,8 @@ export class PolyState {
       totalFaucetBoostPercent,
       isApexUnlocked,
       apexMultiplier,
+      faucetRelicMultiplier,
+      completedRelicSets,
       hasRelicSeeker,
       relicSpawnMultiplier,
       isVip,
@@ -1350,11 +1357,15 @@ export class PolyState {
     const elRelics = document.getElementById('faucet-multiplier-relics');
     if (elRelics) {
       const s1Prog = getSeason1Progress(this.state.relics || {});
-      if (s1Prog.isComplete) {
-        elRelics.innerText = `x1.5 (+50%) (${s1Prog.ownedCount}/17)`;
-        elRelics.style.color = '#ffd700';
+      const s2Prog = getSeason2Progress(this.state.relics || {});
+      const fRelicMult = multis.faucetRelicMultiplier || 1.0;
+      const fCompletedSets = multis.completedRelicSets || 0;
+      if (fRelicMult > 1.0) {
+        const pct = Math.round((fRelicMult - 1) * 100);
+        elRelics.innerText = `x${fRelicMult} (+${pct}%) (${fCompletedSets}/2 Sets)`;
+        elRelics.style.color = fCompletedSets >= 2 ? '#00ff88' : '#ffd700';
       } else {
-        elRelics.innerText = `+0% (${s1Prog.ownedCount}/17)`;
+        elRelics.innerText = `+0% (S1: ${s1Prog.ownedCount}/17 • S2: ${s2Prog.ownedCount}/18)`;
         elRelics.style.color = 'var(--text-muted)';
       }
     }
@@ -1371,9 +1382,9 @@ export class PolyState {
       totalEst *= 1.10;
       totalEstPol *= 1.10;
     }
-    if (multis.isApexUnlocked) {
-      totalEst *= 1.5;
-      totalEstPol *= 1.5;
+    if ((multis.faucetRelicMultiplier || 1.0) > 1.0) {
+      totalEst *= multis.faucetRelicMultiplier;
+      totalEstPol *= multis.faucetRelicMultiplier;
     }
 
     // Dynamic Seasonal Event Bonus (Halloween, Christmas, Easter, etc.)

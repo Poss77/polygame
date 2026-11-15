@@ -680,7 +680,7 @@ export function getVipEstimatedClaimPol() {
   if (lpMult > 1.0) totalEst *= lpMult;
   if (pgtStakerMult > 1.0) totalEst *= pgtStakerMult;
   if (isPgtBalWhale) totalEst *= 1.10;
-  if (multis.isApexUnlocked) totalEst *= 1.5;
+  if ((multis.faucetRelicMultiplier || 1.0) > 1.0) totalEst *= multis.faucetRelicMultiplier;
 
   // Dynamic Seasonal Event Bonus (Halloween, Christmas, Easter, etc.)
   const seasonal = (stateObj && typeof stateObj.getActiveSeasonalEvent === 'function')
@@ -864,9 +864,16 @@ export function renderVipFaucetUI() {
 
   const relicsEl = document.getElementById('vip-faucet-multiplier-relics');
   if (relicsEl) {
-    const isApex = !!multis.isApexUnlocked;
-    relicsEl.innerText = isApex ? 'x1.5 (+50%) (Unlocked)' : '+0% (0/17)';
-    relicsEl.style.color = isApex ? '#ffd700' : 'var(--text-muted)';
+    const fRelicMult = multis.faucetRelicMultiplier || 1.0;
+    const fCompletedSets = multis.completedRelicSets || 0;
+    if (fRelicMult > 1.0) {
+      const pct = Math.round((fRelicMult - 1) * 100);
+      relicsEl.innerText = `x${fRelicMult} (+${pct}%) (${fCompletedSets}/2 Sets)`;
+      relicsEl.style.color = fCompletedSets >= 2 ? '#00ff88' : '#ffd700';
+    } else {
+      relicsEl.innerText = '+0% (0/2 Sets)';
+      relicsEl.style.color = 'var(--text-muted)';
+    }
   }
 
   const isVipUser = typeof stateObj.isVipActive === 'function' && stateObj.isVipActive();
