@@ -17,6 +17,8 @@ class Cyber2048Game {
     this.score = 0;
     this.bestScore = 0;
     this.isPlaying = false;
+    this.isPaused = false;
+    this.sessionRelicsDroppedCount = 0;
     this.maxTile = 2;
     this.bonusTokens = 0;
     this.milestonesAwarded = new Set();
@@ -401,6 +403,8 @@ class Cyber2048Game {
     this.coinCell = null;
     this.movesSinceCoin = 0;
     this.startTime = Date.now();
+    this.isPaused = false;
+    this.sessionRelicsDroppedCount = 0;
     this.isPlaying = true;
 
     // Push history state to trap accidental mobile browser back-gestures
@@ -423,6 +427,8 @@ class Cyber2048Game {
 
   stop() {
     this.isPlaying = false;
+    this.isPaused = false;
+    this.sessionRelicsDroppedCount = 0;
   }
 
   // --- Board Mechanics ---
@@ -479,7 +485,7 @@ class Cyber2048Game {
 
   // Direction: 0: Up, 1: Right, 2: Down, 3: Left
   move(direction) {
-    if (!this.isPlaying) return;
+    if (!this.isPlaying || this.isPaused) return;
 
     let moved = false;
     let turnPoints = 0;
@@ -592,6 +598,25 @@ class Cyber2048Game {
           this.playSfx('merge', maxMergedVal);
         } else if (!coinClaimed) {
           this.playSfx('move');
+        }
+      }
+
+      // Season 2 Quantum Relic Drop Check (1 per session, >= 15s elapsed, >= 64 tile merge)
+      const elapsedSec = this.startTime ? (Date.now() - this.startTime) / 1000 : 0;
+      if ((this.sessionRelicsDroppedCount || 0) < 1 && elapsedSec >= 15 && maxMergedVal >= 64) {
+        const relicMult = (typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
+        if (Math.random() < 0.015 * relicMult) {
+          this.sessionRelicsDroppedCount = 1;
+          if (typeof window.triggerRelicCelebration === 'function') {
+            window.triggerRelicCelebration({
+              id: 'relic_2048_tile',
+              name: '2048 Tile',
+              rarity: 'rare',
+              season: 2,
+              gameName: 'Cyber 2048',
+              image: 'metadata/images/relics/relic_2048_tile.jpg'
+            });
+          }
         }
       }
 
@@ -831,6 +856,8 @@ class Cyber2048Game {
   async gameOver() {
     if (!this.isPlaying) return;
     this.isPlaying = false;
+    this.isPaused = false;
+    this.sessionRelicsDroppedCount = 0;
     this.playSfx('gameover');
 
     // Daily Quest increment ("Play 3 Arcade Games")

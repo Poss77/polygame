@@ -10,10 +10,10 @@ import { ARCADE_GAMES_REGISTRY, ARCADE_GAMES_LIST } from '../core/games-registry
 import { hasValidWeb3Session } from '../core/auth-web3.js';
 import { supabase, ADMIN_WALLET_ADDRESS, TOKEN_CONTRACT_ADDRESS, NFT_CONTRACT_ADDRESS, web3Provider } from '../core/config.js';
 import { sfx } from '../core/audio.js';
-import { NFT_REGISTRY } from './nft.js';
+import { NFT_REGISTRY, getOwnedNftsFromChain } from './nft.js';
 import { appState } from '../core/state.js';
 import { triggerToast, connectWeb3, escapeHtml } from '../core/ui.js';
-import { renderRelicsVault, hydrateAndRenderRelicsVault, getSeason1Progress, getRelicMeta, mergeRelicsObjects } from './relics.js';
+import { renderRelicsVault, hydrateAndRenderRelicsVault, getSeason1Progress, getSeason2Progress, getRelicMeta, mergeRelicsObjects, getOwnedRelicsFromChain } from './relics.js';
 import { formatLeaderboardName, getLeaderboardStarshipBadge, loadAstroDodgeLeaderboard } from './leaderboards.js';
 
 // --- USER PROFILE & PGT LEADERBOARD LOGIC ---
@@ -887,117 +887,177 @@ export async function openPublicProfile(walletAddress) {
     if (refPgtEl) refPgtEl.innerText = `${parseFloat(user.total_referral_commission || 0).toFixed(2)} PGT`;
     if (refPolEl) refPolEl.innerText = `${parseFloat(user.total_referral_pol || 0).toFixed(4)} POL`;
 
-    // Utility NFTs
-    const ownedIds = user.owned_nfts || [];
-    const nftsCountEl = document.getElementById('pub-profile-nfts-count');
-    if (nftsCountEl) nftsCountEl.innerText = ownedIds.length;
+    // Helper to render Public Profile Utility NFTs + Quantum Relics (reused for live on-chain merge)
+    const renderPubProfileAssets = (nftsList, relicsObj) => {
+      const nftsCountEl = document.getElementById('pub-profile-nfts-count');
+      if (nftsCountEl) nftsCountEl.innerText = nftsList.length;
 
-    if (!ownedIds || ownedIds.length === 0) {
-      if (nftsGridEl) nftsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">No NFTs in collection yet.</div>';
-    } else {
-      let nftsHtml = '';
-      ownedIds.forEach(nftId => {
-        const activeNft = NFT_REGISTRY.find(n => n.id === nftId);
-        const nftName = activeNft ? activeNft.name : `NFT #${nftId}`;
-        const nftIcon = activeNft ? (activeNft.icon || '🎨') : '🎨';
-        const isShowcase = (nftId === equippedId);
-        nftsHtml += `
-          <div style="background: ${isShowcase ? 'rgba(0, 240, 255, 0.15)' : 'rgba(0,0,0,0.4)'}; border: 1px solid ${isShowcase ? 'var(--color-primary)' : 'var(--border-glass)'}; padding: 0.4rem 0.65rem; border-radius: 6px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem;">
-            <span>${nftIcon}</span>
-            <strong style="color: #fff;">${nftName}</strong>
-            ${isShowcase ? '<span style="color:var(--color-primary); font-size:0.7rem; font-weight:800; margin-left:2px;">⭐ Displayed</span>' : ''}
-          </div>
-        `;
-      });
-      if (nftsGridEl) nftsGridEl.innerHTML = nftsHtml;
-    }
-
-    // Quantum Relics Stash
-    const relicsData = user.relics || {};
-    const relicsCountEl = document.getElementById('pub-profile-relics-count');
-    const relicsBreakdownEl = document.getElementById('pub-profile-relics-breakdown');
-    const relicsGridEl = document.getElementById('pub-profile-relics-grid');
-
-    let totalRelics = 0;
-    let onchainRelics = 0;
-    let inGameRelics = 0;
-    const unlockedRelicsList = [];
-
-    Object.keys(relicsData).forEach(relicId => {
-      const r = relicsData[relicId];
-      if (r && (r.total > 0 || r.unminted > 0 || r.onchain > 0)) {
-        const count = r.total || ((r.unminted || 0) + (r.onchain || 0));
-        const onchainCount = r.onchain || 0;
-        const unmintedCount = r.unminted || (count - onchainCount);
-        
-        totalRelics += count;
-        onchainRelics += onchainCount;
-        inGameRelics += unmintedCount;
-
-        const meta = getRelicMeta(relicId) || { name: relicId, rarity: 'rare' };
-        unlockedRelicsList.push({
-          id: relicId,
-          name: meta.name,
-          rarity: meta.rarity,
-          total: count,
-          onchain: onchainCount,
-          unminted: unmintedCount
-        });
-      }
-    });
-
-    if (relicsCountEl) relicsCountEl.innerText = totalRelics;
-    if (relicsBreakdownEl) relicsBreakdownEl.innerText = `${onchainRelics} Polygon • ${inGameRelics} In-Game`;
-
-    // Serie 1 Set Progress (out of 17)
-    const s1Progress = getSeason1Progress(relicsData);
-    const s1BannerEl = document.getElementById('pub-profile-s1-banner');
-
-    if (s1CountEl) {
-      if (s1Progress.isComplete) {
-        s1CountEl.innerHTML = `<span style="color: #ffd700; font-weight: 800;">🏆 17 / 17 Complete (1.5x Apex Active)</span>`;
-        if (s1BannerEl) {
-          s1BannerEl.style.borderColor = '#ffd700';
-          s1BannerEl.style.background = 'rgba(255, 215, 0, 0.12)';
-        }
-      } else {
-        const pct = Math.round((s1Progress.ownedCount / 17) * 100);
-        s1CountEl.innerHTML = `<span style="color: var(--color-accent); font-weight: 800;">${s1Progress.ownedCount} / 17 Relics</span> <span style="color: var(--text-dim); font-size: 0.7rem; font-weight: 600;">(${pct}%)</span>`;
-        if (s1BannerEl) {
-          s1BannerEl.style.borderColor = 'rgba(0, 240, 255, 0.2)';
-          s1BannerEl.style.background = 'rgba(0, 240, 255, 0.06)';
-        }
-      }
-    }
-
-    if (relicsGridEl) {
-      if (unlockedRelicsList.length === 0) {
-        relicsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">No Quantum Relics unlocked yet.</div>';
-      } else {
-        const rarityStyles = {
-          rare: { border: '#00f0ff', color: '#00f0ff', bg: 'rgba(0,240,255,0.1)' },
-          epic: { border: '#bd00ff', color: '#bd00ff', bg: 'rgba(189,0,255,0.1)' },
-          legendary: { border: '#ffd700', color: '#ffd700', bg: 'rgba(255,215,0,0.1)' },
-          mythic: { border: '#ff0055', color: '#ff0055', bg: 'rgba(255,0,85,0.1)' }
-        };
-
-        let relicsHtml = '';
-        unlockedRelicsList.forEach(r => {
-          const style = rarityStyles[r.rarity] || rarityStyles.rare;
-          relicsHtml += `
-            <div style="background: rgba(0,0,0,0.4); border: 1px solid ${style.border}; padding: 0.4rem 0.65rem; border-radius: 6px; display: flex; align-items: center; gap: 0.45rem; font-size: 0.78rem;">
-              <span style="font-size: 0.95rem;">🏺</span>
-              <div style="display: flex; flex-direction: column;">
-                <span style="color: #fff; font-weight: 700;">${r.name} <span style="color: ${style.color}; font-size: 0.7rem; text-transform: uppercase;">(${r.rarity})</span></span>
-                <span style="color: var(--text-muted); font-size: 0.68rem;">
-                  x${r.total} total ${r.onchain > 0 ? `• <span style="color:#b388ff; font-weight:600;">${r.onchain} Polygon</span>` : ''} ${r.unminted > 0 ? `• <span style="color:#00f0ff; font-weight:600;">${r.unminted} In-Game</span>` : ''}
-                </span>
+      if (nftsGridEl) {
+        if (!nftsList || nftsList.length === 0) {
+          nftsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">No NFTs in collection yet.</div>';
+        } else {
+          let nftsHtml = '';
+          nftsList.forEach(nftId => {
+            const activeNft = NFT_REGISTRY.find(n => n.id === nftId);
+            const nftName = activeNft ? activeNft.name : `NFT #${nftId}`;
+            const nftIcon = activeNft ? (activeNft.icon || '🎨') : '🎨';
+            const nftImg = activeNft && activeNft.image ? activeNft.image : null;
+            const isShowcase = (nftId === equippedId);
+            nftsHtml += `
+              <div style="background: ${isShowcase ? 'rgba(0, 240, 255, 0.15)' : 'rgba(0,0,0,0.4)'}; border: 1px solid ${isShowcase ? 'var(--color-primary)' : 'var(--border-glass)'}; padding: 0.4rem 0.65rem; border-radius: 6px; display: flex; align-items: center; gap: 0.45rem; font-size: 0.78rem;">
+                ${nftImg
+                  ? `<img src="${nftImg}" alt="${nftName}" style="width: 24px; height: 24px; border-radius: 4px; object-fit: cover; flex-shrink: 0;" loading="lazy" />`
+                  : `<span>${nftIcon}</span>`
+                }
+                <strong style="color: #fff;">${nftName}</strong>
+                ${isShowcase ? '<span style="color:var(--color-primary); font-size:0.7rem; font-weight:800; margin-left:2px;">⭐ Displayed</span>' : ''}
               </div>
-            </div>
-          `;
-        });
-        relicsGridEl.innerHTML = relicsHtml;
+            `;
+          });
+          nftsGridEl.innerHTML = nftsHtml;
+        }
       }
+
+      const relicsCountEl = document.getElementById('pub-profile-relics-count');
+      const relicsBreakdownEl = document.getElementById('pub-profile-relics-breakdown');
+      const relicsGridEl = document.getElementById('pub-profile-relics-grid');
+
+      let totalRelics = 0;
+      let onchainRelics = 0;
+      let inGameRelics = 0;
+      const unlockedRelicsList = [];
+
+      Object.keys(relicsObj || {}).forEach(relicId => {
+        const r = relicsObj[relicId];
+        if (r && (r.total > 0 || r.unminted > 0 || r.onchain > 0)) {
+          const count = r.total || ((r.unminted || 0) + (r.onchain || 0));
+          const onchainCount = r.onchain || 0;
+          const unmintedCount = r.unminted || Math.max(0, count - onchainCount);
+
+          totalRelics += count;
+          onchainRelics += onchainCount;
+          inGameRelics += unmintedCount;
+
+          const meta = getRelicMeta(relicId) || { name: relicId, rarity: 'rare', season: 1, image: null };
+          unlockedRelicsList.push({
+            id: relicId,
+            name: meta.name,
+            rarity: meta.rarity,
+            season: meta.season || 1,
+            image: meta.image,
+            total: count,
+            onchain: onchainCount,
+            unminted: unmintedCount
+          });
+        }
+      });
+
+      if (relicsCountEl) relicsCountEl.innerText = totalRelics;
+      if (relicsBreakdownEl) relicsBreakdownEl.innerText = `${onchainRelics} Polygon • ${inGameRelics} In-Game`;
+
+      // Serie 1 Set Progress (out of 17)
+      const s1Progress = getSeason1Progress(relicsObj);
+      const s1BannerEl = document.getElementById('pub-profile-s1-banner');
+      if (s1CountEl) {
+        if (s1Progress.isComplete) {
+          s1CountEl.innerHTML = `<span style="color: #ffd700; font-weight: 800;">🏆 17 / 17 Complete (1.5x Apex Active)</span>`;
+          if (s1BannerEl) {
+            s1BannerEl.style.borderColor = '#ffd700';
+            s1BannerEl.style.background = 'rgba(255, 215, 0, 0.12)';
+          }
+        } else {
+          const pct = Math.round((s1Progress.ownedCount / 17) * 100);
+          s1CountEl.innerHTML = `<span style="color: var(--color-accent); font-weight: 800;">${s1Progress.ownedCount} / 17 Relics</span> <span style="color: var(--text-dim); font-size: 0.7rem; font-weight: 600;">(${pct}%)</span>`;
+          if (s1BannerEl) {
+            s1BannerEl.style.borderColor = 'rgba(0, 240, 255, 0.2)';
+            s1BannerEl.style.background = 'rgba(0, 240, 255, 0.06)';
+          }
+        }
+      }
+
+      // Serie 2 Set Progress (out of 18)
+      const s2Progress = getSeason2Progress(relicsObj);
+      const s2BannerEl = document.getElementById('pub-profile-s2-banner');
+      const s2CountEl = document.getElementById('pub-profile-s2-count');
+      if (s2CountEl) {
+        if (s2Progress.isComplete) {
+          s2CountEl.innerHTML = `<span style="color: #00ff88; font-weight: 800;">🏆 18 / 18 Complete (1.5x PolySpace Active)</span>`;
+          if (s2BannerEl) {
+            s2BannerEl.style.borderColor = '#00ff88';
+            s2BannerEl.style.background = 'rgba(0, 255, 136, 0.12)';
+          }
+        } else {
+          const pct2 = s2Progress.totalCount > 0 ? Math.round((s2Progress.ownedCount / s2Progress.totalCount) * 100) : 0;
+          s2CountEl.innerHTML = `<span style="color: #e879f9; font-weight: 800;">${s2Progress.ownedCount} / ${s2Progress.totalCount} Relics</span> <span style="color: var(--text-dim); font-size: 0.7rem; font-weight: 600;">(${pct2}%)</span>`;
+          if (s2BannerEl) {
+            s2BannerEl.style.borderColor = 'rgba(189, 0, 255, 0.25)';
+            s2BannerEl.style.background = 'rgba(189, 0, 255, 0.07)';
+          }
+        }
+      }
+
+      if (relicsGridEl) {
+        if (unlockedRelicsList.length === 0) {
+          relicsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">No Quantum Relics unlocked yet.</div>';
+        } else {
+          const rarityStyles = {
+            rare: { border: '#00f0ff', color: '#00f0ff', bg: 'rgba(0,240,255,0.1)' },
+            epic: { border: '#bd00ff', color: '#bd00ff', bg: 'rgba(189,0,255,0.1)' },
+            legendary: { border: '#ffd700', color: '#ffd700', bg: 'rgba(255,215,0,0.1)' },
+            mythic: { border: '#ff0055', color: '#ff0055', bg: 'rgba(255,0,85,0.1)' }
+          };
+
+          let relicsHtml = '';
+          unlockedRelicsList.forEach(r => {
+            const style = rarityStyles[r.rarity] || rarityStyles.rare;
+            const sBadge = r.season === 2
+              ? `<span style="background: rgba(232,121,249,0.2); color: #f0abfc; border: 1px solid rgba(232,121,249,0.4); font-size: 0.6rem; font-weight: 800; padding: 0 4px; border-radius: 3px; margin-left: 3px;">S2</span>`
+              : `<span style="background: rgba(0,240,255,0.15); color: #00f0ff; border: 1px solid rgba(0,240,255,0.35); font-size: 0.6rem; font-weight: 800; padding: 0 4px; border-radius: 3px; margin-left: 3px;">S1</span>`;
+
+            relicsHtml += `
+              <div style="background: rgba(0,0,0,0.4); border: 1px solid ${style.border}; padding: 0.4rem 0.65rem; border-radius: 6px; display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem;">
+                ${r.image
+                  ? `<img src="${r.image}" alt="${r.name}" style="width: 28px; height: 28px; border-radius: 4px; object-fit: cover; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.1);" loading="lazy" />`
+                  : `<span style="font-size: 0.95rem;">🏺</span>`
+                }
+                <div style="display: flex; flex-direction: column;">
+                  <span style="color: #fff; font-weight: 700;">${r.name}${sBadge} <span style="color: ${style.color}; font-size: 0.7rem; text-transform: uppercase;">(${r.rarity})</span></span>
+                  <span style="color: var(--text-muted); font-size: 0.68rem;">
+                    x${r.total} total ${r.onchain > 0 ? `• <span style="color:#b388ff; font-weight:600;">${r.onchain} Polygon</span>` : ''} ${r.unminted > 0 ? `• <span style="color:#00f0ff; font-weight:600;">${r.unminted} In-Game</span>` : ''}
+                  </span>
+                </div>
+              </div>
+            `;
+          });
+          relicsGridEl.innerHTML = relicsHtml;
+        }
+      }
+    };
+
+    // Initial render from Supabase DB row
+    const ownedIds = Array.isArray(user.owned_nfts) ? user.owned_nfts : [];
+    const relicsData = (user.relics && typeof user.relics === 'object') ? user.relics : {};
+    renderPubProfileAssets(ownedIds, relicsData);
+
+    // Non-blocking live Polygon on-chain merge (so Admin-minted prize NFTs/Relics appear immediately)
+    const evmWallet = (user.linked_wallet_address && user.linked_wallet_address.startsWith('0x') && user.linked_wallet_address.length === 42)
+      ? user.linked_wallet_address
+      : ((user.player_id && user.player_id.startsWith('0x') && user.player_id.length === 42 && !user.player_id.startsWith('0xpgt') && !user.player_id.startsWith('0xg'))
+          ? user.player_id
+          : null);
+
+    if (evmWallet) {
+      Promise.all([
+        getOwnedNftsFromChain(evmWallet).catch(() => []),
+        getOwnedRelicsFromChain(evmWallet).catch(() => ({}))
+      ]).then(([chainNfts, chainRelics]) => {
+        const modalCheck = document.getElementById('modal-public-profile');
+        if (!modalCheck || modalCheck.style.display === 'none') return;
+
+        const mergedNfts = Array.from(new Set([...(ownedIds || []), ...(Array.isArray(chainNfts) ? chainNfts : [])]));
+        const mergedRelics = mergeRelicsObjects(relicsData, chainRelics);
+        renderPubProfileAssets(mergedNfts, mergedRelics);
+      }).catch(() => {});
     }
 
     // If the viewed public profile matches the active player, sync relics into appState immediately

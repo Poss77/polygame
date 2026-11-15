@@ -1,0 +1,28 @@
+{
+  "name": "Star Compass",
+  "description": "A celestial gold-and-obsidian astrolabe compass guiding pilots across the void. Authentic PolyGame Serie 2 Quantum Relic NFT. Collect all 18 Serie 2 Relics to unlock the permanent 1.5x PolySpace Mission Rewards Multiplier (Ore + PGT).",
+  "image": "https://polygongaming.io/metadata/images/relics/relic_s2_mythic_compass.jpg",
+  "external_url": "https://polygongaming.io/",
+  "attributes": [
+    {
+      "trait_type": "Game",
+      "value": "Universal (Season 2)"
+    },
+    {
+      "trait_type": "Rarity",
+      "value": "Mythic"
+    },
+    {
+      "trait_type": "Serie",
+      "value": "Serie 2"
+    },
+    {
+      "trait_type": "Set Component",
+      "value": "1 of 18 Serie 2 Relics"
+    },
+    {
+      "trait_type": "Set Bonus",
+      "value": "1.5x PolySpace Mission Rewards (When Full Serie 2 Owned)"
+    }
+  ]
+}

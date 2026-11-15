@@ -211,105 +211,214 @@ export const RELICS_REGISTRY = [
     svgFallback: `<svg viewBox="0 0 100 100"><defs><linearGradient id="g-gen" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#ffd700"/><stop offset="50%" stop-color="#00f0ff"/><stop offset="100%" stop-color="#ff00ff"/></linearGradient></defs><polygon points="50,6 88,28 88,72 50,94 12,72 12,28" fill="none" stroke="url(#g-gen)" stroke-width="4"/><polygon points="50,20 74,34 74,66 50,80 26,66 26,34" fill="none" stroke="#00f0ff" stroke-width="2"/><line x1="50" y1="6" x2="50" y2="20" stroke="#ffd700" stroke-width="2"/><line x1="88" y1="28" x2="74" y2="34" stroke="#ffd700" stroke-width="2"/><line x1="88" y1="72" x2="74" y2="66" stroke="#ffd700" stroke-width="2"/><line x1="50" y1="94" x2="50" y2="80" stroke="#ffd700" stroke-width="2"/><line x1="12" y1="72" x2="26" y2="66" stroke="#ffd700" stroke-width="2"/><line x1="12" y1="28" x2="26" y2="34" stroke="#ffd700" stroke-width="2"/><circle cx="50" cy="50" r="12" fill="#ffd700" opacity="0.85"/><circle cx="50" cy="50" r="5" fill="#fff"/></svg>`
   },
 
-  // --- Serie 2 Expansion Relics ---
+  // --- Cyber Skeet (Serie 2) ---
   {
-    id: "relic_exp1_a",
-    name: "Chrono Warp Drive",
-    game: "expansion_1",
-    gameName: "Expansion Game A",
+    id: "relic_skeet_clay",
+    name: "Clay Skeet",
+    game: "skeet",
+    gameName: "Cyber Skeet",
     rarity: "rare",
     season: 2,
-    description: "Serie 2 Expansion: Advanced warp drive for next-generation arcade survival.",
-    image: null,
-    svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="32" fill="none" stroke="#3b82f6" stroke-width="4"/><polygon points="50,20 70,65 30,65" fill="#3b82f6" opacity="0.5"/><circle cx="50" cy="50" r="6" fill="#fff"/></svg>`
+    description: "An aerodynamic ceramic skeet disc edged with a glowing cyan target rim.",
+    image: "metadata/images/relics/relic_skeet_clay.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><ellipse cx="50" cy="50" rx="38" ry="18" fill="none" stroke="#00f0ff" stroke-width="4" transform="rotate(-20 50 50)"/><ellipse cx="50" cy="50" rx="22" ry="10" fill="#ff7744" opacity="0.7" transform="rotate(-20 50 50)"/></svg>`
   },
   {
-    id: "relic_exp1_b",
-    name: "Plasma Grid Cell",
-    game: "expansion_1",
-    gameName: "Expansion Game A",
+    id: "relic_skeet_scope",
+    name: "Holo Scope",
+    game: "skeet",
+    gameName: "Cyber Skeet",
     rarity: "epic",
     season: 2,
-    description: "Serie 2 Expansion: High-yield ion grid containment unit.",
-    image: null,
-    svgFallback: `<svg viewBox="0 0 100 100"><rect x="25" y="25" width="50" height="50" rx="8" fill="none" stroke="#6366f1" stroke-width="4"/><circle cx="50" cy="50" r="12" fill="#6366f1" opacity="0.6"/><circle cx="50" cy="50" r="4" fill="#fff"/></svg>`
+    description: "A precision holographic optic scope calibrated for high-speed aerial targets.",
+    image: "metadata/images/relics/relic_skeet_scope.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="32" fill="none" stroke="#bd00ff" stroke-width="4"/><circle cx="50" cy="50" r="14" fill="none" stroke="#00f0ff" stroke-width="2"/><line x1="50" y1="12" x2="50" y2="88" stroke="#00f0ff" stroke-width="2"/><line x1="12" y1="50" x2="88" y2="50" stroke="#00f0ff" stroke-width="2"/></svg>`
   },
   {
-    id: "relic_exp1_c",
-    name: "Hyperion Matrix",
-    game: "expansion_1",
-    gameName: "Expansion Game A",
+    id: "relic_skeet_shotgun",
+    name: "Golden Shotgun",
+    game: "skeet",
+    gameName: "Cyber Skeet",
     rarity: "legendary",
     season: 2,
-    description: "Serie 2 Expansion: Holographic quantum computation matrix.",
-    image: null,
-    svgFallback: `<svg viewBox="0 0 100 100"><polygon points="50,15 80,35 80,65 50,85 20,65 20,35" fill="none" stroke="#8b5cf6" stroke-width="4"/><circle cx="50" cy="50" r="15" fill="#8b5cf6" opacity="0.7"/><circle cx="50" cy="50" r="5" fill="#fff"/></svg>`
+    description: "A masterwork gilded sporting shotgun forged for flawless skeet streaks.",
+    image: "metadata/images/relics/relic_skeet_shotgun.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><path d="M15,65 L45,50 L85,35 L88,42 L48,58 L25,75 Z" fill="#ffd700" opacity="0.85" stroke="#fff" stroke-width="2"/></svg>`
   },
+
+  // --- Cyber Bubble (Serie 2) ---
   {
-    id: "relic_exp2_a",
-    name: "Neural Synapse Link",
-    game: "expansion_2",
-    gameName: "Expansion Game B",
+    id: "relic_bubble_orb",
+    name: "Bubble Orb",
+    game: "bubble",
+    gameName: "Cyber Bubble",
     rarity: "rare",
     season: 2,
-    description: "Serie 2 Expansion: High-speed biological cyberware neural interface.",
-    image: null,
-    svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="32" fill="none" stroke="#06b6d4" stroke-width="4"/><circle cx="50" cy="50" r="14" fill="#06b6d4" opacity="0.6"/><circle cx="50" cy="50" r="4" fill="#fff"/></svg>`
+    description: "A translucent crystal sphere pulsing with a cyan-to-magenta energy core.",
+    image: "metadata/images/relics/relic_bubble_orb.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="34" fill="none" stroke="#00f0ff" stroke-width="4"/><circle cx="50" cy="50" r="18" fill="#bd00ff" opacity="0.6"/><circle cx="40" cy="38" r="6" fill="#fff" opacity="0.8"/></svg>`
   },
   {
-    id: "relic_exp2_b",
-    name: "Sonic Oscillator",
-    game: "expansion_2",
-    gameName: "Expansion Game B",
+    id: "relic_bubble_harpoon",
+    name: "Laser Harpoon",
+    game: "bubble",
+    gameName: "Cyber Bubble",
     rarity: "epic",
     season: 2,
-    description: "Serie 2 Expansion: Deep-frequency acoustic particle resonator.",
-    image: null,
-    svgFallback: `<svg viewBox="0 0 100 100"><polygon points="50,20 75,70 25,70" fill="none" stroke="#14b8a6" stroke-width="4"/><circle cx="50" cy="50" r="12" fill="#14b8a6" opacity="0.6"/><circle cx="50" cy="50" r="4" fill="#fff"/></svg>`
+    description: "A precision chrome-and-violet laser harpoon tip engineered for chain pops.",
+    image: "metadata/images/relics/relic_bubble_harpoon.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><polygon points="50,10 68,45 56,45 56,88 44,88 44,45 32,45" fill="#bd00ff" stroke="#00f0ff" stroke-width="3"/></svg>`
   },
   {
-    id: "relic_exp2_c",
-    name: "Singularity Core",
-    game: "expansion_2",
-    gameName: "Expansion Game B",
+    id: "relic_bubble_pearl",
+    name: "Rainbow Pearl",
+    game: "bubble",
+    gameName: "Cyber Bubble",
     rarity: "legendary",
     season: 2,
-    description: "Serie 2 Expansion: Contained black hole event horizon generator.",
-    image: null,
-    svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="36" fill="none" stroke="#f43f5e" stroke-width="4"/><circle cx="50" cy="50" r="18" fill="#f43f5e" opacity="0.7"/><circle cx="50" cy="50" r="6" fill="#fff"/></svg>`
+    description: "An iridescent rainbow pearl cradled in a sculpted titanium-gold ring.",
+    image: "metadata/images/relics/relic_bubble_pearl.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="48" r="26" fill="#ffd700" opacity="0.8" stroke="#fff" stroke-width="3"/><ellipse cx="50" cy="76" rx="30" ry="8" fill="none" stroke="#ffd700" stroke-width="4"/></svg>`
   },
+
+  // --- Cyber Runner (Serie 2) ---
   {
-    id: "relic_exp3_a",
-    name: "Tachyon Solar Sail",
-    game: "expansion_3",
-    gameName: "Expansion Game C",
+    id: "relic_runner_sneakers",
+    name: "Neon Sneakers",
+    game: "runner",
+    gameName: "Cyber Runner",
     rarity: "rare",
     season: 2,
-    description: "Serie 2 Expansion: Interstellar photon propulsion sail.",
-    image: null,
-    svgFallback: `<svg viewBox="0 0 100 100"><polygon points="50,15 85,80 50,65 15,80" fill="none" stroke="#eab308" stroke-width="4"/><circle cx="50" cy="50" r="8" fill="#eab308" opacity="0.8"/></svg>`
+    description: "High-top cybernetic running sneakers with electric-cyan LED soles.",
+    image: "metadata/images/relics/relic_runner_sneakers.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><path d="M20,65 L32,32 L52,32 L60,55 L84,60 L84,72 L20,72 Z" fill="none" stroke="#00f0ff" stroke-width="4"/><line x1="20" y1="75" x2="84" y2="75" stroke="#00f0ff" stroke-width="5"/></svg>`
   },
   {
-    id: "relic_exp3_b",
-    name: "Celestial Orrery",
-    game: "expansion_3",
-    gameName: "Expansion Game C",
+    id: "relic_runner_hoverboard",
+    name: "Cyber Hoverboard",
+    game: "runner",
+    gameName: "Cyber Runner",
     rarity: "epic",
     season: 2,
-    description: "Serie 2 Expansion: Ancient planetary clockwork model predicting cosmic eclipses.",
-    image: null,
-    svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="35" fill="none" stroke="#f59e0b" stroke-width="4"/><circle cx="50" cy="50" r="20" fill="none" stroke="#f59e0b" stroke-width="2"/><circle cx="50" cy="50" r="6" fill="#fff"/></svg>`
+    description: "An anti-gravity titanium hoverboard built for high-velocity neon rails.",
+    image: "metadata/images/relics/relic_runner_hoverboard.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><rect x="14" y="42" width="72" height="16" rx="8" fill="none" stroke="#bd00ff" stroke-width="4" transform="rotate(-15 50 50)"/><circle cx="30" cy="64" r="7" fill="#00f0ff"/><circle cx="70" cy="48" r="7" fill="#00f0ff"/></svg>`
   },
   {
-    id: "relic_exp3_c",
-    name: "Crown of Stars",
-    game: "expansion_3",
-    gameName: "Expansion Game C",
+    id: "relic_runner_jetpack",
+    name: "Turbo Jetpack",
+    game: "runner",
+    gameName: "Cyber Runner",
+    rarity: "legendary",
+    season: 2,
+    description: "A twin-thruster gold-and-titanium jetpack with cyan plasma vents.",
+    image: "metadata/images/relics/relic_runner_jetpack.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><rect x="26" y="22" width="18" height="44" rx="6" fill="none" stroke="#ffd700" stroke-width="4"/><rect x="56" y="22" width="18" height="44" rx="6" fill="none" stroke="#ffd700" stroke-width="4"/><polygon points="35,68 28,88 42,88" fill="#00f0ff"/><polygon points="65,68 58,88 72,88" fill="#00f0ff"/></svg>`
+  },
+
+  // --- Cyber Tetris (Serie 2) ---
+  {
+    id: "relic_tetris_block",
+    name: "Neon Block",
+    game: "tetris",
+    gameName: "Cyber Tetris",
+    rarity: "rare",
+    season: 2,
+    description: "A frosted cyan glass tetromino block humming with neon circuit energy.",
+    image: "metadata/images/relics/relic_tetris_block.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><rect x="38" y="20" width="24" height="24" fill="#00f0ff" opacity="0.7" stroke="#fff" stroke-width="2"/><rect x="14" y="44" width="24" height="24" fill="#00f0ff" opacity="0.7" stroke="#fff" stroke-width="2"/><rect x="38" y="44" width="24" height="24" fill="#00f0ff" opacity="0.7" stroke="#fff" stroke-width="2"/><rect x="62" y="44" width="24" height="24" fill="#00f0ff" opacity="0.7" stroke="#fff" stroke-width="2"/></svg>`
+  },
+  {
+    id: "relic_tetris_beam",
+    name: "Line Clearer",
+    game: "tetris",
+    gameName: "Cyber Tetris",
+    rarity: "epic",
+    season: 2,
+    description: "A horizontal plasma emitter bar that vaporizes full grid rows in one pulse.",
+    image: "metadata/images/relics/relic_tetris_beam.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><rect x="12" y="40" width="76" height="20" rx="6" fill="none" stroke="#bd00ff" stroke-width="4"/><line x1="20" y1="50" x2="80" y2="50" stroke="#00f0ff" stroke-width="6"/></svg>`
+  },
+  {
+    id: "relic_tetris_crown",
+    name: "Tetris Crown",
+    game: "tetris",
+    gameName: "Cyber Tetris",
+    rarity: "legendary",
+    season: 2,
+    description: "A royal crown sculpted from interlocking gold and obsidian tetromino facets.",
+    image: "metadata/images/relics/relic_tetris_crown.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><polygon points="16,74 22,34 40,52 50,24 60,52 78,34 84,74" fill="none" stroke="#ffd700" stroke-width="4"/><circle cx="50" cy="60" r="6" fill="#00f0ff"/></svg>`
+  },
+
+  // --- Cyber 2048 (Serie 2) ---
+  {
+    id: "relic_2048_tile",
+    name: "2048 Tile",
+    game: "q2048",
+    gameName: "Cyber 2048",
+    rarity: "rare",
+    season: 2,
+    description: "A beveled anodized puzzle tile embossed with a glowing cyan circuit emblem.",
+    image: "metadata/images/relics/relic_2048_tile.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><rect x="18" y="18" width="64" height="64" rx="12" fill="none" stroke="#00f0ff" stroke-width="4"/><rect x="34" y="34" width="32" height="32" rx="6" fill="#00f0ff" opacity="0.5"/></svg>`
+  },
+  {
+    id: "relic_2048_cube",
+    name: "Merge Cube",
+    game: "q2048",
+    gameName: "Cyber 2048",
+    rarity: "epic",
+    season: 2,
+    description: "A floating hypercube with glowing violet and cyan energy seams.",
+    image: "metadata/images/relics/relic_2048_cube.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><polygon points="50,14 82,32 82,68 50,86 18,68 18,32" fill="none" stroke="#bd00ff" stroke-width="4"/><line x1="50" y1="14" x2="50" y2="50" stroke="#00f0ff" stroke-width="3"/><line x1="18" y1="32" x2="50" y2="50" stroke="#00f0ff" stroke-width="3"/><line x1="82" y1="32" x2="50" y2="50" stroke="#00f0ff" stroke-width="3"/><line x1="50" y1="50" x2="50" y2="86" stroke="#00f0ff" stroke-width="3"/></svg>`
+  },
+  {
+    id: "relic_2048_gold",
+    name: "Golden 2048",
+    game: "q2048",
+    gameName: "Cyber 2048",
+    rarity: "legendary",
+    season: 2,
+    description: "A solid gold trophy tile housing a radiant warm-gold crystal core.",
+    image: "metadata/images/relics/relic_2048_gold.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><rect x="18" y="18" width="64" height="64" rx="12" fill="none" stroke="#ffd700" stroke-width="4"/><polygon points="50,28 68,50 50,72 32,50" fill="#ffd700" opacity="0.8"/></svg>`
+  },
+
+  // --- Universal Mythics (Serie 2) ---
+  {
+    id: "relic_s2_mythic_compass",
+    name: "Star Compass",
+    game: "universal_s2",
+    gameName: "Universal (Season 2)",
     rarity: "mythic",
     season: 2,
-    description: "Serie 2 Expansion: The ultimate sovereign artifact of the outer cosmos.",
-    image: null,
-    svgFallback: `<svg viewBox="0 0 100 100"><polygon points="20,70 30,35 45,55 50,25 55,55 70,35 80,70" fill="none" stroke="#ffd700" stroke-width="4"/><circle cx="50" cy="65" r="8" fill="#ffd700"/><circle cx="50" cy="65" r="4" fill="#fff"/></svg>`
+    description: "A celestial gold-and-obsidian astrolabe compass guiding pilots across the void.",
+    image: "metadata/images/relics/relic_s2_mythic_compass.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="36" fill="none" stroke="#ffd700" stroke-width="4"/><polygon points="50,20 58,42 80,50 58,58 50,80 42,58 20,50 42,42" fill="#00f0ff" opacity="0.85"/></svg>`
+  },
+  {
+    id: "relic_s2_mythic_gem",
+    name: "Void Gem",
+    game: "universal_s2",
+    gameName: "Universal (Season 2)",
+    rarity: "mythic",
+    season: 2,
+    description: "A faceted obsidian-violet crystal gem orbited by delicate golden rings.",
+    image: "metadata/images/relics/relic_s2_mythic_gem.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><polygon points="50,12 78,42 50,88 22,42" fill="#bd00ff" opacity="0.7" stroke="#ffd700" stroke-width="3"/><ellipse cx="50" cy="50" rx="40" ry="14" fill="none" stroke="#ffd700" stroke-width="2" transform="rotate(-25 50 50)"/></svg>`
+  },
+  {
+    id: "relic_s2_mythic_key",
+    name: "Infinity Key",
+    game: "universal_s2",
+    gameName: "Universal (Season 2)",
+    rarity: "mythic",
+    season: 2,
+    description: "A gilded skeleton key with an infinity-loop bow housing a cosmic core.",
+    image: "metadata/images/relics/relic_s2_mythic_key.jpg",
+    svgFallback: `<svg viewBox="0 0 100 100"><circle cx="34" cy="38" r="16" fill="none" stroke="#ffd700" stroke-width="4"/><line x1="46" y1="48" x2="82" y2="82" stroke="#ffd700" stroke-width="5"/><line x1="68" y1="68" x2="78" y2="58" stroke="#00f0ff" stroke-width="4"/><line x1="75" y1="75" x2="85" y2="65" stroke="#00f0ff" stroke-width="4"/></svg>`
   }
 ];
 
@@ -449,6 +558,33 @@ export function isSeason1ApexUnlocked(userRelics) {
 }
 export const isSerie1ApexUnlocked = isSeason1ApexUnlocked;
 
+// Calculate Serie 2 Progress (18 Active Relics)
+export function getSeason2Progress(userRelics) {
+  const normalized = normalizeRelicsObject(userRelics);
+  const s2Relics = RELICS_REGISTRY.filter(r => r.season === 2);
+  let ownedCount = 0;
+
+  s2Relics.forEach(r => {
+    const data = normalized && normalized[r.id];
+    if (data && (data.total > 0 || data.unminted > 0 || data.onchain > 0)) {
+      ownedCount++;
+    }
+  });
+
+  return {
+    ownedCount,
+    totalCount: s2Relics.length,
+    isComplete: s2Relics.length > 0 && ownedCount === s2Relics.length
+  };
+}
+export const getSerie2Progress = getSeason2Progress;
+
+// Check if Serie 2 Apex 1.5x PolySpace Mission Multiplier is Active
+export function isSeason2ApexUnlocked(userRelics) {
+  return getSeason2Progress(userRelics).isComplete;
+}
+export const isSerie2ApexUnlocked = isSeason2ApexUnlocked;
+
 let _isHydratingRelics = false;
 let _hasHydratedRelicsOnce = false;
 
@@ -546,6 +682,7 @@ export function renderRelicsVault() {
 
   const userRelics = normalizeRelicsObject(appState.state.relics || {});
   const s1Progress = getSeason1Progress(userRelics);
+  const s2Progress = getSeason2Progress(userRelics);
 
   // Group relics by game category
   const categories = [
@@ -554,22 +691,25 @@ export function renderRelicsVault() {
     { key: "drift", title: "🏎️ Cyber Drift Relics", season: 1 },
     { key: "stacker", title: "🏗️ Cyber Stacker Relics", season: 1 },
     { key: "space", title: "🪐 PolySpace Fleet Relics", season: 1 },
-    { key: "universal", title: "👑 Universal Apex Relics", season: 1 },
-    { key: "expansion_1", title: "🌌 Expansion Game A (Serie 2)", season: 2 },
-    { key: "expansion_2", title: "🌌 Expansion Game B (Serie 2)", season: 2 },
-    { key: "expansion_3", title: "🌌 Expansion Game C (Serie 2)", season: 2 }
+    { key: "universal", title: "👑 Universal Apex Relics (Serie 1)", season: 1 },
+    { key: "skeet", title: "🎯 Cyber Skeet Relics", season: 2 },
+    { key: "bubble", title: "🫧 Cyber Bubble Relics", season: 2 },
+    { key: "runner", title: "⚡ Cyber Runner Relics", season: 2 },
+    { key: "tetris", title: "🧱 Cyber Tetris Relics", season: 2 },
+    { key: "q2048", title: "🧩 Cyber 2048 Relics", season: 2 },
+    { key: "universal_s2", title: "👑 Universal Mythic Relics (Serie 2)", season: 2 }
   ];
 
   let html = `
     <!-- Serie 1 Apex Banner -->
-    <div style="background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(0,240,255,0.08) 100%); border: 1px solid ${s1Progress.isComplete ? 'var(--color-accent)' : 'var(--border-cyan)'}; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+    <div style="background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(0,240,255,0.08) 100%); border: 1px solid ${s1Progress.isComplete ? 'var(--color-accent)' : 'var(--border-cyan)'}; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
       <div>
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
           <span style="font-size: 1.4rem;">🏺</span>
-          <h3 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">Quantum Relics Vault</h3>
+          <h3 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">Quantum Relics Vault — Serie 1</h3>
         </div>
         <p style="margin: 0; color: var(--text-muted); font-size: 0.88rem; line-height: 1.4;">
-          Collect all 17 Serie 1 Relics across arcade games & PolySpace mining to unlock the permanent <strong>1.5x Apex Arcade & Faucet Multiplier</strong>!
+          Collect all 17 Serie 1 Relics across S1 arcade games & PolySpace mining to unlock the permanent <strong>1.5x Apex Arcade & Faucet Multiplier</strong>!
         </p>
       </div>
       <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
@@ -585,6 +725,35 @@ export function renderRelicsVault() {
           </div>
           <div style="font-size: 1.1rem; font-weight: 900; color: ${s1Progress.isComplete ? '#ffd700' : 'var(--text-muted)'};">
             ${s1Progress.isComplete ? '1.5x ACTIVE' : '1.5x LOCKED'}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Serie 2 PolySpace Mission Bonus Banner -->
+    <div style="background: linear-gradient(135deg, rgba(189,0,255,0.12) 0%, rgba(236,72,153,0.08) 100%); border: 1px solid ${s2Progress.isComplete ? '#ec4899' : 'rgba(189,0,255,0.35)'}; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+      <div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+          <span style="font-size: 1.4rem;">🚀</span>
+          <h3 style="font-size: 1.1rem; font-weight: 800; color: #f0abfc; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">Serie 2 — PolySpace Frontier</h3>
+        </div>
+        <p style="margin: 0; color: var(--text-muted); font-size: 0.88rem; line-height: 1.4;">
+          Collect all 18 Serie 2 Relics across S2 arcade games (Cyber Skeet, Bubble, Runner, Tetris, 2048) to unlock a permanent <strong>1.5x PolySpace Mission Rewards Multiplier (Ore + PGT)</strong>!
+        </p>
+      </div>
+      <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+        <div style="text-align: right;">
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Serie 2 Progress</div>
+          <div style="font-size: 1.4rem; font-weight: 900; color: ${s2Progress.isComplete ? '#00ff88' : '#e879f9'};">
+            ${s2Progress.ownedCount} / ${s2Progress.totalCount}
+          </div>
+        </div>
+        <div style="background: ${s2Progress.isComplete ? 'rgba(0,255,136,0.18)' : 'rgba(255,255,255,0.05)'}; border: 1px solid ${s2Progress.isComplete ? '#00ff88' : 'var(--border-glass)'}; border-radius: 8px; padding: 8px 14px; text-align: center;">
+          <div style="font-size: 0.7rem; text-transform: uppercase; font-weight: 700; color: ${s2Progress.isComplete ? '#00ff88' : 'var(--text-muted)'};">
+            ${s2Progress.isComplete ? '🛸 POLYSPACE BONUS' : '🔒 POLYSPACE BONUS'}
+          </div>
+          <div style="font-size: 1.1rem; font-weight: 900; color: ${s2Progress.isComplete ? '#00ff88' : 'var(--text-muted)'};">
+            ${s2Progress.isComplete ? '1.5x ACTIVE' : '1.5x LOCKED'}
           </div>
         </div>
       </div>
@@ -696,7 +865,7 @@ export function renderRelicsVault() {
               </div>
             ` : `
               <div style="text-align: center; font-size: 0.78rem; font-weight: 600; color: var(--text-muted);">
-                🔒 Play ${relic.gameName} to unlock
+                🔒 Play ${relic.game === 'universal_s2' ? 'any Season 2 Game' : (relic.game === 'universal' ? 'any Season 1 Game' : relic.gameName)} to unlock
               </div>
             `}
           </div>
@@ -709,6 +878,29 @@ export function renderRelicsVault() {
       </div>
     `;
   });
+
+  // Season 3 Coming Soon Teaser
+  html += `
+    <div style="margin-top: 2rem; background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(88, 28, 135, 0.18) 100%); border: 1px dashed rgba(168, 85, 247, 0.45); border-radius: 12px; padding: 1.4rem 1.6rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div style="font-size: 2rem; width: 48px; height: 48px; border-radius: 12px; background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.4); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          🌌
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; background: rgba(168, 85, 247, 0.2); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.45); padding: 2px 8px; border-radius: 999px;">Coming Soon</span>
+            <h4 style="margin: 0; font-size: 1rem; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 0.05em;">Quantum Relics — Serie 3</h4>
+          </div>
+          <p style="margin: 0; font-size: 0.82rem; color: var(--text-muted); line-height: 1.4;">
+            New anomalous signatures are forming in deep space. Future games and new cosmic relic sets will unlock in <strong>Season 3</strong>.
+          </p>
+        </div>
+      </div>
+      <div style="font-size: 0.8rem; font-weight: 800; color: #c084fc; background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); padding: 6px 12px; border-radius: 8px;">
+        🔒 Signal Encrypted
+      </div>
+    </div>
+  `;
 
   container.innerHTML = html;
 }

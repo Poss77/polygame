@@ -29,6 +29,7 @@ class CyberTetrisGame {
     this.combo = -1;
     this.isPlaying = false;
     this.isPaused = false;
+    this.sessionRelicsDroppedCount = 0;
     this.isGameOver = false;
     this.lastClearWasTetris = false;
     this.bonusTokensCollected = 0; // Rare 5 PGT bonus coins
@@ -405,6 +406,7 @@ class CyberTetrisGame {
     this.elapsedSeconds = 0;
     this.isGameOver = false;
     this.isPaused = false;
+    this.sessionRelicsDroppedCount = 0;
     this.lastClearWasTetris = false;
     this.combo = -1;
     this.bonusTokensCollected = 0;
@@ -850,6 +852,24 @@ class CyberTetrisGame {
 
       this.score += basePoints;
       this.lines += count;
+
+      // Season 2 Quantum Relic Drop Check (1 per session, >= 15s elapsed)
+      if ((this.sessionRelicsDroppedCount || 0) < 1 && this.elapsedSeconds >= 15) {
+        const relicMult = (typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
+        if (Math.random() < (0.006 * count) * relicMult) {
+          this.sessionRelicsDroppedCount = 1;
+          if (typeof window.triggerRelicCelebration === 'function') {
+            window.triggerRelicCelebration({
+              id: 'relic_tetris_block',
+              name: 'Neon Block',
+              rarity: 'rare',
+              season: 2,
+              gameName: 'Cyber Tetris',
+              image: 'metadata/images/relics/relic_tetris_block.jpg'
+            });
+          }
+        }
+      }
 
       // Check if any cleared line contains a golden 5 PGT coin!
       let coinsHarvested = 0;
@@ -1554,6 +1574,7 @@ class CyberTetrisGame {
   stop() {
     this.isPlaying = false;
     this.isPaused = false;
+    this.sessionRelicsDroppedCount = 0;
     if (this.animationId) {
       cancelAnimationFrame(this.animationId);
       this.animationId = null;

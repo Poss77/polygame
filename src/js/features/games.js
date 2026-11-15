@@ -272,6 +272,19 @@ export function updateGameTileBadges(settings) {
       `;
     }
 
+    // 3. Quantum Relics Season Badge (S1 vs S2; Cyber Defense permanently excluded)
+    const S1_RELIC_GAMES = ['astrododge', 'invaders', 'drift', 'stacker', 'space'];
+    const S2_RELIC_GAMES = ['skeet', 'bubble', 'runner', 'tetris', 'q2048'];
+    if (S1_RELIC_GAMES.includes(key)) {
+      badgesHtml += `
+        <div class="badge-relic-season badge-relic-s1" title="Quantum Relics Season 1 Drops Active" style="background: linear-gradient(135deg, rgba(0, 240, 255, 0.22), rgba(255, 215, 0, 0.18)); color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.55); font-size: 0.65rem; font-weight: 900; padding: 0.2rem 0.55rem; border-radius: 12px; letter-spacing: 0.5px; box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);">🏺 S1</div>
+      `;
+    } else if (S2_RELIC_GAMES.includes(key)) {
+      badgesHtml += `
+        <div class="badge-relic-season badge-relic-s2" title="Quantum Relics Season 2 Drops Active" style="background: linear-gradient(135deg, rgba(232, 121, 249, 0.25), rgba(236, 72, 153, 0.25)); color: #f0abfc; border: 1px solid rgba(232, 121, 249, 0.6); font-size: 0.65rem; font-weight: 900; padding: 0.2rem 0.55rem; border-radius: 12px; letter-spacing: 0.5px; box-shadow: 0 0 10px rgba(236, 72, 153, 0.28);">🏺 S2</div>
+      `;
+    }
+
     if (badgeContainer) {
       badgeContainer.innerHTML = badgesHtml;
     }

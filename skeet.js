@@ -15,6 +15,8 @@ export class CyberSkeetEngine {
     
     // Core State
     this.state = 'IDLE'; // IDLE, PLAYING, GAMEOVER
+    this.isPaused = false;
+    this.sessionRelicsDroppedCount = 0;
     this.sessionId = null;
     this.isStarting = false;
     this.animationFrameId = null;
@@ -433,6 +435,8 @@ export class CyberSkeetEngine {
     this.isStarting = true;
 
     // Reset Game State
+    this.isPaused = false;
+    this.sessionRelicsDroppedCount = 0;
     this.lives = 3;
     this.score = 0;
     this.claysHit = 0;
@@ -505,7 +509,9 @@ export class CyberSkeetEngine {
     const dt = Math.min(0.1, (timestamp - this.lastTime) / 1000);
     this.lastTime = timestamp;
 
-    this.update(dt);
+    if (!this.isPaused) {
+      this.update(dt);
+    }
     this.render();
 
     this.animationFrameId = requestAnimationFrame((t) => this.gameLoop(t));
@@ -892,6 +898,24 @@ export class CyberSkeetEngine {
 
     // 5. Shatter Physics Particle Explosion
     this.createClayDebris(clay, clay.color);
+
+    // 6. Season 2 Quantum Relic Drop Check (1 per session, >= 15s survival)
+    if ((this.sessionRelicsDroppedCount || 0) < 1 && this.survivalTime >= 15) {
+      const relicMult = (typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
+      if (Math.random() < 0.008 * relicMult) {
+        this.sessionRelicsDroppedCount = 1;
+        if (typeof window.triggerRelicCelebration === 'function') {
+          window.triggerRelicCelebration({
+            id: 'relic_skeet_clay',
+            name: 'Clay Skeet',
+            rarity: 'rare',
+            season: 2,
+            gameName: 'Cyber Skeet',
+            image: 'metadata/images/relics/relic_skeet_clay.jpg'
+          });
+        }
+      }
+    }
   }
 
   // --- EMP Chain Reaction ---

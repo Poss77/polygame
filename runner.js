@@ -18,6 +18,8 @@ class CyberRunnerGame {
     this.ctx = null;
     this.animationId = null;
     this.isRunning = false;
+    this.isPaused = false;
+    this.sessionRelicsDroppedCount = 0;
 
     // Session & Anti-Cheat
     this.sessionId = null;
@@ -528,6 +530,8 @@ class CyberRunnerGame {
     this.startTime = Date.now();
     this.gameTime = 0;
     this.lastFrameTime = performance.now();
+    this.isPaused = false;
+    this.sessionRelicsDroppedCount = 0;
     this.isRunning = true;
 
     // UI Updates
@@ -571,7 +575,9 @@ class CyberRunnerGame {
     const dt = Math.min((timestamp - this.lastFrameTime) / 1000, 0.1);
     this.lastFrameTime = timestamp;
 
-    this.update(dt);
+    if (!this.isPaused) {
+      this.update(dt);
+    }
     this.render();
 
     this.animationId = requestAnimationFrame((t) => this.loop(t));
@@ -861,6 +867,24 @@ class CyberRunnerGame {
   }
 
   spawnWave() {
+    // Season 2 Quantum Relic Drop Check (1 per session, >= 15s gameTime)
+    if ((this.sessionRelicsDroppedCount || 0) < 1 && this.gameTime >= 15) {
+      const relicMult = (typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
+      if (Math.random() < 0.002 * relicMult) {
+        this.sessionRelicsDroppedCount = 1;
+        if (typeof window.triggerRelicCelebration === 'function') {
+          window.triggerRelicCelebration({
+            id: 'relic_runner_sneakers',
+            name: 'Neon Sneakers',
+            rarity: 'rare',
+            season: 2,
+            gameName: 'Cyber Runner',
+            image: 'metadata/images/relics/relic_runner_sneakers.jpg'
+          });
+        }
+      }
+    }
+
     const lanes = [-1, 0, 1];
     const availableLanes = [...lanes];
     const spawnZ = 950;
