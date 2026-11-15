@@ -746,8 +746,9 @@ class CyberRunnerGame {
               this.lastTrickTime = now;
 
               const isOverdrive = this.overdriveTimer > 0;
-              const baseTrickPts = 75;
-              const bonusPts = isOverdrive ? baseTrickPts * 2 : baseTrickPts;
+              const streakBonus = Math.min(4, Math.max(0, this.trickStreak - 1)) * 25;
+              const baseTrickPts = 75 + streakBonus;
+              const bonusPts = Math.min(250, isOverdrive ? baseTrickPts * 2 : baseTrickPts);
 
               this.trickScore += bonusPts;
               this.score = Math.floor(this.distance + (this.bonusTokensCollected * 100) + (this.bonusItemsCollected * 50) + this.trickScore);
