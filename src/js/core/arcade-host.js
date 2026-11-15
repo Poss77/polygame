@@ -297,7 +297,7 @@ export const PolyArcadeHost = {
     const multInfo = PolyGameSDK.getActiveMultiplier(meta.key);
     const formatted = multInfo.total >= 10 ? multInfo.total.toFixed(1) : multInfo.total.toFixed(2).replace(/\.00$/, '.0');
     pillEl.style.display = 'inline-flex';
-    pillEl.innerHTML = `⚡ <span>${formatted}x Boost</span>`;
+    pillEl.innerHTML = `⚡ <span>${formatted}x</span>`;
     pillEl.title = multInfo.breakdownText;
     pillEl.setAttribute('data-mult-breakdown', multInfo.breakdownText);
   },

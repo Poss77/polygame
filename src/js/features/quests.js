@@ -117,9 +117,15 @@ export async function syncDailyQuests(forceImmediate = false) {
       if (Array.isArray(payload)) payload = payload[0];
       if (payload && payload.success && payload.daily_quests) {
         const synced = payload.daily_quests;
-        if (!synced.streak_days && q.streak_days) synced.streak_days = q.streak_days;
-        if (!synced.last_streak_date && q.last_streak_date) synced.last_streak_date = q.last_streak_date;
-        if (synced.streak_wheel_available === undefined && q.streak_wheel_available) synced.streak_wheel_available = q.streak_wheel_available;
+        if (synced.streak_days === undefined || synced.streak_days === null) {
+          synced.streak_days = q.streak_days || 0;
+        }
+        if (synced.last_streak_date === undefined || synced.last_streak_date === null) {
+          synced.last_streak_date = q.last_streak_date || '';
+        }
+        if (synced.streak_wheel_available === undefined || synced.streak_wheel_available === null) {
+          synced.streak_wheel_available = !!q.streak_wheel_available;
+        }
 
         appState.state.dailyQuests = synced;
         _lastSyncedQuestsSignature = JSON.stringify(synced);

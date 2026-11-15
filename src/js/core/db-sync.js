@@ -14,6 +14,101 @@ const getAppState = () => {
   return (typeof window !== 'undefined' && window.appState) ? window.appState : null;
 };
 
+/** Restores daily quests from DB, trusting server streak/claim state while preserving today's local progress. */
+function restoreDailyQuestsFromDb(activeAppState, rawDbQuests) {
+  const today = new Date().toISOString().split('T')[0];
+  let localQ = activeAppState.state.dailyQuests;
+  if (!localQ || typeof localQ !== 'object' || !localQ.date) {
+    try {
+      const ls = localStorage.getItem('polygame_daily_quests');
+      if (ls) localQ = JSON.parse(ls);
+    } catch (e) {}
+  }
+  localQ = localQ || {};
+
+  const dbQ = (rawDbQuests && typeof rawDbQuests === 'object' && Object.keys(rawDbQuests).length > 0)
+    ? rawDbQuests
+    : null;
+
+  // Server DB is authoritative for streak_days, last_streak_date, and streak_wheel_available
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  let authStreak = dbQ
+    ? Math.max(0, parseInt(dbQ.streak_days || 0, 10))
+    : Math.max(0, parseInt(localQ.streak_days || 0, 10));
+  const authLastStreakDate = dbQ
+    ? (dbQ.last_streak_date || '')
+    : (localQ.last_streak_date || '');
+  const authWheelAvailable = dbQ
+    ? !!dbQ.streak_wheel_available
+    : !!localQ.streak_wheel_available;
+
+  if (dbQ && dbQ.date !== today && authLastStreakDate !== yesterday && authLastStreakDate !== today) {
+    authStreak = 0;
+  }
+
+  if (dbQ && dbQ.date === today && localQ.date === today) {
+    activeAppState.state.dailyQuests = {
+      date: today,
+      games: Math.max(dbQ.games || 0, localQ.games || 0),
+      mining: Math.max(dbQ.mining || 0, localQ.mining || 0),
+      wins: Math.max(dbQ.wins || 0, localQ.wins || 0),
+      games_claimed: !!dbQ.games_claimed,
+      mining_claimed: !!dbQ.mining_claimed,
+      wins_claimed: !!dbQ.wins_claimed,
+      master_claimed: !!dbQ.master_claimed,
+      streak_days: authStreak,
+      last_streak_date: authLastStreakDate,
+      streak_wheel_available: authWheelAvailable
+    };
+  } else if (dbQ && dbQ.date === today) {
+    activeAppState.state.dailyQuests = {
+      ...dbQ,
+      streak_days: authStreak,
+      last_streak_date: authLastStreakDate,
+      streak_wheel_available: authWheelAvailable
+    };
+  } else if (localQ.date === today) {
+    activeAppState.state.dailyQuests = {
+      date: today,
+      games: localQ.games || 0,
+      mining: localQ.mining || 0,
+      wins: localQ.wins || 0,
+      games_claimed: false,
+      mining_claimed: false,
+      wins_claimed: false,
+      master_claimed: false,
+      streak_days: authStreak,
+      last_streak_date: authLastStreakDate,
+      streak_wheel_available: authWheelAvailable
+    };
+  } else {
+    activeAppState.state.dailyQuests = {
+      date: today,
+      games: 0,
+      mining: 0,
+      wins: 0,
+      games_claimed: false,
+      mining_claimed: false,
+      wins_claimed: false,
+      master_claimed: false,
+      streak_days: authStreak,
+      last_streak_date: authLastStreakDate,
+      streak_wheel_available: authWheelAvailable
+    };
+  }
+
+  try {
+    localStorage.setItem('polygame_daily_quests', JSON.stringify(activeAppState.state.dailyQuests));
+  } catch (e) {}
+
+  if (typeof window.syncDailyQuests === 'function') {
+    window.syncDailyQuests(true);
+  }
+  if (window.renderDailyQuestsUI) {
+    window.renderDailyQuestsUI();
+  }
+}
+
 // --- Unauthenticated Guest Visit Tracker ---
 export async function trackGuestVisit() {
   if (typeof window !== 'undefined' && typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying()) return;
@@ -525,83 +620,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
           }
         }
 
-        // Maximize daily quest progress so quest counters NEVER revert & sync to DB if local progress is ahead
-        const today = new Date().toISOString().split('T')[0];
-        let localQ = activeAppState.state.dailyQuests;
-        if (!localQ || typeof localQ !== 'object' || !localQ.date) {
-          try {
-            const ls = localStorage.getItem('polygame_daily_quests');
-            if (ls) localQ = JSON.parse(ls);
-          } catch(e) {}
-        }
-        localQ = localQ || {};
-
-        const dbQ = (data.daily_quests && typeof data.daily_quests === 'object' && Object.keys(data.daily_quests).length > 0)
-          ? data.daily_quests
-          : null;
-
-        let needsDbSync = false;
-
-        if (dbQ && dbQ.date === today && localQ.date === today) {
-          const mergedGames = Math.max(dbQ.games || 0, localQ.games || 0);
-          const mergedMining = Math.max(dbQ.mining || 0, localQ.mining || 0);
-          const mergedWins = Math.max(dbQ.wins || 0, localQ.wins || 0);
-          const mergedGamesClaimed = !!dbQ.games_claimed;
-          const mergedMiningClaimed = !!dbQ.mining_claimed;
-          const mergedWinsClaimed = !!dbQ.wins_claimed;
-          const mergedMasterClaimed = !!dbQ.master_claimed;
-
-          activeAppState.state.dailyQuests = {
-            date: today,
-            games: mergedGames,
-            mining: mergedMining,
-            wins: mergedWins,
-            games_claimed: mergedGamesClaimed,
-            mining_claimed: mergedMiningClaimed,
-            wins_claimed: mergedWinsClaimed,
-            master_claimed: mergedMasterClaimed,
-            streak_days: Math.max(dbQ.streak_days || 0, localQ.streak_days || 0),
-            last_streak_date: dbQ.last_streak_date || localQ.last_streak_date || ''
-          };
-        } else if (dbQ && dbQ.date === today) {
-          activeAppState.state.dailyQuests = dbQ;
-        } else if (localQ.date === today) {
-          activeAppState.state.dailyQuests = {
-            date: today,
-            games: localQ.games || 0,
-            mining: localQ.mining || 0,
-            wins: localQ.wins || 0,
-            games_claimed: false,
-            mining_claimed: false,
-            wins_claimed: false,
-            master_claimed: false,
-            streak_days: Math.max(dbQ?.streak_days || 0, localQ.streak_days || 0),
-            last_streak_date: dbQ?.last_streak_date || localQ.last_streak_date || ''
-          };
-        } else {
-          activeAppState.state.dailyQuests = {
-            date: today,
-            games: 0,
-            mining: 0,
-            wins: 0,
-            games_claimed: false,
-            mining_claimed: false,
-            wins_claimed: false,
-            master_claimed: false,
-            streak_days: Math.max(dbQ?.streak_days || 0, localQ?.streak_days || 0),
-            last_streak_date: dbQ?.last_streak_date || localQ?.last_streak_date || ''
-          };
-        }
-        try { localStorage.setItem('polygame_daily_quests', JSON.stringify(activeAppState.state.dailyQuests)); } catch(e){}
-
-        // Always trigger authoritative multi-device synchronization via sync_daily_quests RPC
-        if (typeof window.syncDailyQuests === 'function') {
-          window.syncDailyQuests(true);
-        }
-
-        if (window.renderDailyQuestsUI) {
-          window.renderDailyQuestsUI();
-        }
+        restoreDailyQuestsFromDb(activeAppState, data.daily_quests);
 
         if (window.polySpace && typeof window.polySpace.loadSpaceState === 'function') {
           window.polySpace.loadSpaceState();
@@ -2920,6 +2939,10 @@ async function syncAuthenticatedUser(user, force = false) {
       activeAppState.state.vipFaucetStreak = parseInt(userRow.vip_faucet_streak || 0, 10);
       activeAppState.state.isAmbassador = !!userRow.is_ambassador;
       activeAppState.state.totalReferralCommission = parseFloat(userRow.total_referral_commission || 0);
+      activeAppState.state.dexLiquidityUsd = parseFloat(userRow.dex_liquidity_usd || 0);
+      if (userRow.dex_liquidity_usd > 0 && !activeAppState.state.liquidityUsdAmount) {
+        activeAppState.state.liquidityUsdAmount = parseFloat(userRow.dex_liquidity_usd);
+      }
 
       // Non-destructive activity merge for social logins
       const dbActivitiesSocial = Array.isArray(userRow.activities) ? userRow.activities : [];
@@ -3022,19 +3045,6 @@ async function syncAuthenticatedUser(user, force = false) {
         }
       }
 
-      // Background on-chain fleet & balance query if user has linked wallet
-      const targetWalletRestore = linked || activeAppState.getActiveWeb3Address();
-      if (targetWalletRestore && !targetWalletRestore.startsWith('0xpgt') && !targetWalletRestore.startsWith('0xg')) {
-        if (typeof window !== 'undefined' && typeof window.refreshOnChainBalances === 'function') {
-          window.refreshOnChainBalances();
-        }
-        if (typeof window !== 'undefined' && window.PolyHangar && typeof window.PolyHangar.syncFleetFromChain === 'function') {
-          setTimeout(() => {
-            window.PolyHangar.syncFleetFromChain(targetWalletRestore, false);
-          }, 600);
-        }
-      }
-
       if (window.polySpace && typeof window.polySpace.loadSpaceState === 'function') {
         window.polySpace.loadSpaceState();
       }
@@ -3056,6 +3066,7 @@ async function syncAuthenticatedUser(user, force = false) {
         walletProvider: isGoogleAccount ? (isWeb3Active ? 'google_linked' : 'google') : (activeAppState.state.walletProvider || 'metamask'),
         walletAddress: activeWallet,
         linkedWalletAddress: linked,
+        dexLiquidityUsd: parseFloat(userRow.dex_liquidity_usd || activeAppState.state.dexLiquidityUsd || 0),
         vipUntil: userRow.vip_until || null,
         vipLevel: Number(userRow.vip_level != null ? userRow.vip_level : (userRow.vip_until ? 2 : 0)),
         weeklyFaucetClaims: parseInt(userRow.weekly_faucet_claims || 0, 10),
@@ -3090,6 +3101,25 @@ async function syncAuthenticatedUser(user, force = false) {
         alltimeBubbleHighScore: alltimeBubbleHigh
       });
 
+      // Background on-chain fleet, balance & DEX LP queries run AFTER activeAppState.update()
+      // so linkedWalletAddress and playerId are populated in state.
+      const targetWalletRestore = linked || activeAppState.getActiveWeb3Address();
+      if (targetWalletRestore && !targetWalletRestore.startsWith('0xpgt') && !targetWalletRestore.startsWith('0xg')) {
+        if (typeof window !== 'undefined' && typeof window.refreshOnChainBalances === 'function') {
+          window.refreshOnChainBalances();
+        }
+        if (typeof window !== 'undefined' && typeof window.syncUserLiquidity === 'function') {
+          setTimeout(() => {
+            window.syncUserLiquidity();
+          }, 300);
+        }
+        if (typeof window !== 'undefined' && window.PolyHangar && typeof window.PolyHangar.syncFleetFromChain === 'function') {
+          setTimeout(() => {
+            window.PolyHangar.syncFleetFromChain(targetWalletRestore, false);
+          }, 600);
+        }
+      }
+
       if (typeof window.checkFaucetCooldown === 'function') {
         window.checkFaucetCooldown();
       }
@@ -3110,9 +3140,7 @@ async function syncAuthenticatedUser(user, force = false) {
       if (typeof window.updateStakingUI === 'function') {
         window.updateStakingUI();
       }
-      if (typeof window.renderQuests === 'function') {
-        window.renderQuests();
-      }
+      restoreDailyQuestsFromDb(activeAppState, userRow.daily_quests);
       if (typeof window.updateGameTileBadges === 'function') {
         window.updateGameTileBadges();
       }

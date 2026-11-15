@@ -5,6 +5,18 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Multi-Device Daily Quests & Streak Sync Fix (`v1.5.839`)**:
+  - Added shared `restoreDailyQuestsFromDb()` helper in `src/js/core/db-sync.js` and wired it into `syncAuthenticatedUser()` (replacing the broken `window.renderQuests()` call) so Google OAuth logins on mobile/other devices restore `userRow.daily_quests` and trigger `syncDailyQuests(true)`.
+  - Fixed `restoreDailyQuestsFromDb()` and `syncDailyQuests()` (`src/js/features/quests.js`) so server-reset `streak_days: 0` (after claiming the 7-day gift) and claim flags are never overwritten by stale `localStorage` values (`!synced.streak_days` or `Math.max(db, local)`).
+
+- **Compact Game Banner Header (`v1.5.838`)**:
+  - Removed the redundant `← Lobby` button from `#arcade-host-header-bar` in `index.html` (keeping the `×` close button on the right) and shortened the multiplier pill from `⚡ X.Xx Boost` to `⚡ X.Xx` in `index.html` and `src/js/core/arcade-host.js` to save horizontal space.
+
+- **Faucet Estimated Claim Sync (`v1.5.837`)**:
+  - Restored `dexLiquidityUsd` (and `liquidityUsdAmount` fallback) on Google OAuth login (`syncAuthenticatedUser` in `src/js/core/db-sync.js`) and moved `refreshOnChainBalances()`, `syncUserLiquidity()`, and `syncFleetFromChain()` after `activeAppState.update(...)` so `linkedWalletAddress` and `playerId` are populated before querying on-chain PGT and DEX LP balances.
+  - Added unified `PolyState.isPgtWhale()` helper in `src/js/core/state.js` matching server RPCs (master admin, `balancePgt + stakedPgtTotal >= 1,000,000`, or `onchainBalancePgt >= 1,000,000`) and used it across `PolyState.syncUI()`, `getVipEstimatedClaimPol()`, `renderVipFaucetUI()`, and `syncProfileView()`.
+  - Updated `PolyState.getMultipliers()` to use the shared `Math.max(claimStreak, vipFaucetStreak)` streak and enforce the 125% additive boost cap, and fixed `renderVipFaucetUI()` in `src/js/features/faucet.js` to fall back to `#faucet-multiplier-pgt-onchain`.
+
 - **Cyber Bubble Earn Arcade Game (`v1.5.831`)**:
   - **Core Gameplay (`bubble.js`)**: Classic vertical-harpoon arcade game with a cybernetic runner, 5 bouncing plasma ball sizes (`Size 5` Giant down to `Size 1` Tiny) that split into two smaller spheres on impact, escalating waves, and continuous ceiling portal drops past 40 seconds so runs naturally peak around 2–3 minutes without a hard time cap.
   - **Visuals, Audio & Power-ups**: Multi-layered synthwave city/grid backdrop, 3D-shaded glossy plasma balls, pop particle bursts, Web Audio synth SFX, touch/drag + keyboard controls, and collectible drops (Double Arrow, Shield, Time Freeze, +5 PGT Coin).

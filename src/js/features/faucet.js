@@ -672,12 +672,10 @@ export function getVipEstimatedClaimPol() {
     lpMult = 1.10;
   }
 
-  const stakedPgt = typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0;
   const pgtStakerMult = typeof stateObj.getStakedPgtMultiplier === 'function' ? stateObj.getStakedPgtMultiplier() : 1.0;
-  const pid = (stateObj.state.playerId || '').toLowerCase();
-  const linked = (stateObj.state.linkedWalletAddress || '').toLowerCase();
-  const isMasterAdmin = (linked === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d' || pid === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d');
-  const isPgtBalWhale = isMasterAdmin || ((stateObj.state.balancePgt || 0) + stakedPgt) >= 1000000 || (stateObj.state.onchainBalancePgt || 0) >= 1000000;
+  const isPgtBalWhale = typeof stateObj.isPgtWhale === 'function'
+    ? stateObj.isPgtWhale()
+    : ((stateObj.state.balancePgt || 0) + (typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0)) >= 1000000 || (stateObj.state.onchainBalancePgt || 0) >= 1000000;
 
   if (lpMult > 1.0) totalEst *= lpMult;
   if (pgtStakerMult > 1.0) totalEst *= pgtStakerMult;
@@ -906,12 +904,10 @@ export function renderVipFaucetUI() {
     lpMult = 1.10;
   }
 
-  const stakedPgt = typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0;
   const pgtStakerMult = typeof stateObj.getStakedPgtMultiplier === 'function' ? stateObj.getStakedPgtMultiplier() : 1.0;
-  const pid = (stateObj.state.playerId || '').toLowerCase();
-  const linked = (stateObj.state.linkedWalletAddress || '').toLowerCase();
-  const isMasterAdmin = (linked === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d' || pid === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d');
-  const isPgtBalWhale = isMasterAdmin || ((stateObj.state.balancePgt || 0) + stakedPgt) >= 1000000 || (stateObj.state.onchainBalancePgt || 0) >= 1000000;
+  const isPgtBalWhale = typeof stateObj.isPgtWhale === 'function'
+    ? stateObj.isPgtWhale()
+    : ((stateObj.state.balancePgt || 0) + (typeof stateObj.getStakedPgtTotal === 'function' ? stateObj.getStakedPgtTotal() : 0)) >= 1000000 || (stateObj.state.onchainBalancePgt || 0) >= 1000000;
 
   const elLp = document.getElementById('vip-faucet-multiplier-lp') || document.getElementById('faucet-multiplier-lp');
   if (elLp) {
@@ -934,7 +930,7 @@ export function renderVipFaucetUI() {
       elPgt.style.color = 'var(--text-muted)';
     }
   }
-  const elPgtOnchain = document.getElementById('vip-faucet-multiplier-pgt-onchain');
+  const elPgtOnchain = document.getElementById('vip-faucet-multiplier-pgt-onchain') || document.getElementById('faucet-multiplier-pgt-onchain');
   if (elPgtOnchain) {
     elPgtOnchain.innerText = isPgtBalWhale ? '+10%' : '+0%';
     elPgtOnchain.style.color = isPgtBalWhale ? 'var(--color-success)' : 'var(--text-muted)';

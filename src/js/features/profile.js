@@ -306,7 +306,7 @@ export function syncProfileView() {
   // Base x (1 + Total Boost% [NFT + Streak + Referral]) x (1FLR Whale 1.15) x (1Y PGT Staker 1.10-1.30) x (Onchain PGT Whale 1.10) x (VIP 2.0) x (Ambassador 2.0)
   const is1FlrWhale = ((appState.state.onchainBalance1flr || 0) >= 5000000);
   const pgtStakerMult = typeof appState.getStakedPgtMultiplier === 'function' ? appState.getStakedPgtMultiplier() : 1.0;
-  const isPgtOnchainWhale = (appState.state.onchainBalancePgt || 0) >= 1000000;
+  const isPgtOnchainWhale = typeof appState.isPgtWhale === 'function' ? appState.isPgtWhale() : ((appState.state.onchainBalancePgt || 0) >= 1000000);
 
   const faucetBoostPct = multis.totalFaucetBoostPercent !== undefined ? multis.totalFaucetBoostPercent : (multis.nftFaucetBoost || (equippedNftObj ? (equippedNftObj.faucetBoost || 0) : 0));
   let totalFaucetMult = (1 + faucetBoostPct / 100);

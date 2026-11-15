@@ -1,6 +1,6 @@
 export let appState = null;
 
-import { supabase, APP_VERSION } from './config.js';
+import { supabase, APP_VERSION, ADMIN_WALLET_ADDRESS } from './config.js';
 import { NFT_REGISTRY } from '../features/nft.js';
 import { cyb53, CHECKSUM_SALT } from '../utils/crypto.js';
 import { triggerToast, escapeHtml } from './ui.js';
@@ -660,6 +660,17 @@ export class PolyState {
     return 1.0;
   }
 
+  /** Returns true if player meets the 1M+ PGT whale bonus (in-game + staked or on-chain, or master admin). */
+  isPgtWhale() {
+    const adminAddr = (ADMIN_WALLET_ADDRESS || '').toLowerCase();
+    const pid = (this.state.playerId || '').toLowerCase();
+    const linked = (this.state.linkedWalletAddress || '').toLowerCase();
+    const activeAddr = typeof this.getActiveWeb3Address === 'function' ? (this.getActiveWeb3Address() || '').toLowerCase() : '';
+    const isMasterAdmin = !!(adminAddr && (linked === adminAddr || pid === adminAddr || activeAddr === adminAddr));
+    const totalGamePgt = (this.state.balancePgt || 0) + this.getStakedPgtTotal();
+    return isMasterAdmin || totalGamePgt >= 1000000 || (this.state.onchainBalancePgt || 0) >= 1000000;
+  }
+
   isVipActive() {
     const expectedAdmin = "0x10b9993990c9ef8a212c9557cb02ad94da9a654d";
     const primary = (this.state.walletAddress || '').toLowerCase();
@@ -740,8 +751,9 @@ export class PolyState {
       }
     });
 
-    // Streak bonus: +2% per day up to 10%
-    const streakBoost = Math.min(this.state.claimStreak * 2, 10);
+    // Streak bonus: +2% per day up to 10% (shared across PGT & VIP POL faucet streaks)
+    const sharedStreak = Math.max(parseInt(this.state.claimStreak || 0, 10), parseInt(this.state.vipFaucetStreak || 0, 10));
+    const streakBoost = Math.min(sharedStreak * 2, 10);
     
     // Referral bonus: +1% per direct (L1) referred account up to 20%, with a final milestone at 100 L1 referrals unlocking 30%
     const refCount = Math.max(0, parseInt(this.state.referralsL1 || 0, 10));
@@ -779,7 +791,7 @@ export class PolyState {
     if (rawNftReferralMultiplier > 1.0) totalReferralMultiplier += rawNftReferralMultiplier;
     if (totalReferralMultiplier <= 0) totalReferralMultiplier = 1.0;
     totalReferralMultiplier = parseFloat(totalReferralMultiplier.toFixed(2));
-    const totalFaucetBoostPercent = (nftFaucetBoost + streakBoost + referralBoost);
+    const totalFaucetBoostPercent = Math.min(nftFaucetBoost + streakBoost + referralBoost, 125);
     const totalLeaderboardMultiplier = parseFloat((rawNftLeaderboardMultiplier * vipLeaderboardMultiplier).toFixed(2));
 
     return {
@@ -1278,7 +1290,7 @@ export class PolyState {
 
     const staked1Y = this.getStakedPgt1YearTotal();
     const pgtStakerMult = this.getStakedPgtMultiplier();
-    const isPgtOnchainWhale = (this.state.onchainBalancePgt || 0) >= 1000000;
+    const isPgtOnchainWhale = this.isPgtWhale();
 
     const elPgt = document.getElementById('faucet-multiplier-pgt');
     if (elPgt) {
