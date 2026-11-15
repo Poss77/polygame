@@ -8,6 +8,7 @@ import { supabase, SUPABASE_URL, SUPABASE_KEY, ADMIN_WALLET_ADDRESS, TOKEN_CONTR
 import { appState } from '../core/state.js';
 import { escapeHtml } from '../core/ui.js';
 import { checkIsUserRow, formatLeaderboardName, getLeaderboardStarshipBadge } from './leaderboards.js';
+import { countRelicsBySeason } from './relics.js';
 
 let holdersCurrentPage = 1;
 const holdersPerPage = 20;
@@ -135,6 +136,8 @@ export async function loadHoldersLeaderboard(initialMode = null, force = false) 
       let globalTotalWealth = 0;
       let globalFaucetClaims = 0;
       let globalRelicsFound = 0;
+      let globalRelicsS1 = 0;
+      let globalRelicsS2 = 0;
 
       const activeUsers = (allData || []).filter(u => !u.is_banned);
       cachedHoldersData = activeUsers.map(u => {
@@ -154,15 +157,11 @@ export async function loadHoldersLeaderboard(initialMode = null, force = false) 
         // Faucet claims
         globalFaucetClaims += (parseInt(u.total_claims) || 0);
 
-        // Quantum Relics found
-        const relics = u.relics || {};
-        if (typeof relics === 'object' && relics !== null) {
-          Object.values(relics).forEach(r => {
-            if (r && typeof r === 'object') {
-              globalRelicsFound += (parseInt(r.total) || ((parseInt(r.unminted) || 0) + (parseInt(r.onchain) || 0)));
-            }
-          });
-        }
+        // Quantum Relics found (total + S1/S2 split)
+        const counts = countRelicsBySeason(u.relics || {});
+        globalRelicsFound += counts.total;
+        globalRelicsS1 += counts.s1;
+        globalRelicsS2 += counts.s2;
 
         return { ...u, totalWealth: total, bal, staked };
       });
@@ -203,14 +202,18 @@ export async function loadHoldersLeaderboard(initialMode = null, force = false) 
         spaceMissionsEl.innerText = globalSpaceMissions.toLocaleString();
       }
       if (relicsFoundEl) relicsFoundEl.innerText = globalRelicsFound.toLocaleString();
+      const relicsSplitEl = document.getElementById('global-stat-relics-split');
+      if (relicsSplitEl) relicsSplitEl.innerText = `S1: ${globalRelicsS1.toLocaleString()} • S2: ${globalRelicsS2.toLocaleString()}`;
       if (faucetClaimsEl) faucetClaimsEl.innerText = globalFaucetClaims.toLocaleString();
 
       // Also update Dashboard Sitewide Stats Badges
       const sitewideArcadeEl = document.getElementById('sitewide-stat-arcade-plays');
       const sitewideRelicsEl = document.getElementById('sitewide-stat-relics-found');
+      const sitewideRelicsSplitEl = document.getElementById('sitewide-stat-relics-split');
       const sitewideFaucetEl = document.getElementById('sitewide-stat-faucet-claims');
       if (sitewideArcadeEl) sitewideArcadeEl.innerText = globalArcadePlays.toLocaleString();
       if (sitewideRelicsEl) sitewideRelicsEl.innerText = globalRelicsFound.toLocaleString();
+      if (sitewideRelicsSplitEl) sitewideRelicsSplitEl.innerText = `(S1: ${globalRelicsS1.toLocaleString()} • S2: ${globalRelicsS2.toLocaleString()})`;
       if (sitewideFaucetEl) sitewideFaucetEl.innerText = globalFaucetClaims.toLocaleString();
 
       lastHoldersFetchAt = Date.now();
@@ -218,6 +221,8 @@ export async function loadHoldersLeaderboard(initialMode = null, force = false) 
         localStorage.setItem('polygame_cached_sitewide_stats', JSON.stringify({
           arcadePlays: globalArcadePlays,
           relicsFound: globalRelicsFound,
+          relicsS1: globalRelicsS1,
+          relicsS2: globalRelicsS2,
           faucetClaims: globalFaucetClaims,
           updatedAt: lastHoldersFetchAt
         }));

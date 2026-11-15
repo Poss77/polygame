@@ -449,22 +449,22 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <!-- Direct parallel stylesheets (eliminates @import waterfall) -->
-  <link rel="stylesheet" href="src/css/variables.css?v=1.5.854">
-  <link rel="stylesheet" href="src/css/base.css?v=1.5.854">
-  <link rel="stylesheet" href="src/css/layout.css?v=1.5.854">
-  <link rel="stylesheet" href="src/css/sidebar.css?v=1.5.854">
-  <link rel="stylesheet" href="src/css/main_content.css?v=1.5.854">
-  <link rel="stylesheet" href="src/css/views.css?v=1.5.854">
-  <link rel="stylesheet" href="src/css/features/faucet.css?v=1.5.854">
-  <link rel="stylesheet" href="src/css/features/games.css?v=1.5.854">
-  <link rel="stylesheet" href="src/css/features/nft.css?v=1.5.854">
-  <link rel="stylesheet" href="src/css/features/staking.css?v=1.5.854">
-  <link rel="stylesheet" href="src/css/features/referrals.css?v=1.5.854">
-  <link rel="stylesheet" href="src/css/features/profile.css?v=1.5.854">
-  <link rel="stylesheet" href="src/css/modals.css?v=1.5.854">
-  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.854">
-  <link rel="stylesheet" href="src/css/animations.css?v=1.5.854">
-  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.854">
+  <link rel="stylesheet" href="src/css/variables.css?v=1.5.855">
+  <link rel="stylesheet" href="src/css/base.css?v=1.5.855">
+  <link rel="stylesheet" href="src/css/layout.css?v=1.5.855">
+  <link rel="stylesheet" href="src/css/sidebar.css?v=1.5.855">
+  <link rel="stylesheet" href="src/css/main_content.css?v=1.5.855">
+  <link rel="stylesheet" href="src/css/views.css?v=1.5.855">
+  <link rel="stylesheet" href="src/css/features/faucet.css?v=1.5.855">
+  <link rel="stylesheet" href="src/css/features/games.css?v=1.5.855">
+  <link rel="stylesheet" href="src/css/features/nft.css?v=1.5.855">
+  <link rel="stylesheet" href="src/css/features/staking.css?v=1.5.855">
+  <link rel="stylesheet" href="src/css/features/referrals.css?v=1.5.855">
+  <link rel="stylesheet" href="src/css/features/profile.css?v=1.5.855">
+  <link rel="stylesheet" href="src/css/modals.css?v=1.5.855">
+  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.855">
+  <link rel="stylesheet" href="src/css/animations.css?v=1.5.855">
+  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.855">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -654,10 +654,11 @@ twq('config','ri5fg');
                   <span style="color: var(--text-dim); text-transform: uppercase; font-size: 0.65rem; font-weight: 700;">Arcade Plays:</span>
                   <strong id="sitewide-stat-arcade-plays" style="color: var(--color-primary); font-size: 0.85rem;">--</strong>
                 </div>
-                <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 170, 0, 0.3); padding: 0.35rem 0.65rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;" title="Total Quantum Relics Discovered across all players">
+                <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 170, 0, 0.3); padding: 0.35rem 0.65rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;" title="Total Quantum Relics Discovered across all players (Serie 1 & Serie 2)">
                   <span style="font-size: 0.85rem; line-height: 1;">🏺</span>
                   <span style="color: var(--text-dim); text-transform: uppercase; font-size: 0.65rem; font-weight: 700;">Relics Found:</span>
                   <strong id="sitewide-stat-relics-found" style="color: var(--color-warning); font-size: 0.85rem;">--</strong>
+                  <span id="sitewide-stat-relics-split" style="font-size: 0.68rem; color: var(--text-muted); font-weight: 700;">(S1: -- • S2: --)</span>
                 </div>
                 <div style="background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(0, 255, 135, 0.25); padding: 0.35rem 0.65rem; border-radius: 8px; display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem;" title="Total Faucet Claims completed across all players">
                   <span style="font-size: 0.85rem; line-height: 1;">💧</span>
@@ -4349,9 +4350,10 @@ twq('config','ri5fg');
               </div>
 
               <!-- 5. Total Relics Discovered -->
-              <div style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 8px; padding: 0.75rem 0.6rem; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 0.25rem; transition: transform 0.2s ease, border-color 0.2s ease;" title="Total Quantum Relics harvested across arcade gameplay & expeditions">
+              <div style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 8px; padding: 0.75rem 0.6rem; text-align: center; display: flex; flex-direction: column; justify-content: center; gap: 0.25rem; transition: transform 0.2s ease, border-color 0.2s ease;" title="Total Quantum Relics harvested across arcade gameplay & expeditions (Serie 1 & Serie 2)">
                 <span style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">🏺 Relics Found</span>
                 <span id="global-stat-relics-found" style="font-size: 1.1rem; font-weight: 900; color: #ffd700;">Loading...</span>
+                <span id="global-stat-relics-split" style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">S1: -- • S2: --</span>
               </div>
 
               <!-- 6. Total Faucet Claims -->
@@ -5510,18 +5512,18 @@ twq('config','ri5fg');
     </div>
   </div>
 
-  <script defer src="game.js?v=1.5.854"></script>
-  <script defer src="invaders.js?v=1.5.854"></script>
-  <script defer src="drift.js?v=1.5.854"></script>
-  <script defer src="stacker.js?v=1.5.854"></script>
-  <script defer src="space.js?v=1.5.854"></script>
-  <script type="module" src="skeet.js?v=1.5.854"></script>
-  <script type="module" src="defense.js?v=1.5.854"></script>
-  <script type="module" src="runner.js?v=1.5.854"></script>
-  <script type="module" src="q2048.js?v=1.5.854"></script>
-  <script defer src="tetris.js?v=1.5.854"></script>
-  <script defer src="bubble.js?v=1.5.854"></script>
-  <script type="module" src="src/js/app.js?v=1.5.854"></script>
+  <script defer src="game.js?v=1.5.855"></script>
+  <script defer src="invaders.js?v=1.5.855"></script>
+  <script defer src="drift.js?v=1.5.855"></script>
+  <script defer src="stacker.js?v=1.5.855"></script>
+  <script defer src="space.js?v=1.5.855"></script>
+  <script type="module" src="skeet.js?v=1.5.855"></script>
+  <script type="module" src="defense.js?v=1.5.855"></script>
+  <script type="module" src="runner.js?v=1.5.855"></script>
+  <script type="module" src="q2048.js?v=1.5.855"></script>
+  <script defer src="tetris.js?v=1.5.855"></script>
+  <script defer src="bubble.js?v=1.5.855"></script>
+  <script type="module" src="src/js/app.js?v=1.5.855"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

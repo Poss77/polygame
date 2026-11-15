@@ -599,6 +599,21 @@ export function getFaucetRelicMultiplier(userRelics) {
   return { multiplier, completedSets, s1Complete, s2Complete };
 }
 
+export function countRelicsBySeason(userRelics) {
+  const normalized = normalizeRelicsObject(userRelics);
+  let s1 = 0;
+  let s2 = 0;
+  Object.entries(normalized).forEach(([id, r]) => {
+    if (!r || typeof r !== 'object') return;
+    const qty = parseInt(r.total) || ((parseInt(r.unminted) || 0) + (parseInt(r.onchain) || 0));
+    if (qty <= 0) return;
+    const meta = getRelicMeta(id);
+    if (meta && meta.season === 2) s2 += qty;
+    else s1 += qty;
+  });
+  return { total: s1 + s2, s1, s2 };
+}
+
 let _isHydratingRelics = false;
 let _hasHydratedRelicsOnce = false;
 

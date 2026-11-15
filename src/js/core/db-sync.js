@@ -3,7 +3,7 @@ import { supabase, ADMIN_WALLET_ADDRESS, web3Provider, realSigner, setWeb3Provid
 import { sfx } from './audio.js';
 import { appState, PolyState } from './state.js';
 import { closeModal, triggerToast, connectWeb3, escapeHtml } from './ui.js';
-import { normalizeRelicsObject, mergeRelicsObjects } from '../features/relics.js';
+import { normalizeRelicsObject, mergeRelicsObjects, countRelicsBySeason } from '../features/relics.js';
 import { hasValidWeb3Session, clearWeb3Session, executeAuthenticatedRpc, ensureValidSupabaseSession } from './auth-web3.js';
 export { executeAuthenticatedRpc };
 
@@ -2109,14 +2109,15 @@ export function hydrateSitewideStatsFromCache() {
     const cachedStr = localStorage.getItem('polygame_cached_sitewide_stats');
     if (cachedStr) {
       const data = JSON.parse(cachedStr);
-      updateSitewideStatsUI(data.arcadePlays, data.relicsFound, data.faucetClaims);
+      updateSitewideStatsUI(data.arcadePlays, data.relicsFound, data.faucetClaims, data.relicsS1, data.relicsS2);
     }
   } catch (e) {}
 }
 
-export function updateSitewideStatsUI(arcadePlays, relicsFound, faucetClaims) {
+export function updateSitewideStatsUI(arcadePlays, relicsFound, faucetClaims, relicsS1, relicsS2) {
   const elArcade = document.getElementById('sitewide-stat-arcade-plays');
   const elRelics = document.getElementById('sitewide-stat-relics-found');
+  const elRelicsSplit = document.getElementById('sitewide-stat-relics-split');
   const elClaims = document.getElementById('sitewide-stat-faucet-claims');
 
   if (elArcade && arcadePlays !== undefined && arcadePlays !== null) {
@@ -2124,6 +2125,9 @@ export function updateSitewideStatsUI(arcadePlays, relicsFound, faucetClaims) {
   }
   if (elRelics && relicsFound !== undefined && relicsFound !== null) {
     elRelics.innerText = Number(relicsFound).toLocaleString();
+  }
+  if (elRelicsSplit && relicsS1 !== undefined && relicsS2 !== undefined) {
+    elRelicsSplit.innerText = `(S1: ${Number(relicsS1).toLocaleString()} • S2: ${Number(relicsS2).toLocaleString()})`;
   }
   if (elClaims && faucetClaims !== undefined && faucetClaims !== null) {
     elClaims.innerText = Number(faucetClaims).toLocaleString();
@@ -2167,6 +2171,8 @@ export async function loadSitewideStats(force = false) {
 
       let faucetClaims = 0;
       let relicsFound = 0;
+      let relicsS1 = 0;
+      let relicsS2 = 0;
       let usersArcadePlays = 0;
       let hasUsersArcadePlays = false;
       let usersLoaded = false;
@@ -2179,14 +2185,10 @@ export async function loadSitewideStats(force = false) {
             usersArcadePlays += (parseInt(u.total_arcade_plays) || 0);
           }
           faucetClaims += (parseInt(u.total_claims) || 0);
-          const relics = u.relics || {};
-          if (typeof relics === 'object' && relics !== null) {
-            Object.values(relics).forEach(r => {
-              if (r && typeof r === 'object') {
-                relicsFound += (parseInt(r.total) || ((parseInt(r.unminted) || 0) + (parseInt(r.onchain) || 0)));
-              }
-            });
-          }
+          const counts = countRelicsBySeason(u.relics || {});
+          relicsFound += counts.total;
+          relicsS1 += counts.s1;
+          relicsS2 += counts.s2;
         });
       }
 
@@ -2200,15 +2202,19 @@ export async function loadSitewideStats(force = false) {
         ? usersArcadePlays
         : (sessionArcadePlays !== null ? sessionArcadePlays : (cached.arcadePlays ?? 0));
       const finalRelicsFound = usersLoaded ? relicsFound : (cached.relicsFound ?? 0);
+      const finalRelicsS1 = usersLoaded ? relicsS1 : (cached.relicsS1 ?? undefined);
+      const finalRelicsS2 = usersLoaded ? relicsS2 : (cached.relicsS2 ?? undefined);
       const finalFaucetClaims = usersLoaded ? faucetClaims : (cached.faucetClaims ?? 0);
 
-      updateSitewideStatsUI(finalArcadePlays, finalRelicsFound, finalFaucetClaims);
+      updateSitewideStatsUI(finalArcadePlays, finalRelicsFound, finalFaucetClaims, finalRelicsS1, finalRelicsS2);
       _lastSitewideStatsFetchAt = Date.now();
 
       try {
         localStorage.setItem('polygame_cached_sitewide_stats', JSON.stringify({
           arcadePlays: finalArcadePlays,
           relicsFound: finalRelicsFound,
+          relicsS1: finalRelicsS1,
+          relicsS2: finalRelicsS2,
           faucetClaims: finalFaucetClaims,
           updatedAt: _lastSitewideStatsFetchAt
         }));
