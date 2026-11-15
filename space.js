@@ -805,6 +805,43 @@ class PolySpaceEngine {
     };
   }
 
+  getSeason2RelicBonusInfo() {
+    const relics = (window.appState && window.appState.state && window.appState.state.relics) || {};
+    if (typeof window.getSeason2Progress === 'function') {
+      const p = window.getSeason2Progress(relics);
+      return {
+        unlocked: Boolean(p.isComplete),
+        mult: p.isComplete ? 1.5 : 1.0,
+        ownedCount: p.ownedCount || 0,
+        totalCount: p.totalCount || 18
+      };
+    }
+
+    const s2Ids = [
+      'relic_skeet_clay', 'relic_skeet_scope', 'relic_skeet_shotgun',
+      'relic_bubble_orb', 'relic_bubble_harpoon', 'relic_bubble_pearl',
+      'relic_runner_sneakers', 'relic_runner_hoverboard', 'relic_runner_jetpack',
+      'relic_tetris_block', 'relic_tetris_beam', 'relic_tetris_crown',
+      'relic_2048_tile', 'relic_2048_cube', 'relic_2048_gold',
+      'relic_s2_mythic_compass', 'relic_s2_mythic_gem', 'relic_s2_mythic_key'
+    ];
+    let ownedCount = 0;
+    s2Ids.forEach((id) => {
+      const val = relics[id];
+      if (!val) return;
+      if (typeof val === 'number' && val > 0) ownedCount++;
+      else if (val === true) ownedCount++;
+      else if (
+        typeof val === 'object' &&
+        ((val.total || 0) > 0 || (val.unminted || 0) > 0 || (val.onchain || 0) > 0 || (Array.isArray(val.token_ids) && val.token_ids.length > 0))
+      ) {
+        ownedCount++;
+      }
+    });
+    const unlocked = ownedCount >= s2Ids.length;
+    return { unlocked, mult: unlocked ? 1.5 : 1.0, ownedCount, totalCount: s2Ids.length };
+  }
+
   getModuleUpgradeCost(lvl) {
     const currentLvl = Math.max(1, lvl || 1);
     if (currentLvl <= 35) {
@@ -1472,6 +1509,8 @@ class PolySpaceEngine {
     const activeCount = (this.state.expeditions || []).length;
     // Scale max slots from 3 up to 5 based on Warp Level (Level 10 = 4, Level 20 = 5)
     const maxSlots = Math.min(5, 3 + Math.floor((this.state.warpLevel || 1) / 10));
+    const shipInfo = this.getEquippedStarshipMultiplier();
+    const s2Info = this.getSeason2RelicBonusInfo();
 
     let html = `
       <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
@@ -1488,7 +1527,19 @@ class PolySpaceEngine {
             </button>
           ` : ''}
         </div>
-        <span style="font-size:0.85rem; font-weight:700; color:var(--color-accent);">Active Expeditions: ${activeCount}/${maxSlots}</span>
+        <div style="display:flex; align-items:center; gap:0.45rem; flex-wrap:wrap; justify-content:flex-end;">
+          ${shipInfo.ship && shipInfo.mult > 1.0 ? `
+            <span style="background:rgba(56,189,248,0.12); border:1px solid ${shipInfo.rarityColor}; color:${shipInfo.rarityColor}; font-size:0.72rem; font-weight:800; padding:2px 7px; border-radius:4px; display:inline-flex; align-items:center; gap:3px;" title="Equipped ${shipInfo.rarity} Starship NFT Multiplier (${shipInfo.mult}x PGT)">
+              🛸 ${shipInfo.rarity} (${shipInfo.mult}x PGT)
+            </span>
+          ` : ''}
+          ${s2Info.unlocked ? `
+            <span style="background:rgba(0,255,136,0.14); border:1px solid #00ff88; color:#00ff88; font-size:0.72rem; font-weight:800; padding:2px 7px; border-radius:4px; display:inline-flex; align-items:center; gap:3px;" title="All 18 Serie 2 Quantum Relics Owned — 1.5x Ore &amp; PGT Active">
+              🚀 Serie 2 Relics (1.5x Ore &amp; PGT)
+            </span>
+          ` : ''}
+          <span style="font-size:0.85rem; font-weight:700; color:var(--color-accent);">Active Expeditions: ${activeCount}/${maxSlots}</span>
+        </div>
       </div>
     `;
 
@@ -1602,32 +1653,32 @@ class PolySpaceEngine {
     if (activeCount < maxSlots) {
       const cargoMult = (1 + (this.state.cargoLevel - 1) * 0.25);
       const laserMult = this.getLaserMultiplier(this.state.laserLevel);
-      const shipInfo = this.getEquippedStarshipMultiplier();
       const starshipMult = shipInfo.mult || 1.0;
+      const s2Mult = s2Info.mult || 1.0;
 
-      // Base PGT & Iron yields calculated from ship upgrades (Laser Level & Cargo Level) + Starship Rarity Multiplier
-      const basePgtAst = 0.5 * laserMult * starshipMult;
-      const ironAst = Math.floor(40 * cargoMult);
+      // Base PGT & Iron yields calculated from ship upgrades (Laser Level & Cargo Level) + Starship Rarity Multiplier + Serie 2 Relics 1.5x Bonus
+      const basePgtAst = 0.5 * laserMult * starshipMult * s2Mult;
+      const ironAst = Math.floor(Math.floor(40 * cargoMult) * s2Mult);
       const pgtAstStr = `~${(basePgtAst * 0.8).toFixed(2)}-${(basePgtAst * 1.2).toFixed(2)}`;
 
-      const basePgtNeb = 1.7 * laserMult * starshipMult;
-      const ironNeb = Math.floor(110 * cargoMult);
+      const basePgtNeb = 1.7 * laserMult * starshipMult * s2Mult;
+      const ironNeb = Math.floor(Math.floor(110 * cargoMult) * s2Mult);
       const pgtNebStr = `~${(basePgtNeb * 0.8).toFixed(2)}-${(basePgtNeb * 1.2).toFixed(2)}`;
       
-      const basePgtVoid = 3.8 * laserMult * starshipMult;
-      const ironVoid = Math.floor(240 * cargoMult);
+      const basePgtVoid = 3.8 * laserMult * starshipMult * s2Mult;
+      const ironVoid = Math.floor(Math.floor(240 * cargoMult) * s2Mult);
       const pgtVoidStr = `~${(basePgtVoid * 0.8).toFixed(2)}-${(basePgtVoid * 1.2).toFixed(2)}`;
 
-      const basePgtSec = 7.2 * laserMult * starshipMult;
-      const ironSec = Math.floor(550 * cargoMult);
+      const basePgtSec = 7.2 * laserMult * starshipMult * s2Mult;
+      const ironSec = Math.floor(Math.floor(550 * cargoMult) * s2Mult);
       const pgtSecStr = `~${(basePgtSec * 0.8).toFixed(2)}-${(basePgtSec * 1.2).toFixed(2)}`;
 
-      const basePgtDeep = 17.125 * laserMult * starshipMult;
-      const ironDeep = Math.floor(1100 * cargoMult);
+      const basePgtDeep = 17.125 * laserMult * starshipMult * s2Mult;
+      const ironDeep = Math.floor(Math.floor(1100 * cargoMult) * s2Mult);
       const pgtDeepStr = `~${(basePgtDeep * 0.8).toFixed(2)}-${(basePgtDeep * 1.2).toFixed(2)}`;
 
-      const basePgtOdyssey = 30.625 * laserMult * starshipMult;
-      const ironOdyssey = Math.floor(2200 * cargoMult);
+      const basePgtOdyssey = 30.625 * laserMult * starshipMult * s2Mult;
+      const ironOdyssey = Math.floor(Math.floor(2200 * cargoMult) * s2Mult);
       const pgtOdysseyStr = `~${(basePgtOdyssey * 0.8).toFixed(2)}-${(basePgtOdyssey * 1.2).toFixed(2)}`;
 
       // Duration strings reflecting Warp Speed Boost
@@ -1651,6 +1702,11 @@ class PolySpaceEngine {
               ${shipInfo.ship && starshipMult > 1.0 ? `
                 <span style="background:rgba(0,0,0,0.45); border:1px solid ${shipInfo.rarityColor}; color:${shipInfo.rarityColor}; font-size:0.72rem; font-weight:800; padding:1px 6px; border-radius:4px; display:inline-flex; align-items:center; gap:3px;" title="Equipped Starship Yield Bonus (${shipInfo.rarity} ${starshipMult}x)">
                   🛸 ${shipInfo.rarity} Flagship (${starshipMult}x PGT)
+                </span>
+              ` : ''}
+              ${s2Info.unlocked ? `
+                <span style="background:rgba(0,255,136,0.14); border:1px solid #00ff88; color:#00ff88; font-size:0.72rem; font-weight:800; padding:1px 6px; border-radius:4px; display:inline-flex; align-items:center; gap:3px;" title="All 18 Serie 2 Relics Owned — 1.5x Ore &amp; PGT Applied">
+                  🚀 Serie 2 Relics (1.5x Ore &amp; PGT)
                 </span>
               ` : ''}
             </div>
@@ -1775,21 +1831,36 @@ class PolySpaceEngine {
       logsHtml = `<div style="font-size:0.75rem; color:var(--text-dim); text-align:center; padding:0.6rem 0;">No completed space missions logged yet. Launch an expedition above!</div>`;
     } else {
       logs.forEach(log => {
-        const critBadge = log.isCritical ? `<span style="background: rgba(255, 0, 85, 0.2); color: #ff0055; border: 1px solid #ff0055; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.65rem; font-weight: 800;">💥 3x CRITICAL</span>` : '';
-        const pgtStr = log.earnedPgt > 0 ? `<span style="color: var(--color-warning); font-weight: 700;">+${log.earnedPgt.toFixed(2)} PGT</span>` : '';
+        const critBadge = log.isCritical ? `<span style="background: rgba(255, 0, 85, 0.2); color: #ff0055; border: 1px solid #ff0055; padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.65rem; font-weight: 800; margin-left: 0.3rem;">💥 3x CRITICAL</span>` : '';
+
+        const logShipMult = log.starshipMult !== undefined ? Number(log.starshipMult) : (shipInfo.mult || 1.0);
+        const rawRarity = log.starshipRarity ? String(log.starshipRarity).trim() : (shipInfo.rarity || 'Ship');
+        const logShipRarity = rawRarity ? (rawRarity.charAt(0).toUpperCase() + rawRarity.slice(1).toLowerCase()) : 'Ship';
+        const logS2Mult = log.s2RelicMult !== undefined ? Number(log.s2RelicMult) : (s2Info.unlocked ? 1.5 : 1.0);
+
+        const shipBadge = logShipMult > 1.0
+          ? `<span style="background: rgba(0, 240, 255, 0.12); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.5); padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.65rem; font-weight: 800; margin-left: 0.3rem;" title="${logShipRarity} Starship NFT Multiplier (${logShipMult}x PGT)">🛸 ${logShipMult}x ${logShipRarity}</span>`
+          : '';
+        const s2Badge = logS2Mult > 1.0
+          ? `<span style="background: rgba(0, 255, 136, 0.14); color: #00ff88; border: 1px solid rgba(0, 255, 136, 0.5); padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.65rem; font-weight: 800; margin-left: 0.3rem;" title="Serie 2 Relics Complete — ${logS2Mult}x Ore &amp; PGT Multiplier">🚀 ${logS2Mult}x S2 Relics</span>`
+          : '';
+
+        const pgtNum = Number(log.earnedPgt || 0);
+        const pgtStr = pgtNum > 0 ? `<span style="color: var(--color-warning); font-weight: 700;">+${pgtNum.toFixed(2)} PGT</span>` : '';
         const ironStr = log.earnedIron > 0 ? `<span style="color: #cbd5e1;">+${log.earnedIron} Iron</span>` : '';
         const titStr = log.earnedTit > 0 ? `<span style="color: #38bdf8;">+${log.earnedTit} Tit</span>` : '';
         const quantStr = log.earnedQuant > 0 ? `<span style="color: #ff00ff;">+${log.earnedQuant} Quant</span>` : '';
+        const pgtOreStr = log.earnedPgtOre > 0 ? `<span style="color: #ffd700; font-weight: 700;">+${log.earnedPgtOre} PGT Ore</span>` : '';
 
         logsHtml += `
           <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-glass); border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.75rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
-            <div>
+            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.25rem;">
               <span style="color: #fff; font-weight: 700;">🛸 ${log.name}</span>
-              <span style="color: var(--text-dim); margin-left: 0.4rem; font-size: 0.7rem;">${log.time}</span>
-              ${critBadge}
+              <span style="color: var(--text-dim); margin-left: 0.2rem; font-size: 0.7rem;">${log.time}</span>
+              ${critBadge}${shipBadge}${s2Badge}
             </div>
-            <div style="display: flex; gap: 0.5rem; align-items: center; font-size: 0.72rem;">
-              ${pgtStr} ${ironStr} ${titStr} ${quantStr}
+            <div style="display: flex; gap: 0.5rem; align-items: center; font-size: 0.72rem; flex-wrap: wrap;">
+              ${pgtStr} ${ironStr} ${titStr} ${quantStr} ${pgtOreStr}
             </div>
           </div>
         `;
@@ -2218,6 +2289,16 @@ class PolySpaceEngine {
       earnedPgt = parseFloat((earnedPgt * 3).toFixed(2));
     }
 
+    // Serie 2 Relics Set Multiplier (1.5x Ore & PGT on PolySpace Missions)
+    const s2Info = this.getSeason2RelicBonusInfo();
+    const s2Mult = s2Info.mult || 1.0;
+    if (s2Mult > 1.0) {
+      earnedIron = Math.floor(earnedIron * s2Mult);
+      earnedTit = Math.floor(earnedTit * s2Mult);
+      earnedQuant = Math.floor(earnedQuant * s2Mult);
+      earnedPgt = parseFloat((earnedPgt * s2Mult).toFixed(2));
+    }
+
     // Rare PGT Ore Extraction (Requires Mining Laser Level >= 35)
     let earnedPgtOre = 0;
     if ((this.state.laserLevel || 1) >= 35) {
@@ -2264,7 +2345,10 @@ class PolySpaceEngine {
       earnedQuant,
       earnedPgtOre,
       earnedPgt,
-      isCritical
+      isCritical,
+      starshipMult: shipInfo.mult || 1.0,
+      starshipRarity: shipInfo.rarity || null,
+      s2RelicMult: s2Mult
     };
 
     this.state.missionLogs.unshift(logEntry);

@@ -1036,6 +1036,10 @@ window.mintRelicOnPolygon = mintRelicOnPolygon;
 window.renderRelicsVault = renderRelicsVault;
 window.hydrateAndRenderRelicsVault = hydrateAndRenderRelicsVault;
 window.getRelicMeta = getRelicMeta;
+window.getSeason1Progress = getSeason1Progress;
+window.getSeason2Progress = getSeason2Progress;
+window.isSeason1ApexUnlocked = isSeason1ApexUnlocked;
+window.isSeason2ApexUnlocked = isSeason2ApexUnlocked;
 
 const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11";
 const MULTICALL3_ABI = [

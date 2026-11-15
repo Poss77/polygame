@@ -5,6 +5,11 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **PolySpace Serie 2 Relics & Starship NFT Multiplier Badges (`v1.5.847`)**:
+  - Exposed `getSeason1Progress`, `getSeason2Progress`, `isSeason1ApexUnlocked`, and `isSeason2ApexUnlocked` on `window` in [`src/js/features/relics.js`](src/js/features/relics.js).
+  - Added `getSeason2RelicBonusInfo()` in [`space.js`](space.js) to display **`🛸 [Rarity] (Xx PGT)`** and **`🚀 Serie 2 Relics (1.5x Ore & PGT)`** badges in the PolySpace Fleet Command header and Deploy Starships row, apply the active `1.5x` Ore & PGT bonus to all 6 expedition yield previews and the offline fallback, and render **`🛸 Xx [Rarity]`**, **`🚀 1.5x S2 Relics`**, and rare **PGT Ore** pills in the **Mission Outcome History** (`missionLogs`).
+  - Updated `claim_polyspace_expedition` in [`supabase/rpcs/06_polyspace_fleet.sql`](supabase/rpcs/06_polyspace_fleet.sql), [`supabase/relics_season2_migration.sql`](supabase/relics_season2_migration.sql), and [`supabase/admin_resync_nfts_fix.sql`](supabase/admin_resync_nfts_fix.sql) to persist `starshipMult`, `starshipRarity`, and `s2RelicMult` inside each server-generated `missionLogs` entry.
+
 - **Season 2 Relics Vault & Profile Resolution Fix (`v1.5.846`)**:
   - Updated `hydrateAndRenderRelicsVault()` in [`src/js/features/relics.js`](src/js/features/relics.js) to check both `getSeason1Progress` and `getSeason2Progress` before skipping hydration, prioritize non-simulated player accounts (`!r.is_simulated`), merge live on-chain Polygon relics via `getOwnedRelicsFromChain()`, and display combined `X/35` progress in `#relics-progress-badge`.
   - Updated `syncProfileView()` and `openPublicProfile()` in [`src/js/features/profile.js`](src/js/features/profile.js) to prioritize non-simulated rows and compute the combined Serie 1 + Serie 2 count (`X/35`) in `#relics-progress-badge`.
