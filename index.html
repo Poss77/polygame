@@ -449,22 +449,22 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <!-- Direct parallel stylesheets (eliminates @import waterfall) -->
-  <link rel="stylesheet" href="src/css/variables.css?v=1.5.850">
-  <link rel="stylesheet" href="src/css/base.css?v=1.5.850">
-  <link rel="stylesheet" href="src/css/layout.css?v=1.5.850">
-  <link rel="stylesheet" href="src/css/sidebar.css?v=1.5.850">
-  <link rel="stylesheet" href="src/css/main_content.css?v=1.5.850">
-  <link rel="stylesheet" href="src/css/views.css?v=1.5.850">
-  <link rel="stylesheet" href="src/css/features/faucet.css?v=1.5.850">
-  <link rel="stylesheet" href="src/css/features/games.css?v=1.5.850">
-  <link rel="stylesheet" href="src/css/features/nft.css?v=1.5.850">
-  <link rel="stylesheet" href="src/css/features/staking.css?v=1.5.850">
-  <link rel="stylesheet" href="src/css/features/referrals.css?v=1.5.850">
-  <link rel="stylesheet" href="src/css/features/profile.css?v=1.5.850">
-  <link rel="stylesheet" href="src/css/modals.css?v=1.5.850">
-  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.850">
-  <link rel="stylesheet" href="src/css/animations.css?v=1.5.850">
-  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.850">
+  <link rel="stylesheet" href="src/css/variables.css?v=1.5.851">
+  <link rel="stylesheet" href="src/css/base.css?v=1.5.851">
+  <link rel="stylesheet" href="src/css/layout.css?v=1.5.851">
+  <link rel="stylesheet" href="src/css/sidebar.css?v=1.5.851">
+  <link rel="stylesheet" href="src/css/main_content.css?v=1.5.851">
+  <link rel="stylesheet" href="src/css/views.css?v=1.5.851">
+  <link rel="stylesheet" href="src/css/features/faucet.css?v=1.5.851">
+  <link rel="stylesheet" href="src/css/features/games.css?v=1.5.851">
+  <link rel="stylesheet" href="src/css/features/nft.css?v=1.5.851">
+  <link rel="stylesheet" href="src/css/features/staking.css?v=1.5.851">
+  <link rel="stylesheet" href="src/css/features/referrals.css?v=1.5.851">
+  <link rel="stylesheet" href="src/css/features/profile.css?v=1.5.851">
+  <link rel="stylesheet" href="src/css/modals.css?v=1.5.851">
+  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.851">
+  <link rel="stylesheet" href="src/css/animations.css?v=1.5.851">
+  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.851">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
@@ -5504,18 +5504,18 @@ twq('config','ri5fg');
     </div>
   </div>
 
-  <script defer src="game.js?v=1.5.850"></script>
-  <script defer src="invaders.js?v=1.5.850"></script>
-  <script defer src="drift.js?v=1.5.850"></script>
-  <script defer src="stacker.js?v=1.5.850"></script>
-  <script defer src="space.js?v=1.5.850"></script>
-  <script type="module" src="skeet.js?v=1.5.850"></script>
-  <script type="module" src="defense.js?v=1.5.850"></script>
-  <script type="module" src="runner.js?v=1.5.850"></script>
-  <script type="module" src="q2048.js?v=1.5.850"></script>
-  <script defer src="tetris.js?v=1.5.850"></script>
-  <script defer src="bubble.js?v=1.5.850"></script>
-  <script type="module" src="src/js/app.js?v=1.5.850"></script>
+  <script defer src="game.js?v=1.5.851"></script>
+  <script defer src="invaders.js?v=1.5.851"></script>
+  <script defer src="drift.js?v=1.5.851"></script>
+  <script defer src="stacker.js?v=1.5.851"></script>
+  <script defer src="space.js?v=1.5.851"></script>
+  <script type="module" src="skeet.js?v=1.5.851"></script>
+  <script type="module" src="defense.js?v=1.5.851"></script>
+  <script type="module" src="runner.js?v=1.5.851"></script>
+  <script type="module" src="q2048.js?v=1.5.851"></script>
+  <script defer src="tetris.js?v=1.5.851"></script>
+  <script defer src="bubble.js?v=1.5.851"></script>
+  <script type="module" src="src/js/app.js?v=1.5.851"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">
@@ -5665,8 +5665,11 @@ twq('config','ri5fg');
 
         <!-- Owned NFTs Grid -->
         <div>
-          <h4 style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-warning); margin-bottom: 0.4rem; letter-spacing: 0.05em; font-weight: 800;">🎨 Web3 Utility NFTs (<span id="pub-profile-nfts-count">0</span>)</h4>
-          <div id="pub-profile-nfts-grid" style="display: flex; gap: 0.5rem; flex-wrap: wrap; max-height: 110px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 0.65rem; border-radius: 8px; border: 1px solid var(--border-glass);">
+          <h4 id="pub-profile-nfts-banner" style="font-size: 0.75rem; text-transform: uppercase; color: var(--color-warning); margin-bottom: 0.4rem; letter-spacing: 0.05em; font-weight: 800; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; padding: 0.35rem 0.6rem; border-radius: 6px; background: rgba(255, 193, 7, 0.07); border: 1px solid rgba(255, 193, 7, 0.25);">
+            <span>🎨 Web3 Utility NFTs (<span id="pub-profile-nfts-count">0</span>)</span>
+            <span id="pub-profile-nfts-toggle" style="font-size: 0.75rem; color: var(--text-muted);">▸</span>
+          </h4>
+          <div id="pub-profile-nfts-grid" style="display: none; gap: 0.5rem; flex-wrap: wrap; max-height: 110px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 0.65rem; border-radius: 8px; border: 1px solid var(--border-glass);">
             <div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">Loading NFTs...</div>
           </div>
         </div>
@@ -5677,15 +5680,21 @@ twq('config','ri5fg');
             <span>🏺 Quantum Relics (<span id="pub-profile-relics-count" style="color: #ffd700;">0</span> Total)</span>
             <span id="pub-profile-relics-breakdown" style="font-size: 0.68rem; color: var(--text-muted); font-weight: normal;">0 Polygon • 0 In-Game</span>
           </h4>
-          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,240,255,0.06); border: 1px solid rgba(0,240,255,0.2); border-radius: 6px; padding: 0.4rem 0.65rem; margin-bottom: 0.4rem;" id="pub-profile-s1-banner">
+          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,240,255,0.06); border: 1px solid rgba(0,240,255,0.2); border-radius: 6px; padding: 0.4rem 0.65rem; margin-bottom: 0.4rem; cursor: pointer; user-select: none;" id="pub-profile-s1-banner">
             <span style="font-size: 0.72rem; color: #fff; font-weight: 700;">Serie 1 Set Progress:</span>
-            <span id="pub-profile-s1-count" style="font-size: 0.72rem; font-weight: 800; color: var(--color-accent);">0 / 17 Relics</span>
+            <span style="display: flex; align-items: center; gap: 0.45rem;">
+              <span id="pub-profile-s1-count" style="font-size: 0.72rem; font-weight: 800; color: var(--color-accent);">0 / 17 Relics</span>
+              <span id="pub-profile-s1-toggle" style="font-size: 0.75rem; color: var(--text-muted);">▸</span>
+            </span>
           </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(189,0,255,0.07); border: 1px solid rgba(189,0,255,0.25); border-radius: 6px; padding: 0.4rem 0.65rem; margin-bottom: 0.5rem;" id="pub-profile-s2-banner">
+          <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(189,0,255,0.07); border: 1px solid rgba(189,0,255,0.25); border-radius: 6px; padding: 0.4rem 0.65rem; margin-bottom: 0.5rem; cursor: pointer; user-select: none;" id="pub-profile-s2-banner">
             <span style="font-size: 0.72rem; color: #fff; font-weight: 700;">Serie 2 Set Progress:</span>
-            <span id="pub-profile-s2-count" style="font-size: 0.72rem; font-weight: 800; color: #e879f9;">0 / 18 Relics</span>
+            <span style="display: flex; align-items: center; gap: 0.45rem;">
+              <span id="pub-profile-s2-count" style="font-size: 0.72rem; font-weight: 800; color: #e879f9;">0 / 18 Relics</span>
+              <span id="pub-profile-s2-toggle" style="font-size: 0.75rem; color: var(--text-muted);">▸</span>
+            </span>
           </div>
-          <div id="pub-profile-relics-grid" style="display: flex; gap: 0.5rem; flex-wrap: wrap; max-height: 130px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 0.65rem; border-radius: 8px; border: 1px solid rgba(0,240,255,0.2);">
+          <div id="pub-profile-relics-grid" style="display: none; gap: 0.5rem; flex-wrap: wrap; max-height: 130px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 0.65rem; border-radius: 8px; border: 1px solid rgba(0,240,255,0.2);">
             <div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">Loading Relics...</div>
           </div>
         </div>

@@ -744,6 +744,7 @@ export async function openPublicProfile(walletAddress) {
   const referralsEl = document.getElementById('pub-profile-referrals');
   const activeRefEl = document.getElementById('pub-profile-active-referrals');
   const nftsGridEl = document.getElementById('pub-profile-nfts-grid');
+  const relicsGridResetEl = document.getElementById('pub-profile-relics-grid');
   const tierBadgeEl = document.getElementById('pub-profile-tier-badge');
   const s1CountEl = document.getElementById('pub-profile-s1-count');
 
@@ -752,7 +753,13 @@ export async function openPublicProfile(walletAddress) {
   if (s1CountEl) s1CountEl.innerText = "0 / 17 Relics";
   if (activeRefEl) activeRefEl.innerText = "0 Active";
   if (walletEl) walletEl.innerText = `${walletAddress.substring(0, 6)}...${walletAddress.substring(38)}`;
-  if (nftsGridEl) nftsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">Loading NFTs...</div>';
+  if (nftsGridEl) {
+    nftsGridEl.style.display = 'none';
+    nftsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">Loading NFTs...</div>';
+  }
+  if (relicsGridResetEl) {
+    relicsGridResetEl.style.display = 'none';
+  }
 
   try {
     const normAddr = walletAddress.toLowerCase().trim();
@@ -890,16 +897,37 @@ export async function openPublicProfile(walletAddress) {
     if (refPolEl) refPolEl.innerText = `${parseFloat(user.total_referral_pol || 0).toFixed(4)} POL`;
 
     // Helper to render Public Profile Utility NFTs + Quantum Relics (reused for live on-chain merge)
+    let activePubAssetTab = null; // null | 'utility' | 's1' | 's2'
+    let latestPubNftsList = [];
+    let latestPubRelicsObj = {};
+
     const renderPubProfileAssets = (nftsList, relicsObj) => {
+      latestPubNftsList = Array.isArray(nftsList) ? nftsList : [];
+      latestPubRelicsObj = (relicsObj && typeof relicsObj === 'object') ? relicsObj : {};
+
       const nftsCountEl = document.getElementById('pub-profile-nfts-count');
-      if (nftsCountEl) nftsCountEl.innerText = nftsList.length;
+      if (nftsCountEl) nftsCountEl.innerText = latestPubNftsList.length;
+
+      const nftsBannerEl = document.getElementById('pub-profile-nfts-banner');
+      const nftsToggleEl = document.getElementById('pub-profile-nfts-toggle');
+      const s1ToggleEl = document.getElementById('pub-profile-s1-toggle');
+      const s2ToggleEl = document.getElementById('pub-profile-s2-toggle');
+
+      if (nftsToggleEl) nftsToggleEl.innerText = (activePubAssetTab === 'utility') ? '▾' : '▸';
+      if (s1ToggleEl) s1ToggleEl.innerText = (activePubAssetTab === 's1') ? '▾' : '▸';
+      if (s2ToggleEl) s2ToggleEl.innerText = (activePubAssetTab === 's2') ? '▾' : '▸';
+
+      if (nftsBannerEl) {
+        nftsBannerEl.style.borderColor = (activePubAssetTab === 'utility') ? 'var(--color-warning)' : 'rgba(255, 193, 7, 0.25)';
+      }
 
       if (nftsGridEl) {
-        if (!nftsList || nftsList.length === 0) {
+        nftsGridEl.style.display = (activePubAssetTab === 'utility') ? 'flex' : 'none';
+        if (!latestPubNftsList || latestPubNftsList.length === 0) {
           nftsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">No NFTs in collection yet.</div>';
         } else {
           let nftsHtml = '';
-          nftsList.forEach(nftId => {
+          latestPubNftsList.forEach(nftId => {
             const activeNft = NFT_REGISTRY.find(n => n.id === nftId);
             const nftName = activeNft ? activeNft.name : `NFT #${nftId}`;
             const nftIcon = activeNft ? (activeNft.icon || '🎨') : '🎨';
@@ -999,9 +1027,17 @@ export async function openPublicProfile(walletAddress) {
       }
 
       if (relicsGridEl) {
-        if (unlockedRelicsList.length === 0) {
-          relicsGridEl.innerHTML = '<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">No Quantum Relics unlocked yet.</div>';
-        } else {
+        const showRelics = (activePubAssetTab === 's1' || activePubAssetTab === 's2');
+        relicsGridEl.style.display = showRelics ? 'flex' : 'none';
+        const targetSeason = activePubAssetTab === 's2' ? 2 : 1;
+        const filteredRelicsList = showRelics
+          ? unlockedRelicsList.filter(r => (r.season || 1) === targetSeason)
+          : [];
+
+        if (showRelics && filteredRelicsList.length === 0) {
+          const label = targetSeason === 2 ? 'Serie 2' : 'Serie 1';
+          relicsGridEl.innerHTML = `<div style="color: var(--text-dim); font-size: 0.8rem; width: 100%; text-align: center;">No ${label} Quantum Relics unlocked yet.</div>`;
+        } else if (showRelics) {
           const rarityStyles = {
             rare: { border: '#00f0ff', color: '#00f0ff', bg: 'rgba(0,240,255,0.1)' },
             epic: { border: '#bd00ff', color: '#bd00ff', bg: 'rgba(189,0,255,0.1)' },
@@ -1010,7 +1046,7 @@ export async function openPublicProfile(walletAddress) {
           };
 
           let relicsHtml = '';
-          unlockedRelicsList.forEach(r => {
+          filteredRelicsList.forEach(r => {
             const style = rarityStyles[r.rarity] || rarityStyles.rare;
             const sBadge = r.season === 2
               ? `<span style="background: rgba(232,121,249,0.2); color: #f0abfc; border: 1px solid rgba(232,121,249,0.4); font-size: 0.6rem; font-weight: 800; padding: 0 4px; border-radius: 3px; margin-left: 3px;">S2</span>`
@@ -1033,6 +1069,25 @@ export async function openPublicProfile(walletAddress) {
           });
           relicsGridEl.innerHTML = relicsHtml;
         }
+      }
+
+      if (nftsBannerEl) {
+        nftsBannerEl.onclick = () => {
+          activePubAssetTab = (activePubAssetTab === 'utility') ? null : 'utility';
+          renderPubProfileAssets(latestPubNftsList, latestPubRelicsObj);
+        };
+      }
+      if (s1BannerEl) {
+        s1BannerEl.onclick = () => {
+          activePubAssetTab = (activePubAssetTab === 's1') ? null : 's1';
+          renderPubProfileAssets(latestPubNftsList, latestPubRelicsObj);
+        };
+      }
+      if (s2BannerEl) {
+        s2BannerEl.onclick = () => {
+          activePubAssetTab = (activePubAssetTab === 's2') ? null : 's2';
+          renderPubProfileAssets(latestPubNftsList, latestPubRelicsObj);
+        };
       }
     };
 
