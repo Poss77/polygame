@@ -5,6 +5,12 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Simulated Community Accounts Deduplication & Identity Trigger Fix (`v1.5.848`)**:
+  - Updated `enforce_account_identity_integrity()` in [`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql) to skip identity rewriting for simulated benchmark rows (`is_simulated = TRUE` with no `user_id`/`web3_auth_id`) and for `SECURITY DEFINER` RPC updates targeting accounts other than the caller's own `auth.uid()`, preventing simulated `0xpgtsim_*` rows from being rewritten to `0xpgtc58e9dfe` and stamped with the admin wallet.
+  - Updated `prevent_direct_balance_mutation()` in [`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql) to lock `is_simulated` against direct client tampering (`SECURITY INVOKER` preserved).
+  - Updated `admin_generate_community_scores()` in [`supabase/rpcs/11_admin_automation.sql`](supabase/rpcs/11_admin_automation.sql) to deduplicate simulated accounts by username before upserting and added `Cyber Bubble` (`bubble`) support.
+  - Added migration [`supabase/deduplicate_simulated_accounts.sql`](supabase/deduplicate_simulated_accounts.sql) to merge/remove the duplicate `Tomas Lindqvist` row (`0xpgtc58e9dfe`) and restore roster wallets for simulated Web3 accounts.
+
 - **PolySpace Serie 2 Relics & Starship NFT Multiplier Badges (`v1.5.847`)**:
   - Exposed `getSeason1Progress`, `getSeason2Progress`, `isSeason1ApexUnlocked`, and `isSeason2ApexUnlocked` on `window` in [`src/js/features/relics.js`](src/js/features/relics.js).
   - Added `getSeason2RelicBonusInfo()` in [`space.js`](space.js) to display **`🛸 [Rarity] (Xx PGT)`** and **`🚀 Serie 2 Relics (1.5x Ore & PGT)`** badges in the PolySpace Fleet Command header and Deploy Starships row, apply the active `1.5x` Ore & PGT bonus to all 6 expedition yield previews and the offline fallback, and render **`🛸 Xx [Rarity]`**, **`🚀 1.5x S2 Relics`**, and rare **PGT Ore** pills in the **Mission Outcome History** (`missionLogs`).
