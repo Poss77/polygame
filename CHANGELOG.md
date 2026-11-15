@@ -5,6 +5,10 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Astro-Dodge Frame Pacing & GPU Performance Optimization (`v1.5.842`)**:
+  - Updated `game.js` to use `getContext('2d', { alpha: false })`, added a `0.8ms` VSync snap and skipped redundant 0-update `draw()` calls in `loop()` to eliminate 60Hz frame-pacing judder, cached player/global/rarity multipliers on `startGame()`, and removed `shadowBlur` calls from Boss rendering.
+  - Removed `backdrop-filter: blur(...)` from fullscreen HUD overlays in `src/css/features/games.css` to avoid per-frame GPU blur recompositing over live canvases.
+
 - **Cyber Bubble Full-Screen Mobile Swipe Fix (`v1.5.841`)**:
   - Added `bubble-touch-lock` CSS class (`touch-action: none !important` on all non-modal descendants in `src/css/mobile.css`) and a non-passive `touchmove` `preventDefault()` guard in `bubble.js` during active gameplay so swiping outside the game window on mobile no longer triggers browser scrolling/`pointercancel`.
 

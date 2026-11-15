@@ -7,7 +7,7 @@
 class NeonAstroDodge {
   constructor(canvasId, overlayId) {
     this.canvas = document.getElementById(canvasId);
-    this.ctx = this.canvas.getContext('2d');
+    this.ctx = this.canvas.getContext('2d', { alpha: false });
     this.overlay = document.getElementById(overlayId);
     
     // Canvas dimensions
@@ -533,6 +533,9 @@ class NeonAstroDodge {
     const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
     const starshipMult = this.nftTierEarnMultiplier || 1.0;
     const initialPlayerMult = nftMult * vipMult * ambMult * relicMult * starshipMult;
+    this._cachedPlayerMult = initialPlayerMult;
+    this._cachedGlobalEarnMult = (typeof appState !== 'undefined' && appState.state && appState.state.globalEarnMultiplier !== undefined) ? Number(appState.state.globalEarnMultiplier) : 1.0;
+    this._cachedShipRarity = this.nftRarity || (this.nftDna && window.PolyHangar && typeof window.PolyHangar.getStarshipRarity === 'function' ? window.PolyHangar.getStarshipRarity(this.nftDna) : null);
     const boostLabel = document.getElementById('game-nft-boost-label');
     if (boostLabel) boostLabel.innerText = `${initialPlayerMult.toFixed(1)}x`;
     this.bonusTokensCollected = 0;
@@ -830,6 +833,11 @@ class NeonAstroDodge {
     const timestep = 1000 / 60; // 16.667ms per standard 60 FPS frame
     this.accumulatedTime = (this.accumulatedTime || 0) + elapsed;
 
+    // Snap near-vsync intervals so 60Hz monitors stay 1:1 instead of 0/2-step juddering
+    if (this.accumulatedTime >= timestep - 0.8 && this.accumulatedTime < timestep) {
+      this.accumulatedTime = timestep;
+    }
+
     // Cap accumulator at 150ms to prevent spiral of death on tab switch
     if (this.accumulatedTime > 150) {
       this.accumulatedTime = 150;
@@ -848,8 +856,8 @@ class NeonAstroDodge {
       this.accumulatedTime = 0;
     }
 
-    // Render whenever updated or new frame arrives
-    if (updated || elapsed >= 14) {
+    // Only draw when physics stepped so we never waste a full canvas redraw on a 0-update frame
+    if (updated) {
       this.draw();
     }
 
@@ -1005,19 +1013,11 @@ class NeonAstroDodge {
     this.difficulty += 0.00025;
     this.baseSpeedMult = 0.9 + (this.difficulty - 1) * 0.25;
 
-    // Throttle multiplier calculation & DOM HUD updates to once every 10 frames (~6x/sec) and cache DOM element references
+    // Throttle HUD DOM updates to once every 10 frames (~6x/sec) using cached multipliers
     if (!this._hudTick || this._hudTick >= 10) {
       this._hudTick = 0;
-      const multis = (typeof appState.getMultipliers === 'function') ? appState.getMultipliers() : { nftGameMultiplier: 0 };
-      const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-      const isVip = (typeof appState.isVipActive === 'function' && appState.isVipActive());
-      const vipLevel = (typeof appState.getVipLevel === 'function') ? appState.getVipLevel() : (isVip ? 2 : 0);
-      const vipMult = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
-      const ambMult = (appState.state && appState.state.isAmbassador) ? 2.0 : 1.0;
-      const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
-      const starshipMult = this.nftTierEarnMultiplier || 1.0;
-      const playerMult = nftMult * vipMult * ambMult * relicMult * starshipMult;
-      const globalEarnMult = (typeof appState !== 'undefined' && appState.state && appState.state.globalEarnMultiplier !== undefined) ? Number(appState.state.globalEarnMultiplier) : 1.0;
+      const playerMult = this._cachedPlayerMult || 1.0;
+      const globalEarnMult = this._cachedGlobalEarnMult !== undefined ? this._cachedGlobalEarnMult : 1.0;
       const liveRawPgt = Math.min(75.0, ((this.score / 2500.0) + (this.shardsCollected * 0.05)) * globalEarnMult);
       const liveFinalPgt = Math.min(1500.0, (liveRawPgt * playerMult) + Math.min((this.bonusTokensCollected || 0) * 5.0, 100.0));
 
@@ -2114,7 +2114,7 @@ class NeonAstroDodge {
     let beamCore = '#ffffff';
     let beamGlow = 'rgba(0, 240, 255, 0.35)';
 
-    const shipRarity = this.nftRarity || (this.nftDna && window.PolyHangar && typeof window.PolyHangar.getStarshipRarity === 'function' ? window.PolyHangar.getStarshipRarity(this.nftDna) : null);
+    const shipRarity = this._cachedShipRarity || this.nftRarity;
     if (shipRarity && shipRarity.flame) {
       beamFlame = shipRarity.flame;
       beamCore = shipRarity.coreFlame || '#ffffff';
@@ -2302,8 +2302,6 @@ class NeonAstroDodge {
         this.ctx.fillStyle = b.hullColor || '#1b2038';
         this.ctx.strokeStyle = b.color;
         this.ctx.lineWidth = 2.5;
-        this.ctx.shadowColor = b.color;
-        this.ctx.shadowBlur = 18;
 
         // Wedge Hull
         this.ctx.beginPath();
@@ -2323,16 +2321,12 @@ class NeonAstroDodge {
 
         // Core Amber Visor
         this.ctx.fillStyle = b.coreColor;
-        this.ctx.shadowColor = b.coreColor;
-        this.ctx.shadowBlur = 14;
         this.ctx.beginPath();
         this.ctx.ellipse(b.x + 36, b.y + b.h / 2, 12, 6, 0, 0, Math.PI * 2);
         this.ctx.fill();
 
         // Rear Thruster Jets
         this.ctx.fillStyle = '#00f0ff';
-        this.ctx.shadowColor = '#00f0ff';
-        this.ctx.shadowBlur = 12;
         const flameOffset = Math.sin(this.gameTime * 0.3) * 3;
         this.ctx.fillRect(b.x + b.w, b.y + 16, 8 + flameOffset, 6);
         this.ctx.fillRect(b.x + b.w, b.y + b.h - 22, 8 + flameOffset, 6);
@@ -2342,8 +2336,6 @@ class NeonAstroDodge {
         this.ctx.fillStyle = b.hullColor || '#18122c';
         this.ctx.strokeStyle = b.color;
         this.ctx.lineWidth = 2.5;
-        this.ctx.shadowColor = b.color;
-        this.ctx.shadowBlur = 20;
 
         // Swept Forward Blade Wings
         this.ctx.beginPath();
@@ -2379,8 +2371,6 @@ class NeonAstroDodge {
 
         // Rotating Quantum Singularity Core
         this.ctx.fillStyle = b.coreColor;
-        this.ctx.shadowColor = b.coreColor;
-        this.ctx.shadowBlur = 16;
         this.ctx.beginPath();
         this.ctx.arc(b.x + 38, b.y + b.h / 2, 8, 0, Math.PI * 2);
         this.ctx.fill();
@@ -2395,8 +2385,6 @@ class NeonAstroDodge {
 
         // Void Thruster Trails
         this.ctx.fillStyle = b.color;
-        this.ctx.shadowColor = b.color;
-        this.ctx.shadowBlur = 14;
         const flameOffset = Math.sin(this.gameTime * 0.25) * 4;
         this.ctx.fillRect(b.x + b.w - 4, b.y + 22, 10 + flameOffset, 5);
         this.ctx.fillRect(b.x + b.w - 4, b.y + b.h / 2 - 3, 14 + flameOffset, 6);
@@ -2407,8 +2395,6 @@ class NeonAstroDodge {
         this.ctx.fillStyle = b.hullColor || '#281b10';
         this.ctx.strokeStyle = b.color;
         this.ctx.lineWidth = 3;
-        this.ctx.shadowColor = b.color;
-        this.ctx.shadowBlur = 22;
 
         // Jagged Armored Battle Colossus
         this.ctx.beginPath();
@@ -2444,8 +2430,6 @@ class NeonAstroDodge {
 
         // Emerald Solar Reactor Core
         this.ctx.fillStyle = b.coreColor;
-        this.ctx.shadowColor = b.coreColor;
-        this.ctx.shadowBlur = 18;
         this.ctx.beginPath();
         this.ctx.arc(b.x + 40, b.y + b.h / 2, 10, 0, Math.PI * 2);
         this.ctx.fill();
@@ -2462,8 +2446,6 @@ class NeonAstroDodge {
         if (b.isEnraged) {
           this.ctx.strokeStyle = '#ff0055';
           this.ctx.lineWidth = 2;
-          this.ctx.shadowColor = '#ff0055';
-          this.ctx.shadowBlur = 15;
           this.ctx.beginPath();
           this.ctx.arc(b.x + b.w / 2, b.y + b.h / 2, b.w * 0.55 + Math.sin(this.gameTime * 0.2) * 5, 0, Math.PI * 2);
           this.ctx.stroke();
@@ -2471,8 +2453,6 @@ class NeonAstroDodge {
 
         // Scorching Solar Thrusters
         this.ctx.fillStyle = '#ffaa00';
-        this.ctx.shadowColor = '#ffaa00';
-        this.ctx.shadowBlur = 16;
         const flameOffset = Math.sin(this.gameTime * 0.28) * 5;
         this.ctx.fillRect(b.x + b.w - 5, b.y + 18, 12 + flameOffset, 6);
         this.ctx.fillRect(b.x + b.w - 2, b.y + b.h / 2 - 4, 16 + flameOffset, 8);
@@ -2483,8 +2463,6 @@ class NeonAstroDodge {
         this.ctx.fillStyle = b.hullColor || '#0c2130';
         this.ctx.strokeStyle = b.color;
         this.ctx.lineWidth = 3.5;
-        this.ctx.shadowColor = b.color;
-        this.ctx.shadowBlur = 25;
 
         // Pincer Mandible Forward Wings Framing Accelerator Cannon
         this.ctx.beginPath();
@@ -2520,8 +2498,6 @@ class NeonAstroDodge {
 
         // Crimson Dark Matter Singularity Core with Energy Arcs
         this.ctx.fillStyle = b.coreColor;
-        this.ctx.shadowColor = b.coreColor;
-        this.ctx.shadowBlur = 20;
         this.ctx.beginPath();
         this.ctx.arc(b.x + 48, b.y + b.h / 2, 12, 0, Math.PI * 2);
         this.ctx.fill();
@@ -2537,8 +2513,6 @@ class NeonAstroDodge {
 
         // Quad Apex Engines
         this.ctx.fillStyle = '#00f0ff';
-        this.ctx.shadowColor = '#00f0ff';
-        this.ctx.shadowBlur = 18;
         const flameOffset = Math.sin(this.gameTime * 0.3) * 6;
         this.ctx.fillRect(b.x + b.w - 5, b.y + 14, 12 + flameOffset, 5);
         this.ctx.fillRect(b.x + b.w - 3, b.y + 32, 16 + flameOffset, 6);
