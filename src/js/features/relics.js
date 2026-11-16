@@ -764,7 +764,7 @@ export function renderRelicsVault() {
 
   let html = `
     <!-- Serie 1 Apex Banner -->
-    <div style="background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(0,240,255,0.08) 100%); border: 1px solid ${s1Progress.isComplete ? 'var(--color-accent)' : 'var(--border-cyan)'}; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+    <div onclick="document.getElementById('relic-vault-serie-1-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })" title="Click to jump to Serie 1 Relics" style="cursor: pointer; background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(0,240,255,0.08) 100%); border: 1px solid ${s1Progress.isComplete ? 'var(--color-accent)' : 'var(--border-cyan)'}; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
       <div>
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
           <span style="font-size: 1.4rem;">🏺</span>
@@ -793,7 +793,7 @@ export function renderRelicsVault() {
     </div>
 
     <!-- Serie 2 PolySpace Mission Bonus Banner -->
-    <div style="background: linear-gradient(135deg, rgba(189,0,255,0.12) 0%, rgba(236,72,153,0.08) 100%); border: 1px solid ${s2Progress.isComplete ? '#ec4899' : 'rgba(189,0,255,0.35)'}; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+    <div onclick="document.getElementById('relic-vault-serie-2-anchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' })" title="Click to jump to Serie 2 Relics" style="cursor: pointer; background: linear-gradient(135deg, rgba(189,0,255,0.12) 0%, rgba(236,72,153,0.08) 100%); border: 1px solid ${s2Progress.isComplete ? '#ec4899' : 'rgba(189,0,255,0.35)'}; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
       <div>
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
           <span style="font-size: 1.4rem;">🚀</span>
@@ -838,12 +838,23 @@ export function renderRelicsVault() {
   `;
 
   // Render categories
+  let addedS1Anchor = false;
+  let addedS2Anchor = false;
   categories.forEach(cat => {
     const relicsInCat = RELICS_REGISTRY.filter(r => r.game === cat.key);
     if (relicsInCat.length === 0) return;
 
+    let anchorAttr = '';
+    if (cat.season === 1 && !addedS1Anchor) {
+      addedS1Anchor = true;
+      anchorAttr = ' id="relic-vault-serie-1-anchor"';
+    } else if (cat.season === 2 && !addedS2Anchor) {
+      addedS2Anchor = true;
+      anchorAttr = ' id="relic-vault-serie-2-anchor"';
+    }
+
     html += `
-      <div style="margin-bottom: 2rem;">
+      <div${anchorAttr} style="margin-bottom: 2rem; scroll-margin-top: 80px;">
         <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; margin-bottom: 1rem;">
           <h4 style="font-size: 1.05rem; font-weight: 800; color: #fff; margin: 0; text-transform: uppercase; letter-spacing: 0.05em;">
             ${cat.title}
