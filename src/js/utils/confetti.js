@@ -357,6 +357,12 @@ export function triggerRelicCelebration(relicMeta) {
             window.appState.update({ relics: prevRelicsSnapshot });
             if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
           }
+          const statusEl = document.querySelector('#quantum-relic-discovery-modal [data-relic-status-badge]');
+          if (statusEl) {
+            statusEl.style.color = '#ffaa00';
+            statusEl.style.borderColor = 'rgba(255, 170, 0, 0.5)';
+            statusEl.innerText = `⚠️ Not added: ${res.data.error}`;
+          }
           if (typeof window.triggerToast === 'function') {
             window.triggerToast(`⚠️ Relic resonance blocked: ${res.data.error}`, 'warning');
           }
@@ -439,7 +445,7 @@ export function triggerRelicCelebration(relicMeta) {
       ${relicMeta.description || (relicMeta.season === 2 ? 'Added to your permanent Quantum Relics Vault. Collect all 18 Season 2 Relics for the 1.5x PolySpace Mission Multiplier!' : 'Added to your permanent Quantum Relics Vault. Collect all 17 for the 1.5x Apex Multiplier!')}
     </p>
 
-    <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 4px 10px; font-size: 0.7rem; color: #00f0ff; font-weight: 800; margin-bottom: 8px;">
+    <div data-relic-status-badge style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 4px 10px; font-size: 0.7rem; color: #00f0ff; font-weight: 800; margin-bottom: 8px;">
       ✨ Added to Stash (+1 In-Game)
     </div>
 
