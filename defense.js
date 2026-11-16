@@ -2949,8 +2949,8 @@ export class CyberDefenseEngine {
             verifiedPgt = serverPayout > 0 ? Math.min(serverPayout, calculatedPgt) : calculatedPgt;
           }
           if (res.is_new_high) isNewHigh = true;
-          if (res.limit_reached) limitReached = true;
-        } else if (res && (res.limit_reached || (res.error && res.error.includes('limit')))) {
+          if (res.daily_limit_reached || res.limit_reached) limitReached = true;
+        } else if (res && (res.daily_limit_reached || res.limit_reached || (res.error && res.error.includes('limit')))) {
           limitReached = true;
           verifiedPgt = 0.0;
         }
@@ -3021,13 +3021,23 @@ export class CyberDefenseEngine {
     if (finalWavesEl) finalWavesEl.innerText = `${this.wave} / ${this.maxWaves}`;
     if (finalKillsEl) finalKillsEl.innerText = this.creepsKilled.toLocaleString();
 
+    const maxPlays = (window.appState && window.appState.state && window.appState.state.maxDailyPlaysPerGame) ? window.appState.state.maxDailyPlaysPerGame : 25;
     let payoutDisplay = `+${verifiedPgt.toFixed(2)} PGT`;
     if (isHarvestDisabled) {
       payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-danger); font-size:0.75rem; margin-top:2px;">🚫 In-Game Harvest Paused by Admin</span>`;
     } else if (limitReached) {
-      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit Reached</span>`;
+      payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (${maxPlays}/${maxPlays} plays) • Rewards Paused</span>`;
     }
     if (finalPgtEl) finalPgtEl.innerHTML = payoutDisplay;
+
+    if (limitBox) {
+      if (isConnected && limitReached) {
+        limitBox.style.display = 'block';
+        limitBox.innerText = `⚠️ Daily Limit (${maxPlays}/${maxPlays} plays) • Rewards Paused`;
+      } else {
+        limitBox.style.display = 'none';
+      }
+    }
 
     if (multBreakdownEl) {
       const vipBadgeStr = (isVip ? (vipLevel >= 2 ? ' 🔥 <span style="color:var(--color-warning); font-size:0.75rem;">(Gold VIP 2.0x)</span>' : ' 🥈 <span style="color:#c0c0c0; font-size:0.75rem;">(Silver VIP 1.5x)</span>') : '') +

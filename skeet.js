@@ -1091,9 +1091,10 @@ export class CyberSkeetEngine {
             verifiedPgt = serverPayout >= 0 ? serverPayout : finalPgt;
           }
           if (res.is_new_high) isNewHigh = true;
-          if (res.limit_reached) limitReached = true;
-        } else if (res && res.limit_reached) {
+          if (res.daily_limit_reached || res.limit_reached) limitReached = true;
+        } else if (res && (res.daily_limit_reached || res.limit_reached || (res.error && res.error.includes('limit')))) {
           limitReached = true;
+          verifiedPgt = 0.0;
         }
       } catch (err) {
         console.warn('[CyberSkeet] endArcadeSession exception:', err);
@@ -1131,7 +1132,7 @@ export class CyberSkeetEngine {
     const accuracy = this.shotsFired > 0 ? Math.round((this.claysHit / this.shotsFired) * 100) : 0;
     const gamePgt = Math.max(0, verifiedPgt - serverTokenPgt);
     const verifiedBase = (playerMult > 0 && verifiedPgt > 0) ? (gamePgt / playerMult) : rawBase;
-    const maxPlays = (window.appState && window.appState.state && window.appState.state.maxDailyPlaysPerGame) ? window.appState.state.maxDailyPlaysPerGame : 35;
+    const maxPlays = (window.appState && window.appState.state && window.appState.state.maxDailyPlaysPerGame) ? window.appState.state.maxDailyPlaysPerGame : 25;
     
     let payoutDisplay = `+${verifiedPgt.toFixed(2)} PGT`;
     if (isHarvestDisabled) {
