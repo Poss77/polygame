@@ -552,32 +552,30 @@ class CyberTetrisGame {
     const newLevel = Math.max(linesLevel, timeLevel);
 
     if (newLevel !== this.level) {
+      const prevLevel = this.level;
       const prevTheme = this.getLevelTheme(this.level);
       const newTheme = this.getLevelTheme(newLevel);
       this.level = newLevel;
 
-      if (newTheme.name !== prevTheme.name) {
+      if (newLevel >= 35 && prevLevel < 35) {
+        this.triggerFloatingBadge(`⚡ 20G HYPERDRIVE!`, 'level', `INSTANT DROP`);
+      } else if (newTheme.name !== prevTheme.name) {
         this.triggerFloatingBadge(`⚡ ${newTheme.phaseTitle}!`, 'level', `PHASE SHIFT`);
         const wrapper = document.getElementById('tetris-board-wrapper');
         if (wrapper) wrapper.style.boxShadow = newTheme.borderGlow;
       }
     }
 
-    // Drop Interval Scaling (Twice slower ramp: lasts ~5-6 minutes):
-    // Level 1: 800ms
-    // Level 5 (1:00m): ~400ms
-    // Level 10 (2:15m): ~180ms
-    // Level 15 (3:30m): ~80ms
-    // Level 20 (4:45m): ~35ms
-    // Level 25+ (6:00m+): 0ms (Instant 20G Fall)
-    if (this.level >= 25) {
+    // Drop Interval Scaling:
+    // Level 1: 800ms -> Level 25: ~25ms -> Level 35+ (~8:30m+): 0ms (Instant 20G Fall)
+    if (this.level >= 35) {
       this.dropInterval = 0; // 20G Mode
     } else {
       this.dropInterval = Math.max(25, Math.floor(800 * Math.pow(0.86, this.level - 1)));
     }
 
-    // Lock Delay Decays twice slower from 500ms down to 180ms
-    this.lockDelay = Math.max(180, 500 - (this.level * 6));
+    // Generous lock delay (550ms down to 450ms min) so 20G pieces can be moved/rotated at the bottom
+    this.lockDelay = Math.max(450, 560 - (this.level * 3));
 
     this.updateHUD();
   }
@@ -1191,7 +1189,7 @@ class CyberTetrisGame {
       this._lastHudLines = this.lines;
     }
     if (this._levelEl && this._lastHudLevel !== this.level) {
-      this._levelEl.innerText = this.level >= 25 ? '20G MAX' : this.level.toString();
+      this._levelEl.innerText = this.level >= 35 ? '20G MAX' : this.level.toString();
       const theme = this.getLevelTheme(this.level);
       if (theme && theme.accent) {
         this._levelEl.style.color = theme.accent;
