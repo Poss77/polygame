@@ -494,12 +494,20 @@ class BubbleTroubleGame {
     // 3. Arrows Update & Ball Collision
     for (let i = this.arrows.length - 1; i >= 0; i--) {
       const arr = this.arrows[i];
-      arr.topY -= arr.speed * dt;
-      arr.x = this.getArrowXAtY(arr, arr.topY);
-      if (arr.topY <= this.ceilingY) {
-        this.arrows.splice(i, 1);
-        continue;
+      if (arr.stickTimer !== undefined) {
+        arr.stickTimer -= dt;
+        if (arr.stickTimer <= 0) {
+          this.arrows.splice(i, 1);
+          continue;
+        }
+      } else {
+        arr.topY -= arr.speed * dt;
+        if (arr.topY <= this.ceilingY) {
+          arr.topY = this.ceilingY;
+          arr.stickTimer = 0.5;
+        }
       }
+      arr.x = this.getArrowXAtY(arr, arr.topY);
 
       // Check collision with any ball along the wavy vertical harpoon segment (arr.topY .. floorY)
       let hitIndex = -1;
