@@ -400,7 +400,25 @@ class NeonAstroDodge {
     if (typeof sfx.playLaser === 'function') sfx.playLaser();
   }
 
-  startGame() {
+  async startGame() {
+    if (this._isStarting) return;
+    this._isStarting = true;
+
+    let sessId = null;
+    try {
+      if (window.startArcadeSession) {
+        sessId = await window.startArcadeSession('AstroDodge');
+      }
+    } catch (e) {
+      console.warn('[AstroDodge] startArcadeSession error:', e);
+    } finally {
+      this._isStarting = false;
+    }
+
+    if (!sessId && window.appState?.isPlayerConnected?.()) {
+      return;
+    }
+
     sfx.init();
     if (typeof sfx.playBgm === 'function') {
       sfx.playBgm();
@@ -539,7 +557,7 @@ class NeonAstroDodge {
     const boostLabel = document.getElementById('game-nft-boost-label');
     if (boostLabel) boostLabel.innerText = `${initialPlayerMult.toFixed(1)}x`;
     this.bonusTokensCollected = 0;
-    this.sessionId = null;
+    this.sessionId = sessId;
     this.sessionRelicsDroppedCount = 0;
 
     // Reset Mouse & Touch Controls
@@ -549,12 +567,6 @@ class NeonAstroDodge {
     this.isMouseDown = false;
     this.lastTouchTime = 0;
     if (this.canvas) this.canvas.style.cursor = 'crosshair';
-
-    if (window.startArcadeSession) {
-      window.startArcadeSession('AstroDodge').then(sid => {
-        this.sessionId = sid;
-      }).catch(() => {});
-    }
 
     // Trigger game loop cleanly
     if (this.animationId) {

@@ -139,10 +139,24 @@ class CyberInvaders {
 
   }
 
-  startGame() {
+  async startGame() {
     if (this._isStarting) return;
     this._isStarting = true;
-    setTimeout(() => { this._isStarting = false; }, 600);
+
+    let sessId = null;
+    try {
+      if (window.startArcadeSession) {
+        sessId = await window.startArcadeSession('Cyber Invaders');
+      }
+    } catch (e) {
+      console.warn('[CyberInvaders] startArcadeSession error:', e);
+    } finally {
+      this._isStarting = false;
+    }
+
+    if (!sessId && window.appState?.isPlayerConnected?.()) {
+      return;
+    }
 
     if (window.sfx && window.sfx.init) window.sfx.init();
 
@@ -238,13 +252,8 @@ class CyberInvaders {
     }
 
     this.bonusTokensCollected = 0;
-    this.sessionId = null;
+    this.sessionId = sessId;
     this.sessionRelicsDroppedCount = 0;
-    if (window.startArcadeSession) {
-      window.startArcadeSession('Cyber Invaders').then(sid => {
-        this.sessionId = sid;
-      }).catch(() => {});
-    }
 
     this.lastFrameTimestamp = 0;
     this.loop();
@@ -1444,7 +1453,7 @@ class CyberInvaders {
               </div>
             </div>
             <div style="margin-bottom: 0.35rem; padding: 0.25rem 0.5rem; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.05); border-radius: 4px; font-size: 0.72rem; color: var(--text-muted); text-align: center;">
-              Base: <strong style="color:#fff;">${rawBase.toFixed(2)} PGT</strong> • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> <span style="font-size:0.68rem;">(${nftPct}% NFT${vipBadgeStr})</span>
+              Base: <strong style="color:#fff;">${verifiedBase.toFixed(2)} PGT</strong> • Multiplier: <strong style="color:var(--color-secondary);">${playerMult.toFixed(1)}x</strong> <span style="font-size:0.68rem;">(${nftPct}% NFT${vipBadgeStr})</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 0.25rem; font-size: 0.88rem;">
               <span style="color: var(--color-warning); font-weight: 700;">Earned:</span>

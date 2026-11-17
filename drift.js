@@ -323,7 +323,25 @@ class CyberDriftGame {
     });
   }
 
-  start() {
+  async start() {
+    if (this._isStarting) return;
+    this._isStarting = true;
+
+    let sessId = null;
+    try {
+      if (window.startArcadeSession) {
+        sessId = await window.startArcadeSession('Cyber Drift');
+      }
+    } catch (e) {
+      console.warn('[CyberDrift] startArcadeSession error:', e);
+    } finally {
+      this._isStarting = false;
+    }
+
+    if (!sessId && window.appState?.isPlayerConnected?.()) {
+      return;
+    }
+
     this.init();
     this.resetGame();
     this.isRunning = true;
@@ -336,13 +354,8 @@ class CyberDriftGame {
     if (controlsHud) controlsHud.style.display = 'flex';
 
     this.bonusTokensCollected = 0;
-    this.sessionId = null;
+    this.sessionId = sessId;
     this.sessionRelicsDroppedCount = 0;
-    if (window.startArcadeSession) {
-      window.startArcadeSession('Cyber Drift').then(sid => {
-        this.sessionId = sid;
-      }).catch(() => {});
-    }
 
     if (this.animationId) cancelAnimationFrame(this.animationId);
     this.lastFrameTime = performance.now();
