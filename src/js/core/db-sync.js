@@ -3324,9 +3324,19 @@ export async function trackDailyVisit() {
     const pid = activeSt?.state?.playerId || activeSt?.state?.walletAddress || localStorage.getItem('polygame_wallet_address') || '0xguest_anon';
     const isGuest = !activeSt?.state?.authUserId && !activeSt?.state?.walletConnected && String(pid).toLowerCase().startsWith('0xguest');
 
-    // Extract clean referrer domain
+    // Extract UTM source/term (e.g. A-ADS Goal Tracking) or clean referrer domain
     let ref = 'direct';
-    if (typeof document !== 'undefined' && document.referrer) {
+    try {
+      const params = new URLSearchParams(window.location.search || '');
+      const utmSource = (params.get('utm_source') || '').trim();
+      const utmTerm = (params.get('utm_term') || '').trim();
+      if (utmSource) {
+        ref = (utmTerm && !utmTerm.includes('{{'))
+          ? `${utmSource.toLowerCase()}:${utmTerm}`
+          : utmSource.toLowerCase();
+      }
+    } catch (e) {}
+    if (ref === 'direct' && typeof document !== 'undefined' && document.referrer) {
       try {
         const u = new URL(document.referrer);
         if (u.hostname && u.hostname !== window.location.hostname) {
