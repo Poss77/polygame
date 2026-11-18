@@ -566,12 +566,12 @@ class CyberTetrisGame {
       }
     }
 
-    // Drop Interval Scaling:
-    // Level 1: 800ms -> Level 25: ~25ms -> Level 35+ (~8:30m+): 0ms (Instant 20G Fall)
+    // Drop Interval Scaling (Continuous acceleration all the way through Level 34):
+    // Level 1: 800ms -> Level 10: 280ms -> Level 20: 87ms -> Level 30: 27ms -> Level 34: 17ms -> Level 35+: 0ms (20G)
     if (this.level >= 35) {
       this.dropInterval = 0; // 20G Mode
     } else {
-      this.dropInterval = Math.max(25, Math.floor(800 * Math.pow(0.86, this.level - 1)));
+      this.dropInterval = Math.max(16, Math.floor(800 * Math.pow(0.89, this.level - 1)));
     }
 
     // Generous lock delay (550ms down to 450ms min) so 20G pieces can be moved/rotated at the bottom
