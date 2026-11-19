@@ -5912,8 +5912,17 @@ class PolySpaceEngine {
   // RADAR PGT HARVEST ENGINE (PLAN-RADAR-PGT)
   // Spawns floating PGT coin (~1 every 10s), stays until clicked, max 10/day
   // ----------------------------------------------------------------------
+  getRadarHarvestDailyLimit() {
+    if (typeof this._radarPgtMaxDaily === 'number' && this._radarPgtMaxDaily > 0) {
+      return this._radarPgtMaxDaily;
+    }
+    const isVip = Boolean(window.appState && typeof window.appState.isVipActive === 'function' && window.appState.isVipActive());
+    return isVip ? 20 : 10;
+  }
+
   async initRadarPgtHarvest() {
     this._radarPgtClaimsToday = 0;
+    this._radarPgtMaxDaily = null;
     this._radarPgtCoinSpawned = false;
     this._radarPgtClaimInProgress = false;
     this._radarDoubleGambleMode = (typeof localStorage !== 'undefined' && localStorage.getItem('polygame_radar_double_mode') === '1');
@@ -5922,7 +5931,7 @@ class PolySpaceEngine {
     await this.fetchRadarHarvestStatus();
 
     // Schedule coin spawn in ~30-45 seconds (3-4x more rare) if daily cap not reached
-    if (this._radarPgtClaimsToday < 10 && !this._radarPgtCoinSpawned) {
+    if (this._radarPgtClaimsToday < this.getRadarHarvestDailyLimit() && !this._radarPgtCoinSpawned) {
       this.scheduleNextRadarPgtCoin(Math.random() * 15000 + 30000);
     }
   }
@@ -5934,7 +5943,8 @@ class PolySpaceEngine {
       : ((window.appState && window.appState.state) ? (window.appState.state.playerId || window.appState.state.walletAddress) : null);
 
     if (!sb || !pid || String(pid).startsWith('0xguest')) {
-      this.updateRadarHarvestUI(0, 10);
+      const limit = this.getRadarHarvestDailyLimit();
+      this.updateRadarHarvestUI(0, limit, limit);
       return;
     }
 
@@ -5944,7 +5954,10 @@ class PolySpaceEngine {
       });
       if (!error && data && data.success) {
         this._radarPgtClaimsToday = parseInt(data.claims_today || 0, 10);
-        this.updateRadarHarvestUI(this._radarPgtClaimsToday, data.claims_remaining);
+        if (data.max_daily !== undefined && data.max_daily !== null) {
+          this._radarPgtMaxDaily = parseInt(data.max_daily, 10);
+        }
+        this.updateRadarHarvestUI(this._radarPgtClaimsToday, data.claims_remaining, this._radarPgtMaxDaily);
       }
     } catch (e) {
       console.warn('[fetchRadarHarvestStatus Exception]', e);
@@ -5956,7 +5969,7 @@ class PolySpaceEngine {
       clearTimeout(this._radarPgtSpawnTimer);
       this._radarPgtSpawnTimer = null;
     }
-    if (this._radarPgtClaimsToday >= 10 || this._radarPgtCoinSpawned) return;
+    if (this._radarPgtClaimsToday >= this.getRadarHarvestDailyLimit() || this._radarPgtCoinSpawned) return;
 
     this._radarPgtSpawnTimer = setTimeout(() => {
       this.spawnRadarPgtCoin();
@@ -5964,7 +5977,7 @@ class PolySpaceEngine {
   }
 
   spawnRadarPgtCoin() {
-    if (this._radarPgtClaimsToday >= 10 || this._radarPgtCoinSpawned) return;
+    if (this._radarPgtClaimsToday >= this.getRadarHarvestDailyLimit() || this._radarPgtCoinSpawned) return;
     this._radarPgtCoinSpawned = true;
 
     // Pick random location around tactical radar (between 50px and 130px from base)
@@ -6084,8 +6097,9 @@ class PolySpaceEngine {
   }
 
   openRadarHarvestModal() {
-    if (this._radarPgtClaimsToday >= 10) {
-      if (window.triggerToast) window.triggerToast("Daily limit of 10 radar PGT harvests reached!", "warning");
+    const dailyLimit = this.getRadarHarvestDailyLimit();
+    if (this._radarPgtClaimsToday >= dailyLimit) {
+      if (window.triggerToast) window.triggerToast(`Daily limit of ${dailyLimit} radar PGT harvests reached!`, "warning");
       return;
     }
     const laserLvl = (this.state && this.state.laserLevel) || 1;
@@ -6159,8 +6173,9 @@ class PolySpaceEngine {
 
   async claimRadarPgtHarvest(isDouble = false) {
     if (this._radarPgtClaimInProgress) return;
-    if (this._radarPgtClaimsToday >= 10) {
-      if (window.triggerToast) window.triggerToast("Daily limit of 10 radar PGT harvests reached!", "warning");
+    const dailyLimit = this.getRadarHarvestDailyLimit();
+    if (this._radarPgtClaimsToday >= dailyLimit) {
+      if (window.triggerToast) window.triggerToast(`Daily limit of ${dailyLimit} radar PGT harvests reached!`, "warning");
       return;
     }
 
@@ -6189,6 +6204,9 @@ class PolySpaceEngine {
 
       if (!error && data && data.success) {
         this._radarPgtClaimsToday = parseInt(data.claims_today, 10);
+        if (data.max_daily !== undefined && data.max_daily !== null) {
+          this._radarPgtMaxDaily = parseInt(data.max_daily, 10);
+        }
         this._radarPgtCoinSpawned = false;
         this._radarPgtTokenScreenPos = null;
         this._radarPgtTokenNormalized = null;
@@ -6243,10 +6261,10 @@ class PolySpaceEngine {
           }
         }
 
-        this.updateRadarHarvestUI(this._radarPgtClaimsToday, data.claims_remaining);
+        this.updateRadarHarvestUI(this._radarPgtClaimsToday, data.claims_remaining, this._radarPgtMaxDaily);
 
-        // Schedule next coin after ~30-45 seconds (3-4x more rare) if remaining < 10
-        if (this._radarPgtClaimsToday < 10) {
+        // Schedule next coin after ~30-45 seconds (3-4x more rare) if remaining < dailyLimit
+        if (this._radarPgtClaimsToday < this.getRadarHarvestDailyLimit()) {
           this.scheduleNextRadarPgtCoin(Math.random() * 15000 + 30000);
         }
       } else {
@@ -6268,12 +6286,14 @@ class PolySpaceEngine {
     }
   }
 
-  updateRadarHarvestUI(claimsToday, claimsRemaining) {
+  updateRadarHarvestUI(claimsToday, claimsRemaining, maxDaily = null) {
     const countEl = document.getElementById('radar-harvest-count');
     const badgeEl = document.getElementById('radar-harvest-badge');
     const subtitleEl = document.getElementById('radar-harvest-subtitle');
     const indicatorEl = document.getElementById('radar-harvest-status-indicator');
     const laserBadge = document.getElementById('radar-laser-badge');
+    const dailyLimit = (typeof maxDaily === 'number' && maxDaily > 0) ? maxDaily : this.getRadarHarvestDailyLimit();
+    const vipTag = dailyLimit > 10 ? ' <span style="color:#ffd700; font-size:0.65rem;">(VIP 2x)</span>' : '';
 
     const laserLvl = (this.state && this.state.laserLevel) || 1;
     const mult = this.getLaserMultiplier(laserLvl);
@@ -6287,15 +6307,15 @@ class PolySpaceEngine {
 
     if (countEl) countEl.innerText = claimsToday;
 
-    if (claimsToday >= 10) {
+    if (claimsToday >= dailyLimit) {
       if (badgeEl) {
         badgeEl.style.background = 'rgba(255, 170, 0, 0.15)';
         badgeEl.style.borderColor = 'var(--color-warning)';
         badgeEl.style.color = '#ffd700';
-        badgeEl.innerHTML = '🪙 Radar Harvest: <strong style="color:#fff;">10 / 10</strong> (Capped)';
+        badgeEl.innerHTML = `🪙 Radar Harvest: <strong style="color:#fff;">${claimsToday} / ${dailyLimit}</strong> (Capped)${vipTag}`;
       }
       if (subtitleEl) {
-        subtitleEl.innerText = 'Daily harvest limit reached (10/10) • Resets at 00:00 UTC';
+        subtitleEl.innerText = `Daily harvest limit reached (${claimsToday}/${dailyLimit}) • Resets at 00:00 UTC`;
         subtitleEl.style.color = '#ffd700';
       }
       if (indicatorEl) {
@@ -6310,7 +6330,7 @@ class PolySpaceEngine {
         badgeEl.style.background = 'rgba(0, 240, 255, 0.15)';
         badgeEl.style.borderColor = 'rgba(0, 240, 255, 0.4)';
         badgeEl.style.color = '#00f0ff';
-        badgeEl.innerHTML = `🪙 Radar Harvest: <strong style="color:#fff;">${claimsToday}</strong> / 10 Today`;
+        badgeEl.innerHTML = `🪙 Radar Harvest: <strong style="color:#fff;">${claimsToday}</strong> / ${dailyLimit} Today${vipTag}`;
       }
       if (subtitleEl) {
         if (this._radarPgtCoinSpawned) {
