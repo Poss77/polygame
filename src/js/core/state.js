@@ -1563,6 +1563,26 @@ export class PolyState {
       refInput.value = `${cleanBaseUrl}?ref=${this.state.referralCode}`;
     }
     const isConn = this.isPlayerConnected();
+    const bannerPrimaryBtn = document.getElementById('btn-banner-action');
+    const bannerSecondaryBtn = document.getElementById('btn-banner-faucet');
+    if (bannerPrimaryBtn) {
+      if (isConn) {
+        bannerPrimaryBtn.setAttribute('onclick', "switchTab('faucet')");
+        bannerPrimaryBtn.innerHTML = '<span>💧</span> <span>1. Claim Free Faucet</span>';
+      } else {
+        bannerPrimaryBtn.setAttribute('onclick', "if(window.launchInstantDemo){ window.launchInstantDemo(); } else { switchTab('games', 'earn'); }");
+        bannerPrimaryBtn.innerHTML = '<span>🎮</span> <span>Play Instant Demo (No Login)</span>';
+      }
+    }
+    if (bannerSecondaryBtn) {
+      if (isConn) {
+        bannerSecondaryBtn.setAttribute('onclick', "switchTab('games', 'earn')");
+        bannerSecondaryBtn.innerHTML = '<span>🎮</span> <span>2. Play Arcade Games</span>';
+      } else {
+        bannerSecondaryBtn.setAttribute('onclick', "switchTab('faucet')");
+        bannerSecondaryBtn.innerHTML = '<span>💧</span> <span>Claim Free Faucet</span>';
+      }
+    }
     const dashRefAuth = document.getElementById('dashboard-ref-auth-row');
     const dashRefGuest = document.getElementById('dashboard-ref-guest-row');
     if (dashRefAuth) dashRefAuth.style.display = isConn ? 'flex' : 'none';

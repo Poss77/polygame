@@ -3027,6 +3027,10 @@ export class CyberDefenseEngine {
       payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-danger); font-size:0.75rem; margin-top:2px;">🚫 In-Game Harvest Paused by Admin</span>`;
     } else if (limitReached) {
       payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (${maxPlays}/${maxPlays} plays) • Rewards Paused</span>`;
+    } else if (!isConnected) {
+      payoutDisplay = (window.getGuestPayoutCtaHtml)
+        ? window.getGuestPayoutCtaHtml(verifiedPgt)
+        : `<span style="color:var(--text-dim); font-size:1.1rem;">Sign in to Earn PGT</span>`;
     }
     if (finalPgtEl) finalPgtEl.innerHTML = payoutDisplay;
 

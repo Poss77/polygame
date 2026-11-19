@@ -1,5 +1,6 @@
 import { ARCADE_GAMES_REGISTRY, ARCADE_GAMES_LIST, initArcadeLeaderboardCards } from '../core/games-registry.js';
 import { PolyArcadeHost, PolyGameSDK } from '../core/arcade-host.js';
+import { ensureGameLoaded, isGameLoaded } from '../core/game-loader.js';
 export const ARCADE_GAMES = ARCADE_GAMES_LIST;
 // ============================================================
 // POLYGAME: ARCADE GAMES VIEW & TAB NAVIGATION ROUTER
@@ -427,6 +428,43 @@ export function switchGameModeView(mode) {
     if (el) el.style.display = 'none';
   });
 
+  const runPostLoadInit = () => {
+    if (mode === 'arcade') {
+      if (window.sfx && typeof window.sfx.updateBgmSelectorUI === 'function') {
+        window.sfx.updateBgmSelectorUI();
+      }
+    } else if (mode === 'drift') {
+      if (window.cyberDrift && typeof window.cyberDrift.resize === 'function') {
+        window.cyberDrift.resize();
+      }
+    } else if (mode === 'stacker' || mode === 'catcher') {
+      if (window.cyberStacker) {
+        if (typeof window.cyberStacker.ensureCanvas === 'function') window.cyberStacker.ensureCanvas();
+        if (typeof window.cyberStacker.resize === 'function') window.cyberStacker.resize();
+      }
+    } else if (mode === 'skeet') {
+      if (typeof window.initCyberSkeet === 'function') {
+        const engine = window.initCyberSkeet();
+        if (engine && typeof engine.resizeCanvas === 'function') engine.resizeCanvas();
+      }
+    } else if (mode === 'defense') {
+      if (typeof window.initCyberDefense === 'function') window.initCyberDefense();
+    } else if (mode === 'runner') {
+      if (window.cyberRunner && typeof window.cyberRunner.resize === 'function') {
+        window.cyberRunner.resize();
+      }
+    } else if (mode === 'q2048') {
+      if (window.cyber2048 && typeof window.cyber2048.init === 'function') {
+        window.cyber2048.init();
+      }
+    } else if (mode === 'tetris') {
+      if (window.cyberTetrisGame) {
+        if (typeof window.cyberTetrisGame.initCanvases === 'function') window.cyberTetrisGame.initCanvases();
+        if (typeof window.cyberTetrisGame.render === 'function') window.cyberTetrisGame.render();
+      }
+    }
+  };
+
   if (mode === 'arcade') {
     if (panelArcade) {
       panelArcade.style.removeProperty('display');
@@ -438,9 +476,6 @@ export function switchGameModeView(mode) {
       overlay.classList.remove('hidden');
       overlay.style.removeProperty('display');
       overlay.style.display = 'flex';
-    }
-    if (window.sfx && typeof window.sfx.updateBgmSelectorUI === 'function') {
-      window.sfx.updateBgmSelectorUI();
     }
   } else if (mode === 'invaders') {
     if (panelInvaders) {
@@ -464,9 +499,6 @@ export function switchGameModeView(mode) {
       overlay.style.removeProperty('display');
       overlay.style.display = 'flex';
     }
-    if (window.cyberDrift && typeof window.cyberDrift.resize === 'function') {
-      window.cyberDrift.resize();
-    }
     if (typeof window.loadDriftLeaderboard === 'function') window.loadDriftLeaderboard();
   } else if (mode === 'stacker' || mode === 'catcher') {
     if (panelStacker) {
@@ -478,10 +510,6 @@ export function switchGameModeView(mode) {
     if (startScreen) {
       startScreen.style.removeProperty('display');
       startScreen.style.display = 'flex';
-    }
-    if (window.cyberStacker) {
-      if (typeof window.cyberStacker.ensureCanvas === 'function') window.cyberStacker.ensureCanvas();
-      if (typeof window.cyberStacker.resize === 'function') window.cyberStacker.resize();
     }
     if (typeof window.loadStackerLeaderboard === 'function') window.loadStackerLeaderboard();
     else if (typeof window.loadCatcherLeaderboard === 'function') window.loadCatcherLeaderboard();
@@ -498,10 +526,6 @@ export function switchGameModeView(mode) {
       skeetStart.classList.remove('hidden');
       skeetStart.style.display = 'flex';
     }
-    if (typeof window.initCyberSkeet === 'function') {
-      const engine = window.initCyberSkeet();
-      if (engine && typeof engine.resizeCanvas === 'function') engine.resizeCanvas();
-    }
     if (typeof window.loadSkeetLeaderboard === 'function') window.loadSkeetLeaderboard();
   } else if (mode === 'defense') {
     if (panelDefense) {
@@ -516,7 +540,6 @@ export function switchGameModeView(mode) {
     }
     const turretBar = document.getElementById('defense-turret-bar');
     if (turretBar) turretBar.style.display = 'none';
-    if (typeof window.initCyberDefense === 'function') window.initCyberDefense();
     if (typeof window.loadDefenseLeaderboard === 'function') window.loadDefenseLeaderboard();
     else if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('defense');
   } else if (mode === 'runner') {
@@ -530,9 +553,6 @@ export function switchGameModeView(mode) {
       startScreen.style.removeProperty('display');
       startScreen.style.display = 'flex';
     }
-    if (window.cyberRunner && typeof window.cyberRunner.resize === 'function') {
-      window.cyberRunner.resize();
-    }
     if (typeof window.loadRunnerLeaderboard === 'function') window.loadRunnerLeaderboard();
     else if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('runner');
   } else if (mode === 'q2048') {
@@ -545,9 +565,6 @@ export function switchGameModeView(mode) {
     if (startScreen) {
       startScreen.style.removeProperty('display');
       startScreen.style.display = 'flex';
-    }
-    if (window.cyber2048 && typeof window.cyber2048.init === 'function') {
-      window.cyber2048.init();
     }
     if (typeof window.loadQ2048Leaderboard === 'function') window.loadQ2048Leaderboard();
     else if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('q2048');
@@ -572,10 +589,6 @@ export function switchGameModeView(mode) {
     const bestEl = document.getElementById('tetris-best-val');
     if (bestEl) bestEl.innerText = highscore.toLocaleString();
 
-    if (window.cyberTetrisGame) {
-      if (typeof window.cyberTetrisGame.initCanvases === 'function') window.cyberTetrisGame.initCanvases();
-      if (typeof window.cyberTetrisGame.render === 'function') window.cyberTetrisGame.render();
-    }
     if (typeof window.loadTetrisLeaderboard === 'function') window.loadTetrisLeaderboard();
     else if (typeof window.loadGameLeaderboard === 'function') window.loadGameLeaderboard('tetris');
   } else if (mode === 'bubble') {
@@ -637,6 +650,18 @@ export function switchGameModeView(mode) {
       panelSudoku.style.display = 'flex';
     }
     if (typeof window.initSudokuGame === 'function') window.initSudokuGame();
+  }
+
+  // Lazy-load the selected game engine script on first visit (or initialize immediately if cached)
+  if (isGameLoaded(mode)) {
+    runPostLoadInit();
+  } else {
+    ensureGameLoaded(mode).then(runPostLoadInit).catch((err) => {
+      console.error(`[Games] Failed to load engine for "${mode}":`, err);
+      if (window.triggerToast) {
+        window.triggerToast('Failed to load game engine. Please try again.', 'error');
+      }
+    });
   }
 
   // Synchronize Unified Arcade Top HUD Bar (Game Badge, Active Multiplier Pill, Audio Mute, Aspect Frame)

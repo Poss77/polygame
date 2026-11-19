@@ -1096,6 +1096,10 @@ class CyberStackerGame {
       payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (${maxPlays}/${maxPlays} plays) • Rewards Paused</span>`;
     } else if (isPlayerConnected && !this.sessionId && cleanScore > 0) {
       payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Session Not Verified • Rewards Paused</span>`;
+    } else if (!isPlayerConnected) {
+      payoutDisplay = (window.getGuestPayoutCtaHtml)
+        ? window.getGuestPayoutCtaHtml(verifiedPgt)
+        : `<span style="color:var(--text-dim); font-size:1.1rem;">Sign in to Earn PGT</span>`;
     } else if (tokenPgt > 0 && verifiedPgt > 0) {
       payoutDisplay = `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.9em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`;
     }
@@ -1155,8 +1159,12 @@ window.launchCyberStackerGame = function() {
 
 window.cyberStacker = new CyberStackerGame();
 
-document.addEventListener('DOMContentLoaded', () => {
-  if (window.cyberStacker) {
-    window.cyberStacker.ensureCanvas();
-  }
-});
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.cyberStacker) {
+      window.cyberStacker.ensureCanvas();
+    }
+  });
+} else if (window.cyberStacker) {
+  window.cyberStacker.ensureCanvas();
+}

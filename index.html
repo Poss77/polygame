@@ -12,9 +12,16 @@
 
   <!-- Automatically unregister legacy Service Workers & suppress extension chunk errors -->
   <script>
-    // Performance Diagnostic Sentinel: pinpoint any slow setTimeout/setInterval handlers (>=40ms)
+    // Performance Diagnostic Sentinel (opt-in via window.POLY_DEBUG, ?debug=true, or localStorage.POLY_DEBUG=1)
     (function() {
       try {
+        const qs = (typeof location !== 'undefined' && location.search) || '';
+        const debugOn = Boolean(
+          window.POLY_DEBUG ||
+          /[?&]debug=(1|true)\b/i.test(qs) ||
+          (typeof localStorage !== 'undefined' && localStorage.getItem('POLY_DEBUG') === '1')
+        );
+        if (!debugOn) return;
         const _origSetTimeout = window.setTimeout;
         const _origSetInterval = window.setInterval;
         window.setTimeout = function(fn, delay, ...args) {
@@ -449,25 +456,25 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <!-- Direct parallel stylesheets (eliminates @import waterfall) -->
-  <link rel="stylesheet" href="src/css/variables.css?v=1.5.864">
-  <link rel="stylesheet" href="src/css/base.css?v=1.5.864">
-  <link rel="stylesheet" href="src/css/layout.css?v=1.5.864">
-  <link rel="stylesheet" href="src/css/sidebar.css?v=1.5.864">
-  <link rel="stylesheet" href="src/css/main_content.css?v=1.5.864">
-  <link rel="stylesheet" href="src/css/views.css?v=1.5.864">
-  <link rel="stylesheet" href="src/css/features/faucet.css?v=1.5.864">
-  <link rel="stylesheet" href="src/css/features/games.css?v=1.5.864">
-  <link rel="stylesheet" href="src/css/features/nft.css?v=1.5.864">
-  <link rel="stylesheet" href="src/css/features/staking.css?v=1.5.864">
-  <link rel="stylesheet" href="src/css/features/referrals.css?v=1.5.864">
-  <link rel="stylesheet" href="src/css/features/profile.css?v=1.5.864">
-  <link rel="stylesheet" href="src/css/modals.css?v=1.5.864">
-  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.864">
-  <link rel="stylesheet" href="src/css/animations.css?v=1.5.864">
-  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.864">
+  <link rel="stylesheet" href="src/css/variables.css?v=1.5.865">
+  <link rel="stylesheet" href="src/css/base.css?v=1.5.865">
+  <link rel="stylesheet" href="src/css/layout.css?v=1.5.865">
+  <link rel="stylesheet" href="src/css/sidebar.css?v=1.5.865">
+  <link rel="stylesheet" href="src/css/main_content.css?v=1.5.865">
+  <link rel="stylesheet" href="src/css/views.css?v=1.5.865">
+  <link rel="stylesheet" href="src/css/features/faucet.css?v=1.5.865">
+  <link rel="stylesheet" href="src/css/features/games.css?v=1.5.865">
+  <link rel="stylesheet" href="src/css/features/nft.css?v=1.5.865">
+  <link rel="stylesheet" href="src/css/features/staking.css?v=1.5.865">
+  <link rel="stylesheet" href="src/css/features/referrals.css?v=1.5.865">
+  <link rel="stylesheet" href="src/css/features/profile.css?v=1.5.865">
+  <link rel="stylesheet" href="src/css/modals.css?v=1.5.865">
+  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.865">
+  <link rel="stylesheet" href="src/css/animations.css?v=1.5.865">
+  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.865">
   <!-- Web3 and DB SDKs -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin="anonymous" defer></script>
   <!-- Cloudflare Turnstile Anti-Bot Security SDK -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
@@ -632,19 +639,19 @@ twq('config','ri5fg');
               <p style="margin-bottom: 1.25rem; font-size: 0.92rem; color: var(--text-dim); line-height: 1.5; max-width: 900px;">
                 Claim free daily tokens, conquer retro arcade leaderboards, solve daily puzzles, and multiply rewards with utility NFTs. 100% free to play, zero deposit required.
               </p>
-              <!-- 4-Step Fast Start Action Bar -->
+              <!-- Fast Start Action Bar (Adapts dynamically: Guest Demo vs Connected Faucet) -->
               <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.65rem; margin-bottom: 1.1rem;">
-                <button class="btn-primary" id="btn-banner-action" onclick="switchTab('faucet')" style="white-space: nowrap; font-weight: 800; padding: 0.7rem 1.3rem; display: flex; align-items: center; gap: 0.45rem;">
-                  <span>💧</span> <span>1. Claim Free Faucet</span>
+                <button class="btn-primary" id="btn-banner-action" onclick="if(window.launchInstantDemo){ window.launchInstantDemo(); } else { switchTab('games', 'earn'); }" style="white-space: nowrap; font-weight: 800; padding: 0.7rem 1.3rem; display: flex; align-items: center; gap: 0.45rem;">
+                  <span>🎮</span> <span>Play Instant Demo (No Login)</span>
                 </button>
-                <button class="btn-secondary" onclick="switchTab('games', 'earn')" style="white-space: nowrap; font-weight: 700; padding: 0.7rem 1.2rem; display: flex; align-items: center; gap: 0.45rem;">
-                  <span>🎮</span> <span>2. Play Arcade Games</span>
+                <button class="btn-secondary" id="btn-banner-faucet" onclick="switchTab('faucet')" style="white-space: nowrap; font-weight: 700; padding: 0.7rem 1.2rem; display: flex; align-items: center; gap: 0.45rem;">
+                  <span>💧</span> <span>Claim Free Faucet</span>
                 </button>
                 <button class="btn-secondary" onclick="switchTab('games', 'daily')" style="white-space: nowrap; font-weight: 700; padding: 0.7rem 1.2rem; display: flex; align-items: center; gap: 0.45rem;">
-                  <span>🧩</span> <span>3. Play Daily Games</span>
+                  <span>🧩</span> <span>Daily Puzzles</span>
                 </button>
                 <button class="btn-secondary" onclick="switchTab('staking')" style="white-space: nowrap; font-weight: 700; padding: 0.7rem 1.2rem; display: flex; align-items: center; gap: 0.45rem;">
-                  <span>🏛️</span> <span>4. Stake & Vault APY</span>
+                  <span>🏛️</span> <span>Stake & Vault APY</span>
                 </button>
               </div>
               <!-- Sitewide Platform Stats Badges -->
@@ -679,7 +686,7 @@ twq('config','ri5fg');
               <span>🕹️</span> <span>Featured Play-to-Earn Games</span>
             </h3>
             <button class="btn-secondary" onclick="switchTab('games')" style="font-size: 0.8rem; padding: 0.35rem 0.85rem;">
-              Browse All 9 Games & Betting ↗
+              Browse All 10 Games & Betting ↗
             </button>
           </div>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
@@ -1616,7 +1623,7 @@ twq('config','ri5fg');
                   <div class="game-title" id="game-overlay-title">Astro-Dodge Arcade</div>
                   <p class="game-desc" id="game-overlay-desc" style="margin-bottom: 0.85rem; max-width: 440px; text-align: center; line-height: 1.4;">Use WASD / Mouse to pilot your starship, blast enemies and collect PGT shards!</p>
                   <div id="astro-dodge-btn-group" style="display:flex; gap:0.5rem; justify-content:center; align-items:stretch; flex-wrap:nowrap; width:100%; max-width:420px; margin: 0.35rem 0;">
-                    <button class="btn-play-game" id="btn-start-game" style="flex:1 1 0; min-width:0; padding:0.65rem 0.5rem; font-size:0.95rem; font-weight:800; border-radius:8px; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center; min-height:42px; text-align:center;">Launch</button>
+                    <button class="btn-play-game" id="btn-start-game" onclick="if(!window.dodgeGame && window.ensureGameLoaded){ window.ensureGameLoaded('arcade').then(function(){ if(window.dodgeGame) window.dodgeGame.startGame(); }); }" style="flex:1 1 0; min-width:0; padding:0.65rem 0.5rem; font-size:0.95rem; font-weight:800; border-radius:8px; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center; min-height:42px; text-align:center;">Launch</button>
                     <button type="button" id="btn-open-hangar" onclick="if(window.PolyHangar) window.PolyHangar.openHangarModal();" style="flex:1 1 0; min-width:0; display:inline-flex; justify-content:center; align-items:center; padding:0.65rem 0.5rem; background:rgba(0, 240, 255, 0.15); border:1px solid var(--color-primary); color:var(--color-primary); border-radius:8px; font-weight:800; font-size:0.82rem; cursor:pointer; gap:0.35rem; box-shadow:0 0 12px rgba(0,240,255,0.25); white-space:nowrap; min-height:42px; text-align:center;">
                       🛸 Starship Hangar <span style="font-size:0.65rem; background:rgba(0,240,255,0.25); color:#00f0ff; border:1px solid rgba(0,240,255,0.6); padding:1px 5px; border-radius:3px;">NFT</span>
                     </button>
@@ -5512,18 +5519,8 @@ twq('config','ri5fg');
     </div>
   </div>
 
-  <script defer src="game.js?v=1.5.864"></script>
-  <script defer src="invaders.js?v=1.5.864"></script>
-  <script defer src="drift.js?v=1.5.864"></script>
-  <script defer src="stacker.js?v=1.5.864"></script>
-  <script defer src="space.js?v=1.5.864"></script>
-  <script type="module" src="skeet.js?v=1.5.864"></script>
-  <script type="module" src="defense.js?v=1.5.864"></script>
-  <script type="module" src="runner.js?v=1.5.864"></script>
-  <script type="module" src="q2048.js?v=1.5.864"></script>
-  <script defer src="tetris.js?v=1.5.864"></script>
-  <script defer src="bubble.js?v=1.5.864"></script>
-  <script type="module" src="src/js/app.js?v=1.5.864"></script>
+  <!-- Game engines (game.js, invaders.js, drift.js, stacker.js, space.js, skeet.js, defense.js, runner.js, q2048.js, tetris.js, bubble.js) lazy-loaded on demand via src/js/core/game-loader.js -->
+  <script type="module" src="src/js/app.js?v=1.5.865"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

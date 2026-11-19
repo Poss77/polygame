@@ -726,9 +726,15 @@ class NeonAstroDodge {
       payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit (${playsDone}/${maxPlays} plays) • Rewards Paused</span>`;
     } else if (isPlayerConnected && !this.sessionId && cleanScore > 0) {
       payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Session Not Verified • Rewards Paused</span>`;
+    } else if (!isPlayerConnected) {
+      payoutDisplay = `Demo (+${verifiedPgt.toFixed(2)} PGT unsaved)`;
     } else if (tokenPgt > 0 && verifiedPgt > 0) {
       payoutDisplay = `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.95em; font-weight:700;">+ ${tokenPgt.toFixed(0)} PGT Bonus</span>`;
     }
+
+    const guestBannerHtml = (!isPlayerConnected && window.getGuestBannerCtaHtml)
+      ? window.getGuestBannerCtaHtml(verifiedPgt)
+      : '';
 
     if (descEl) {
       descEl.innerHTML = `
@@ -746,6 +752,7 @@ class NeonAstroDodge {
             </button>
           </span>
         </span>
+        ${guestBannerHtml}
       `;
     }
 
@@ -3407,7 +3414,14 @@ class NeonAstroDodge {
 
 // Instantiate game context
 let dodgeGame = null;
-window.addEventListener('DOMContentLoaded', () => {
-  dodgeGame = new NeonAstroDodge('game-canvas', 'game-ui-overlay');
-  window.dodgeGame = dodgeGame;
-});
+function initAstroDodgeInstance() {
+  if (!window.dodgeGame) {
+    dodgeGame = new NeonAstroDodge('game-canvas', 'game-ui-overlay');
+    window.dodgeGame = dodgeGame;
+  }
+}
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', initAstroDodgeInstance);
+} else {
+  initAstroDodgeInstance();
+}

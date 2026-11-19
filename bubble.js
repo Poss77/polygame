@@ -875,9 +875,14 @@ class BubbleTroubleGame {
         payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Daily Limit Reached • Rewards Paused</span>`;
       } else if (isPlayerConnected && !this.sessionId && cleanScore > 0) {
         payoutDisplay = `+0.00 PGT <span style="display:block; color:var(--color-warning); font-size:0.75rem; margin-top:2px;">⚠️ Session Not Verified • Rewards Paused</span>`;
+      } else if (!isPlayerConnected) {
+        payoutDisplay = `Demo (+${verifiedPgt.toFixed(2)} PGT unsaved)`;
       } else if (tokenPgt > 0 && verifiedPgt > 0) {
         payoutDisplay = `+${gamePgt.toFixed(2)} PGT <span style="color:var(--color-warning); font-size:0.9em; font-weight:700;">+ ${tokenPgt.toFixed(2)} PGT Bonus</span>`;
       }
+      const guestBannerHtml = (!isPlayerConnected && window.getGuestBannerCtaHtml)
+        ? window.getGuestBannerCtaHtml(verifiedPgt)
+        : '';
 
       this.overlay.innerHTML = `
         <div style="background: rgba(8, 12, 26, 0.94); border: 2px solid #ff2a85; border-radius: 12px; padding: 1.15rem; text-align: center; max-width: 440px; width: 92%; box-shadow: 0 0 28px rgba(255, 42, 133, 0.35);">
@@ -896,6 +901,7 @@ class BubbleTroubleGame {
               </button>
             </span>
           </div>
+          ${guestBannerHtml}
           <button class="btn-play-game" id="btn-restart-bubble" disabled style="width:100%; opacity:0.6;">Play Again</button>
         </div>
       `;

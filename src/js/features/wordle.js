@@ -8,8 +8,16 @@ import { executeAuthenticatedRpc } from '../core/auth-web3.js';
 import { triggerToast, openModal, closeModal } from '../core/ui.js';
 import { sfx } from '../core/audio.js';
 import { triggerConfetti } from '../utils/confetti.js';
-import { WORDLE_VALID_WORDS } from './wordle-words.js';
+import { ensureGameLoaded } from '../core/game-loader.js';
 import { refreshDailyGamesHubStatus, getCachedHubStatus } from './daily-hub.js';
+
+async function getWordleValidWords() {
+  if (typeof window !== 'undefined' && window.__WORDLE_VALID_WORDS) {
+    return window.__WORDLE_VALID_WORDS;
+  }
+  await ensureGameLoaded('wordle-words');
+  return (typeof window !== 'undefined' && window.__WORDLE_VALID_WORDS) ? window.__WORDLE_VALID_WORDS : null;
+}
 
 let currentGuess = '';
 let currentRow = 0;
@@ -48,6 +56,9 @@ export async function initWordleGame() {
   renderWordleKeyboard();
   hidePostgameCard();
   attachKeyListeners();
+
+  // Preload 134KB dictionary lazily in the background while user views the board
+  ensureGameLoaded('wordle-words').catch(() => {});
 
   // Restore existing progress or solved state for today
   await syncWordleServerState();
@@ -249,8 +260,9 @@ async function submitCurrentGuess() {
 
   const guessUpper = currentGuess.toUpperCase();
 
-  // Local dictionary validation for fast feedback
-  if (!WORDLE_VALID_WORDS.has(guessUpper)) {
+  // Local dictionary validation for fast feedback (lazy-loaded on demand)
+  const validWords = await getWordleValidWords();
+  if (validWords && !validWords.has(guessUpper)) {
     if (triggerToast) triggerToast(`"${guessUpper}" is not in the valid word list!`, 'warning');
     shakeCurrentRow();
     return;

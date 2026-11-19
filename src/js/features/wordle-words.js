@@ -1001,3 +1001,7 @@ export const WORDLE_VALID_WORDS = new Set([
 ]);
 
 export const WORDLE_SOLUTION_COUNT = 631;
+
+if (typeof window !== 'undefined') {
+  window.__WORDLE_VALID_WORDS = WORDLE_VALID_WORDS;
+}

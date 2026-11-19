@@ -1,5 +1,6 @@
 import { initArcadeLeaderboardCards } from './core/games-registry.js';
 import { initArcadeHost } from './core/arcade-host.js';
+import { ensureGameLoaded, initLazyGameLaunchers } from './core/game-loader.js';
 import { initDiagnostics } from './core/diagnostics.js';
 import { renderDailyQuestsUI, trackQuestProgress, syncDailyQuests } from './features/quests.js';
 import { sfx } from './core/audio.js';
@@ -36,7 +37,8 @@ import './features/daily-hub.js';
 import './features/wordle.js';
 import './features/sudoku.js';
 import './utils/social-share.js';
-// Note: Arcade game modules (skeet.js, defense.js, runner.js, q2048.js, tetris.js) are loaded via versioned script tags in index.html
+// Game engines (game.js, invaders.js, drift.js, stacker.js, space.js, skeet.js, defense.js, runner.js, q2048.js, tetris.js, bubble.js)
+// are lazy-loaded on demand via src/js/core/game-loader.js
 
 // Expose critical state and UI functions globally for legacy non-module scripts (game.js, invaders.js)
 window.appState = appState;
@@ -47,6 +49,7 @@ window.supabaseClient = supabase;
 initDiagnostics();
 initArcadeLeaderboardCards();
 initArcadeHost();
+initLazyGameLaunchers();
 
 // --- Master View Switcher (Router) ---
 
@@ -54,6 +57,27 @@ export function launchPolySpace() {
   switchTab('space');
 }
 window.launchPolySpace = launchPolySpace;
+
+export function launchAstroDodge() {
+  switchTab('games', 'earn');
+  if (typeof window.switchGameModeView === 'function') {
+    window.switchGameModeView('arcade');
+  }
+}
+window.launchAstroDodge = launchAstroDodge;
+
+export function launchInvaders() {
+  switchTab('games', 'earn');
+  if (typeof window.switchGameModeView === 'function') {
+    window.switchGameModeView('invaders');
+  }
+}
+window.launchInvaders = launchInvaders;
+
+export function launchInstantDemo() {
+  launchAstroDodge();
+}
+window.launchInstantDemo = launchInstantDemo;
 
 export function switchTab(tabId, subcategory = null) {
   // Always remove fullscreen lock on tab switch so bottom nav is guaranteed visible
@@ -247,14 +271,19 @@ export function switchTab(tabId, subcategory = null) {
     }
   }
     if (tabId === 'space') {
-    if (window.polySpaceEngine) {
-      setTimeout(() => window.polySpaceEngine.init(), 50);
-    } else if (window.initPolySpace) {
-      window.initPolySpace();
-    }
-    if (window.polySpace && typeof window.polySpace.syncCloudSpaceState === 'function') {
-      window.polySpace.syncCloudSpaceState(true);
-    }
+    ensureGameLoaded('space').then(() => {
+      if (window.polySpaceEngine) {
+        setTimeout(() => window.polySpaceEngine.init(), 50);
+      } else if (window.initPolySpace) {
+        window.initPolySpace();
+      }
+      if (window.polySpace && typeof window.polySpace.syncCloudSpaceState === 'function') {
+        window.polySpace.syncCloudSpaceState(true);
+      }
+    }).catch((err) => {
+      console.error('[PolySpace] Failed to lazy-load space.js:', err);
+      triggerToast('Failed to load PolySpace engine. Please try again.', 'error');
+    });
     if (sfx && typeof sfx.startPolySpaceAudio === 'function') {
       const pref = localStorage.getItem('polygame_polyspace_music');
       if (pref !== 'off') {

@@ -1136,3 +1136,36 @@ function fallbackCopyText(text, label) {
   }
 }
 window.copyToClipboard = copyToClipboard;
+
+/**
+ * Generates an inviting clickable Google / Wallet Sign-In CTA for logged-out guests
+ * inside arcade Game Over payout slots (`finalPgtEl` span containers).
+ * @param {number} potentialPgt
+ * @returns {string}
+ */
+export function getGuestPayoutCtaHtml(potentialPgt = 0) {
+  const amt = Math.max(0, Number(potentialPgt) || 0);
+  const btnText = amt > 0
+    ? `🔓 Sign in (Google / Wallet) to Earn +${amt.toFixed(2)} PGT`
+    : '🔓 Sign in (Google / Wallet) to Save Score &amp; Earn PGT';
+  return `<span style="display:flex; flex-direction:column; align-items:center; gap:0.4rem; margin-top:0.2rem;">
+    <span style="color:var(--text-dim); font-size:0.78rem; font-weight:600;">Demo Mode • Unsaved${amt > 0 ? ` (+${amt.toFixed(2)} PGT preview)` : ''}</span>
+    <button type="button" onclick="if(window.exitGameFullscreen)window.exitGameFullscreen(); if(window.openModal)window.openModal('wallet');" style="background:linear-gradient(135deg, #00f0ff 0%, #8b5cf6 100%); color:#050814; border:none; border-radius:8px; padding:0.48rem 0.95rem; font-size:0.8rem; font-weight:900; cursor:pointer; box-shadow:0 0 14px rgba(0,240,255,0.35); white-space:normal; line-height:1.25;">${btnText}</button>
+  </span>`;
+}
+window.getGuestPayoutCtaHtml = getGuestPayoutCtaHtml;
+
+/**
+ * Generates a full-width clickable Sign-In banner button for card-based Game Over overlays
+ * (Astro-Dodge, Cyber Invaders, Cyber Bubble) directly below the Earned / Final Payout row.
+ * @param {number} potentialPgt
+ * @returns {string}
+ */
+export function getGuestBannerCtaHtml(potentialPgt = 0) {
+  const amt = Math.max(0, Number(potentialPgt) || 0);
+  const label = amt > 0
+    ? `🔓 Sign in (Google / Wallet) to Claim +${amt.toFixed(2)} PGT &amp; Save Score`
+    : '🔓 Sign in (Google / Wallet) to Save Score &amp; Earn PGT';
+  return `<button type="button" onclick="if(window.exitGameFullscreen)window.exitGameFullscreen(); if(window.openModal)window.openModal('wallet');" style="width:100%; margin:0.45rem 0 0.5rem 0; background:linear-gradient(135deg, #00f0ff 0%, #8b5cf6 100%); color:#050814; border:none; border-radius:8px; padding:0.55rem 0.85rem; font-size:0.82rem; font-weight:900; cursor:pointer; box-shadow:0 0 16px rgba(0,240,255,0.35); line-height:1.25;">${label}</button>`;
+}
+window.getGuestBannerCtaHtml = getGuestBannerCtaHtml;
