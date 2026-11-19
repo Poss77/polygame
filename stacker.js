@@ -77,6 +77,7 @@ class CyberStackerGame {
           return;
         }
         e.preventDefault();
+        if (e.repeat) return;
         this.dropActiveBlock();
       }
     });
@@ -87,7 +88,7 @@ class CyberStackerGame {
   ensureCanvas() {
     if (!this.canvas) {
       this.canvas = document.getElementById('stacker-canvas');
-      this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
+      this.ctx = this.canvas ? this.canvas.getContext('2d', { alpha: false }) : null;
       this.container = document.getElementById('container-stacker');
     }
 
@@ -114,6 +115,10 @@ class CyberStackerGame {
       // Fullscreen Outside Tap / Click Drop Handler:
       const handleFullscreenOutsideDrop = (e) => {
         if (!this.isPlaying || this.isPaused) return;
+        // Clicks/taps directly on the canvas are handled by the canvas listener
+        if (e.target === this.canvas) {
+          return;
+        }
         if (!e || e.isTrusted !== true) {
           if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Stacker', 'untrusted_input');
           return;
@@ -134,11 +139,6 @@ class CyberStackerGame {
             e.target.closest('.game-stats-hud') || 
             e.target.closest('button') || 
             e.target.closest('a')) {
-          return;
-        }
-
-        // Clicks/taps directly on the canvas are handled by the canvas listener
-        if (e.target === this.canvas) {
           return;
         }
 
@@ -178,7 +178,7 @@ class CyberStackerGame {
   resize() {
     if (!this.canvas) {
       this.canvas = document.getElementById('stacker-canvas');
-      this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
+      this.ctx = this.canvas ? this.canvas.getContext('2d', { alpha: false }) : null;
       this.container = document.getElementById('container-stacker');
     }
     if (!this.canvas || !this.container) return;
@@ -309,6 +309,28 @@ class CyberStackerGame {
     this.particles = [];
     this.floatingTexts = [];
 
+    // Cache HUD DOM elements & static run multipliers to eliminate per-frame DOM/GC churn
+    this._scoreEl = document.getElementById('stacker-live-score');
+    this._floorsEl = document.getElementById('stacker-live-floors');
+    this._comboEl = document.getElementById('stacker-live-combo');
+    this._livesEl = document.getElementById('stacker-live-lives');
+    this._earnedEl = document.getElementById('stacker-live-earned');
+    this._boostLabelEl = document.getElementById('stacker-nft-boost-label');
+    this._lastEarnedStr = null;
+    this._lastBoostStr = null;
+
+    const multis = window.appState ? window.appState.getMultipliers() : { nftGameMultiplier: 0 };
+    const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
+    const isVip = (window.appState && typeof window.appState.isVipActive === 'function' && window.appState.isVipActive());
+    const vipLevel = (window.appState && typeof window.appState.getVipLevel === 'function') ? window.appState.getVipLevel() : (isVip ? 2 : 0);
+    const vipMult = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
+    const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
+    const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
+    this._cachedPlayerMult = nftMult * vipMult * ambMult * relicMult;
+    this._cachedGlobalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined)
+      ? Number(window.appState.state.globalEarnMultiplier)
+      : 1.0;
+
     // Foundation Base Platform at bottom
     const baseFloor = {
       type: 'foundation',
@@ -356,6 +378,7 @@ class CyberStackerGame {
 
     this.resetGame();
     this.isPlaying = true;
+    this.accumulatedTime = 0;
 
     const startScreen = document.getElementById('stacker-start-screen');
     const gameOverScreen = document.getElementById('stacker-gameover-screen');
@@ -375,6 +398,7 @@ class CyberStackerGame {
 
     if (this.animationId) cancelAnimationFrame(this.animationId);
     this.lastTime = performance.now();
+    this.accumulatedTime = 0;
     this.loop();
   }
 
@@ -392,13 +416,49 @@ class CyberStackerGame {
     if (!this.isPlaying) return;
 
     if (this.isPaused) {
+      this.lastTime = performance.now();
       this.animationId = requestAnimationFrame(() => this.loop());
       return;
     }
 
-    this.update();
-    this.render();
+    const now = performance.now();
+    if (!this.lastTime) this.lastTime = now;
+    let elapsed = now - this.lastTime;
+    this.lastTime = now;
 
+    if (elapsed > 200) {
+      elapsed = 16.67;
+      this.accumulatedTime = 0;
+    }
+
+    const timestep = 1000 / 60;
+    this.accumulatedTime = (this.accumulatedTime || 0) + elapsed;
+
+    // Snap normal 60Hz VSync jitter (~14.2ms - 20.2ms) to 1 step; normalize 120Hz/144Hz monitors to 60 FPS physics
+    if (this.accumulatedTime >= timestep - 2.5 && this.accumulatedTime <= timestep + 3.5) {
+      this.accumulatedTime = timestep;
+    }
+    if (this.accumulatedTime > 150) {
+      this.accumulatedTime = 150;
+    }
+
+    let updated = false;
+    let updates = 0;
+    while (this.accumulatedTime >= timestep && updates < 3) {
+      this.update();
+      this.accumulatedTime -= timestep;
+      updated = true;
+      updates++;
+    }
+    if (this.accumulatedTime > timestep * 2) {
+      this.accumulatedTime = 0;
+    }
+
+    if (updated) {
+      this.render();
+    }
+
+    if (this.animationId) cancelAnimationFrame(this.animationId);
     this.animationId = requestAnimationFrame(() => this.loop());
   }
 
@@ -444,34 +504,45 @@ class CyberStackerGame {
     this.towerWobbleVel *= 0.92; // Damping
     this.towerWobble += this.towerWobbleVel;
 
-    // 4. Update Falling Debris
-    for (let i = this.fallingDebris.length - 1; i >= 0; i--) {
+    // 4. Update Falling Debris (O(N) in-place compaction)
+    let debrisWrite = 0;
+    const debrisCullY = this.height + this.cameraY + 200;
+    for (let i = 0; i < this.fallingDebris.length; i++) {
       const d = this.fallingDebris[i];
       d.x += d.vx;
       d.y += d.vy;
       d.vy += 0.5;
       d.rot += d.rotVel;
-      if (d.y > this.height + this.cameraY + 200) {
-        this.fallingDebris.splice(i, 1);
+      if (d.y <= debrisCullY) {
+        this.fallingDebris[debrisWrite++] = d;
       }
     }
+    this.fallingDebris.length = debrisWrite;
 
-    // 5. Update Particles
-    for (let i = this.particles.length - 1; i >= 0; i--) {
+    // 5. Update Particles (O(N) in-place compaction)
+    let particleWrite = 0;
+    for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
       p.x += p.vx;
       p.y += p.vy;
       p.alpha -= p.decay;
-      if (p.alpha <= 0) this.particles.splice(i, 1);
+      if (p.alpha > 0) {
+        this.particles[particleWrite++] = p;
+      }
     }
+    this.particles.length = particleWrite;
 
-    // 6. Update Floating Text Popups
-    for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+    // 6. Update Floating Text Popups (O(N) in-place compaction)
+    let textWrite = 0;
+    for (let i = 0; i < this.floatingTexts.length; i++) {
       const t = this.floatingTexts[i];
       t.y += t.vy;
       t.alpha -= 0.02;
-      if (t.alpha <= 0) this.floatingTexts.splice(i, 1);
+      if (t.alpha > 0) {
+        this.floatingTexts[textWrite++] = t;
+      }
     }
+    this.floatingTexts.length = textWrite;
 
     // 7. Smooth Camera Interpolation (Only scroll up when tower reaches the middle of the screen)
     const topBlock = this.tower[this.tower.length - 1];
@@ -480,11 +551,6 @@ class CyberStackerGame {
       const idealCameraY = Math.max(0, scrollThresholdY - topBlock.y);
       this.targetCameraY = idealCameraY;
       this.cameraY += (this.targetCameraY - this.cameraY) * 0.1;
-    }
-
-    // Periodic HUD Refresh
-    if (this.gameTime % 15 === 0) {
-      this.updateLiveEarnDisplay();
     }
   }
 
@@ -715,7 +781,10 @@ class CyberStackerGame {
   }
 
   addSparks(x, y, color, count = 20) {
-    for (let i = 0; i < count; i++) {
+    const remaining = 60 - this.particles.length;
+    if (remaining <= 0) return;
+    const safeCount = Math.min(count, 24, remaining);
+    for (let i = 0; i < safeCount; i++) {
       const angle = Math.random() * Math.PI * 2;
       const spd = 2 + Math.random() * 6;
       this.particles.push({
@@ -747,49 +816,49 @@ class CyberStackerGame {
   }
 
   updateHUD() {
-    const scoreEl = document.getElementById('stacker-live-score');
-    if (scoreEl) scoreEl.innerText = this.score.toLocaleString();
+    if (!this._scoreEl) this._scoreEl = document.getElementById('stacker-live-score');
+    if (this._scoreEl) this._scoreEl.textContent = this.score.toLocaleString();
 
-    const floorsEl = document.getElementById('stacker-live-floors');
-    if (floorsEl) floorsEl.innerText = `${this.floors}F (${(this.floors * 3.5).toFixed(1)}m)`;
+    if (!this._floorsEl) this._floorsEl = document.getElementById('stacker-live-floors');
+    if (this._floorsEl) this._floorsEl.textContent = `${this.floors}F (${(this.floors * 3.5).toFixed(1)}m)`;
 
-    const comboEl = document.getElementById('stacker-live-combo');
-    if (comboEl) {
-      comboEl.innerText = `${this.combo.toFixed(1)}x`;
-      comboEl.style.color = (this.combo > 1.0) ? 'var(--color-secondary)' : 'var(--text-muted)';
+    if (!this._comboEl) this._comboEl = document.getElementById('stacker-live-combo');
+    if (this._comboEl) {
+      this._comboEl.textContent = `${this.combo.toFixed(1)}x`;
+      this._comboEl.style.color = (this.combo > 1.0) ? 'var(--color-secondary)' : 'var(--text-muted)';
     }
 
-    const livesEl = document.getElementById('stacker-live-lives');
-    if (livesEl) {
+    if (!this._livesEl) this._livesEl = document.getElementById('stacker-live-lives');
+    if (this._livesEl) {
       let heartStr = '';
       for (let i = 0; i < this.lives; i++) heartStr += '❤️';
       for (let i = this.lives; i < 3; i++) heartStr += '🖤';
-      livesEl.innerText = heartStr;
+      this._livesEl.textContent = heartStr;
     }
 
     this.updateLiveEarnDisplay();
   }
 
   updateLiveEarnDisplay() {
-    const earnedEl = document.getElementById('stacker-live-earned');
-    if (!earnedEl) return;
+    if (!this._earnedEl) this._earnedEl = document.getElementById('stacker-live-earned');
+    if (!this._earnedEl) return;
 
-    const multis = window.appState ? window.appState.getMultipliers() : { nftGameMultiplier: 0 };
-    const nftMult = 1 + ((multis.nftGameMultiplier || 0) / 100);
-    const isVip = (window.appState && window.appState.isVipActive());
-    const vipLevel = (window.appState && typeof window.appState.getVipLevel === 'function') ? window.appState.getVipLevel() : (isVip ? 2 : 0);
-    const vipMult = isVip ? (vipLevel >= 2 ? 2.0 : 1.5) : 1.0;
-    const ambMult = (window.appState && window.appState.state && window.appState.state.isAmbassador) ? 2.0 : 1.0;
-    const relicMult = (multis && multis.isApexUnlocked) ? 1.5 : 1.0;
-    const playerMult = nftMult * vipMult * ambMult * relicMult;
-
-    const globalEarnMult = (window.appState && window.appState.state && window.appState.state.globalEarnMultiplier !== undefined) ? Number(window.appState.state.globalEarnMultiplier) : 1.0;
+    const playerMult = this._cachedPlayerMult || 1.0;
+    const globalEarnMult = this._cachedGlobalEarnMult !== undefined ? this._cachedGlobalEarnMult : 1.0;
     const basePgt = (((this.floors * 0.45) + (this.score / 1500.0)) * 0.70) * globalEarnMult;
     const estPgt = (basePgt * playerMult) + (this.goldenCoresCollected * 5.0);
 
-    earnedEl.innerText = estPgt.toFixed(2);
-    const boostLabelEl = document.getElementById('stacker-nft-boost-label');
-    if (boostLabelEl) boostLabelEl.innerText = `${playerMult.toFixed(1)}x`;
+    const earnedStr = estPgt.toFixed(2);
+    if (this._lastEarnedStr !== earnedStr) {
+      this._lastEarnedStr = earnedStr;
+      this._earnedEl.textContent = earnedStr;
+    }
+    if (!this._boostLabelEl) this._boostLabelEl = document.getElementById('stacker-nft-boost-label');
+    const boostStr = `${playerMult.toFixed(1)}x`;
+    if (this._boostLabelEl && this._lastBoostStr !== boostStr) {
+      this._lastBoostStr = boostStr;
+      this._boostLabelEl.textContent = boostStr;
+    }
   }
 
   render() {
@@ -797,48 +866,48 @@ class CyberStackerGame {
     if (!ctx) return;
 
     ctx.save();
-    ctx.clearRect(0, 0, this.width, this.height);
+    ctx.shadowBlur = 0;
 
-    // 1. Dynamic Atmospheric Background (Ascends with tower height)
+    // 1. Dynamic Atmospheric Background (Cached gradient instance per altitude tier & canvas height)
     const altitude = this.floors;
-    let bgGrad = ctx.createLinearGradient(0, 0, 0, this.height);
-
-    if (altitude < 10) {
-      // Ground / Cityscape Neon Level
-      bgGrad.addColorStop(0, '#0a051b');
-      bgGrad.addColorStop(1, '#060a14');
-    } else if (altitude < 25) {
-      // Cloud / Lightning Layer
-      bgGrad.addColorStop(0, '#150a2a');
-      bgGrad.addColorStop(1, '#081026');
-    } else {
-      // Space Orbit Layer
-      bgGrad.addColorStop(0, '#020208');
-      bgGrad.addColorStop(1, '#0d041e');
+    const tier = altitude < 10 ? 0 : (altitude < 25 ? 1 : 2);
+    if (!this._bgGrad || this._bgGradTier !== tier || this._bgGradHeight !== this.height) {
+      const grad = ctx.createLinearGradient(0, 0, 0, this.height);
+      if (tier === 0) {
+        grad.addColorStop(0, '#0a051b');
+        grad.addColorStop(1, '#060a14');
+      } else if (tier === 1) {
+        grad.addColorStop(0, '#150a2a');
+        grad.addColorStop(1, '#081026');
+      } else {
+        grad.addColorStop(0, '#020208');
+        grad.addColorStop(1, '#0d041e');
+      }
+      this._bgGrad = grad;
+      this._bgGradTier = tier;
+      this._bgGradHeight = this.height;
     }
 
-    ctx.fillStyle = bgGrad;
+    ctx.fillStyle = this._bgGrad;
     ctx.fillRect(0, 0, this.width, this.height);
 
-    // Neon Cyber Grid Background
+    // Neon Cyber Grid Background (Batched into 1 single stroke draw call)
     ctx.strokeStyle = 'rgba(0, 240, 255, 0.05)';
     ctx.lineWidth = 1;
     const gridSize = 40;
     const gridOffsetY = Math.floor(this.cameraY % gridSize);
+    ctx.beginPath();
     for (let x = 0; x < this.width; x += gridSize) {
-      ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, this.height);
-      ctx.stroke();
     }
     for (let y = gridOffsetY; y < this.height; y += gridSize) {
-      ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(this.width, y);
-      ctx.stroke();
     }
+    ctx.stroke();
 
-    // 2. Quantum Crane & Cable (Fixed at Top of Screen)
+    // 2. Quantum Crane & Cable (Fixed at Top of Screen, zero shadowBlur)
     ctx.strokeStyle = 'rgba(255, 170, 0, 0.4)';
     ctx.lineWidth = 2;
     ctx.setLineDash([4, 4]);
@@ -848,10 +917,10 @@ class CyberStackerGame {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Crane Trolley Hook
+    // Crane Trolley Hook (Layered alpha halo instead of shadowBlur)
+    ctx.fillStyle = 'rgba(255, 170, 0, 0.25)';
+    ctx.fillRect(this.crane.x - 21, this.crane.y - 11, 42, 22);
     ctx.fillStyle = '#ffaa00';
-    ctx.shadowBlur = 10;
-    ctx.shadowColor = '#ffaa00';
     ctx.fillRect(this.crane.x - 18, this.crane.y - 8, 36, 16);
 
     // Cable to Active Block
@@ -863,38 +932,48 @@ class CyberStackerGame {
       ctx.lineTo(this.activeBlock.x, this.activeBlock.y - (this.activeBlock.h / 2));
       ctx.stroke();
     }
-    ctx.shadowBlur = 0;
 
     // --- Apply Camera Offset for World Objects ---
     ctx.save();
     ctx.translate(0, this.cameraY);
 
-    // 3. Render Placed Tower Blocks
-    for (let i = 0; i < this.tower.length; i++) {
+    // 3. Render Placed Tower Blocks (Viewport-culled & zero shadowBlur)
+    const towerLen = this.tower.length;
+    const viewBottom = this.height + 40;
+    for (let i = 0; i < towerLen; i++) {
       const b = this.tower[i];
+      const screenY = b.y + this.cameraY;
+      if (screenY - b.h > viewBottom || screenY + b.h < -40) continue;
+
       ctx.save();
 
       // Cumulative Wobble Offset as tower gets higher
-      const blockWobble = (i / Math.max(1, this.tower.length)) * this.towerWobble * 25;
+      const blockWobble = (i / Math.max(1, towerLen)) * this.towerWobble * 25;
       ctx.translate(b.x + blockWobble, b.y);
-
-      // Block Glow & Styling
-      ctx.shadowBlur = b.isGold ? 18 : 10;
-      ctx.shadowColor = b.color;
-      ctx.fillStyle = b.isGold ? 'linear-gradient(135deg, #ffd700, #ff8800)' : b.color;
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
 
       if (b.type === 'foundation') {
         // Heavy base slab
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = '#00f0ff';
+        ctx.fillRect(-b.w / 2 - 3, -b.h / 2 - 3, b.w + 6, b.h + 6);
+        ctx.globalAlpha = 1.0;
+
         ctx.fillStyle = '#1e293b';
         ctx.strokeStyle = '#00f0ff';
         ctx.lineWidth = 2;
         ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
         ctx.strokeRect(-b.w / 2, -b.h / 2, b.w, b.h);
       } else {
+        // Lightweight outer alpha halo instead of expensive software shadowBlur
+        ctx.globalAlpha = b.isGold ? 0.28 : 0.22;
+        ctx.fillStyle = b.color;
+        ctx.fillRect(-b.w / 2 - 3, -b.h / 2 - 3, b.w + 6, b.h + 6);
+        ctx.globalAlpha = 1.0;
+
         // Geometric Block Body
         ctx.fillStyle = b.color;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
         if (typeof ctx.roundRect === 'function') {
           ctx.beginPath();
           ctx.roundRect(-b.w / 2, -b.h / 2, b.w, b.h, 4);
@@ -926,27 +1005,29 @@ class CyberStackerGame {
       ctx.restore();
     }
 
-    // 4. Render Falling Debris / Toppled Blocks
-    for (const d of this.fallingDebris) {
+    // 4. Render Falling Debris / Toppled Blocks (Zero shadowBlur)
+    for (let i = 0; i < this.fallingDebris.length; i++) {
+      const d = this.fallingDebris[i];
       ctx.save();
       ctx.translate(d.x, d.y);
       ctx.rotate(d.rot);
       ctx.fillStyle = d.color;
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = d.color;
       ctx.fillRect(-d.w / 2, -d.h / 2, d.w, d.h);
       ctx.restore();
     }
 
-    // 5. Render Active Dropping Block
+    // 5. Render Active Dropping Block (Layered alpha halo, zero shadowBlur)
     if (this.activeBlock) {
       const b = this.activeBlock;
       ctx.save();
       ctx.translate(b.x, b.y);
       ctx.rotate(b.rot);
 
-      ctx.shadowBlur = 15;
-      ctx.shadowColor = b.color;
+      ctx.globalAlpha = 0.24;
+      ctx.fillStyle = b.color;
+      ctx.fillRect(-b.w / 2 - 3, -b.h / 2 - 3, b.w + 6, b.h + 6);
+      ctx.globalAlpha = 1.0;
+
       ctx.fillStyle = b.color;
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 2;
@@ -964,27 +1045,34 @@ class CyberStackerGame {
       ctx.restore();
     }
 
-    // 6. Render Particles
-    for (const p of this.particles) {
+    // 6. Render Particles (Batched fillRect, zero save/restore/arc overhead)
+    if (this.particles.length > 0) {
       ctx.save();
-      ctx.globalAlpha = p.alpha;
-      ctx.fillStyle = p.color;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
+      for (let i = 0; i < this.particles.length; i++) {
+        const p = this.particles[i];
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x - p.size, p.y - p.size, p.size * 2, p.size * 2);
+      }
       ctx.restore();
     }
 
-    // 7. Render Floating Text Popups
-    for (const t of this.floatingTexts) {
+    // 7. Render Floating Text Popups (Crisp stroke outline, zero shadowBlur)
+    if (this.floatingTexts.length > 0) {
       ctx.save();
-      ctx.globalAlpha = t.alpha;
       ctx.font = 'bold 15px sans-serif';
-      ctx.fillStyle = t.color;
-      ctx.shadowBlur = 8;
-      ctx.shadowColor = t.color;
       ctx.textAlign = 'center';
-      ctx.fillText(t.text, t.x, t.y);
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+      ctx.lineWidth = 3;
+      for (let i = 0; i < this.floatingTexts.length; i++) {
+        const t = this.floatingTexts[i];
+        const tx = Math.round(t.x);
+        const ty = Math.round(t.y);
+        ctx.globalAlpha = t.alpha;
+        ctx.fillStyle = t.color;
+        ctx.strokeText(t.text, tx, ty);
+        ctx.fillText(t.text, tx, ty);
+      }
       ctx.restore();
     }
 
@@ -1138,6 +1226,10 @@ class CyberStackerGame {
 
   stop() {
     this.isPlaying = false;
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
     if (this.animationFrameId) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
