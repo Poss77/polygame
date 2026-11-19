@@ -1548,21 +1548,20 @@ class CyberInvaders {
       const pcy = this.player.y + this.player.h / 2;
 
       this.ctx.save();
-      // Primary Inner Shield (Cyan)
-      this.ctx.strokeStyle = '#00ffff';
-      this.ctx.lineWidth = 2.2;
-      this.ctx.shadowColor = '#00ffff';
-      this.ctx.shadowBlur = 12;
+      // Primary Inner Shield (Cyan, double-stroke glow without shadowBlur)
+      this.ctx.strokeStyle = 'rgba(0, 255, 255, 0.28)';
+      this.ctx.lineWidth = 6;
       this.ctx.beginPath();
       this.ctx.arc(pcx, pcy, 24, 0, Math.PI * 2);
+      this.ctx.stroke();
+      this.ctx.strokeStyle = '#00ffff';
+      this.ctx.lineWidth = 2.2;
       this.ctx.stroke();
 
       // Secondary Outer Shield (Double Shield - Rotating Magenta Aura)
       if (this.shieldCount >= 2) {
         this.ctx.strokeStyle = '#bd00ff';
         this.ctx.lineWidth = 2.4;
-        this.ctx.shadowColor = '#bd00ff';
-        this.ctx.shadowBlur = 16;
         this.ctx.setLineDash([8, 6]);
         this.ctx.lineDashOffset = -this.gameTime * 0.8;
         this.ctx.beginPath();
@@ -1586,19 +1585,15 @@ class CyberInvaders {
         // Ship nose points upward (-Math.PI / 2), thrusters fire downward
         window.PolyHangar.renderProceduralShip(this.ctx, pcx, pcy, this.nftDna, shipScale, -Math.PI / 2, this.gameTime, true);
       } else {
-        this.ctx.shadowColor = '#00ffff';
-        this.ctx.shadowBlur = 20;
+        this.ctx.fillStyle = 'rgba(0, 255, 255, 0.22)';
+        this.ctx.fillRect(this.player.x - 3, this.player.y + 2, this.player.w + 6, this.player.h + 1);
         this.ctx.fillStyle = '#00ffff';
         this.ctx.fillRect(this.player.x, this.player.y + 5, this.player.w, this.player.h - 5);
         this.ctx.fillRect(this.player.x + this.player.w / 2 - 4, this.player.y - 8, 8, 12);
         this.ctx.fillStyle = '#ffffff';
-        this.ctx.shadowColor = '#ffffff';
-        this.ctx.shadowBlur = 12;
         this.ctx.fillRect(this.player.x + 4, this.player.y + 7, this.player.w - 8, 5);
         this.ctx.fillRect(this.player.x + this.player.w / 2 - 2, this.player.y - 10, 4, 10);
         this.ctx.fillStyle = '#ff0055';
-        this.ctx.shadowColor = '#ff0055';
-        this.ctx.shadowBlur = 10;
         this.ctx.fillRect(this.player.x + 8, this.player.y + this.player.h, 4, 6);
         this.ctx.fillRect(this.player.x + this.player.w - 12, this.player.y + this.player.h, 4, 6);
       }
@@ -1620,14 +1615,11 @@ class CyberInvaders {
         else if (this.nftRarity.tier === 'Mythic') beamColor = 'rgba(255, 0, 85, 0.16)';
       }
       this.ctx.save();
-      // Outer translucent energy channel (12px wide, gentle 8px glow for clear playfield visibility)
+      // Outer translucent energy channel (Zero shadowBlur)
       this.ctx.fillStyle = beamColor;
-      this.ctx.shadowColor = beamShadow;
-      this.ctx.shadowBlur = 8;
       this.ctx.fillRect(centerX - 6, 0, 12, this.player.y);
       // Energetic laser core (3px wide)
       this.ctx.fillStyle = beamCore;
-      this.ctx.shadowBlur = 4;
       this.ctx.fillRect(centerX - 1.5, 0, 3, this.player.y);
       this.ctx.restore();
     }
@@ -1646,12 +1638,13 @@ class CyberInvaders {
     }
 
     this.ctx.save();
-    for (const b of this.bullets) {
+    for (let i = 0; i < this.bullets.length; i++) {
+      const b = this.bullets[i];
       if (b.isBeam) {
-        // High-energy piercing mega laser bolt (7x22px plasma javelin)
+        // High-energy piercing mega laser bolt (7x22px plasma javelin, zero shadowBlur)
+        this.ctx.fillStyle = bulletGlow;
+        this.ctx.fillRect(b.x - 3, b.y - 2, b.w + 6, b.h + 4);
         this.ctx.fillStyle = bulletColor;
-        this.ctx.shadowColor = bulletColor;
-        this.ctx.shadowBlur = 10;
         this.ctx.fillRect(b.x - 1, b.y, b.w + 2, b.h);
         this.ctx.fillStyle = '#ffffff';
         this.ctx.fillRect(b.x + 2, b.y + 2, Math.max(2, b.w - 4), b.h - 4);
@@ -1666,16 +1659,25 @@ class CyberInvaders {
     }
     this.ctx.restore();
 
-    // Draw Homing Micro-Missiles
-    for (const m of this.missiles) {
-      this.ctx.save();
-      this.ctx.fillStyle = '#ffaa00';
-      this.ctx.shadowColor = '#ffaa00';
-      this.ctx.shadowBlur = 10;
+    // Draw Homing Micro-Missiles (Zero shadowBlur, batched)
+    if (this.missiles.length > 0) {
+      this.ctx.fillStyle = 'rgba(255, 170, 0, 0.32)';
       this.ctx.beginPath();
-      this.ctx.arc(m.x, m.y, 3.5, 0, Math.PI * 2);
+      for (let i = 0; i < this.missiles.length; i++) {
+        const m = this.missiles[i];
+        this.ctx.moveTo(m.x + 6.5, m.y);
+        this.ctx.arc(m.x, m.y, 6.5, 0, Math.PI * 2);
+      }
       this.ctx.fill();
-      this.ctx.restore();
+
+      this.ctx.fillStyle = '#ffaa00';
+      this.ctx.beginPath();
+      for (let i = 0; i < this.missiles.length; i++) {
+        const m = this.missiles[i];
+        this.ctx.moveTo(m.x + 3.5, m.y);
+        this.ctx.arc(m.x, m.y, 3.5, 0, Math.PI * 2);
+      }
+      this.ctx.fill();
     }
 
     // Draw Enemy Bullets (Vibrant High-Contrast Solar Plasma Bolts)
@@ -1733,8 +1735,6 @@ class CyberInvaders {
       this.ctx.fillStyle = p.type === 'weapon_upgrade' ? 'rgba(5, 25, 45, 0.95)' : 'rgba(10, 15, 30, 0.90)';
       this.ctx.strokeStyle = mainColor;
       this.ctx.lineWidth = p.type === 'weapon_upgrade' ? 2.5 : 2.0;
-      this.ctx.shadowColor = mainColor;
-      this.ctx.shadowBlur = p.type === 'weapon_upgrade' ? 18 : 12;
       this.ctx.fill();
       this.ctx.stroke();
 
@@ -1752,8 +1752,6 @@ class CyberInvaders {
 
         // Twin Golden Ascending Chevrons ▲▲
         this.ctx.fillStyle = '#ffd700';
-        this.ctx.shadowColor = '#ffd700';
-        this.ctx.shadowBlur = 10;
 
         // Top Chevron
         this.ctx.beginPath();
@@ -1780,8 +1778,6 @@ class CyberInvaders {
         // Bold white label text below
         this.ctx.font = '900 8px monospace';
         this.ctx.fillStyle = '#ffffff';
-        this.ctx.shadowColor = '#00f0ff';
-        this.ctx.shadowBlur = 6;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         this.ctx.fillText('GUN UP', cx, cy + 8);
@@ -1825,12 +1821,11 @@ class CyberInvaders {
       this.ctx.restore();
     }
 
-    // Draw Invaders Swarm
-    for (const inv of this.invaders) {
-      this.ctx.save();
-      if (inv.type === 'stealth') {
-        this.ctx.globalAlpha = inv.stealthAlpha || 0.8;
-      }
+    // Draw Invaders Swarm (Zero per-invader save/restore)
+    for (let idx = 0; idx < this.invaders.length; idx++) {
+      const inv = this.invaders[idx];
+      const isStealth = inv.type === 'stealth';
+      if (isStealth) this.ctx.globalAlpha = inv.stealthAlpha || 0.8;
 
       this.ctx.fillStyle = inv.color;
       this.ctx.fillRect(inv.x, inv.y, inv.w, inv.h);
@@ -1862,14 +1857,12 @@ class CyberInvaders {
         this.ctx.stroke();
       }
 
-      this.ctx.restore();
+      if (isStealth) this.ctx.globalAlpha = 1.0;
     }
 
-    // Draw UFOs
+    // Draw UFOs (Zero shadowBlur)
     for (const u of this.ufos) {
       this.ctx.fillStyle = u.color;
-      this.ctx.shadowColor = u.color;
-      this.ctx.shadowBlur = 15;
       this.ctx.beginPath();
       this.ctx.ellipse(u.x + u.w / 2, u.y + u.h / 2, u.w / 2, u.h / 2, 0, 0, Math.PI * 2);
       this.ctx.fill();

@@ -96,6 +96,9 @@ class CyberRunnerGame {
     // Visual FX
     this.screenShake = 0;
     this.glitchIntensity = 0;
+    this._bgCanvas = null;
+    this._bgW = 0;
+    this._bgH = 0;
 
     // Audio Context (Synthesizer)
     this.audioCtx = null;
@@ -568,12 +571,19 @@ class CyberRunnerGame {
     }
   }
 
-  // --- Main Game Loop ---
+  // --- Main Game Loop (60Hz Frame Paced) ---
   loop(timestamp) {
     if (!this.isRunning) return;
 
-    const dt = Math.min((timestamp - this.lastFrameTime) / 1000, 0.1);
-    this.lastFrameTime = timestamp;
+    const elapsedMs = timestamp - this.lastFrameTime;
+    // Cap at ~62 FPS on 120Hz/144Hz monitors so GPU isn't overloaded
+    if (elapsedMs < 15.5) {
+      this.animationId = requestAnimationFrame((t) => this.loop(t));
+      return;
+    }
+
+    const dt = Math.min(elapsedMs / 1000, 0.05);
+    this.lastFrameTime = timestamp - (elapsedMs % 16.6667);
 
     if (!this.isPaused) {
       this.update(dt);
@@ -831,16 +841,16 @@ class CyberRunnerGame {
       }
     }
 
-    // Update Particles
-    for (let i = this.particles.length - 1; i >= 0; i--) {
+    // Update Particles (in-place compaction)
+    let pWrite = 0;
+    for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       p.life -= dt;
-      if (p.life <= 0) {
-        this.particles.splice(i, 1);
-      }
+      if (p.life > 0) this.particles[pWrite++] = p;
     }
+    this.particles.length = pWrite;
 
     // Regular runner thruster particles
     if (Math.random() < 0.45) {
@@ -1077,11 +1087,131 @@ class CyberRunnerGame {
     return this.getScreenPos(this.laneX, 100, this.y);
   }
 
+  _buildBackdrop(w, h) {
+    if (!this._bgCanvas) this._bgCanvas = document.createElement('canvas');
+    this._bgCanvas.width = w;
+    this._bgCanvas.height = h;
+    this._bgW = w;
+    this._bgH = h;
+    const bctx = this._bgCanvas.getContext('2d');
+
+    // 1. Sky & Cyber Synthwave Backdrop
+    const skyGrad = bctx.createLinearGradient(0, 0, 0, h * 0.42);
+    skyGrad.addColorStop(0, '#04010a');
+    skyGrad.addColorStop(0.45, '#120522');
+    skyGrad.addColorStop(0.8, '#2b073d');
+    skyGrad.addColorStop(1, '#4a0e4e');
+    bctx.fillStyle = skyGrad;
+    bctx.fillRect(0, 0, w, h);
+
+    // Neon Cyber Sun on Horizon
+    const sunX = w / 2;
+    const sunY = h * 0.36;
+    const sunRad = Math.min(w, h) * 0.22;
+
+    const haloGrad = bctx.createRadialGradient(sunX, sunY, sunRad * 0.2, sunX, sunY, sunRad * 1.6);
+    haloGrad.addColorStop(0, 'rgba(255, 0, 127, 0.45)');
+    haloGrad.addColorStop(0.5, 'rgba(255, 85, 0, 0.2)');
+    haloGrad.addColorStop(1, 'rgba(255, 0, 127, 0)');
+    bctx.fillStyle = haloGrad;
+    bctx.beginPath();
+    bctx.arc(sunX, sunY, sunRad * 1.6, 0, Math.PI * 2);
+    bctx.fill();
+
+    const sunGrad = bctx.createLinearGradient(sunX, sunY - sunRad, sunX, sunY + sunRad);
+    sunGrad.addColorStop(0, '#ff007f');
+    sunGrad.addColorStop(0.35, '#ff3300');
+    sunGrad.addColorStop(0.7, '#ff9900');
+    sunGrad.addColorStop(1, '#ffe066');
+
+    bctx.save();
+    bctx.beginPath();
+    bctx.arc(sunX, sunY, sunRad, Math.PI, 0);
+    bctx.fillStyle = sunGrad;
+    bctx.shadowColor = '#ff007f';
+    bctx.shadowBlur = 24;
+    bctx.fill();
+
+    // Synthwave Horizontal Scanlines across lower portion of Sun
+    bctx.shadowBlur = 0;
+    bctx.fillStyle = '#04010a';
+    let currY = sunY - sunRad * 0.65;
+    let gap = 5;
+    let lineH = 1.2;
+    while (currY < sunY) {
+      bctx.fillRect(sunX - sunRad - 6, currY, (sunRad + 6) * 2, lineH);
+      currY += gap + lineH;
+      gap += 1.4;
+      lineH += 0.55;
+    }
+    bctx.restore();
+
+    // Distant Synthwave Mountain Silhouettes
+    bctx.save();
+    bctx.fillStyle = '#0b0216';
+    bctx.strokeStyle = '#ff007f';
+    bctx.lineWidth = 1.4;
+
+    bctx.beginPath();
+    bctx.moveTo(0, sunY);
+    bctx.lineTo(w * 0.07, sunY - 22);
+    bctx.lineTo(w * 0.15, sunY - 12);
+    bctx.lineTo(w * 0.25, sunY - 32);
+    bctx.lineTo(w * 0.35, sunY - 14);
+    bctx.lineTo(w * 0.43, sunY);
+    bctx.closePath();
+    bctx.fill();
+    bctx.stroke();
+
+    bctx.beginPath();
+    bctx.moveTo(w * 0.57, sunY);
+    bctx.lineTo(w * 0.65, sunY - 15);
+    bctx.lineTo(w * 0.75, sunY - 34);
+    bctx.lineTo(w * 0.85, sunY - 16);
+    bctx.lineTo(w * 0.93, sunY - 24);
+    bctx.lineTo(w, sunY);
+    bctx.closePath();
+    bctx.fill();
+    bctx.stroke();
+
+    bctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
+    bctx.lineWidth = 1;
+    bctx.beginPath();
+    bctx.moveTo(w * 0.25, sunY - 32); bctx.lineTo(w * 0.21, sunY);
+    bctx.moveTo(w * 0.25, sunY - 32); bctx.lineTo(w * 0.30, sunY);
+    bctx.moveTo(w * 0.75, sunY - 34); bctx.lineTo(w * 0.71, sunY);
+    bctx.moveTo(w * 0.75, sunY - 34); bctx.lineTo(w * 0.80, sunY);
+    bctx.stroke();
+    bctx.restore();
+
+    // Horizon Neon Bloom & Fog
+    const horizonHaze = bctx.createLinearGradient(0, sunY - 16, 0, sunY + 20);
+    horizonHaze.addColorStop(0, 'rgba(255, 0, 127, 0)');
+    horizonHaze.addColorStop(0.5, 'rgba(255, 0, 127, 0.38)');
+    horizonHaze.addColorStop(1, 'rgba(0, 240, 255, 0)');
+    bctx.fillStyle = horizonHaze;
+    bctx.fillRect(0, sunY - 16, w, 36);
+
+    // 3D Perspective Ground Plane
+    const groundY = h * 0.36;
+    const floorGrad = bctx.createLinearGradient(0, groundY, 0, h);
+    floorGrad.addColorStop(0, '#090214');
+    floorGrad.addColorStop(0.3, '#110421');
+    floorGrad.addColorStop(1, '#05010a');
+    bctx.fillStyle = floorGrad;
+    bctx.fillRect(0, groundY, w, h - groundY);
+  }
+
   // --- Rendering Engine ---
   render() {
     const ctx = this.ctx;
     const w = this.renderWidth;
     const h = this.renderHeight;
+    if (!ctx || !w || !h) return;
+
+    if (!this._bgCanvas || this._bgW !== w || this._bgH !== h) {
+      this._buildBackdrop(w, h);
+    }
 
     ctx.save();
 
@@ -1092,192 +1222,70 @@ class CyberRunnerGame {
       ctx.translate(sx, sy);
     }
 
-    // 1. Sky & Cyber Synthwave Backdrop
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.42);
-    skyGrad.addColorStop(0, '#04010a');
-    skyGrad.addColorStop(0.45, '#120522');
-    skyGrad.addColorStop(0.8, '#2b073d');
-    skyGrad.addColorStop(1, '#4a0e4e');
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, w, h);
+    // 1. Blit Cached Sky, Sun, Mountains & Floor
+    ctx.drawImage(this._bgCanvas, 0, 0);
 
-    // Twinkling Starfield
+    // Twinkling Starfield (Zero shadowBlur, single alpha pass)
     if (this.stars && this.stars.length) {
-      this.stars.forEach(s => {
+      for (let i = 0; i < this.stars.length; i++) {
+        const s = this.stars[i];
         const twinkle = 0.35 + 0.65 * Math.sin(this.gameTime * s.speed + s.phase);
-        ctx.save();
-        ctx.fillStyle = s.color;
         ctx.globalAlpha = Math.max(0.1, twinkle);
-        ctx.shadowColor = s.color;
-        ctx.shadowBlur = 4;
+        ctx.fillStyle = s.color;
         ctx.beginPath();
         ctx.arc(s.x * w, s.y * h, s.size, 0, Math.PI * 2);
         ctx.fill();
-        ctx.restore();
-      });
+      }
+      ctx.globalAlpha = 1;
     }
-
-    // Neon Cyber Sun on Horizon
-    const sunX = w / 2;
-    const sunY = h * 0.36;
-    const sunRad = Math.min(w, h) * 0.22;
-
-    // Atmospheric Halo Bloom around Sun
-    const haloGrad = ctx.createRadialGradient(sunX, sunY, sunRad * 0.2, sunX, sunY, sunRad * 1.6);
-    haloGrad.addColorStop(0, 'rgba(255, 0, 127, 0.45)');
-    haloGrad.addColorStop(0.5, 'rgba(255, 85, 0, 0.2)');
-    haloGrad.addColorStop(1, 'rgba(255, 0, 127, 0)');
-    ctx.fillStyle = haloGrad;
-    ctx.beginPath();
-    ctx.arc(sunX, sunY, sunRad * 1.6, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Sliced Synthwave Sun Disc
-    const sunGrad = ctx.createLinearGradient(sunX, sunY - sunRad, sunX, sunY + sunRad);
-    sunGrad.addColorStop(0, '#ff007f');
-    sunGrad.addColorStop(0.35, '#ff3300');
-    sunGrad.addColorStop(0.7, '#ff9900');
-    sunGrad.addColorStop(1, '#ffe066');
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(sunX, sunY, sunRad, Math.PI, 0); // Upper half
-    ctx.fillStyle = sunGrad;
-    ctx.shadowColor = '#ff007f';
-    ctx.shadowBlur = 28;
-    ctx.fill();
-
-    // Synthwave Horizontal Scanlines across lower portion of Sun
-    ctx.fillStyle = '#04010a';
-    const scanlineStart = sunY - sunRad * 0.65;
-    let currY = scanlineStart;
-    let gap = 5;
-    let lineH = 1.2;
-    while (currY < sunY) {
-      ctx.fillRect(sunX - sunRad - 6, currY, (sunRad + 6) * 2, lineH);
-      currY += gap + lineH;
-      gap += 1.4;
-      lineH += 0.55;
-    }
-    ctx.restore();
-
-    // Distant Synthwave Mountain Silhouettes (Framing Sun)
-    ctx.save();
-    ctx.fillStyle = '#0b0216';
-    ctx.strokeStyle = '#ff007f';
-    ctx.lineWidth = 1.4;
-    ctx.shadowColor = '#ff007f';
-    ctx.shadowBlur = 6;
-
-    // Left mountain range
-    ctx.beginPath();
-    ctx.moveTo(0, sunY);
-    ctx.lineTo(w * 0.07, sunY - 22);
-    ctx.lineTo(w * 0.15, sunY - 12);
-    ctx.lineTo(w * 0.25, sunY - 32);
-    ctx.lineTo(w * 0.35, sunY - 14);
-    ctx.lineTo(w * 0.43, sunY);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    // Right mountain range
-    ctx.beginPath();
-    ctx.moveTo(w * 0.57, sunY);
-    ctx.lineTo(w * 0.65, sunY - 15);
-    ctx.lineTo(w * 0.75, sunY - 34);
-    ctx.lineTo(w * 0.85, sunY - 16);
-    ctx.lineTo(w * 0.93, sunY - 24);
-    ctx.lineTo(w, sunY);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
-
-    // Cyan mountain wireframe ridges
-    ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    // Left ridges
-    ctx.moveTo(w * 0.25, sunY - 32);
-    ctx.lineTo(w * 0.21, sunY);
-    ctx.moveTo(w * 0.25, sunY - 32);
-    ctx.lineTo(w * 0.30, sunY);
-    // Right ridges
-    ctx.moveTo(w * 0.75, sunY - 34);
-    ctx.lineTo(w * 0.71, sunY);
-    ctx.moveTo(w * 0.75, sunY - 34);
-    ctx.lineTo(w * 0.80, sunY);
-    ctx.stroke();
-    ctx.restore();
-
-    // Horizon Neon Bloom & Fog
-    const horizonHaze = ctx.createLinearGradient(0, sunY - 16, 0, sunY + 20);
-    horizonHaze.addColorStop(0, 'rgba(255, 0, 127, 0)');
-    horizonHaze.addColorStop(0.5, 'rgba(255, 0, 127, 0.38)');
-    horizonHaze.addColorStop(1, 'rgba(0, 240, 255, 0)');
-    ctx.fillStyle = horizonHaze;
-    ctx.fillRect(0, sunY - 16, w, 36);
-
-    // 2. 3D Perspective Ground Plane
-    const groundY = h * 0.36;
-    const floorGrad = ctx.createLinearGradient(0, groundY, 0, h);
-    floorGrad.addColorStop(0, '#090214');
-    floorGrad.addColorStop(0.3, '#110421');
-    floorGrad.addColorStop(1, '#05010a');
-    ctx.fillStyle = floorGrad;
-    ctx.fillRect(0, groundY, w, h - groundY);
 
     // 2B. Cyber Scenery Skyscrapers (Flanking the track beyond guardrails)
     this.renderBuildings(ctx);
 
-    // Outer Guardrails / Track Boundaries (lanes -1.55 and +1.55)
-    [-1.55, 1.55].forEach(side => {
+    // Outer Guardrails / Track Boundaries (Zero-shadowBlur double glow pass)
+    for (let sIdx = 0; sIdx < 2; sIdx++) {
+      const side = sIdx === 0 ? -1.55 : 1.55;
       const topP = this.getScreenPos(side, 3000, 0);
       const botP = this.getScreenPos(side, 25, 0);
-      ctx.save();
-      ctx.strokeStyle = '#00f0ff';
-      ctx.shadowColor = '#00f0ff';
-      ctx.shadowBlur = 10;
-      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
+      ctx.lineWidth = 6;
       ctx.beginPath();
       ctx.moveTo(topP.x, topP.y);
       ctx.lineTo(botP.x, botP.y);
       ctx.stroke();
-      ctx.restore();
-    });
+
+      ctx.strokeStyle = '#00f0ff';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(topP.x, topP.y);
+      ctx.lineTo(botP.x, botP.y);
+      ctx.stroke();
+    }
 
     // Inner Lane Lines (-0.5, 0.5)
+    ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
     [-0.5, 0.5].forEach(side => {
       const topP = this.getScreenPos(side, 3000, 0);
       const botP = this.getScreenPos(side, 25, 0);
-      ctx.save();
-      ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
-      ctx.shadowColor = '#00f0ff';
-      ctx.shadowBlur = 6;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
       ctx.moveTo(topP.x, topP.y);
       ctx.lineTo(botP.x, botP.y);
-      ctx.stroke();
-      ctx.restore();
     });
+    ctx.stroke();
 
-    // Horizontal Moving Perspective Gridlines
-    ctx.save();
+    // Horizontal Moving Perspective Gridlines (Zero shadowBlur)
     for (let z = 25 + (this.groundGridOffset % 40); z < 2600; z += 40) {
       const left = this.getScreenPos(-1.55, z, 0);
       const right = this.getScreenPos(1.55, z, 0);
       const alpha = Math.min(0.65, Math.max(0.08, 120 / z));
       ctx.strokeStyle = `rgba(255, 0, 127, ${alpha})`;
-      ctx.shadowColor = '#ff007f';
-      ctx.shadowBlur = 6;
       ctx.lineWidth = Math.max(0.8, Math.min(2.5, 80 / z));
       ctx.beginPath();
       ctx.moveTo(left.x, left.y);
       ctx.lineTo(right.x, right.y);
       ctx.stroke();
     }
-    ctx.restore();
 
     // 3. Render Collectibles & Power-Ups (Sorted Far to Near)
     this.collectibles.sort((a, b) => b.z - a.z);
@@ -1615,10 +1623,7 @@ class CyberRunnerGame {
         // --- LOW ROAD HURDLE (JUMP OVER) ---
         const bH = 28 * factor;
         const railH = Math.max(1.5, 3 * factor);
-        ctx.save();
         ctx.fillStyle = '#ff2a00';
-        ctx.shadowColor = '#ff3300';
-        ctx.shadowBlur = 14 * factor;
         ctx.fillRect(-baseW / 2, -bH, baseW, bH);
         ctx.strokeStyle = '#ffd700';
         ctx.lineWidth = Math.max(1.0, 2 * factor);
@@ -1632,17 +1637,11 @@ class CyberRunnerGame {
 
         // Top Neon Amber Rail
         ctx.fillStyle = '#ffd700';
-        ctx.shadowColor = '#ffd700';
-        ctx.shadowBlur = 10 * factor;
         ctx.fillRect(-baseW / 2, -bH - railH, baseW, railH);
 
         // Center Hazard Accent Stripe
         ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = '#ffffff';
-        ctx.shadowBlur = 6 * factor;
         ctx.fillRect(-7 * factor, -bH * 0.65, 14 * factor, 3 * factor);
-
-        ctx.restore();
 
       } else if (obs.type === 'highLaser') {
         // --- CALIBRATED OVERHEAD ELECTRIC LASER FENCE (SLIDE UNDER) ---
@@ -1659,8 +1658,6 @@ class CyberRunnerGame {
 
         // 1. Heavy Industrial Side Pylons (Ground y=0 up to gateTop)
         ctx.fillStyle = '#180628';
-        ctx.shadowColor = '#d000ff';
-        ctx.shadowBlur = 10 * factor;
         ctx.fillRect(pylonLeft, gateTop - 4 * factor, pylonW, -gateTop + 4 * factor);
         ctx.fillRect(pylonRight, gateTop - 4 * factor, pylonW, -gateTop + 4 * factor);
 
@@ -1671,10 +1668,8 @@ class CyberRunnerGame {
         ctx.strokeRect(pylonRight, gateTop - 4 * factor, pylonW, -gateTop + 4 * factor);
 
         // Pylon Pulsing Energy Coils
+        ctx.fillStyle = '#ff00ff';
         [-34, -54].forEach(cy => {
-          ctx.fillStyle = '#ff00ff';
-          ctx.shadowColor = '#ff00ff';
-          ctx.shadowBlur = 10 * factor;
           ctx.fillRect(pylonLeft - 1.5 * factor, cy * factor, pylonW + 3 * factor, 5 * factor);
           ctx.fillRect(pylonRight - 1.5 * factor, cy * factor, pylonW + 3 * factor, 5 * factor);
         });
@@ -1705,9 +1700,9 @@ class CyberRunnerGame {
         const beamH = Math.max(1.4, 4 * factor);
         [-34, -54].forEach(beamLvl => {
           const by = beamLvl * factor;
+          ctx.fillStyle = 'rgba(255, 0, 255, 0.35)';
+          ctx.fillRect(pylonLeft + pylonW, by - beamH * 0.9, spanW - pylonW * 2, beamH * 1.8);
           ctx.fillStyle = '#ff00ff';
-          ctx.shadowColor = '#ff00ff';
-          ctx.shadowBlur = 14 * factor;
           ctx.fillRect(pylonLeft + pylonW, by - beamH * 0.5, spanW - pylonW * 2, beamH);
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(pylonLeft + pylonW, by - beamH * 0.25, spanW - pylonW * 2, beamH * 0.5);
@@ -1721,10 +1716,8 @@ class CyberRunnerGame {
         ctx.strokeRect(pylonLeft, gateTop - 7 * factor, spanW, 7 * factor);
 
         // Overhead Hazard Beacon Nodes
+        ctx.fillStyle = '#ffd700';
         [-spanW * 0.28, 0, spanW * 0.28].forEach(bx => {
-          ctx.fillStyle = '#ffd700';
-          ctx.shadowColor = '#ffd700';
-          ctx.shadowBlur = 8 * factor;
           ctx.beginPath();
           ctx.arc(bx, gateTop - 3.5 * factor, 2.5 * factor, 0, Math.PI * 2);
           ctx.fill();
@@ -1749,8 +1742,6 @@ class CyberRunnerGame {
 
         // 1. Heavy Industrial Steel Columns (Left & Right Anchors)
         ctx.fillStyle = '#0d041a';
-        ctx.shadowColor = '#ff0055';
-        ctx.shadowBlur = 16 * factor;
         ctx.fillRect(-halfW, -wallH, pylonW, wallH);
         ctx.fillRect(halfW - pylonW, -wallH, pylonW, wallH);
 
@@ -1800,8 +1791,6 @@ class CyberRunnerGame {
 
         // Glowing Warning Triangle
         ctx.fillStyle = '#ffd700';
-        ctx.shadowColor = '#ffd700';
-        ctx.shadowBlur = 12 * factor;
         ctx.beginPath();
         ctx.moveTo(0, -signR * 1.15);
         ctx.lineTo(signR * 1.1, signR * 0.85);
@@ -1815,7 +1804,6 @@ class CyberRunnerGame {
         // Vector Exclamation Mark inside Triangle (skip at extreme distance so it doesn't overflow triangle)
         if (signR >= 2.2) {
           ctx.fillStyle = '#000000';
-          ctx.shadowBlur = 0;
           const barW = Math.max(1.0, 3.4 * factor);
           const barH = 11 * factor;
           ctx.fillRect(-barW / 2, -signR * 0.5, barW, barH);
@@ -1829,8 +1817,6 @@ class CyberRunnerGame {
         const strobePulse = (Math.sin(this.gameTime * 10) + 1) * 0.5;
         const beaconColor = strobePulse > 0.4 ? '#ff0055' : '#660022';
         ctx.fillStyle = beaconColor;
-        ctx.shadowColor = '#ff0055';
-        ctx.shadowBlur = strobePulse * 16 * factor;
 
         // Top structural cap rail
         ctx.fillRect(-halfW, -wallH - 4 * factor, wallW, 4 * factor);
@@ -2313,10 +2299,8 @@ class CyberRunnerGame {
       ctx.save();
       ctx.translate(p.x, p.y);
 
-      // Dark cyber building facade
+      // Dark cyber building facade (Zero shadowBlur for 60 FPS)
       ctx.fillStyle = '#080314';
-      ctx.shadowColor = b.accentColor;
-      ctx.shadowBlur = 10 * factor;
       ctx.fillRect(-bw / 2, -bh, bw, bh);
 
       // Building Wireframe Border
@@ -2324,7 +2308,7 @@ class CyberRunnerGame {
       ctx.lineWidth = Math.max(0.8, 1.5 * factor);
       ctx.strokeRect(-bw / 2, -bh, bw, bh);
 
-      // Illuminated Windows
+      // Illuminated Windows (Zero shadowBlur)
       if (factor > 0.07) {
         const winW = 3.5 * factor;
         const winH = 5 * factor;
@@ -2332,7 +2316,6 @@ class CyberRunnerGame {
         const rowGap = (bh * 0.8 - (b.windowRows * winH)) / (b.windowRows + 1);
 
         ctx.fillStyle = b.accentColor;
-        ctx.shadowBlur = 4 * factor;
         for (let r = 0; r < b.windowRows; r++) {
           for (let c = 0; c < b.windowCols; c++) {
             if ((r * 7 + c * 13 + Math.floor(b.z * 0.05)) % 5 !== 0) {
@@ -2356,9 +2339,11 @@ class CyberRunnerGame {
 
         const blink = Math.sin(this.gameTime * 6 + b.lane) > 0;
         if (blink) {
+          ctx.fillStyle = 'rgba(255, 0, 85, 0.32)';
+          ctx.beginPath();
+          ctx.arc(0, -bh - antH, 5 * factor, 0, Math.PI * 2);
+          ctx.fill();
           ctx.fillStyle = '#ff0055';
-          ctx.shadowColor = '#ff0055';
-          ctx.shadowBlur = 8 * factor;
           ctx.beginPath();
           ctx.arc(0, -bh - antH, 2.5 * factor, 0, Math.PI * 2);
           ctx.fill();
@@ -2372,21 +2357,19 @@ class CyberRunnerGame {
   renderFloatingTexts(ctx) {
     if (!this.floatingTexts || this.floatingTexts.length === 0) return;
     ctx.save();
-    this.floatingTexts.forEach(ft => {
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i < this.floatingTexts.length; i++) {
+      const ft = this.floatingTexts[i];
       const progress = ft.life / ft.maxLife;
       const alpha = Math.min(1.0, progress * 1.5);
       ctx.globalAlpha = Math.max(0, alpha);
       ctx.font = `900 ${Math.floor(14 * ft.scale)}px "Segoe UI", sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+      ctx.fillText(ft.text, ft.x + 1.5, ft.y + 1.5);
       ctx.fillStyle = ft.color;
-      ctx.shadowColor = ft.color;
-      ctx.shadowBlur = 12;
       ctx.fillText(ft.text, ft.x, ft.y);
-      // White sharp core
-      ctx.fillStyle = '#ffffff';
-      ctx.fillText(ft.text, ft.x, ft.y);
-    });
+    }
     ctx.restore();
   }
 

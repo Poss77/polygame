@@ -849,8 +849,14 @@ export class CyberDefenseEngine {
       return;
     }
 
-    const rawDt = Math.min((timestamp - this.lastTime) / 1000, 0.1);
-    this.lastTime = timestamp;
+    const elapsedMs = timestamp - this.lastTime;
+    if (elapsedMs < 15.5) {
+      this.animationFrameId = requestAnimationFrame((t) => this.loop(t));
+      return;
+    }
+
+    const rawDt = Math.min(elapsedMs / 1000, 0.05);
+    this.lastTime = timestamp - (elapsedMs % 16.6667);
     this.globalTick += rawDt;
 
     // Physics sub-stepping prevents tunneling/clipped waypoints at 4x speed
@@ -1572,26 +1578,32 @@ export class CyberDefenseEngine {
       this.drawTurret(ctx, t);
     }
 
-    // 7. Projectiles & Beams
-    for (const p of (this.projectiles || [])) {
+    // 7. Projectiles & Beams (Zero shadowBlur two-pass glow for 60 FPS)
+    for (let i = 0; i < (this.projectiles || []).length; i++) {
+      const p = this.projectiles[i];
       if (p.type === 'beam') {
         ctx.strokeStyle = p.color;
-        ctx.lineWidth = p.width;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 12;
+        ctx.globalAlpha = 0.35;
+        ctx.lineWidth = p.width * 2.4;
         ctx.beginPath();
         ctx.moveTo(p.x1, p.y1);
         ctx.lineTo(p.x2, p.y2);
         ctx.stroke();
-        ctx.shadowBlur = 0;
+
+        ctx.globalAlpha = 1;
+        ctx.lineWidth = p.width;
+        ctx.stroke();
       } else if (p.type === 'plasma') {
         ctx.fillStyle = p.color;
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 15;
+        ctx.globalAlpha = 0.32;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 7, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 11, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowBlur = 0;
+
+        ctx.globalAlpha = 1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 6.5, 0, Math.PI * 2);
+        ctx.fill();
       }
     }
 
@@ -1610,15 +1622,15 @@ export class CyberDefenseEngine {
       }
     }
 
-    // 9. Floating Combat Texts
-    for (const ft of (this.floatingTexts || [])) {
+    // 9. Floating Combat Texts (Zero shadowBlur)
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
+    for (let i = 0; i < (this.floatingTexts || []).length; i++) {
+      const ft = this.floatingTexts[i];
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+      ctx.fillText(ft.text, ft.x + 1, ft.y + 1);
       ctx.fillStyle = ft.color;
-      ctx.font = 'bold 12px monospace';
-      ctx.textAlign = 'center';
-      ctx.shadowColor = '#000';
-      ctx.shadowBlur = 4;
       ctx.fillText(ft.text, ft.x, ft.y);
-      ctx.shadowBlur = 0;
     }
 
     // 10. Preparation Phase Cyber Banner
@@ -1840,10 +1852,7 @@ export class CyberDefenseEngine {
       // Sweeping Cylon Sensor Eye
       const eyeScan = Math.sin(tick * 5) * 3;
       ctx.fillStyle = isFrozen ? '#e0f2fe' : '#ef4444';
-      ctx.shadowColor = ctx.fillStyle;
-      ctx.shadowBlur = 6;
       ctx.fillRect(4, -3 + eyeScan, 4, 3);
-      ctx.shadowBlur = 0;
 
     } else if (c.type === 'specter') {
       // ===== SPECTER QUANTUM VOID CRAFT =====
@@ -1876,11 +1885,8 @@ export class CyberDefenseEngine {
       // Inner Pulsing Dimensional Core
       const corePulse = Math.sin(tick * 8) * 2;
       ctx.fillStyle = isFrozen ? '#bae6fd' : '#00f0ff';
-      ctx.shadowColor = ctx.fillStyle;
-      ctx.shadowBlur = 10;
       this.drawPolygon(ctx, 0, hoverOffset, 5 + corePulse, 4);
       ctx.fill();
-      ctx.shadowBlur = 0;
 
       // 4 Floating Phase Pylons
       ctx.fillStyle = '#c084fc';
@@ -2003,10 +2009,7 @@ export class CyberDefenseEngine {
 
       // Cyan Sensor Visor
       ctx.fillStyle = isFrozen ? '#ffffff' : '#00f0ff';
-      ctx.shadowColor = ctx.fillStyle;
-      ctx.shadowBlur = 6;
       ctx.fillRect(3, -1.5, 5, 3);
-      ctx.shadowBlur = 0;
     }
 
     // Shimmering Frost Crystal Facets (When Cryo Frozen)
@@ -2045,12 +2048,9 @@ export class CyberDefenseEngine {
     if (hpPct > 0) {
       const hpColor = hpPct > 0.55 ? '#10b981' : (hpPct > 0.25 ? '#f59e0b' : '#ef4444');
       ctx.fillStyle = hpColor;
-      ctx.shadowColor = hpColor;
-      ctx.shadowBlur = hpPct < 0.25 ? 6 : 0;
       ctx.beginPath();
       if (ctx.roundRect) ctx.roundRect(barX, barY, barW * hpPct, barH, 2); else ctx.rect(barX, barY, barW * hpPct, barH);
       ctx.fill();
-      ctx.shadowBlur = 0;
     }
 
     // Shield Bar (If Unit has Active Shield)
@@ -2066,12 +2066,9 @@ export class CyberDefenseEngine {
       ctx.stroke();
 
       ctx.fillStyle = '#00f0ff';
-      ctx.shadowColor = '#00f0ff';
-      ctx.shadowBlur = 4;
       ctx.beginPath();
       if (ctx.roundRect) ctx.roundRect(barX, shieldY, barW * shieldPct, 3, 2); else ctx.rect(barX, shieldY, barW * shieldPct, 3);
       ctx.fill();
-      ctx.shadowBlur = 0;
     }
 
     // Boss Nameplate & Threat Badge
@@ -2079,13 +2076,12 @@ export class CyberDefenseEngine {
       const isOmega = c.name && c.name.includes('Omega');
       const nameY = c.y - c.size - (c.maxShield > 0 && c.shield > 0 ? 22 : 16);
 
-      ctx.fillStyle = isOmega ? '#ff00aa' : '#ff3366';
       ctx.font = 'bold 9px monospace';
       ctx.textAlign = 'center';
-      ctx.shadowColor = '#000000';
-      ctx.shadowBlur = 4;
+      ctx.fillStyle = '#000000';
+      ctx.fillText(`☠ ${c.name || 'LEVIATHAN'} ☠`, c.x + 1, nameY + 1);
+      ctx.fillStyle = isOmega ? '#ff00aa' : '#ff3366';
       ctx.fillText(`☠ ${c.name || 'LEVIATHAN'} ☠`, c.x, nameY);
-      ctx.shadowBlur = 0;
     }
   }
 
@@ -2123,18 +2119,13 @@ export class CyberDefenseEngine {
     else if (mod === 'spotter') modColor = '#06b6d4';
     else if (mod === 'amplifier') modColor = '#f43f5e';
 
-    // Outer Graphite Hull with Mod Aura if socket is boosted
+    // Outer Graphite Hull with Mod Aura if socket is boosted (Zero shadowBlur)
     ctx.fillStyle = '#0a0f1d';
     ctx.strokeStyle = modColor || '#1e293b';
     ctx.lineWidth = modColor ? 2.5 : 2;
-    if (modColor) {
-      ctx.shadowColor = modColor;
-      ctx.shadowBlur = 8;
-    }
     this.drawPolygon(ctx, t.x, t.y, 18, 8);
     ctx.fill();
     ctx.stroke();
-    if (modColor) ctx.shadowBlur = 0;
 
     // 4 Corner Mounting Hex-Bolts
     ctx.fillStyle = '#475569';
