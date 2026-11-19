@@ -136,6 +136,9 @@ export class RetroSynth {
   // Classic retro coin pickup chime
   playCoin() {
     if (!this.enabled) return;
+    const nowMs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    if (this._lastCoinSfxTime && (nowMs - this._lastCoinSfxTime) < 35) return;
+    this._lastCoinSfxTime = nowMs;
     this.init();
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
@@ -200,6 +203,9 @@ export class RetroSynth {
   // White noise explosion with lowpass filter sweep for crash
   playExplosion() {
     if (!this.enabled) return;
+    const nowMs = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    if (this._lastExplosionSfxTime && (nowMs - this._lastExplosionSfxTime) < 45) return;
+    this._lastExplosionSfxTime = nowMs;
     this.init();
     if (!this.ctx) return;
     const t = this.ctx.currentTime;

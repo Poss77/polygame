@@ -75,6 +75,12 @@ class NeonAstroDodge {
         return;
       }
       if (!e.key || typeof e.key !== 'string') return;
+      if (e.repeat && this.isPlaying) {
+        if ([' ', 'Spacebar', 'Shift', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 's', 'a', 'd', 'W', 'S', 'A', 'D', 'c', 'C'].includes(e.key)) {
+          e.preventDefault();
+        }
+        return;
+      }
       if (e.key === ' ' || e.key === 'Spacebar') {
         if (this.isPlaying && !this.isPaused) {
           e.preventDefault();
@@ -853,8 +859,9 @@ class NeonAstroDodge {
     const timestep = 1000 / 60; // 16.667ms per standard 60 FPS frame
     this.accumulatedTime = (this.accumulatedTime || 0) + elapsed;
 
-    // Snap near-vsync intervals so 60Hz monitors stay 1:1 instead of 0/2-step juddering
-    if (this.accumulatedTime >= timestep - 0.8 && this.accumulatedTime < timestep) {
+    // Snap normal 60Hz VSync jitter (~14.2ms - 20.2ms) to exactly 1 timestep
+    // so 60Hz displays run strictly 1 update + 1 draw per rAF with zero accumulator drift
+    if (this.accumulatedTime >= timestep - 2.5 && this.accumulatedTime <= timestep + 3.5) {
       this.accumulatedTime = timestep;
     }
 
@@ -1206,6 +1213,7 @@ class NeonAstroDodge {
       // Auto-fire dual or quad plasma blasters based on Rapid Fire cooldown (140ms down to 90ms -> 8 down to 5 frames)
       const autoFireCadence = Math.max(5, Math.min(9, Math.round((this.nftShotCooldown || 140) / 16.67)));
       if (this.gameTime % autoFireCadence === 0) {
+        this.lastShootTime = performance.now();
         const plasmaDmg = this.nftPlasmaMultiplier || 1.0;
         if (this.player.tripleGun) {
           this.bullets.push({ x: this.player.x + 22, y: this.player.y - 4, vx: 13, vy: 0, isQuad: true, damage: plasmaDmg });
@@ -1502,8 +1510,10 @@ class NeonAstroDodge {
       if (this.boss && b.x > this.boss.x && b.x < this.boss.x + this.boss.w && b.y > this.boss.y && b.y < this.boss.y + this.boss.h) {
         const hitDmg = b.damage || (this.nftPlasmaMultiplier || 1.0);
         this.boss.hp -= hitDmg;
-        const sparkCol = this.nftRarity?.flame || this.boss.secondaryColor || '#00f0ff';
-        this.createExplosionSparks(b.x, b.y, sparkCol, 4);
+        if (this.gameTime % 2 === 0) {
+          const sparkCol = this.nftRarity?.flame || this.boss.secondaryColor || '#00f0ff';
+          this.createExplosionSparks(b.x, b.y, sparkCol, 3);
+        }
         bulletHit = true;
 
         if (this.boss.hp <= 0) {
@@ -2036,16 +2046,30 @@ class NeonAstroDodge {
       }
     }
 
-    // 8. Update Particles
-    for (let i = this.particles.length - 1; i >= 0; i--) {
+    // 8. Update Particles (O(N) in-place compaction, zero splice churn)
+    let pWrite = 0;
+    for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
       p.x += p.vx;
       p.y += p.vy;
       p.alpha -= 0.02;
-      if (p.alpha <= 0) {
-        this.particles.splice(i, 1);
+      if (p.alpha > 0) {
+        this.particles[pWrite++] = p;
       }
     }
+    this.particles.length = pWrite;
+
+    // 9. Update Floating Texts in physics step so draw() stays pure & splice-free
+    let ftWrite = 0;
+    for (let i = 0; i < this.floatTexts.length; i++) {
+      const ft = this.floatTexts[i];
+      ft.y += ft.vy;
+      ft.alpha -= 0.02;
+      if (ft.alpha > 0) {
+        this.floatTexts[ftWrite++] = ft;
+      }
+    }
+    this.floatTexts.length = ftWrite;
   }
 
   // --- Collision Detection Helpers ---
@@ -2070,10 +2094,9 @@ class NeonAstroDodge {
   }
 
   createExplosionSparks(x, y, color, count) {
-    if (this.particles.length > 50) {
-      this.particles.splice(0, this.particles.length - 50);
-    }
-    const safeCount = Math.min(count, 10);
+    const remaining = 60 - this.particles.length;
+    if (remaining <= 0) return;
+    const safeCount = Math.min(count, 10, remaining);
     for (let i = 0; i < safeCount; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 1.5 + Math.random() * 4.0;
@@ -2808,6 +2831,8 @@ class NeonAstroDodge {
       this.ctx.arc(pup.x, pup.y, pup.radius + 3, 0, Math.PI * 2);
       this.ctx.fill();
       
+      const pupTextX = Math.round(pup.x);
+      const pupTextY = Math.round(pup.y);
       if (pup.type === 'slow') {
         // Chronos Time-Slow Orb (Cyan/Purple)
         this.ctx.fillStyle = '#00f0ff';
@@ -2819,7 +2844,7 @@ class NeonAstroDodge {
         this.ctx.font = 'bold 11px sans-serif';
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        this.ctx.fillText('⏱️', pup.x, pup.y);
+        this.ctx.fillText('⏱️', pupTextX, pupTextY);
       } else if (pup.type === 'triple') {
         // Triple-Laser Trident Badge (Neon Magenta)
         this.ctx.fillStyle = '#ff00ff';
@@ -2831,7 +2856,7 @@ class NeonAstroDodge {
         this.ctx.font = 'bold 11px sans-serif';
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        this.ctx.fillText('🔱', pup.x, pup.y);
+        this.ctx.fillText('🔱', pupTextX, pupTextY);
       } else {
         // Shield Orb (Gold)
         this.ctx.fillStyle = '#ffd700';
@@ -2843,7 +2868,7 @@ class NeonAstroDodge {
         this.ctx.font = 'bold 10px sans-serif';
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
-        this.ctx.fillText('🛡️', pup.x, pup.y);
+        this.ctx.fillText('🛡️', pupTextX, pupTextY);
       }
       
       this.ctx.restore();
@@ -3092,12 +3117,15 @@ class NeonAstroDodge {
       this.ctx.closePath();
       this.ctx.fill();
 
-      // Inner Luminous HUD Core
-      const canopyGrad = this.ctx.createLinearGradient(-3, 0, 11, 0);
-      canopyGrad.addColorStop(0, '#0077b6');
-      canopyGrad.addColorStop(0.6, '#00f0ff');
-      canopyGrad.addColorStop(1, '#ffffff');
-      this.ctx.fillStyle = canopyGrad;
+      // Inner Luminous HUD Core (cached gradient instance to avoid 60/sec GC churn)
+      if (!this._canopyGrad) {
+        const canopyGrad = this.ctx.createLinearGradient(-3, 0, 11, 0);
+        canopyGrad.addColorStop(0, '#0077b6');
+        canopyGrad.addColorStop(0.6, '#00f0ff');
+        canopyGrad.addColorStop(1, '#ffffff');
+        this._canopyGrad = canopyGrad;
+      }
+      this.ctx.fillStyle = this._canopyGrad;
       this.ctx.beginPath();
       this.ctx.moveTo(11, 0);
       this.ctx.lineTo(2, -2.5);
@@ -3217,7 +3245,12 @@ class NeonAstroDodge {
     // 8.8 Boss Incoming Countdown Banner
     if (!this.boss && (this.gameTime - this.lastBossSpawnFrame >= 3000)) {
       const remainingSecs = Math.max(1, Math.ceil((3600 - (this.gameTime - this.lastBossSpawnFrame)) / 60));
-      const nextArchetype = this.getBossArchetype((this.bossEncounterCount || 0) + 1);
+      const nextTier = (this.bossEncounterCount || 0) + 1;
+      if (!this._cachedNextBossArchetype || this._cachedNextBossTier !== nextTier) {
+        this._cachedNextBossTier = nextTier;
+        this._cachedNextBossArchetype = this.getBossArchetype(nextTier);
+      }
+      const nextArchetype = this._cachedNextBossArchetype;
       this.ctx.save();
       this.ctx.fillStyle = nextArchetype.glowColor || 'rgba(255, 0, 85, 0.25)';
       this.ctx.strokeStyle = nextArchetype.color || '#ff0055';
@@ -3233,10 +3266,14 @@ class NeonAstroDodge {
       this.ctx.restore();
     }
 
-    // 8.9 Live Power-Up Active Timer Badges (HUD - Zero shadowBlur)
+    // 8.9 Live Power-Up Active Timer Badges (HUD - Zero shadowBlur, cached text widths)
     let badgeX = 12;
     const badgeY = 12;
     const badgeHeight = 20;
+    if (!this._hudWidthCache || this._hudWidthCacheCount > 64) {
+      this._hudWidthCache = {};
+      this._hudWidthCacheCount = 0;
+    }
 
     // 1. Energy Shield Timer Badge
     if (this.player && this.player.shield) {
@@ -3248,7 +3285,12 @@ class NeonAstroDodge {
       
       const label = `🛡️ SHIELD ${shieldSecs}s`;
       this.ctx.font = 'bold 10px "Outfit", system-ui, sans-serif';
-      const textWidth = this.ctx.measureText(label).width;
+      let textWidth = this._hudWidthCache[label];
+      if (textWidth === undefined) {
+        textWidth = this.ctx.measureText(label).width;
+        this._hudWidthCache[label] = textWidth;
+        this._hudWidthCacheCount++;
+      }
       const pillWidth = textWidth + 14;
 
       this.ctx.beginPath();
@@ -3279,7 +3321,12 @@ class NeonAstroDodge {
       this.ctx.lineWidth = 1.5;
 
       this.ctx.font = 'bold 10px "Outfit", system-ui, sans-serif';
-      const textWidth = this.ctx.measureText(label).width;
+      let textWidth = this._hudWidthCache[label];
+      if (textWidth === undefined) {
+        textWidth = this.ctx.measureText(label).width;
+        this._hudWidthCache[label] = textWidth;
+        this._hudWidthCacheCount++;
+      }
       const pillWidth = textWidth + 14;
 
       this.ctx.beginPath();
@@ -3306,7 +3353,12 @@ class NeonAstroDodge {
 
       const label = `⌛ WARP ${slowSecs}s`;
       this.ctx.font = 'bold 10px "Outfit", system-ui, sans-serif';
-      const textWidth = this.ctx.measureText(label).width;
+      let textWidth = this._hudWidthCache[label];
+      if (textWidth === undefined) {
+        textWidth = this.ctx.measureText(label).width;
+        this._hudWidthCache[label] = textWidth;
+        this._hudWidthCacheCount++;
+      }
       const pillWidth = textWidth + 14;
 
       this.ctx.beginPath();
@@ -3392,22 +3444,18 @@ class NeonAstroDodge {
       this.ctx.restore();
     }
 
-    // 9. Floating Text Animations (Near Misses & Bonuses - Zero shadowBlur)
-    for (let i = this.floatTexts.length - 1; i >= 0; i--) {
-      const ft = this.floatTexts[i];
-      ft.y += ft.vy;
-      ft.alpha -= 0.02;
-
+    // 9. Floating Text Animations (Rendered purely in draw(), updated/compacted in update())
+    if (this.floatTexts && this.floatTexts.length > 0) {
       this.ctx.save();
-      this.ctx.globalAlpha = Math.max(0, ft.alpha);
-      this.ctx.fillStyle = ft.color;
       this.ctx.font = 'bold 12px sans-serif';
-      this.ctx.fillText(ft.text, ft.x, ft.y);
-      this.ctx.restore();
-
-      if (ft.alpha <= 0) {
-        this.floatTexts.splice(i, 1);
+      for (let i = 0; i < this.floatTexts.length; i++) {
+        const ft = this.floatTexts[i];
+        if (ft.alpha <= 0) continue;
+        this.ctx.globalAlpha = ft.alpha;
+        this.ctx.fillStyle = ft.color;
+        this.ctx.fillText(ft.text, Math.round(ft.x), Math.round(ft.y));
       }
+      this.ctx.restore();
     }
   }
 }
