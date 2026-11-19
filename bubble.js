@@ -103,11 +103,11 @@ class BubbleTroubleGame {
 
     // 5 Ball Size Specs (5 = Giant -> 1 = Tiny)
     this.ballSpecs = {
-      5: { r: 44, bounceVy: 525, vx: 98,  pts: 50,  c1: '#ff9ec4', c2: '#ff1e6e', c3: '#5e0028', glow: 'rgba(255, 30, 110, 0.32)' },
-      4: { r: 33, bounceVy: 485, vx: 118, pts: 100, c1: '#ffd09b', c2: '#ff6a00', c3: '#5c1f00', glow: 'rgba(255, 106, 0, 0.32)' },
-      3: { r: 24, bounceVy: 440, vx: 138, pts: 150, c1: '#fff3a1', c2: '#ffd000', c3: '#614a00', glow: 'rgba(255, 208, 0, 0.30)' },
-      2: { r: 16, bounceVy: 385, vx: 162, pts: 225, c1: '#b8fbff', c2: '#00e5ff', c3: '#00485c', glow: 'rgba(0, 229, 255, 0.32)' },
-      1: { r: 10, bounceVy: 330, vx: 190, pts: 350, c1: '#f1c4ff', c2: '#b84dff', c3: '#3c0066', glow: 'rgba(184, 77, 255, 0.36)' }
+      5: { r: 44, bounceVy: 525, vx: 98,  pts: 25,  c1: '#ff9ec4', c2: '#ff1e6e', c3: '#5e0028', glow: 'rgba(255, 30, 110, 0.32)' },
+      4: { r: 33, bounceVy: 485, vx: 118, pts: 50,  c1: '#ffd09b', c2: '#ff6a00', c3: '#5c1f00', glow: 'rgba(255, 106, 0, 0.32)' },
+      3: { r: 24, bounceVy: 440, vx: 138, pts: 75,  c1: '#fff3a1', c2: '#ffd000', c3: '#614a00', glow: 'rgba(255, 208, 0, 0.30)' },
+      2: { r: 16, bounceVy: 385, vx: 162, pts: 112, c1: '#b8fbff', c2: '#00e5ff', c3: '#00485c', glow: 'rgba(0, 229, 255, 0.32)' },
+      1: { r: 10, bounceVy: 330, vx: 190, pts: 175, c1: '#f1c4ff', c2: '#b84dff', c3: '#3c0066', glow: 'rgba(184, 77, 255, 0.36)' }
     };
 
     // Pre-render static backdrop & 3D ball sprites for locked 60 FPS
@@ -975,7 +975,7 @@ class BubbleTroubleGame {
     // 7. Wave Clear Progression
     if (this.balls.length === 0 && this.portals.length === 0) {
       this.wave += 1;
-      const waveBonus = this.wave * 200;
+      const waveBonus = this.wave * 100;
       this.score += waveBonus;
       this.floatingTexts.push({ x: this.width / 2, y: this.height / 2 - 20, text: `WAVE ${this.wave}! +${waveBonus}`, color: '#00ff88', life: 1.4, maxLife: 1.4 });
       this.playTone(440, 880, 0.22, 'triangle', 0.09);
@@ -1148,7 +1148,7 @@ class BubbleTroubleGame {
       this.floatingTexts.push({ x: p.x, y: p.y - 16, text: '❄️ TIME SLOW!', color: '#99e6ff', life: 1.1, maxLife: 1.1 });
     } else if (p.type === 'coin') {
       this.bonusTokensCollected = Math.min(20, this.bonusTokensCollected + 1);
-      this.score += 400;
+      this.score += 200;
       this.floatingTexts.push({ x: p.x, y: p.y - 16, text: '🪙 +1.25 PGT COIN!', color: '#ffd700', life: 1.2, maxLife: 1.2 });
       this.updateLiveHud();
     }
