@@ -77,7 +77,7 @@ class CyberRunnerGame {
     this.collectibles = [];
     this.particles = [];
     this.groundGridOffset = 0;
-    this.nextSpawnZ = 800;
+    this.nextSpawnZ = 150;
     this.spawnInterval = 320;
 
     // In-Run Power-ups & Shield Mechanics
@@ -523,7 +523,7 @@ class CyberRunnerGame {
       }
     }
 
-    this.nextSpawnZ = 900;
+    this.nextSpawnZ = 150;
     this.screenShake = 0;
     this.glitchIntensity = 0;
 
@@ -889,7 +889,9 @@ class CyberRunnerGame {
 
     const lanes = [-1, 0, 1];
     const availableLanes = [...lanes];
-    const spawnZ = 950;
+    // Spawn far down the track (1800 -> 2500 Z) using strictly monotonic base speed
+    // so players get ~2x-2.9x more advance visibility without overdrive spacing compression
+    const spawnZ = Math.min(2500, Math.round(1800 + Math.max(0, this.speed - 15) * 18));
 
     // Check if we should spawn a rare Power-Up (Shield, Magnet, Overdrive)
     let powerupType = null;
@@ -1262,7 +1264,7 @@ class CyberRunnerGame {
 
     // Horizontal Moving Perspective Gridlines
     ctx.save();
-    for (let z = 25 + (this.groundGridOffset % 40); z < 1500; z += 40) {
+    for (let z = 25 + (this.groundGridOffset % 40); z < 2600; z += 40) {
       const left = this.getScreenPos(-1.55, z, 0);
       const right = this.getScreenPos(1.55, z, 0);
       const alpha = Math.min(0.65, Math.max(0.08, 120 / z));
@@ -1282,7 +1284,7 @@ class CyberRunnerGame {
     this.collectibles.forEach(item => {
       const p = this.getScreenPos(item.lane, item.z, item.y);
       const size = 26 * p.factor;
-      if (size < 2) return;
+      if (size < 1.1) return;
 
       ctx.save();
       ctx.translate(p.x, p.y);
@@ -1606,17 +1608,20 @@ class CyberRunnerGame {
 
       ctx.save();
       ctx.translate(p.x, p.y);
+      // Smooth horizon fade-in so distant obstacles emerge crisply (~0.55 at spawn, 1.0 by z <= 2200)
+      ctx.globalAlpha = Math.min(1, Math.max(0.55, (2650 - obs.z) / 450));
 
       if (obs.type === 'lowBarrier') {
         // --- LOW ROAD HURDLE (JUMP OVER) ---
         const bH = 28 * factor;
+        const railH = Math.max(1.5, 3 * factor);
         ctx.save();
         ctx.fillStyle = '#ff2a00';
         ctx.shadowColor = '#ff3300';
         ctx.shadowBlur = 14 * factor;
         ctx.fillRect(-baseW / 2, -bH, baseW, bH);
         ctx.strokeStyle = '#ffd700';
-        ctx.lineWidth = 2 * factor;
+        ctx.lineWidth = Math.max(1.0, 2 * factor);
         ctx.strokeRect(-baseW / 2, -bH, baseW, bH);
 
         // Warning Hazard Stripes
@@ -1629,7 +1634,7 @@ class CyberRunnerGame {
         ctx.fillStyle = '#ffd700';
         ctx.shadowColor = '#ffd700';
         ctx.shadowBlur = 10 * factor;
-        ctx.fillRect(-baseW / 2, -bH - 3 * factor, baseW, 3 * factor);
+        ctx.fillRect(-baseW / 2, -bH - railH, baseW, railH);
 
         // Center Hazard Accent Stripe
         ctx.fillStyle = '#ffffff';
@@ -1684,7 +1689,7 @@ class CyberRunnerGame {
 
         // Electric Hazard Grid Mesh
         ctx.strokeStyle = 'rgba(255, 0, 255, 0.3)';
-        ctx.lineWidth = 1;
+        ctx.lineWidth = Math.max(0.5, 1.0 * factor);
         ctx.beginPath();
         for (let gx = pylonLeft + pylonW + 15 * factor; gx < pylonRight; gx += 20 * factor) {
           ctx.moveTo(gx, gateTop);
@@ -1697,14 +1702,15 @@ class CyberRunnerGame {
         ctx.stroke();
 
         // 3. Glowing Multi-Tier Horizontal Laser Beams
+        const beamH = Math.max(1.4, 4 * factor);
         [-34, -54].forEach(beamLvl => {
           const by = beamLvl * factor;
           ctx.fillStyle = '#ff00ff';
           ctx.shadowColor = '#ff00ff';
           ctx.shadowBlur = 14 * factor;
-          ctx.fillRect(pylonLeft + pylonW, by - 2 * factor, spanW - pylonW * 2, 4 * factor);
+          ctx.fillRect(pylonLeft + pylonW, by - beamH * 0.5, spanW - pylonW * 2, beamH);
           ctx.fillStyle = '#ffffff';
-          ctx.fillRect(pylonLeft + pylonW, by - 1 * factor, spanW - pylonW * 2, 2 * factor);
+          ctx.fillRect(pylonLeft + pylonW, by - beamH * 0.25, spanW - pylonW * 2, beamH * 0.5);
         });
 
         // 4. Overhead Structural Crossbar with Hazard Beacons (No text)
@@ -1806,15 +1812,17 @@ class CyberRunnerGame {
         ctx.lineWidth = 1.5 * factor;
         ctx.stroke();
 
-        // Vector Exclamation Mark inside Triangle
-        ctx.fillStyle = '#000000';
-        ctx.shadowBlur = 0;
-        const barW = Math.max(2, 3.4 * factor);
-        const barH = 11 * factor;
-        ctx.fillRect(-barW / 2, -signR * 0.5, barW, barH);
-        ctx.beginPath();
-        ctx.arc(0, signR * 0.55, barW * 0.65, 0, Math.PI * 2);
-        ctx.fill();
+        // Vector Exclamation Mark inside Triangle (skip at extreme distance so it doesn't overflow triangle)
+        if (signR >= 2.2) {
+          ctx.fillStyle = '#000000';
+          ctx.shadowBlur = 0;
+          const barW = Math.max(1.0, 3.4 * factor);
+          const barH = 11 * factor;
+          ctx.fillRect(-barW / 2, -signR * 0.5, barW, barH);
+          ctx.beginPath();
+          ctx.arc(0, signR * 0.55, barW * 0.65, 0, Math.PI * 2);
+          ctx.fill();
+        }
         ctx.restore();
 
         // 6. Overhead Strobe Warning Lights
