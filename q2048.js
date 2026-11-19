@@ -601,9 +601,8 @@ class Cyber2048Game {
         }
       }
 
-      // Season 2 Quantum Relic Drop Check (1 per session, >= 15s elapsed, >= 64 tile merge)
-      const elapsedSec = this.startTime ? (Date.now() - this.startTime) / 1000 : 0;
-      if ((this.sessionRelicsDroppedCount || 0) < 1 && elapsedSec >= 15 && maxMergedVal >= 64) {
+      // Season 2 Quantum Relic Drop Check (1 per session, >= 64 tile merge)
+      if ((this.sessionRelicsDroppedCount || 0) < 1 && maxMergedVal >= 64) {
         const relicMult = (typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
         if (Math.random() < 0.015 * relicMult) {
           this.sessionRelicsDroppedCount = 1;

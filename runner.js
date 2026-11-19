@@ -868,8 +868,8 @@ class CyberRunnerGame {
   }
 
   spawnWave() {
-    // Season 2 Quantum Relic Drop Check (1 per session, >= 15s gameTime)
-    if ((this.sessionRelicsDroppedCount || 0) < 1 && this.gameTime >= 15) {
+    // Season 2 Quantum Relic Drop Check (1 per session)
+    if ((this.sessionRelicsDroppedCount || 0) < 1) {
       const relicMult = (typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
       if (Math.random() < 0.002 * relicMult) {
         this.sessionRelicsDroppedCount = 1;

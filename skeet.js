@@ -904,8 +904,8 @@ export class CyberSkeetEngine {
     // 5. Shatter Physics Particle Explosion
     this.createClayDebris(clay, clay.color);
 
-    // 6. Season 2 Quantum Relic Drop Check (1 per session, >= 15s survival)
-    if ((this.sessionRelicsDroppedCount || 0) < 1 && this.survivalTime >= 15) {
+    // 6. Season 2 Quantum Relic Drop Check (1 per session)
+    if ((this.sessionRelicsDroppedCount || 0) < 1) {
       const relicMult = (typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
       if (Math.random() < 0.008 * relicMult) {
         this.sessionRelicsDroppedCount = 1;
