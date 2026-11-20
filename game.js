@@ -1210,8 +1210,9 @@ class NeonAstroDodge {
         });
       }
 
-      // Auto-fire dual or quad plasma blasters based on Rapid Fire cooldown (140ms down to 90ms -> 8 down to 5 frames)
-      const autoFireCadence = Math.max(5, Math.min(9, Math.round((this.nftShotCooldown || 140) / 16.67)));
+      // Auto-fire dual or quad plasma blasters based on Rapid Fire level (Lv.1..5 -> 8, 7, 6, 5, 4 frames at 60Hz)
+      const rapidLevel = Math.max(1, Math.min(5, Number(this.nftShip?.rapidFireLevel) || 1));
+      const autoFireCadence = [8, 8, 7, 6, 5, 4][rapidLevel];
       if (this.gameTime % autoFireCadence === 0) {
         this.lastShootTime = performance.now();
         const plasmaDmg = this.nftPlasmaMultiplier || 1.0;
