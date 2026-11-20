@@ -1502,6 +1502,24 @@ class PolySpaceEngine {
     const statusContainer = document.getElementById('space-expedition-status-box');
     if (!statusContainer) return;
 
+    if (!statusContainer.dataset.pointerGuardAttached) {
+      statusContainer.dataset.pointerGuardAttached = '1';
+      statusContainer.addEventListener('pointerdown', () => {
+        this._expeditionPointerDown = true;
+        clearTimeout(this._expeditionPointerTimer);
+        this._expeditionPointerTimer = setTimeout(() => { this._expeditionPointerDown = false; }, 1500);
+      });
+      const clearPointer = () => {
+        this._expeditionPointerDown = false;
+        clearTimeout(this._expeditionPointerTimer);
+      };
+      statusContainer.addEventListener('pointerup', clearPointer);
+      statusContainer.addEventListener('pointercancel', clearPointer);
+    }
+
+    // Never replace DOM while user is mid-click inside the Fleet Command Center
+    if (this._expeditionPointerDown) return;
+
     // Capture previous scroll position of Mission Outcome History to prevent auto-scrolling to top on 1s tick
     const existingLogsScroll = document.getElementById('mission-outcome-history-scroll');
     const prevScrollTop = existingLogsScroll ? existingLogsScroll.scrollTop : 0;
@@ -1511,6 +1529,47 @@ class PolySpaceEngine {
     const maxSlots = Math.min(5, 3 + Math.floor((this.state.warpLevel || 1) / 10));
     const shipInfo = this.getEquippedStarshipMultiplier();
     const s2Info = this.getSeason2RelicBonusInfo();
+    const nowSig = Date.now();
+    const expSig = (this.state.expeditions || []).map(e => `${e.id}:${nowSig >= e.endTime ? 1 : 0}:${e.hasBoosted ? 1 : 0}:${e.boostMissed ? 1 : 0}:${e.endTime}`).join(',');
+    const logsArr = this.state.missionLogs || [];
+    const structSig = `${activeCount}|${maxSlots}|${readyCount}|${this.selectedBatchCount || 1}|${this.state.cargoLevel}|${this.state.laserLevel}|${this.state.warpLevel}|${shipInfo.mult}|${s2Info.unlocked ? 1 : 0}|${logsArr.length}|${logsArr[0]?.time || logsArr[0]?.timestamp || ''}|${expSig}`;
+
+    if (this._lastExpeditionStructSig === structSig) {
+      // Update only countdown timers & progress bars in-place so buttons are never destroyed mid-click
+      (this.state.expeditions || []).forEach(exp => {
+        if (nowSig >= exp.endTime) return;
+        const totalSecs = Math.ceil((exp.endTime - nowSig) / 1000);
+        const hrs = Math.floor(totalSecs / 3600);
+        const mins = Math.floor((totalSecs % 3600) / 60);
+        const secs = totalSecs % 60;
+        const timeStr = `${hrs > 0 ? hrs + 'h ' : ''}${mins}m ${secs < 10 ? '0' : ''}${secs}s`;
+        const baseDur = exp.type === 'asteroids' ? 15*60*1000 :
+                        exp.type === 'nebula' ? 2*60*60*1000 :
+                        exp.type === 'void' ? 8*60*60*1000 :
+                        exp.type === 'sector9' ? 24*60*60*1000 :
+                        exp.type === 'deepspace' ? 72*60*60*1000 :
+                        exp.type === 'odyssey' ? 7*24*60*60*1000 : 15*60*1000;
+        const startTime = exp.startTime || (exp.endTime - baseDur);
+        const totalDuration = Math.max(1, exp.endTime - startTime);
+        const elapsed = Math.max(0, nowSig - startTime);
+        const progressRatio = Math.min(1.0, Math.max(0.0, elapsed / totalDuration));
+        const progressPercent = Math.min(100, Math.max(0, Math.round(progressRatio * 100)));
+
+        const timerEl = statusContainer.querySelector(`[data-exp-timer="${exp.id}"]`);
+        if (timerEl) timerEl.textContent = timeStr;
+        const pctEl = statusContainer.querySelector(`[data-exp-pct="${exp.id}"]`);
+        if (pctEl) pctEl.textContent = `(${progressPercent}%)`;
+        const barEl = statusContainer.querySelector(`[data-exp-bar="${exp.id}"]`);
+        if (barEl) barEl.style.width = `${progressPercent}%`;
+        const shipEl = statusContainer.querySelector(`[data-exp-ship="${exp.id}"]`);
+        if (shipEl) {
+          shipEl.style.left = `calc(30px + (100% - 64px) * ${progressRatio})`;
+          shipEl.title = `${progressPercent}% Traveled`;
+        }
+      });
+      return;
+    }
+    this._lastExpeditionStructSig = structSig;
 
     let html = `
       <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
@@ -1611,8 +1670,8 @@ class PolySpaceEngine {
                   <strong style="color:var(--color-accent); font-size:0.88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🚀 ${exp.name}</strong>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.35rem; flex-shrink: 0;">
-                  <span style="font-size: 0.95rem; font-weight: 800; color: var(--color-warning);">${timeStr}</span>
-                  <span style="font-size: 0.72rem; color: var(--color-primary); font-weight: 700;">(${progressPercent}%)</span>
+                  <span data-exp-timer="${exp.id}" style="font-size: 0.95rem; font-weight: 800; color: var(--color-warning);">${timeStr}</span>
+                  <span data-exp-pct="${exp.id}" style="font-size: 0.72rem; color: var(--color-primary); font-weight: 700;">(${progressPercent}%)</span>
                   ${!exp.hasBoosted ? `
                     <button onclick="window.polySpace && window.polySpace.openHyperdriveCalibration('${exp.id}')" style="background: linear-gradient(135deg, #00f0ff, #bd00ff); color: #000; border: none; border-radius: 4px; font-size: 0.68rem; padding: 0.18rem 0.45rem; cursor: pointer; font-weight: 800; box-shadow: 0 0 8px rgba(0,240,255,0.4);" title="Align hyperdrive harmonic rings for instant 10%-35% mission duration boost!">⚡ Boost</button>
                   ` : exp.boostMissed ? `
@@ -1631,11 +1690,11 @@ class PolySpaceEngine {
 
                 <!-- Flight Track Beam -->
                 <div style="position: absolute; left: 30px; right: 34px; height: 5px; background: rgba(255, 255, 255, 0.08); border-radius: 3px; overflow: hidden;">
-                  <div style="width: ${progressPercent}%; height: 100%; background: linear-gradient(90deg, #00f0ff, #00ff66, #ffaa00); box-shadow: 0 0 8px rgba(0, 255, 102, 0.6); border-radius: 3px; transition: width 0.5s ease-out;"></div>
+                  <div data-exp-bar="${exp.id}" style="width: ${progressPercent}%; height: 100%; background: linear-gradient(90deg, #00f0ff, #00ff66, #ffaa00); box-shadow: 0 0 8px rgba(0, 255, 102, 0.6); border-radius: 3px; transition: width 0.5s ease-out;"></div>
                 </div>
 
                 <!-- Animated Flying Ship Icon navigating across the corridor -->
-                <div style="position: absolute; left: calc(30px + (100% - 64px) * ${progressRatio}); transform: translateX(-50%); z-index: 3; font-size: 1rem; filter: drop-shadow(0 0 6px #00f0ff) drop-shadow(-4px 0 6px #ff00ff); transition: left 0.5s ease-out; user-select:none;" title="${progressPercent}% Traveled">
+                <div data-exp-ship="${exp.id}" style="position: absolute; left: calc(30px + (100% - 64px) * ${progressRatio}); transform: translateX(-50%); z-index: 3; font-size: 1rem; filter: drop-shadow(0 0 6px #00f0ff) drop-shadow(-4px 0 6px #ff00ff); transition: left 0.5s ease-out; user-select:none;" title="${progressPercent}% Traveled">
                   🚀
                 </div>
 
