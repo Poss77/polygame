@@ -583,7 +583,7 @@ class CyberRunnerGame {
     }
 
     const dt = Math.min(elapsedMs / 1000, 0.05);
-    this.lastFrameTime = timestamp - (elapsedMs % 16.6667);
+    this.lastFrameTime = timestamp;
 
     if (!this.isPaused) {
       this.update(dt);

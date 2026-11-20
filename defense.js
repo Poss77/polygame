@@ -856,7 +856,7 @@ export class CyberDefenseEngine {
     }
 
     const rawDt = Math.min(elapsedMs / 1000, 0.05);
-    this.lastTime = timestamp - (elapsedMs % 16.6667);
+    this.lastTime = timestamp;
     this.globalTick += rawDt;
 
     // Physics sub-stepping prevents tunneling/clipped waypoints at 4x speed
