@@ -41,6 +41,15 @@ function restoreDailyQuestsFromDb(activeAppState, rawDbQuests) {
   const authWheelAvailable = dbQ
     ? !!dbQ.streak_wheel_available
     : !!localQ.streak_wheel_available;
+  const authTotalSpins = Math.max(
+    parseInt((dbQ && dbQ.total_streak_spins) || 0, 10),
+    parseInt((localQ && localQ.total_streak_spins) || 0, 10)
+  );
+  const authBestStreak = Math.max(
+    parseInt((dbQ && dbQ.best_streak) || 0, 10),
+    parseInt((localQ && localQ.best_streak) || 0, 10),
+    authStreak
+  );
 
   if (dbQ && dbQ.date !== today && authLastStreakDate !== yesterday && authLastStreakDate !== today) {
     authStreak = 0;
@@ -58,14 +67,18 @@ function restoreDailyQuestsFromDb(activeAppState, rawDbQuests) {
       master_claimed: !!dbQ.master_claimed,
       streak_days: authStreak,
       last_streak_date: authLastStreakDate,
-      streak_wheel_available: authWheelAvailable
+      streak_wheel_available: authWheelAvailable,
+      total_streak_spins: authTotalSpins,
+      best_streak: authBestStreak
     };
   } else if (dbQ && dbQ.date === today) {
     activeAppState.state.dailyQuests = {
       ...dbQ,
       streak_days: authStreak,
       last_streak_date: authLastStreakDate,
-      streak_wheel_available: authWheelAvailable
+      streak_wheel_available: authWheelAvailable,
+      total_streak_spins: authTotalSpins,
+      best_streak: authBestStreak
     };
   } else if (localQ.date === today) {
     activeAppState.state.dailyQuests = {
@@ -79,7 +92,9 @@ function restoreDailyQuestsFromDb(activeAppState, rawDbQuests) {
       master_claimed: false,
       streak_days: authStreak,
       last_streak_date: authLastStreakDate,
-      streak_wheel_available: authWheelAvailable
+      streak_wheel_available: authWheelAvailable,
+      total_streak_spins: authTotalSpins,
+      best_streak: authBestStreak
     };
   } else {
     activeAppState.state.dailyQuests = {
@@ -93,7 +108,9 @@ function restoreDailyQuestsFromDb(activeAppState, rawDbQuests) {
       master_claimed: false,
       streak_days: authStreak,
       last_streak_date: authLastStreakDate,
-      streak_wheel_available: authWheelAvailable
+      streak_wheel_available: authWheelAvailable,
+      total_streak_spins: authTotalSpins,
+      best_streak: authBestStreak
     };
   }
 
@@ -3334,6 +3351,10 @@ export async function trackDailyVisit() {
         ref = (utmTerm && !utmTerm.includes('{{'))
           ? `${utmSource.toLowerCase()}:${utmTerm}`
           : utmSource.toLowerCase();
+        sessionStorage.setItem('polygame_utm_tag', ref);
+      } else {
+        const savedUtm = sessionStorage.getItem('polygame_utm_tag');
+        if (savedUtm) ref = savedUtm;
       }
     } catch (e) {}
     if (ref === 'direct' && typeof document !== 'undefined' && document.referrer) {

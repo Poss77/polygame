@@ -40,7 +40,9 @@ export function getUserQuests() {
       master_claimed: false,
       streak_days: validStreak,
       last_streak_date: lastDate,
-      streak_wheel_available: (q && q.streak_wheel_available) || false
+      streak_wheel_available: (q && q.streak_wheel_available) || false,
+      total_streak_spins: (q && q.total_streak_spins) || 0,
+      best_streak: Math.max((q && q.best_streak) || 0, validStreak)
     };
     appState.state.dailyQuests = q;
     try { localStorage.setItem('polygame_daily_quests', JSON.stringify(q)); } catch(e){}
@@ -125,6 +127,12 @@ export async function syncDailyQuests(forceImmediate = false) {
         }
         if (synced.streak_wheel_available === undefined || synced.streak_wheel_available === null) {
           synced.streak_wheel_available = !!q.streak_wheel_available;
+        }
+        if (synced.total_streak_spins === undefined || synced.total_streak_spins === null) {
+          synced.total_streak_spins = q.total_streak_spins || 0;
+        }
+        if (synced.best_streak === undefined || synced.best_streak === null) {
+          synced.best_streak = Math.max(q.best_streak || 0, synced.streak_days || 0);
         }
 
         appState.state.dailyQuests = synced;
