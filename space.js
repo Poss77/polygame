@@ -6374,7 +6374,11 @@ class PolySpaceEngine {
         badgeEl.innerHTML = `🪙 Radar Harvest: <strong style="color:#fff;">${claimsToday} / ${dailyLimit}</strong> (Capped)${vipTag}`;
       }
       if (subtitleEl) {
-        subtitleEl.innerText = `Daily harvest limit reached (${claimsToday}/${dailyLimit}) • Resets at 00:00 UTC`;
+        if (dailyLimit <= 10) {
+          subtitleEl.innerHTML = `Daily harvest limit reached (${claimsToday}/${dailyLimit}) • Resets at 00:00 UTC • <a href="javascript:void(0)" onclick="if(window.switchTab) window.switchTab('profile');" style="color:#00f0ff; font-weight:800; text-decoration:underline;">👑 Become VIP for 2x (20/day)!</a>`;
+        } else {
+          subtitleEl.innerText = `Daily harvest limit reached (${claimsToday}/${dailyLimit}) • Resets at 00:00 UTC`;
+        }
         subtitleEl.style.color = '#ffd700';
       }
       if (indicatorEl) {
