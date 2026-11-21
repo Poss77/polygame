@@ -745,8 +745,6 @@ class BubbleTroubleGame {
     if (this.screenShake > 0) this.screenShake = Math.max(0, this.screenShake - dt * 26);
     if (this.flashAlpha > 0) this.flashAlpha = Math.max(0, this.flashAlpha - dt * 2.5);
     if (this.waveBannerTimer > 0) this.waveBannerTimer = Math.max(0, this.waveBannerTimer - dt);
-    if (this.doubleArrowTimer > 0) this.doubleArrowTimer = Math.max(0, this.doubleArrowTimer - dt);
-    if (this.stickyWireTimer > 0) this.stickyWireTimer = Math.max(0, this.stickyWireTimer - dt);
     if (this.freezeTimer > 0) this.freezeTimer = Math.max(0, this.freezeTimer - dt);
     if (this.invincibleTimer > 0) this.invincibleTimer = Math.max(0, this.invincibleTimer - dt);
     if (this.dashCooldown > 0) this.dashCooldown = Math.max(0, this.dashCooldown - dt);
@@ -1124,11 +1122,11 @@ class BubbleTroubleGame {
   collectPowerup(p) {
     this.playTone(520, 960, 0.15, 'triangle', 0.1);
     if (p.type === 'double') {
-      this.doubleArrowTimer = 9.0;
+      this.doubleArrowTimer = 1;
       this.floatingTexts.push({ x: p.x, y: p.y - 16, text: '⚡ DOUBLE HARPOON!', color: '#00f0ff', life: 1.1, maxLife: 1.1 });
     } else if (p.type === 'sticky') {
-      this.stickyWireTimer = 10.0;
-      this.floatingTexts.push({ x: p.x, y: p.y - 16, text: '🪝 STICKY WIRE (3s)!', color: '#ffd700', life: 1.1, maxLife: 1.1 });
+      this.stickyWireTimer = 1;
+      this.floatingTexts.push({ x: p.x, y: p.y - 16, text: '🪝 STICKY WIRE!', color: '#ffd700', life: 1.1, maxLife: 1.1 });
     } else if (p.type === 'emp') {
       this.floatingTexts.push({ x: p.x, y: p.y - 16, text: '💣 CYBER EMP BLAST!', color: '#00f0ff', life: 1.2, maxLife: 1.2 });
       this.triggerEmpBlast();
@@ -1172,6 +1170,8 @@ class BubbleTroubleGame {
     this.lives -= 1;
     this.combo = 0;
     this.comboTimer = 0;
+    this.doubleArrowTimer = 0;
+    this.stickyWireTimer = 0;
     this.updateLiveHud();
 
     if (this.lives <= 0) {
@@ -1806,12 +1806,12 @@ class BubbleTroubleGame {
     ctx.textAlign = 'left';
     if (this.doubleArrowTimer > 0) {
       ctx.fillStyle = '#00f0ff';
-      ctx.fillText(`⚡ 2x HARPOON ${this.doubleArrowTimer.toFixed(1)}s`, 16, hudY);
+      ctx.fillText('⚡ 2x HARPOON ACTIVE', 16, hudY);
       hudY += 15;
     }
     if (this.stickyWireTimer > 0) {
       ctx.fillStyle = '#ffd700';
-      ctx.fillText(`🪝 STICKY WIRE ${this.stickyWireTimer.toFixed(1)}s`, 16, hudY);
+      ctx.fillText('🪝 STICKY WIRE ACTIVE', 16, hudY);
       hudY += 15;
     }
     if (this.freezeTimer > 0) {
