@@ -177,8 +177,21 @@ function hookGlobalErrors() {
 
 export function getDiagnosticReport() {
   const activePanel = document.querySelector('.view-panel.active');
-  const spaceState = window.spaceState || appState?.spaceState || {};
-  const ship = spaceState?.ship || {};
+  const st = appState?.state || {};
+  const spaceState = window.polySpace?.state || st.spaceState || window.spaceState || {};
+  const isLoggedIn = typeof appState?.isPlayerConnected === 'function' ? appState.isPlayerConnected() : false;
+  const isVip = typeof appState?.isVipActive === 'function' ? appState.isVipActive() : false;
+  const playerId = typeof appState?.getPlayerId === 'function' ? appState.getPlayerId() : (st.playerId || st.walletAddress || null);
+  const stakedPgt = typeof appState?.getStakedPgtTotal === 'function'
+    ? Number(appState.getStakedPgtTotal() || 0)
+    : Number(st.stakedBalancePgt || 0);
+  const nftCount = new Set([...(st.ownedNfts || []), ...(st.crateNfts || [])]).size;
+  const relicCount = (st.relics && typeof st.relics === 'object')
+    ? Object.values(st.relics).filter(r => (typeof r === 'number' ? r > 0 : ((r?.total || 0) > 0 || (r?.unminted || 0) > 0 || (r?.onchain || 0) > 0))).length
+    : 0;
+  const shipBoosts = (window.PolyHangar && typeof window.PolyHangar.getEquippedStarshipBoosts === 'function')
+    ? window.PolyHangar.getEquippedStarshipBoosts()
+    : null;
 
   return {
     version: APP_VERSION,
@@ -187,24 +200,25 @@ export function getDiagnosticReport() {
     url: window.location.href,
     activeView: activePanel ? activePanel.id : 'unknown',
     player: {
-      walletAddress: appState?.walletAddress || null,
-      linkedWalletAddress: appState?.linkedWalletAddress || null,
-      username: appState?.username || null,
-      isLoggedIn: Boolean(appState?.isLoggedIn),
-      isVip: Boolean(appState?.isVip),
-      balancePgt: Number(appState?.balance || 0),
-      stakedPgt: Number(appState?.stakedBalance || 0),
-      nftCount: Array.isArray(appState?.ownedNfts) ? appState.ownedNfts.length : 0,
-      relicCount: Array.isArray(appState?.ownedRelics) ? appState.ownedRelics.length : 0,
-      equippedStarshipId: appState?.equippedStarshipId || null,
-      starshipBonusPct: Number(appState?.starshipBonusPct || 0)
+      playerId,
+      linkedWalletAddress: st.linkedWalletAddress || null,
+      username: st.username || null,
+      isLoggedIn,
+      isVip,
+      vipLevel: isVip ? (typeof appState?.getVipLevel === 'function' ? appState.getVipLevel() : (st.vipLevel || 0)) : 0,
+      balancePgt: Number(st.balancePgt || 0),
+      stakedPgt,
+      nftCount,
+      relicCount,
+      equippedStarshipId: shipBoosts?.ship?.tokenId || null,
+      starshipBonusPct: shipBoosts?.isEquipped ? Math.round(((shipBoosts.tierEarnMultiplier || 1) - 1) * 100) : 0
     },
     polySpace: {
-      warpDrive: ship.warpDrive || 1,
-      miningLaser: ship.miningLaser || 1,
-      cargoHold: ship.cargoHold || 1,
-      totalPgtEarned: Number(spaceState?.totalPgtEarned || 0),
-      activeExpedition: Boolean(spaceState?.expedition?.active)
+      warpDrive: spaceState.warpLevel || 1,
+      miningLaser: spaceState.laserLevel || 1,
+      cargoHold: spaceState.cargoLevel || 1,
+      totalPgtEarned: Number(spaceState.pgtEarned || spaceState.totalPgtEarned || 0),
+      activeExpeditions: Array.isArray(spaceState.expeditions) ? spaceState.expeditions.length : 0
     },
     recentErrors: diagState.errorLogs.slice(0, 15),
     recentNetwork: diagState.networkLogs.slice(0, 20)
