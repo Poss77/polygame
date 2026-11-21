@@ -361,6 +361,7 @@ class BubbleTroubleGame {
         return;
       }
 
+      cachedRect = null;
       const pos = getCanvasPos(e.clientX, e.clientY);
       // Check bottom-right canvas Dash button tap
       if (pos.x >= this.width - 106 && pos.x <= this.width - 8 && pos.y >= this.floorY - 38 && pos.y <= this.floorY) {
@@ -369,14 +370,6 @@ class BubbleTroubleGame {
       }
 
       if (this.touchPointerId === null || this.touchPointerId === undefined) {
-        const now = performance.now();
-        if (now - this._lastTapTime < 260 && Math.abs(pos.x - this._lastTapX) < 55) {
-          this.triggerDash(pos.x >= this.player.x ? 1 : -1);
-          this._lastTapTime = 0;
-        } else {
-          this._lastTapTime = now;
-          this._lastTapX = pos.x;
-        }
         this.touchPointerId = e.pointerId;
         this.touchStartX = pos.x;
         this.touchStartY = pos.y;
@@ -400,19 +393,22 @@ class BubbleTroubleGame {
 
       const pos = getCanvasPos(e.clientX, e.clientY);
       if (e.pointerId === this.touchPointerId) {
-        if (!this.touchMoved && Math.hypot(pos.x - this.touchStartX, pos.y - this.touchStartY) > TAP_SLOP_PX) {
-          this.touchMoved = true;
-        }
-        if (this.touchMoved) {
-          const dx = pos.x - this.touchLastX;
-          if (Math.abs(dx) > 0.1) {
-            const halfW = this.player.w / 2;
-            this.player.x = Math.max(halfW + 10, Math.min(this.width - halfW - 10, this.player.x + dx));
-            this.player.facing = dx > 0 ? 1 : -1;
-            this.player.walkPhase += Math.abs(dx) * 0.25;
-            this.touchActive = true;
-            this.touchMoveTimer = 0.08;
+        if (!this.touchMoved) {
+          if (Math.hypot(pos.x - this.touchStartX, pos.y - this.touchStartY) > TAP_SLOP_PX) {
+            this.touchMoved = true;
+            this.touchLastX = pos.x;
           }
+          return;
+        }
+        const rawDx = pos.x - this.touchLastX;
+        const dx = Math.max(-36, Math.min(36, rawDx));
+        if (Math.abs(dx) > 0.25) {
+          const halfW = this.player.w / 2;
+          this.player.x = Math.max(halfW + 10, Math.min(this.width - halfW - 10, this.player.x + dx));
+          this.player.facing = dx > 0 ? 1 : -1;
+          this.player.walkPhase += Math.abs(dx) * 0.25;
+          this.touchActive = true;
+          this.touchMoveTimer = 0.08;
         }
         this.touchLastX = pos.x;
       } else if (this.secondaryTouchPointers.has(e.pointerId)) {
