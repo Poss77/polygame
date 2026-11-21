@@ -1736,37 +1736,37 @@ class CyberRunnerGame {
         const wallH = 110 * factor;
         const wallW = baseW * 1.15;
         const halfW = wallW / 2;
-        const pylonW = 10 * factor;
+        const pylonW = Math.max(2.0, 10 * factor);
 
         ctx.save();
 
         // 1. Heavy Industrial Steel Columns (Left & Right Anchors)
-        ctx.fillStyle = '#0d041a';
+        ctx.fillStyle = '#240826';
         ctx.fillRect(-halfW, -wallH, pylonW, wallH);
         ctx.fillRect(halfW - pylonW, -wallH, pylonW, wallH);
 
-        ctx.strokeStyle = '#ff0055';
-        ctx.lineWidth = 1.8 * factor;
+        ctx.strokeStyle = '#ff2a6d';
+        ctx.lineWidth = Math.max(1.0, 1.8 * factor);
         ctx.strokeRect(-halfW, -wallH, pylonW, wallH);
         ctx.strokeRect(halfW - pylonW, -wallH, pylonW, wallH);
 
-        // 2. Armored Center Barrier Face
+        // 2. High-Contrast Crimson Armored Center Barrier Face (visible at 2500Z)
         const faceX = -halfW + pylonW;
         const faceW = wallW - pylonW * 2;
         const faceGrad = ctx.createLinearGradient(0, -wallH, 0, 0);
-        faceGrad.addColorStop(0, 'rgba(38, 8, 48, 0.95)');
-        faceGrad.addColorStop(0.5, 'rgba(20, 5, 30, 0.92)');
-        faceGrad.addColorStop(1, 'rgba(42, 5, 26, 0.98)');
+        faceGrad.addColorStop(0, 'rgba(195, 16, 72, 0.92)');
+        faceGrad.addColorStop(0.5, 'rgba(115, 8, 48, 0.88)');
+        faceGrad.addColorStop(1, 'rgba(215, 20, 82, 0.96)');
         ctx.fillStyle = faceGrad;
         ctx.fillRect(faceX, -wallH, faceW, wallH);
 
-        ctx.strokeStyle = '#ff0055';
-        ctx.lineWidth = 2 * factor;
+        ctx.strokeStyle = '#ff3377';
+        ctx.lineWidth = Math.max(1.2, 2.2 * factor);
         ctx.strokeRect(faceX, -wallH, faceW, wallH);
 
         // 3. Diagonal Warning Hazard Cross-Trusses (Reinforced X-Brace)
-        ctx.strokeStyle = 'rgba(255, 170, 0, 0.45)';
-        ctx.lineWidth = 5 * factor;
+        ctx.strokeStyle = 'rgba(255, 120, 60, 0.78)';
+        ctx.lineWidth = Math.max(1.0, 5 * factor);
         ctx.beginPath();
         ctx.moveTo(faceX, 0);
         ctx.lineTo(faceX + faceW, -wallH);
@@ -1774,8 +1774,8 @@ class CyberRunnerGame {
         ctx.lineTo(faceX, -wallH);
         ctx.stroke();
 
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-        ctx.lineWidth = 1.5 * factor;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.82)';
+        ctx.lineWidth = Math.max(0.8, 1.6 * factor);
         ctx.beginPath();
         ctx.moveTo(faceX, 0);
         ctx.lineTo(faceX + faceW, -wallH);
@@ -1783,48 +1783,46 @@ class CyberRunnerGame {
         ctx.lineTo(faceX, -wallH);
         ctx.stroke();
 
-        // 4. Procedural Vector Warning Sign (Center Triangle with '!' - NO EMOJIS)
+        // 4. Procedural Crimson/White Hazard X-Plate (Unmistakably a wall, never looks like a gold coin)
         const signY = -wallH * 0.50;
         const signR = 19 * factor;
-        ctx.save();
-        ctx.translate(0, signY);
+        if (signR >= 2.0) {
+          ctx.save();
+          ctx.translate(0, signY);
 
-        // Glowing Warning Triangle
-        ctx.fillStyle = '#ffd700';
-        ctx.beginPath();
-        ctx.moveTo(0, -signR * 1.15);
-        ctx.lineTo(signR * 1.1, signR * 0.85);
-        ctx.lineTo(-signR * 1.1, signR * 0.85);
-        ctx.closePath();
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5 * factor;
-        ctx.stroke();
+          ctx.fillStyle = '#ff0044';
+          ctx.fillRect(-signR, -signR, signR * 2, signR * 2);
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = Math.max(1.0, 1.8 * factor);
+          ctx.strokeRect(-signR, -signR, signR * 2, signR * 2);
 
-        // Vector Exclamation Mark inside Triangle (skip at extreme distance so it doesn't overflow triangle)
-        if (signR >= 2.2) {
-          ctx.fillStyle = '#000000';
-          const barW = Math.max(1.0, 3.4 * factor);
-          const barH = 11 * factor;
-          ctx.fillRect(-barW / 2, -signR * 0.5, barW, barH);
+          // Bold white 'X' inside hazard plate
+          const xPad = signR * 0.55;
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = Math.max(1.2, 3.2 * factor);
           ctx.beginPath();
-          ctx.arc(0, signR * 0.55, barW * 0.65, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.moveTo(-xPad, -xPad);
+          ctx.lineTo(xPad, xPad);
+          ctx.moveTo(xPad, -xPad);
+          ctx.lineTo(-xPad, xPad);
+          ctx.stroke();
+          ctx.restore();
         }
-        ctx.restore();
 
         // 6. Overhead Strobe Warning Lights
         const strobePulse = (Math.sin(this.gameTime * 10) + 1) * 0.5;
-        const beaconColor = strobePulse > 0.4 ? '#ff0055' : '#660022';
+        const beaconColor = strobePulse > 0.4 ? '#ff2a6d' : '#ff7799';
         ctx.fillStyle = beaconColor;
 
         // Top structural cap rail
-        ctx.fillRect(-halfW, -wallH - 4 * factor, wallW, 4 * factor);
+        const capH = Math.max(1.5, 4 * factor);
+        ctx.fillRect(-halfW, -wallH - capH, wallW, capH);
 
         // Top Corner & Center Warning Beacons
+        const beaconR = Math.max(1.2, 3.5 * factor);
         [-halfW + pylonW / 2, 0, halfW - pylonW / 2].forEach(bx => {
           ctx.beginPath();
-          ctx.arc(bx, -wallH - 5 * factor, 3.5 * factor, 0, Math.PI * 2);
+          ctx.arc(bx, -wallH - capH - beaconR * 0.4, beaconR, 0, Math.PI * 2);
           ctx.fill();
         });
 
