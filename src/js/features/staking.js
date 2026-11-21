@@ -43,7 +43,8 @@ export function initStakingCycle() {
       const now = getSecureNow();
       list.forEach(stake => {
         const lastTime = stake.lastHarvest || stake.stakedAt || now;
-        const secondsPassed = Math.max(0, (now - lastTime) / 1000);
+        const effectiveEnd = stake.lockUntil ? Math.min(now, stake.lockUntil) : now;
+        const secondsPassed = Math.max(0, (effectiveEnd - lastTime) / 1000);
         const accruedYield = stake.amount * (stake.apy / 100) * (secondsPassed / secondsInYear);
         stake.interest = accruedYield;
         shouldUpdate = true;
@@ -224,8 +225,9 @@ export function renderStakingLedger() {
       <td style="padding: 0.75rem 0.5rem; color: var(--color-accent); font-weight: 700;">${parseFloat(stake.apy || 0).toFixed(2)}%</td>
       <td style="padding: 0.75rem 0.5rem;">${timeStr}</td>
       <td style="padding: 0.75rem 0.5rem; color: var(--color-primary); font-weight: 700;">${parseFloat(stake.interest || 0).toFixed(6)} ${symbol}</td>
-      <td style="padding: 0.75rem 0.5rem; text-align: right;">
+      <td style="padding: 0.75rem 0.5rem; text-align: right; white-space: nowrap;">
         <button class="btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; margin-right: 0.25rem; background: var(--color-primary); color: black; border: none; cursor: pointer;" onclick="harvestIndividualStake('${stake.id}')" ${stake.interest < 0.0001 ? 'disabled style="opacity:0.4; cursor:not-allowed;"' : ''}>Harvest</button>
+        ${diff <= 0 ? `<button class="btn-primary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; margin-right: 0.25rem; background: linear-gradient(135deg, #00ff88, #00f0ff); color: #000; font-weight: 800; border: none; cursor: pointer;" onclick="restakePosition('${stake.id}')" title="Restake with the same duration (${(stake.tier || 'day').toUpperCase()})">🔄 Restake</button>` : ''}
         <button class="btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; border: 1px solid var(--border-glass); cursor: pointer;" onclick="unstakeIndividualPosition('${stake.id}')">Unstake</button>
       </td>
     `;
@@ -361,6 +363,85 @@ export async function unstakeIndividualPosition(id) {
   }
 }
 window.unstakeIndividualPosition = unstakeIndividualPosition;
+
+export async function restakePosition(id) {
+  if (processingHarvestIds.has(id)) {
+    triggerToast("Transaction already in progress...", "info");
+    return;
+  }
+
+  const stakes = appState.state.stakes || [];
+  const idx = stakes.findIndex(s => s.id === id);
+  if (idx === -1) return;
+
+  const stake = stakes[idx];
+  const now = getSecureNow();
+  if (now < stake.lockUntil) {
+    triggerToast("Stake position is still locked!", "warning");
+    return;
+  }
+
+  processingHarvestIds.add(id);
+  try {
+    if (appState.isPlayerConnected() && supabase) {
+      let { data: res, error } = await executeAuthenticatedRpc('restake_position', {
+        p_wallet: getStakingWalletAddress(),
+        p_stake_id: id
+      });
+
+      if (error || !res || !res.success) {
+        triggerToast(res?.error || error?.message || "Restake failed", "error");
+        return;
+      }
+
+      stake.apy = parseFloat(res.apy || stake.apy);
+      stake.stakedAt = res.staked_at ? new Date(res.staked_at).getTime() : Date.now();
+      stake.lockUntil = res.lock_until ? new Date(res.lock_until).getTime() : (Date.now() + 86400000);
+      stake.lastHarvest = stake.stakedAt;
+      stake.interest = 0;
+
+      const yieldAmt = parseFloat(res.yield || 0);
+      const updates = { stakes };
+      if (yieldAmt > 0) {
+        updates.balancePgt = res.new_balance !== undefined ? parseFloat(res.new_balance) : ((appState.state.balancePgt || 0) + yieldAmt);
+        updates.totalStakingYield = (appState.state.totalStakingYield || 0) + yieldAmt;
+      }
+      appState.update(updates);
+      appState.save(true);
+      if (sfx && sfx.playSuccess) sfx.playSuccess();
+      const yieldMsg = yieldAmt > 0 ? ` (+${yieldAmt.toFixed(4)} PGT yield harvested)` : '';
+      triggerToast(`🔄 Restaked ${parseFloat(stake.amount || 0).toFixed(2)} PGT for ${(stake.tier || 'day').toUpperCase()} @ ${stake.apy.toFixed(2)}% APY${yieldMsg}!`, 'success');
+      appState.addActivity('You', `restaked ${parseFloat(stake.amount || 0).toFixed(2)} PGT (${stake.tier || 'day'})`, `${stake.apy.toFixed(2)}% APY`);
+      renderStakingLedger();
+      return;
+    }
+
+    // Local Guest Mode Fallback
+    const tier = (stake.tier || 'day').toLowerCase();
+    const durMs = tier === 'year' ? 365 * 86400000 : (tier === 'month' ? 30 * 86400000 : 86400000);
+    const interest = parseFloat(stake.interest || 0);
+    stake.stakedAt = now;
+    stake.lockUntil = now + durMs;
+    stake.lastHarvest = now;
+    stake.interest = 0;
+    const updates = { stakes };
+    if (interest > 0) {
+      updates.balancePgt = (appState.state.balancePgt || 0) + interest;
+      updates.totalStakingYield = (appState.state.totalStakingYield || 0) + interest;
+    }
+    appState.update(updates);
+    appState.save(true);
+    if (sfx && sfx.playSuccess) sfx.playSuccess();
+    triggerToast(`🔄 Restaked ${parseFloat(stake.amount || 0).toFixed(2)} PGT (${tier.toUpperCase()})!`, 'success');
+    renderStakingLedger();
+  } catch (err) {
+    console.error("restakePosition exception:", err);
+    triggerToast("Network error during restake", "error");
+  } finally {
+    processingHarvestIds.delete(id);
+  }
+}
+window.restakePosition = restakePosition;
 
 // Fast forward simulator
 export async function fastForwardStakingLock() {
@@ -516,8 +597,9 @@ export async function harvestAllYield() {
     const nowMs = Date.now();
     let totalPending = 0;
     stakes.forEach(s => {
-      const lastH = s.lastHarvest || s.createdAt || nowMs;
-      const elapsedSec = Math.max(0, (nowMs - lastH) / 1000);
+      const lastH = s.lastHarvest || s.stakedAt || s.createdAt || nowMs;
+      const effectiveEnd = s.lockUntil ? Math.min(nowMs, s.lockUntil) : nowMs;
+      const elapsedSec = Math.max(0, (effectiveEnd - lastH) / 1000);
       const apy = s.apy || 1.0;
       const amount = parseFloat(s.amount || 0);
       const calcYield = (amount * (apy / 100.0) * (elapsedSec / 31536000.0));
