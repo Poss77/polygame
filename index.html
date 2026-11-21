@@ -456,22 +456,22 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <!-- Direct parallel stylesheets (eliminates @import waterfall) -->
-  <link rel="stylesheet" href="src/css/variables.css?v=1.5.879">
-  <link rel="stylesheet" href="src/css/base.css?v=1.5.879">
-  <link rel="stylesheet" href="src/css/layout.css?v=1.5.879">
-  <link rel="stylesheet" href="src/css/sidebar.css?v=1.5.879">
-  <link rel="stylesheet" href="src/css/main_content.css?v=1.5.879">
-  <link rel="stylesheet" href="src/css/views.css?v=1.5.879">
-  <link rel="stylesheet" href="src/css/features/faucet.css?v=1.5.879">
-  <link rel="stylesheet" href="src/css/features/games.css?v=1.5.879">
-  <link rel="stylesheet" href="src/css/features/nft.css?v=1.5.879">
-  <link rel="stylesheet" href="src/css/features/staking.css?v=1.5.879">
-  <link rel="stylesheet" href="src/css/features/referrals.css?v=1.5.879">
-  <link rel="stylesheet" href="src/css/features/profile.css?v=1.5.879">
-  <link rel="stylesheet" href="src/css/modals.css?v=1.5.879">
-  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.879">
-  <link rel="stylesheet" href="src/css/animations.css?v=1.5.879">
-  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.879">
+  <link rel="stylesheet" href="src/css/variables.css?v=1.5.880">
+  <link rel="stylesheet" href="src/css/base.css?v=1.5.880">
+  <link rel="stylesheet" href="src/css/layout.css?v=1.5.880">
+  <link rel="stylesheet" href="src/css/sidebar.css?v=1.5.880">
+  <link rel="stylesheet" href="src/css/main_content.css?v=1.5.880">
+  <link rel="stylesheet" href="src/css/views.css?v=1.5.880">
+  <link rel="stylesheet" href="src/css/features/faucet.css?v=1.5.880">
+  <link rel="stylesheet" href="src/css/features/games.css?v=1.5.880">
+  <link rel="stylesheet" href="src/css/features/nft.css?v=1.5.880">
+  <link rel="stylesheet" href="src/css/features/staking.css?v=1.5.880">
+  <link rel="stylesheet" href="src/css/features/referrals.css?v=1.5.880">
+  <link rel="stylesheet" href="src/css/features/profile.css?v=1.5.880">
+  <link rel="stylesheet" href="src/css/modals.css?v=1.5.880">
+  <link rel="stylesheet" href="src/css/notifications.css?v=1.5.880">
+  <link rel="stylesheet" href="src/css/animations.css?v=1.5.880">
+  <link rel="stylesheet" href="src/css/mobile.css?v=1.5.880">
   <!-- Web3 and DB SDKs -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js" crossorigin="anonymous" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" defer></script>
@@ -636,13 +636,23 @@ twq('config','ri5fg');
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
             <div class="welcome-content" style="flex: 1 1 520px; min-width: 280px; max-width: 100%;">
               <h2 style="font-size: 1.75rem; margin: 0 0 0.5rem 0; font-weight: 900; background: linear-gradient(135deg, #fff 40%, var(--color-accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Play Web3 Arcade Games & Earn PGT</h2>
-              <p style="margin-bottom: 1.25rem; font-size: 0.92rem; color: var(--text-dim); line-height: 1.5; max-width: 900px;">
+              <p style="margin-bottom: 0.85rem; font-size: 0.92rem; color: var(--text-dim); line-height: 1.5; max-width: 900px;">
                 Claim free daily tokens, conquer retro arcade leaderboards, solve daily puzzles, and multiply rewards with utility NFTs. 100% free to play, zero deposit required.
               </p>
-              <!-- Fast Start Action Bar (Adapts dynamically: Guest Demo vs Connected Faucet) -->
+              <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.45rem; margin-bottom: 1rem; font-size: 0.74rem; font-weight: 700;">
+                <span style="background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.3); color: #00f0ff; padding: 0.25rem 0.6rem; border-radius: 999px;">1. Play Free Arcade</span>
+                <span style="color: var(--text-dim);">→</span>
+                <span style="background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); color: #00ff88; padding: 0.25rem 0.6rem; border-radius: 999px;">2. Claim Faucet &amp; Relics</span>
+                <span style="color: var(--text-dim);">→</span>
+                <span style="background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3); color: #ffd700; padding: 0.25rem 0.6rem; border-radius: 999px;">3. Withdraw on Polygon ($0 Deposit)</span>
+              </div>
+              <!-- Fast Start Action Bar (Adapts dynamically: Guest vs Connected) -->
               <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.65rem; margin-bottom: 1.1rem;">
                 <button class="btn-primary" id="btn-banner-action" onclick="if(window.launchInstantDemo){ window.launchInstantDemo(); } else { switchTab('games', 'earn'); }" style="white-space: nowrap; font-weight: 800; padding: 0.7rem 1.3rem; display: flex; align-items: center; gap: 0.45rem;">
-                  <span>🎮</span> <span>Play Instant Demo (No Login)</span>
+                  <span>🎮</span> <span>Play Free Now (Instant)</span>
+                </button>
+                <button class="btn-primary" id="btn-banner-signin" onclick="openModal('wallet')" style="white-space: nowrap; font-weight: 800; padding: 0.7rem 1.25rem; display: flex; align-items: center; gap: 0.45rem; background: linear-gradient(135deg, #00ff88, #00f0ff); color: #000; border: none; box-shadow: 0 0 14px rgba(0, 255, 136, 0.35);">
+                  <span>🚀</span> <span>Sign In Free (Keep PGT)</span>
                 </button>
                 <button class="btn-secondary" id="btn-banner-faucet" onclick="switchTab('faucet')" style="white-space: nowrap; font-weight: 700; padding: 0.7rem 1.2rem; display: flex; align-items: center; gap: 0.45rem;">
                   <span>💧</span> <span>Claim Free Faucet</span>
@@ -5520,7 +5530,7 @@ twq('config','ri5fg');
   </div>
 
   <!-- Game engines (game.js, invaders.js, drift.js, stacker.js, space.js, skeet.js, defense.js, runner.js, q2048.js, tetris.js, bubble.js) lazy-loaded on demand via src/js/core/game-loader.js -->
-  <script type="module" src="src/js/app.js?v=1.5.879"></script>
+  <script type="module" src="src/js/app.js?v=1.5.880"></script>
 
   <!-- Public Player Profile Modal -->
   <div class="modal-overlay" id="modal-public-profile" style="display: none; pointer-events: none;">

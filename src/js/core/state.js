@@ -1564,14 +1564,18 @@ export class PolyState {
     }
     const isConn = this.isPlayerConnected();
     const bannerPrimaryBtn = document.getElementById('btn-banner-action');
+    const bannerSigninBtn = document.getElementById('btn-banner-signin');
     const bannerSecondaryBtn = document.getElementById('btn-banner-faucet');
+    if (bannerSigninBtn) {
+      bannerSigninBtn.style.display = isConn ? 'none' : 'flex';
+    }
     if (bannerPrimaryBtn) {
       if (isConn) {
         bannerPrimaryBtn.setAttribute('onclick', "switchTab('faucet')");
         bannerPrimaryBtn.innerHTML = '<span>💧</span> <span>1. Claim Free Faucet</span>';
       } else {
         bannerPrimaryBtn.setAttribute('onclick', "if(window.launchInstantDemo){ window.launchInstantDemo(); } else { switchTab('games', 'earn'); }");
-        bannerPrimaryBtn.innerHTML = '<span>🎮</span> <span>Play Instant Demo (No Login)</span>';
+        bannerPrimaryBtn.innerHTML = '<span>🎮</span> <span>Play Free Now (Instant)</span>';
       }
     }
     if (bannerSecondaryBtn) {

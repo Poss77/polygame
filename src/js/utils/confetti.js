@@ -237,22 +237,27 @@ export function triggerConfetti(options = {}) {
 export function triggerRelicCelebration(relicMeta) {
   if (!relicMeta) return;
 
-  // Canonicalize metadata against in-game registry to guarantee 100% uniformity with Vault & Profile
-  if (relicMeta.id && typeof window.getRelicMeta === 'function') {
-    const canonical = window.getRelicMeta(relicMeta.id);
-    if (canonical) {
-      relicMeta = {
-        ...canonical,
-        ...relicMeta,
-        name: canonical.name,
-        rarity: canonical.rarity || relicMeta.rarity || 'rare',
-        gameName: canonical.gameName || relicMeta.gameName || 'Apex Relic',
-        description: canonical.description || relicMeta.description
-      };
+  const canonicalizeMeta = (meta) => {
+    if (meta && meta.id && typeof window.getRelicMeta === 'function') {
+      const canonical = window.getRelicMeta(meta.id);
+      if (canonical) {
+        return {
+          ...canonical,
+          ...meta,
+          name: canonical.name,
+          rarity: canonical.rarity || meta.rarity || 'rare',
+          gameName: canonical.gameName || meta.gameName || 'Apex Relic',
+          description: canonical.description || meta.description,
+          image: canonical.image || meta.image
+        };
+      }
     }
-  }
+    return meta;
+  };
 
-  // 1. Automatically Pause Active Arcade Games
+  relicMeta = canonicalizeMeta(relicMeta);
+
+  // 1. Automatically Pause Active Arcade Games immediately
   pauseActiveArcadeGames();
 
   const rarityColors = {
@@ -261,8 +266,6 @@ export function triggerRelicCelebration(relicMeta) {
     legendary: { border: '#ffd700', glow: 'rgba(255,215,0,0.8)', bg: 'rgba(255,215,0,0.15)', text: '#ffd700' },
     mythic: { border: '#ff0055', glow: 'rgba(255,0,85,0.85)', bg: 'rgba(255,0,85,0.2)', text: '#ff0055' }
   };
-  const rarity = (relicMeta.rarity || 'rare').toLowerCase();
-  const rc = rarityColors[rarity] || rarityColors.rare;
 
   // Ensure spin animation style exists
   if (!document.getElementById('relic-celebration-keyframes')) {
@@ -275,111 +278,23 @@ export function triggerRelicCelebration(relicMeta) {
     document.head.appendChild(style);
   }
 
-  // 2. Play Triumphant Fanfare Sound
-  if (window.sfx && typeof window.sfx.playRelicFanfare === 'function') {
-    window.sfx.playRelicFanfare();
-  } else if (window.sfx && typeof window.sfx.playWin === 'function') {
-    window.sfx.playWin();
-  }
-
-  // 3. Universal State & Supabase Persistence
-  const prevRelicsSnapshot = (window.appState && window.appState.state && window.appState.state.relics)
-    ? JSON.parse(JSON.stringify(window.appState.state.relics))
-    : {};
-
-  if (relicMeta.id && window.appState && window.appState.state) {
-    const currentRelics = { ...(window.appState.state.relics || {}) };
-    const prev = currentRelics[relicMeta.id] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
-    currentRelics[relicMeta.id] = {
-      ...prev,
-      unminted: (prev.unminted || 0) + 1,
-      onchain: prev.onchain || 0,
-      total: (prev.unminted || 0) + 1 + (prev.onchain || 0),
-      token_ids: prev.token_ids || []
-    };
-    window.appState.update({ relics: currentRelics });
-    if (typeof window.renderRelicsVault === 'function') {
-      window.renderRelicsVault();
-    }
-  }
-
   const sbClient = window.supabaseClient || (window.supabase && typeof window.supabase.rpc === 'function' ? window.supabase : null);
-  if (sbClient && window.appState && window.appState.state && relicMeta.id && !relicMeta.skipRpc) {
-    const pId = window.appState.state.playerId || window.appState.state.walletAddress;
-    const activeSessionId = relicMeta.sessionId || window.currentArcadeSessionId || null;
-    if (pId && activeSessionId) {
-      // Client-Side Session Anti-Cheat Guard: Enforce strictly 1 relic drop RPC call per session
-      if (!window._relicClaimedSessions) window._relicClaimedSessions = new Set();
-      if (window._relicClaimedSessions.has(activeSessionId)) {
-        console.warn("[triggerRelicCelebration] Session already claimed maximum 1 relic:", activeSessionId);
-        return;
-      }
-      window._relicClaimedSessions.add(activeSessionId);
-      sbClient.rpc('grant_relic_drop', {
-        p_player_id: pId,
-        p_relic_id: relicMeta.id,
-        p_amount: 1,
-        p_session_id: activeSessionId
-      }).then(res => {
-        if (res && res.data && !res.data.error && window.appState) {
-          // Robust unpack: grant_relic_drop may return { success: true, relic_id: '...', relics: { ... } }
-          const updatedRelics = (res.data.relics && typeof res.data.relics === 'object')
-            ? res.data.relics
-            : ((typeof res.data === 'object' && !res.data.success) ? res.data : null);
-          if (updatedRelics) {
-            window.appState.update({ relics: updatedRelics });
-            if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
-          }
-          // If server rolled a different canonical relic_id (e.g. Season 2 server-authoritative roll), update the celebration modal UI
-          const serverRelicId = res.data.relic_id;
-          if (serverRelicId && serverRelicId !== relicMeta.id && typeof window.getRelicMeta === 'function') {
-            const srvMeta = window.getRelicMeta(serverRelicId);
-            if (srvMeta) {
-              const modalEl = document.getElementById('quantum-relic-discovery-modal');
-              if (modalEl) {
-                const imgEl = modalEl.querySelector('img');
-                const titleEl = modalEl.querySelector('h3');
-                const descEl = modalEl.querySelector('p');
-                const badgeEl = modalEl.querySelector('[data-relic-rarity-badge]');
-                const gameEl = modalEl.querySelector('[data-relic-game-label]');
-                if (imgEl) imgEl.src = srvMeta.image || `metadata/images/relics/${srvMeta.id}.jpg`;
-                if (titleEl) titleEl.innerText = srvMeta.name;
-                if (descEl) descEl.innerText = srvMeta.description;
-                if (badgeEl) badgeEl.innerText = srvMeta.rarity;
-                if (gameEl) gameEl.innerText = srvMeta.gameName;
-              }
-            }
-          }
-        } else if (res && res.data && res.data.error) {
-          console.warn("[triggerRelicCelebration] grant_relic_drop rejected:", res.data.error);
-          // Rollback optimistic local relic state
-          if (window.appState) {
-            window.appState.update({ relics: prevRelicsSnapshot });
-            if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
-          }
-          const statusEl = document.querySelector('#quantum-relic-discovery-modal [data-relic-status-badge]');
-          if (statusEl) {
-            statusEl.style.color = '#ffaa00';
-            statusEl.style.borderColor = 'rgba(255, 170, 0, 0.5)';
-            statusEl.innerText = `⚠️ Not added: ${res.data.error}`;
-          }
-          if (typeof window.triggerToast === 'function') {
-            window.triggerToast(`⚠️ Relic resonance blocked: ${res.data.error}`, 'warning');
-          }
-        }
-      }).catch(err => console.warn("[triggerRelicCelebration] grant_relic_drop error:", err));
+  const pId = window.appState && window.appState.state ? (window.appState.state.playerId || window.appState.state.walletAddress) : null;
+  const activeSessionId = relicMeta.sessionId || window.currentArcadeSessionId || null;
+  const shouldCallRpc = Boolean(sbClient && pId && activeSessionId && relicMeta.id && !relicMeta.skipRpc);
+
+  if (shouldCallRpc) {
+    if (!window._relicClaimedSessions) window._relicClaimedSessions = new Set();
+    if (window._relicClaimedSessions.has(activeSessionId)) {
+      console.warn("[triggerRelicCelebration] Session already claimed maximum 1 relic:", activeSessionId);
+      resumeActiveArcadeGames();
+      return;
     }
+    window._relicClaimedSessions.add(activeSessionId);
   }
 
-  // 4. Launch Cyber Confetti Stream
-  triggerConfetti({
-    count: 140,
-    colors: [rc.border, '#ffd700', '#00f0ff', '#ffffff', '#ff007f']
-  });
-
-  // 5. Render Floating Quantum Relic Discovery Hologram Modal attached to Top Layer
+  // Build Overlay & Modal (starts in "Decoding" state if awaiting server roll, so no wrong placeholder flashes)
   const targetParent = getActiveTopLayerContainer();
-
   let existingOverlay = document.getElementById('quantum-relic-discovery-overlay');
   if (existingOverlay) existingOverlay.remove();
 
@@ -405,8 +320,8 @@ export function triggerRelicCelebration(relicMeta) {
   const modal = document.createElement('div');
   modal.id = 'quantum-relic-discovery-modal';
   modal.style.background = 'linear-gradient(135deg, rgba(10, 14, 23, 0.98) 0%, rgba(20, 10, 35, 0.98) 100%)';
-  modal.style.border = `2px solid ${rc.border}`;
-  modal.style.boxShadow = `0 0 35px ${rc.glow}, inset 0 0 20px ${rc.bg}`;
+  modal.style.border = '2px solid #00f0ff';
+  modal.style.boxShadow = '0 0 35px rgba(0,240,255,0.6), inset 0 0 20px rgba(0,240,255,0.15)';
   modal.style.borderRadius = '16px';
   modal.style.padding = '1.25rem 1.5rem';
   modal.style.display = 'flex';
@@ -419,70 +334,148 @@ export function triggerRelicCelebration(relicMeta) {
   modal.style.transform = 'scale(0.85)';
   modal.style.transition = 'transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
 
-  const relicImage = relicMeta.image || `metadata/images/relics/${relicMeta.id}.jpg`;
-
-  modal.innerHTML = `
-    <div style="font-size: 0.78rem; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; color: #ffd700; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 6px;">
-      <span>🏺</span> QUANTUM RELIC DISCOVERED! <span>✨</span>
-    </div>
-
-    <!-- Relic Artwork with Glowing Rotating Ring -->
-    <div style="position: relative; width: 100px; height: 100px; margin: 0.4rem 0 0.65rem 0; display: flex; justify-content: center; align-items: center;">
-      <div style="position: absolute; inset: -5px; border-radius: 12px; border: 2px dashed ${rc.border}; animation: spin-slow 12s linear infinite; opacity: 0.7;"></div>
-      <img src="${relicImage}" alt="${relicMeta.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px; border: 1px solid ${rc.border}; box-shadow: 0 0 15px ${rc.glow};" onerror="this.onerror=null; this.src='metadata/images/relics/relic_locked_unknown.jpg';" />
-      <span data-relic-rarity-badge style="position: absolute; bottom: -6px; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; background: ${rc.border}; color: #000; padding: 2px 8px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.6);">
-        ${rarity}
-      </span>
-    </div>
-
-    <h3 style="font-size: 1.15rem; font-weight: 900; color: #fff; margin: 0 0 2px 0; text-shadow: 0 0 10px ${rc.glow};">
-      ${relicMeta.name}
-    </h3>
-    <div data-relic-game-label style="font-size: 0.72rem; font-weight: 700; color: ${rc.text}; text-transform: uppercase; margin-bottom: 6px;">
-      ${relicMeta.gameName || 'Apex Relic'}
-    </div>
-    <p style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.3; margin: 0 0 10px 0;">
-      ${relicMeta.description || (relicMeta.season === 2 ? 'Added to your permanent Quantum Relics Vault. Collect all 18 Season 2 Relics for the 1.5x PolySpace Mission Multiplier!' : 'Added to your permanent Quantum Relics Vault. Collect all 17 for the 1.5x Apex Multiplier!')}
-    </p>
-
-    <div data-relic-status-badge style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 4px 10px; font-size: 0.7rem; color: #00f0ff; font-weight: 800; margin-bottom: 8px;">
-      ✨ Added to Stash (+1 In-Game)
-    </div>
-
-    <button id="btn-relic-resume-game" style="width: 100%; padding: 0.55rem 1rem; font-weight: 800; font-size: 0.82rem; background: linear-gradient(135deg, #00f0ff, #bd00ff); color: #fff; border: none; border-radius: 6px; cursor: pointer; box-shadow: 0 0 15px rgba(0,240,255,0.3); text-transform: uppercase; letter-spacing: 0.5px;">
-      ▶ Continue Game
-    </button>
-  `;
-
-  overlay.appendChild(modal);
-  targetParent.appendChild(overlay);
-
-  // Trigger smooth fade & scale
-  requestAnimationFrame(() => {
-    overlay.style.opacity = '1';
-    modal.style.transform = 'scale(1)';
-  });
-
   let isDismissed = false;
   const dismiss = () => {
     if (isDismissed) return;
     isDismissed = true;
-
     overlay.style.opacity = '0';
     modal.style.transform = 'scale(0.85)';
-
     setTimeout(() => {
       if (overlay.parentElement) overlay.remove();
       resumeActiveArcadeGames();
     }, 300);
   };
 
+  const renderFinalRelic = (finalMeta, statusText = '✨ Added to Stash (+1 In-Game)', isError = false) => {
+    if (isDismissed) return;
+    const rarity = (finalMeta.rarity || 'rare').toLowerCase();
+    const rc = rarityColors[rarity] || rarityColors.rare;
+    const relicImage = finalMeta.image || `metadata/images/relics/${finalMeta.id}.jpg`;
+
+    modal.style.border = `2px solid ${rc.border}`;
+    modal.style.boxShadow = `0 0 35px ${rc.glow}, inset 0 0 20px ${rc.bg}`;
+
+    if (window.sfx && typeof window.sfx.playRelicFanfare === 'function') {
+      window.sfx.playRelicFanfare();
+    } else if (window.sfx && typeof window.sfx.playWin === 'function') {
+      window.sfx.playWin();
+    }
+    triggerConfetti({
+      count: 140,
+      colors: [rc.border, '#ffd700', '#00f0ff', '#ffffff', '#ff007f']
+    });
+
+    const statusColor = isError ? '#ffaa00' : '#00f0ff';
+    const statusBorder = isError ? 'rgba(255, 170, 0, 0.5)' : 'rgba(255,255,255,0.1)';
+
+    modal.innerHTML = `
+      <div style="font-size: 0.78rem; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; color: #ffd700; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 6px;">
+        <span>🏺</span> QUANTUM RELIC DISCOVERED! <span>✨</span>
+      </div>
+
+      <div style="position: relative; width: 100px; height: 100px; margin: 0.4rem 0 0.65rem 0; display: flex; justify-content: center; align-items: center;">
+        <div style="position: absolute; inset: -5px; border-radius: 12px; border: 2px dashed ${rc.border}; animation: spin-slow 12s linear infinite; opacity: 0.7;"></div>
+        <img src="${relicImage}" alt="${finalMeta.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px; border: 1px solid ${rc.border}; box-shadow: 0 0 15px ${rc.glow};" onerror="this.onerror=null; this.src='metadata/images/relics/relic_locked_unknown.jpg';" />
+        <span data-relic-rarity-badge style="position: absolute; bottom: -6px; font-size: 0.65rem; font-weight: 900; text-transform: uppercase; background: ${rc.border}; color: #000; padding: 2px 8px; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.6);">
+          ${rarity}
+        </span>
+      </div>
+
+      <h3 style="font-size: 1.15rem; font-weight: 900; color: #fff; margin: 0 0 2px 0; text-shadow: 0 0 10px ${rc.glow};">
+        ${finalMeta.name}
+      </h3>
+      <div data-relic-game-label style="font-size: 0.72rem; font-weight: 700; color: ${rc.text}; text-transform: uppercase; margin-bottom: 6px;">
+        ${finalMeta.gameName || 'Apex Relic'}
+      </div>
+      <p style="font-size: 0.76rem; color: var(--text-muted); line-height: 1.3; margin: 0 0 10px 0;">
+        ${finalMeta.description || (finalMeta.season === 2 ? 'Added to your permanent Quantum Relics Vault. Collect all 18 Season 2 Relics for the 1.5x PolySpace Mission Multiplier!' : 'Added to your permanent Quantum Relics Vault. Collect all 17 for the 1.5x Apex Multiplier!')}
+      </p>
+
+      <div data-relic-status-badge style="background: rgba(0,0,0,0.5); border: 1px solid ${statusBorder}; border-radius: 6px; padding: 4px 10px; font-size: 0.7rem; color: ${statusColor}; font-weight: 800; margin-bottom: 8px;">
+        ${statusText}
+      </div>
+
+      <button id="btn-relic-resume-game" style="width: 100%; padding: 0.55rem 1rem; font-weight: 800; font-size: 0.82rem; background: linear-gradient(135deg, #00f0ff, #bd00ff); color: #fff; border: none; border-radius: 6px; cursor: pointer; box-shadow: 0 0 15px rgba(0,240,255,0.3); text-transform: uppercase; letter-spacing: 0.5px;">
+        ▶ Continue Game
+      </button>
+    `;
+
+    const btnResume = modal.querySelector('#btn-relic-resume-game');
+    if (btnResume) btnResume.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dismiss();
+    });
+  };
+
+  overlay.appendChild(modal);
+  targetParent.appendChild(overlay);
   overlay.addEventListener('click', dismiss);
-  const btnResume = modal.querySelector('#btn-relic-resume-game');
-  if (btnResume) btnResume.addEventListener('click', (e) => {
-    e.stopPropagation();
-    dismiss();
+
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1';
+    modal.style.transform = 'scale(1)';
   });
+
+  if (shouldCallRpc) {
+    modal.innerHTML = `
+      <div style="font-size: 0.78rem; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; color: #ffd700; margin-bottom: 0.6rem;">
+        🏺 QUANTUM ANOMALY DETECTED ✨
+      </div>
+      <div style="position: relative; width: 100px; height: 100px; margin: 0.4rem 0 0.8rem 0; display: flex; justify-content: center; align-items: center;">
+        <div style="position: absolute; inset: -6px; border-radius: 12px; border: 2px dashed #00f0ff; animation: spin-slow 2s linear infinite; opacity: 0.9;"></div>
+        <img src="metadata/images/relics/relic_locked_unknown.jpg" alt="Decoding Relic" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px; border: 1px solid #00f0ff; animation: pulse-glow 1.2s ease-in-out infinite;" />
+      </div>
+      <div style="font-size: 0.9rem; font-weight: 800; color: #00f0ff; margin-bottom: 0.25rem;">Decoding Quantum Signature...</div>
+      <div style="font-size: 0.74rem; color: var(--text-muted);">Resolving server drop roll</div>
+    `;
+
+    sbClient.rpc('grant_relic_drop', {
+      p_player_id: pId,
+      p_relic_id: relicMeta.id,
+      p_amount: 1,
+      p_session_id: activeSessionId
+    }).then(res => {
+      if (res && res.data && !res.data.error && window.appState) {
+        const updatedRelics = (res.data.relics && typeof res.data.relics === 'object')
+          ? res.data.relics
+          : ((typeof res.data === 'object' && !res.data.success) ? res.data : null);
+        if (updatedRelics) {
+          window.appState.update({ relics: updatedRelics });
+          if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
+        }
+        const serverRelicId = res.data.relic_id || relicMeta.id;
+        const finalMeta = canonicalizeMeta({ ...relicMeta, id: serverRelicId });
+        renderFinalRelic(finalMeta);
+      } else if (res && res.data && res.data.error) {
+        console.warn("[triggerRelicCelebration] grant_relic_drop rejected:", res.data.error);
+        renderFinalRelic(relicMeta, `⚠️ Not added: ${res.data.error}`, true);
+        if (typeof window.triggerToast === 'function') {
+          window.triggerToast(`⚠️ Relic resonance blocked: ${res.data.error}`, 'warning');
+        }
+      } else {
+        renderFinalRelic(relicMeta);
+      }
+    }).catch(err => {
+      console.warn("[triggerRelicCelebration] grant_relic_drop error:", err);
+      renderFinalRelic(relicMeta);
+    });
+  } else {
+    // Guest / preview fallback (no server RPC)
+    if (relicMeta.id && window.appState && window.appState.state) {
+      const currentRelics = { ...(window.appState.state.relics || {}) };
+      const prev = currentRelics[relicMeta.id] || { unminted: 0, onchain: 0, total: 0, token_ids: [] };
+      currentRelics[relicMeta.id] = {
+        ...prev,
+        unminted: (prev.unminted || 0) + 1,
+        onchain: prev.onchain || 0,
+        total: (prev.unminted || 0) + 1 + (prev.onchain || 0),
+        token_ids: prev.token_ids || []
+      };
+      window.appState.update({ relics: currentRelics });
+      if (typeof window.renderRelicsVault === 'function') window.renderRelicsVault();
+    }
+    renderFinalRelic(relicMeta);
+  }
 }
 
 /**
