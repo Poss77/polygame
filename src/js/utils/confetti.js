@@ -153,32 +153,16 @@ export function resumeArcadeGamesWithCountdown(seconds = 3) {
   overlay.style.alignItems = 'center';
   overlay.style.justifyContent = 'center';
 
-  const badge = document.createElement('div');
-  badge.style.background = 'rgba(6, 10, 20, 0.72)';
-  badge.style.border = '2px solid rgba(0, 240, 255, 0.75)';
-  badge.style.borderRadius = '16px';
-  badge.style.padding = '0.9rem 1.75rem';
-  badge.style.textAlign = 'center';
-  badge.style.boxShadow = '0 8px 28px rgba(0, 0, 0, 0.55)';
-
-  const label = document.createElement('div');
-  label.textContent = 'GET READY';
-  label.style.fontSize = '0.78rem';
-  label.style.fontWeight = '900';
-  label.style.letterSpacing = '2px';
-  label.style.color = '#00f0ff';
-  label.style.marginBottom = '0.15rem';
-
   const numEl = document.createElement('div');
-  numEl.style.fontSize = '3.5rem';
+  numEl.style.fontSize = '4.5rem';
   numEl.style.fontWeight = '900';
   numEl.style.lineHeight = '1';
   numEl.style.color = '#ffffff';
-  numEl.style.textShadow = '0 0 14px rgba(0, 240, 255, 0.85), 0 3px 10px rgba(0, 0, 0, 0.9)';
+  numEl.style.userSelect = 'none';
+  numEl.style.webkitTextStroke = '2px rgba(0, 0, 0, 0.9)';
+  numEl.style.textShadow = '0 0 18px rgba(0, 240, 255, 0.9), 0 4px 14px rgba(0, 0, 0, 0.95)';
 
-  badge.appendChild(label);
-  badge.appendChild(numEl);
-  overlay.appendChild(badge);
+  overlay.appendChild(numEl);
   targetParent.appendChild(overlay);
 
   let remaining = Math.max(1, Math.floor(seconds));
