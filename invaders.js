@@ -72,11 +72,18 @@ class CyberInvaders {
         if (window.antiBot) window.antiBot.reportSuspiciousActivity('Cyber Invaders', 'untrusted_keyboard_input');
         return;
       }
-      if (this.keys.hasOwnProperty(e.key)) {
+      const isSpaceKey = e.key === " " || e.key === "Spacebar" || e.code === "Space";
+      const activeTag = document.activeElement && document.activeElement.tagName ? document.activeElement.tagName.toLowerCase() : '';
+      const isEditableFocused = activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select' || Boolean(document.activeElement && document.activeElement.isContentEditable);
+
+      if (isSpaceKey && this.isPlaying && !isEditableFocused) {
+        e.preventDefault();
+      }
+      if (this.keys.hasOwnProperty(e.key) || isSpaceKey) {
         if (this.isPaused) return;
-        this.keys[e.key] = true;
-        if (e.key === " " && this.isPlaying) {
-          e.preventDefault();
+        if (this.keys.hasOwnProperty(e.key)) this.keys[e.key] = true;
+        if (isSpaceKey && this.isPlaying) {
+          this.keys[" "] = true;
           if (this.overdrive >= 100) this.triggerOverdrive();
           if (document.activeElement && typeof document.activeElement.blur === 'function') {
             document.activeElement.blur();
@@ -88,6 +95,9 @@ class CyberInvaders {
     window.addEventListener('keyup', (e) => {
       if (this.keys.hasOwnProperty(e.key)) {
         this.keys[e.key] = false;
+      }
+      if (e.key === " " || e.key === "Spacebar" || e.code === "Space") {
+        this.keys[" "] = false;
       }
     });
 

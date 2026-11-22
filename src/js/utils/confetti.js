@@ -29,6 +29,7 @@ export function pauseActiveArcadeGames() {
     if (window.cyberRunner && window.cyberRunner.isRunning) window.cyberRunner.isPaused = true;
     if (window.cyberTetrisGame && window.cyberTetrisGame.isPlaying) window.cyberTetrisGame.isPaused = true;
     if (window.cyber2048 && window.cyber2048.isPlaying) window.cyber2048.isPaused = true;
+    installPausedArcadeScrollGuard();
   } catch (e) {
     console.warn("[Relic Celebration] Pause games error:", e);
   }
@@ -56,6 +57,57 @@ function hasPausedRealtimeArcadeGame() {
   }
 }
 
+function isEditableElementFocused() {
+  if (typeof document === 'undefined' || !document.activeElement) return false;
+  const el = document.activeElement;
+  const tag = el.tagName ? el.tagName.toLowerCase() : '';
+  return tag === 'input' || tag === 'textarea' || tag === 'select' || Boolean(el.isContentEditable);
+}
+
+function isRelicOrCountdownActive() {
+  if (typeof document === 'undefined') return false;
+  return Boolean(
+    document.getElementById('quantum-relic-discovery-overlay') ||
+    document.getElementById('relic-resume-countdown-overlay') ||
+    document.getElementById('global-jackpot-celebration-overlay') ||
+    hasPausedRealtimeArcadeGame()
+  );
+}
+
+function removePausedArcadeScrollGuard() {
+  if (typeof window === 'undefined') return;
+  if (window._relicPausedScrollGuardHandler) {
+    window.removeEventListener('keydown', window._relicPausedScrollGuardHandler, true);
+    window._relicPausedScrollGuardHandler = null;
+  }
+}
+
+function installPausedArcadeScrollGuard() {
+  if (typeof window === 'undefined' || window._relicPausedScrollGuardHandler) return;
+  const handler = (e) => {
+    if (!isRelicOrCountdownActive()) {
+      removePausedArcadeScrollGuard();
+      return;
+    }
+    if (isEditableElementFocused()) return;
+    const isScrollKey =
+      e.code === 'Space' ||
+      e.key === ' ' ||
+      e.key === 'Spacebar' ||
+      e.key === 'ArrowUp' ||
+      e.key === 'ArrowDown' ||
+      e.key === 'ArrowLeft' ||
+      e.key === 'ArrowRight' ||
+      e.key === 'PageUp' ||
+      e.key === 'PageDown';
+    if (isScrollKey) {
+      e.preventDefault();
+    }
+  };
+  window._relicPausedScrollGuardHandler = handler;
+  window.addEventListener('keydown', handler, true);
+}
+
 function clearRelicResumeCountdown() {
   if (typeof window === 'undefined') return;
   if (window._relicResumeCountdownTimer) {
@@ -64,6 +116,9 @@ function clearRelicResumeCountdown() {
   }
   const existing = document.getElementById('relic-resume-countdown-overlay');
   if (existing) existing.remove();
+  if (!isRelicOrCountdownActive()) {
+    removePausedArcadeScrollGuard();
+  }
 }
 
 /**
@@ -113,6 +168,8 @@ export function resumeActiveArcadeGames() {
     }
   } catch (e) {
     console.warn("[Relic Celebration] Resume games error:", e);
+  } finally {
+    removePausedArcadeScrollGuard();
   }
 }
 
@@ -126,6 +183,8 @@ export function resumeArcadeGamesWithCountdown(seconds = 3) {
     resumeActiveArcadeGames();
     return;
   }
+
+  installPausedArcadeScrollGuard();
 
   if (!document.getElementById('relic-countdown-keyframes')) {
     const style = document.createElement('style');
@@ -374,6 +433,7 @@ export function triggerRelicCelebration(relicMeta) {
   // 1. Clear any stale countdown & Pause Active Arcade Games immediately
   clearRelicResumeCountdown();
   pauseActiveArcadeGames();
+  installPausedArcadeScrollGuard();
 
   const rarityColors = {
     rare: { border: '#00f0ff', glow: 'rgba(0,240,255,0.7)', bg: 'rgba(0,240,255,0.15)', text: '#00f0ff' },
@@ -409,6 +469,11 @@ export function triggerRelicCelebration(relicMeta) {
   }
 
   // Build Overlay & Modal (starts in "Decoding" state if awaiting server roll, so no wrong placeholder flashes)
+  if (typeof window !== 'undefined' && window._relicModalKeyDownHandler) {
+    window.removeEventListener('keydown', window._relicModalKeyDownHandler, true);
+    window._relicModalKeyDownHandler = null;
+  }
+
   const targetParent = getActiveTopLayerContainer();
   let existingOverlay = document.getElementById('quantum-relic-discovery-overlay');
   if (existingOverlay) existingOverlay.remove();
@@ -450,9 +515,45 @@ export function triggerRelicCelebration(relicMeta) {
   modal.style.transition = 'transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
 
   let isDismissed = false;
+  let relicRevealReadyAt = Infinity;
+
+  const onRelicModalKeyDown = (e) => {
+    if (isDismissed || !overlay.isConnected) {
+      window.removeEventListener('keydown', onRelicModalKeyDown, true);
+      if (window._relicModalKeyDownHandler === onRelicModalKeyDown) {
+        window._relicModalKeyDownHandler = null;
+      }
+      return;
+    }
+    if (isEditableElementFocused()) return;
+
+    const isConfirmKey =
+      e.code === 'Space' ||
+      e.key === ' ' ||
+      e.key === 'Spacebar' ||
+      e.code === 'Enter' ||
+      e.key === 'Enter';
+    if (!isConfirmKey) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!e.repeat && Date.now() >= relicRevealReadyAt) {
+      dismiss();
+    }
+  };
+
   const dismiss = () => {
     if (isDismissed) return;
     isDismissed = true;
+    window.removeEventListener('keydown', onRelicModalKeyDown, true);
+    if (window._relicModalKeyDownHandler === onRelicModalKeyDown) {
+      window._relicModalKeyDownHandler = null;
+    }
+    if (document.activeElement && document.activeElement !== document.body && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
+    installPausedArcadeScrollGuard();
     overlay.style.opacity = '0';
     modal.style.transform = 'scale(0.85)';
     setTimeout(() => {
@@ -515,6 +616,8 @@ export function triggerRelicCelebration(relicMeta) {
       </button>
     `;
 
+    relicRevealReadyAt = Date.now() + 450;
+
     const btnResume = modal.querySelector('#btn-relic-resume-game');
     if (btnResume) btnResume.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -525,6 +628,8 @@ export function triggerRelicCelebration(relicMeta) {
   overlay.appendChild(modal);
   targetParent.appendChild(overlay);
   overlay.addEventListener('click', dismiss);
+  window._relicModalKeyDownHandler = onRelicModalKeyDown;
+  window.addEventListener('keydown', onRelicModalKeyDown, true);
 
   requestAnimationFrame(() => {
     overlay.style.opacity = '1';
@@ -603,6 +708,7 @@ export function triggerJackpotCelebration({ amount, gameName = 'Casino Game', wi
 
   // 1. Automatically Pause Active Arcade Games
   pauseActiveArcadeGames();
+  installPausedArcadeScrollGuard();
 
   // 2. Play Web Audio Grand Fanfare Chord sequence (works universally across all devices)
   try {
