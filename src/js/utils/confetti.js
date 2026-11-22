@@ -35,6 +35,38 @@ export function pauseActiveArcadeGames() {
 }
 
 /**
+ * Returns true if a real-time arcade game is currently active and paused.
+ * Turn-based games (e.g. 2048) are excluded so they resume immediately.
+ */
+function hasPausedRealtimeArcadeGame() {
+  try {
+    return Boolean(
+      (window.dodgeGame && window.dodgeGame.isPlaying && window.dodgeGame.isPaused) ||
+      (window.invadersGame && window.invadersGame.isPlaying && window.invadersGame.isPaused) ||
+      (window.cyberDrift && window.cyberDrift.isRunning && window.cyberDrift.isPaused) ||
+      (window.cyberStacker && window.cyberStacker.isPlaying && window.cyberStacker.isPaused) ||
+      (window.skeetEngine && window.skeetEngine.state === 'PLAYING' && window.skeetEngine.isPaused) ||
+      (window.defenseEngine && window.defenseEngine.state === 'PLAYING' && window.defenseEngine.isPaused) ||
+      (window.bubbleGame && window.bubbleGame.isPlaying && window.bubbleGame.isPaused) ||
+      (window.cyberRunner && window.cyberRunner.isRunning && window.cyberRunner.isPaused) ||
+      (window.cyberTetrisGame && window.cyberTetrisGame.isPlaying && window.cyberTetrisGame.isPaused)
+    );
+  } catch (e) {
+    return false;
+  }
+}
+
+function clearRelicResumeCountdown() {
+  if (typeof window === 'undefined') return;
+  if (window._relicResumeCountdownTimer) {
+    clearTimeout(window._relicResumeCountdownTimer);
+    window._relicResumeCountdownTimer = null;
+  }
+  const existing = document.getElementById('relic-resume-countdown-overlay');
+  if (existing) existing.remove();
+}
+
+/**
  * Resumes all active arcade engines seamlessly upon modal dismissal
  */
 export function resumeActiveArcadeGames() {
@@ -43,6 +75,7 @@ export function resumeActiveArcadeGames() {
     if (window.dodgeGame && window.dodgeGame.isPlaying) {
       window.dodgeGame.isPaused = false;
       window.dodgeGame.lastFrameTime = now;
+      window.dodgeGame.accumulatedTime = 0;
     }
     if (window.invadersGame && window.invadersGame.isPlaying) {
       window.invadersGame.isPaused = false;
@@ -81,6 +114,103 @@ export function resumeActiveArcadeGames() {
   } catch (e) {
     console.warn("[Relic Celebration] Resume games error:", e);
   }
+}
+
+/**
+ * Displays an unobstructed 3-second countdown over the frozen game canvas before resuming
+ */
+export function resumeArcadeGamesWithCountdown(seconds = 3) {
+  clearRelicResumeCountdown();
+
+  if (!hasPausedRealtimeArcadeGame()) {
+    resumeActiveArcadeGames();
+    return;
+  }
+
+  if (!document.getElementById('relic-countdown-keyframes')) {
+    const style = document.createElement('style');
+    style.id = 'relic-countdown-keyframes';
+    style.textContent = `
+      @keyframes relic-countdown-pop {
+        0% { transform: scale(1.35); opacity: 0.4; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  const targetParent = getActiveTopLayerContainer();
+  const overlay = document.createElement('div');
+  overlay.id = 'relic-resume-countdown-overlay';
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.width = '100vw';
+  overlay.style.height = '100vh';
+  overlay.style.zIndex = '2147483647';
+  overlay.style.pointerEvents = 'none';
+  overlay.style.background = 'transparent';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+
+  const badge = document.createElement('div');
+  badge.style.background = 'rgba(6, 10, 20, 0.72)';
+  badge.style.border = '2px solid rgba(0, 240, 255, 0.75)';
+  badge.style.borderRadius = '16px';
+  badge.style.padding = '0.9rem 1.75rem';
+  badge.style.textAlign = 'center';
+  badge.style.boxShadow = '0 8px 28px rgba(0, 0, 0, 0.55)';
+
+  const label = document.createElement('div');
+  label.textContent = 'GET READY';
+  label.style.fontSize = '0.78rem';
+  label.style.fontWeight = '900';
+  label.style.letterSpacing = '2px';
+  label.style.color = '#00f0ff';
+  label.style.marginBottom = '0.15rem';
+
+  const numEl = document.createElement('div');
+  numEl.style.fontSize = '3.5rem';
+  numEl.style.fontWeight = '900';
+  numEl.style.lineHeight = '1';
+  numEl.style.color = '#ffffff';
+  numEl.style.textShadow = '0 0 14px rgba(0, 240, 255, 0.85), 0 3px 10px rgba(0, 0, 0, 0.9)';
+
+  badge.appendChild(label);
+  badge.appendChild(numEl);
+  overlay.appendChild(badge);
+  targetParent.appendChild(overlay);
+
+  let remaining = Math.max(1, Math.floor(seconds));
+
+  const renderTick = () => {
+    if (!hasPausedRealtimeArcadeGame()) {
+      clearRelicResumeCountdown();
+      return;
+    }
+
+    if (remaining <= 0) {
+      clearRelicResumeCountdown();
+      resumeActiveArcadeGames();
+      return;
+    }
+
+    numEl.textContent = String(remaining);
+    numEl.style.animation = 'none';
+    void numEl.offsetWidth;
+    numEl.style.animation = 'relic-countdown-pop 0.25s ease-out';
+
+    try {
+      if (window.sfx && typeof window.sfx.playClick === 'function') {
+        window.sfx.playClick();
+      }
+    } catch (e) {}
+
+    remaining -= 1;
+    window._relicResumeCountdownTimer = setTimeout(renderTick, 1000);
+  };
+
+  renderTick();
 }
 
 /**
@@ -257,7 +387,8 @@ export function triggerRelicCelebration(relicMeta) {
 
   relicMeta = canonicalizeMeta(relicMeta);
 
-  // 1. Automatically Pause Active Arcade Games immediately
+  // 1. Clear any stale countdown & Pause Active Arcade Games immediately
+  clearRelicResumeCountdown();
   pauseActiveArcadeGames();
 
   const rarityColors = {
@@ -342,8 +473,8 @@ export function triggerRelicCelebration(relicMeta) {
     modal.style.transform = 'scale(0.85)';
     setTimeout(() => {
       if (overlay.parentElement) overlay.remove();
-      resumeActiveArcadeGames();
-    }, 300);
+      resumeArcadeGamesWithCountdown(3);
+    }, 180);
   };
 
   const renderFinalRelic = (finalMeta, statusText = '✨ Added to Stash (+1 In-Game)', isError = false) => {
@@ -685,5 +816,6 @@ if (typeof window !== 'undefined') {
   window.triggerJackpotCelebration = triggerJackpotCelebration;
   window.pauseActiveArcadeGames = pauseActiveArcadeGames;
   window.resumeActiveArcadeGames = resumeActiveArcadeGames;
+  window.resumeArcadeGamesWithCountdown = resumeArcadeGamesWithCountdown;
 }
 
