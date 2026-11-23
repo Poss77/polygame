@@ -1950,15 +1950,6 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
   const outcome = isWin ? 'win' : (isPush ? 'push' : 'loss');
   const profitLoss = Math.round((pay - bet) * 100) / 100;
 
-  // Trigger Discord Webhook Notification ONLY for actual Big Bet Wins (Payout > 100 PGT threshold)
-  if (isWin && pay > 100) {
-    if (typeof window.sendDiscordBetWinAnnouncement === 'function') {
-      window.sendDiscordBetWinAnnouncement(game, bet, pay, mult);
-    } else if (typeof window.sendDiscordBigWin === 'function') {
-      window.sendDiscordBigWin(game, bet, pay, mult);
-    }
-  }
-
   if (!supabase || !appState.isPlayerConnected()) return;
   const targetId = appState.getPlayerId() || appState.state.walletAddress || '';
   if (!targetId) return;
@@ -1991,6 +1982,16 @@ export async function logBetWin(game, betAmount, payout, multiplier) {
     }
   } catch (e) {
     // Non-blocking log catch
+  }
+
+  // Trigger Discord Webhook Notification ONLY for actual Big Bet Wins (Profit > 100 PGT threshold)
+  // Dispatched AFTER bet_wins DB insert so discord-relay anti-spoof guard always finds the record
+  if (isWin && profitLoss > 100) {
+    if (typeof window.sendDiscordBetWinAnnouncement === 'function') {
+      window.sendDiscordBetWinAnnouncement(game, bet, pay, mult);
+    } else if (typeof window.sendDiscordBigWin === 'function') {
+      window.sendDiscordBigWin(game, bet, pay, mult);
+    }
   }
 }
 

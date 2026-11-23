@@ -297,20 +297,21 @@ window.sendDiscordEarnAnnouncement = sendDiscordEarnAnnouncement;
 
 /**
  * Helper to trigger Mini-Game (Bet) Win Announcements
- * Triggers ONLY if winAmount > DISCORD_MIN_WIN_THRESHOLD (default: 100 PGT)
+ * Triggers ONLY if net profit (winAmount - betAmount) > DISCORD_MIN_WIN_THRESHOLD (default: 100 PGT)
  */
 export function sendDiscordBetWinAnnouncement(gameName, betAmount, winAmount, multiplier = 1) {
   if (typeof window !== 'undefined' && window.appState && typeof window.appState.isPlayerConnected === 'function') {
     if (!window.appState.isPlayerConnected()) return;
   }
   const winPgt = parseFloat(winAmount || 0);
+  const betPgt = parseFloat(betAmount || 0);
+  const profitPgt = Math.max(0, Math.round((winPgt - betPgt) * 100) / 100);
   const minWin = (window.appState?.state?.discordMinWinThreshold !== undefined)
     ? parseFloat(window.appState.state.discordMinWinThreshold)
     : DISCORD_MIN_WIN_THRESHOLD;
 
-  if (winPgt <= minWin) return;
+  if (profitPgt <= minWin) return;
 
-  const betPgt = parseFloat(betAmount || 0);
   const multVal = parseFloat(multiplier || 1);
   const username = window.appState?.state?.username;
   const player = (username && username !== 'Anonymous Player') ? username : 'PolyGame Pilot';
@@ -321,6 +322,7 @@ export function sendDiscordBetWinAnnouncement(gameName, betAmount, winAmount, mu
     gameName,
     wager: betPgt,
     payout: winPgt,
+    profit: profitPgt,
     multiplier: multVal.toFixed(2),
     player
   });
