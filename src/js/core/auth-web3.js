@@ -601,26 +601,40 @@ export async function executeAuthenticatedRpc(rpcName, params = {}) {
   // Step 2: Attempt RPC execution
   let res = await client.rpc(rpcName, params);
 
-  // Step 3: Inspect for authentication errors
-  const rawData = Array.isArray(res?.data) ? res.data[0] : res?.data;
-  const errMsg = String(res?.error?.message || rawData?.error || rawData?.reason || '');
-  const isAuthError = Boolean(
-    errMsg.includes('AUTHENTICATION_REQUIRED') ||
-    errMsg.toLowerCase().includes('jwt expired') ||
-    errMsg.toLowerCase().includes('token is expired') ||
-    errMsg.toLowerCase().includes('invalid claim') ||
-    errMsg.toLowerCase().includes('permission denied') ||
-    res?.error?.code === 'PGRST301' ||
-    res?.error?.status === 401
-  );
+  // Step 3: Inspect for authentication or transient PostgREST JWT errors (e.g. PGRST301/302/303, HTTP 401)
+  const checkIsAuthError = (r) => {
+    const rData = Array.isArray(r?.data) ? r.data[0] : r?.data;
+    const msg = String(r?.error?.message || rData?.error || rData?.reason || '');
+    const lowerMsg = msg.toLowerCase();
+    const errCode = String(r?.error?.code || '');
+    return Boolean(
+      msg.includes('AUTHENTICATION_REQUIRED') ||
+      lowerMsg.includes('jwt') ||
+      lowerMsg.includes('token is expired') ||
+      lowerMsg.includes('invalid claim') ||
+      lowerMsg.includes('permission denied') ||
+      errCode.startsWith('PGRST30') ||
+      r?.status === 401 ||
+      r?.error?.status === 401
+    );
+  };
 
-  // Step 4: If auth error occurred, attempt re-auth and retry once
-  if (isAuthError) {
-    console.warn(`[executeAuthenticatedRpc] Authentication error detected during ${rpcName}: "${errMsg}". Re-authenticating session...`);
-    const reAuthed = await ensureValidSupabaseSession(true);
-    if (reAuthed) {
-      if (window.POLY_DEBUG) console.log(`[executeAuthenticatedRpc] Re-authentication successful. Retrying ${rpcName}...`);
-      res = await client.rpc(rpcName, params);
+  // Step 4: If auth/JWT error occurred (such as transient PGRST303 after OAuth token rotation),
+  // perform a brief 250ms backoff + silent session check and retry before falling back to interactive re-auth
+  if (checkIsAuthError(res)) {
+    const firstErrMsg = String(res?.error?.message || res?.error?.code || res?.status || '401');
+    console.warn(`[executeAuthenticatedRpc] Auth/JWT error during ${rpcName} (${firstErrMsg}). Retrying after silent session sync...`);
+    await new Promise(resolve => setTimeout(resolve, 250));
+    await ensureValidSupabaseSession(false);
+    res = await client.rpc(rpcName, params);
+
+    if (checkIsAuthError(res)) {
+      console.warn(`[executeAuthenticatedRpc] Silent retry still returned auth error for ${rpcName}. Re-authenticating session...`);
+      const reAuthed = await ensureValidSupabaseSession(true);
+      if (reAuthed) {
+        if (window.POLY_DEBUG) console.log(`[executeAuthenticatedRpc] Re-authentication successful. Retrying ${rpcName}...`);
+        res = await client.rpc(rpcName, params);
+      }
     }
   }
 
