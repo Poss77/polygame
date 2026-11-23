@@ -627,7 +627,11 @@ export function triggerRelicCelebration(relicMeta) {
 
   overlay.appendChild(modal);
   targetParent.appendChild(overlay);
-  overlay.addEventListener('click', dismiss);
+  overlay.addEventListener('click', () => {
+    if (Date.now() >= relicRevealReadyAt) {
+      dismiss();
+    }
+  });
   window._relicModalKeyDownHandler = onRelicModalKeyDown;
   window.addEventListener('keydown', onRelicModalKeyDown, true);
 
@@ -649,12 +653,38 @@ export function triggerRelicCelebration(relicMeta) {
       <div style="font-size: 0.74rem; color: var(--text-muted);">Resolving server drop roll</div>
     `;
 
-    sbClient.rpc('grant_relic_drop', {
+    let hasResolvedRelic = false;
+    const safeRenderFinalRelic = (meta, statusText, isError) => {
+      if (hasResolvedRelic) return;
+      hasResolvedRelic = true;
+      if (decodeSafetyTimer) clearTimeout(decodeSafetyTimer);
+      renderFinalRelic(meta, statusText, isError);
+    };
+
+    // Hard 7.5-second watchdog so the player can NEVER get stuck on "Decoding Quantum Signature..."
+    // even if a mobile network switch (Wi-Fi <-> 5G) hangs the HTTP socket
+    const decodeSafetyTimer = setTimeout(() => {
+      if (!hasResolvedRelic) {
+        console.warn("[triggerRelicCelebration] Server roll timed out after 7.5s; revealing relic so game can resume.");
+        safeRenderFinalicFallback();
+      }
+    }, 7500);
+
+    const safeRenderFinalicFallback = () => {
+      safeRenderFinalRelic(relicMeta);
+    };
+
+    const rpcParams = {
       p_player_id: pId,
       p_relic_id: relicMeta.id,
       p_amount: 1,
       p_session_id: activeSessionId
-    }).then(res => {
+    };
+    const rpcCallPromise = (typeof window.executeAuthenticatedRpc === 'function')
+      ? window.executeAuthenticatedRpc('grant_relic_drop', rpcParams, { timeoutMs: 6500 })
+      : sbClient.rpc('grant_relic_drop', rpcParams);
+
+    Promise.resolve(rpcCallPromise).then(res => {
       if (res && res.data && !res.data.error && window.appState) {
         const updatedRelics = (res.data.relics && typeof res.data.relics === 'object')
           ? res.data.relics
@@ -665,19 +695,19 @@ export function triggerRelicCelebration(relicMeta) {
         }
         const serverRelicId = res.data.relic_id || relicMeta.id;
         const finalMeta = canonicalizeMeta({ ...relicMeta, id: serverRelicId });
-        renderFinalRelic(finalMeta);
+        safeRenderFinalRelic(finalMeta);
       } else if (res && res.data && res.data.error) {
         console.warn("[triggerRelicCelebration] grant_relic_drop rejected:", res.data.error);
-        renderFinalRelic(relicMeta, `⚠️ Not added: ${res.data.error}`, true);
+        safeRenderFinalRelic(relicMeta, `⚠️ Not added: ${res.data.error}`, true);
         if (typeof window.triggerToast === 'function') {
           window.triggerToast(`⚠️ Relic resonance blocked: ${res.data.error}`, 'warning');
         }
       } else {
-        renderFinalRelic(relicMeta);
+        safeRenderFinalRelic(relicMeta);
       }
     }).catch(err => {
       console.warn("[triggerRelicCelebration] grant_relic_drop error:", err);
-      renderFinalRelic(relicMeta);
+      safeRenderFinalRelic(relicMeta);
     });
   } else {
     // Guest / preview fallback (no server RPC)

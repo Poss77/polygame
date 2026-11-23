@@ -589,17 +589,78 @@ export async function ensureValidSupabaseSession(interactive = true) {
  * @param {object} params - Parameters object for the RPC.
  * @returns {Promise<{ data: any, error: any }>} Standard Supabase RPC response object.
  */
-export async function executeAuthenticatedRpc(rpcName, params = {}) {
+export async function executeAuthenticatedRpc(rpcName, params = {}, options = {}) {
   const client = (typeof window !== 'undefined' && (window.supabaseClient || window.supabase)) ? (window.supabaseClient || window.supabase) : null;
   if (!client) {
     return { data: null, error: { message: 'Database connection unavailable' } };
   }
 
-  // Step 1: Proactively ensure the access token is fresh (silent check)
-  await ensureValidSupabaseSession(false);
+  const timeoutMs = (typeof options.timeoutMs === 'number' && options.timeoutMs > 0) ? options.timeoutMs : 12000;
+
+  const invokeWithTimeout = async () => {
+    let timerId = null;
+    try {
+      const rpcPromise = client.rpc(rpcName, params);
+      const timeoutPromise = new Promise((resolve) => {
+        timerId = setTimeout(() => {
+          resolve({
+            data: null,
+            error: {
+              message: `RPC ${rpcName} timed out after ${timeoutMs}ms`,
+              code: 'NETWORK_TIMEOUT'
+            }
+          });
+        }, timeoutMs);
+      });
+      return await Promise.race([rpcPromise, timeoutPromise]);
+    } catch (err) {
+      return {
+        data: null,
+        error: {
+          message: err?.message || String(err),
+          code: 'NETWORK_ERROR'
+        }
+      };
+    } finally {
+      if (timerId) clearTimeout(timerId);
+    }
+  };
+
+  // Step 1: Proactively ensure the access token is fresh (silent check with 5s timeout guard)
+  try {
+    await Promise.race([
+      ensureValidSupabaseSession(false),
+      new Promise(r => setTimeout(r, 5000))
+    ]);
+  } catch (_) {}
 
   // Step 2: Attempt RPC execution
-  let res = await client.rpc(rpcName, params);
+  let res = await invokeWithTimeout();
+
+  // Step 2b: Inspect for transient mobile network / dead-socket errors (e.g. Wi-Fi <-> 5G IP handoff on iOS Safari)
+  const checkIsNetworkError = (r) => {
+    const msg = String(r?.error?.message || r?.error || '').toLowerCase();
+    const errCode = String(r?.error?.code || '');
+    return Boolean(
+      errCode === 'NETWORK_TIMEOUT' ||
+      errCode === 'NETWORK_ERROR' ||
+      msg.includes('failed to fetch') ||
+      msg.includes('load failed') ||
+      msg.includes('networkerror') ||
+      msg.includes('network request failed') ||
+      msg.includes('timed out')
+    );
+  };
+
+  if (checkIsNetworkError(res)) {
+    const netRetryDelays = [350, 800];
+    for (let attempt = 0; attempt < netRetryDelays.length; attempt++) {
+      console.warn(`[executeAuthenticatedRpc] Network/socket drop during ${rpcName} (${res?.error?.message || res?.error?.code}). Retry ${attempt + 1}/${netRetryDelays.length}...`);
+      await new Promise(resolve => setTimeout(resolve, netRetryDelays[attempt]));
+      res = await invokeWithTimeout();
+      if (!checkIsNetworkError(res)) break;
+    }
+  }
 
   // Step 3: Inspect for authentication or transient PostgREST JWT errors (e.g. PGRST301/302/303, HTTP 401)
   const checkIsAuthError = (r) => {
@@ -625,15 +686,20 @@ export async function executeAuthenticatedRpc(rpcName, params = {}) {
     const firstErrMsg = String(res?.error?.message || res?.error?.code || res?.status || '401');
     console.warn(`[executeAuthenticatedRpc] Auth/JWT error during ${rpcName} (${firstErrMsg}). Retrying after silent session sync...`);
     await new Promise(resolve => setTimeout(resolve, 250));
-    await ensureValidSupabaseSession(false);
-    res = await client.rpc(rpcName, params);
+    try {
+      await Promise.race([
+        ensureValidSupabaseSession(false),
+        new Promise(r => setTimeout(r, 5000))
+      ]);
+    } catch (_) {}
+    res = await invokeWithTimeout();
 
     if (checkIsAuthError(res)) {
       console.warn(`[executeAuthenticatedRpc] Silent retry still returned auth error for ${rpcName}. Re-authenticating session...`);
       const reAuthed = await ensureValidSupabaseSession(true);
       if (reAuthed) {
         if (window.POLY_DEBUG) console.log(`[executeAuthenticatedRpc] Re-authentication successful. Retrying ${rpcName}...`);
-        res = await client.rpc(rpcName, params);
+        res = await invokeWithTimeout();
       }
     }
   }

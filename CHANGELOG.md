@@ -5,6 +5,10 @@ For historical archives, see:
 - [Historical v1.5 Releases (v1.5.000 - v1.5.689)](docs/archive/CHANGELOG_v1.5_archive.md)
 - [Historical v1.4 Releases (v1.4.298 - v1.4.499)](docs/archive/CHANGELOG_v1.4_archive.md)
 
+- **Relic Decoding Hang Guard & Mobile Network-Handoff RPC Retry (`v1.5.891`)**:
+  - Updated `triggerRelicCelebration()` in [`src/js/utils/confetti.js`](src/js/utils/confetti.js) to invoke `grant_relic_drop` through `executeAuthenticatedRpc` with a `6.5s` timeout, added a hard `7.5s` watchdog timer (`decodeSafetyTimer`) so the `"Decoding Quantum Signature..."` modal always resolves even if a mobile socket stalls during a Wi-Fi/5G handoff, and prevented premature backdrop-tap dismissal before `relicRevealReadyAt`.
+  - Hardened `executeAuthenticatedRpc()` in [`src/js/core/auth-web3.js`](src/js/core/auth-web3.js) with a `12s` per-call timeout (`options.timeoutMs`), a `5s` timeout guard around `ensureValidSupabaseSession(false)`, and a 2-attempt automatic backoff retry (`350ms` -> `800ms`) for transient mobile network/socket drops (`Failed to fetch`, `Load failed`, `NetworkError`, `NETWORK_TIMEOUT`).
+
 - **Simulated Community Accounts Deduplication & Identity Trigger Fix (`v1.5.848`)**:
   - Updated `enforce_account_identity_integrity()` in [`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql) to skip identity rewriting for simulated benchmark rows (`is_simulated = TRUE` with no `user_id`/`web3_auth_id`) and for `SECURITY DEFINER` RPC updates targeting accounts other than the caller's own `auth.uid()`, preventing simulated `0xpgtsim_*` rows from being rewritten to `0xpgtc58e9dfe` and stamped with the admin wallet.
   - Updated `prevent_direct_balance_mutation()` in [`supabase/rpcs/12_anticheat_triggers.sql`](supabase/rpcs/12_anticheat_triggers.sql) to lock `is_simulated` against direct client tampering (`SECURITY INVOKER` preserved).
