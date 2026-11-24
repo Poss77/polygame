@@ -69,12 +69,19 @@ export async function syncUserLiquidity(force = false) {
     const res = await fetchUserTotalPgtLiquidity(wallet, force);
     if (res && typeof res.totalPgt === 'number') {
       const liveUsd = res.totalUsd || 0;
+      const dbDexUsd = parseFloat(stateObj.state.dexLiquidityUsd || 0);
+      const effectiveUsd = Math.max(dbDexUsd, liveUsd);
+      let effectiveMult = 1.0;
+      if (effectiveUsd >= 150) effectiveMult = 1.30;
+      else if (effectiveUsd >= 100) effectiveMult = 1.20;
+      else if (effectiveUsd >= 50) effectiveMult = 1.10;
+
       stateObj.update({
         liquidityPgtAmount: res.totalPgt,
-        liquidityUsdAmount: liveUsd,
-        dexLiquidityUsd: liveUsd,
-        liquidityMultiplier: res.multiplier || 1.0,
-        isLiquidityProvider: res.isQualified
+        liquidityUsdAmount: effectiveUsd,
+        dexLiquidityUsd: effectiveUsd,
+        liquidityMultiplier: effectiveMult,
+        isLiquidityProvider: effectiveMult > 1.0
       });
       if (typeof stateObj.syncUI === 'function') stateObj.syncUI();
     }
@@ -662,7 +669,7 @@ export function getVipEstimatedClaimPol() {
 
   let totalEst = basePol * (1 + combinedBoostPercent / 100);
 
-  const lpUsd = parseFloat(stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0);
+  const lpUsd = Math.max(parseFloat(stateObj.state.dexLiquidityUsd || 0), parseFloat(stateObj.state.liquidityUsdAmount || 0));
   let lpMult = 1.0;
   if (lpUsd >= 150) {
     lpMult = 1.30;
@@ -901,7 +908,7 @@ export function renderVipFaucetUI() {
     }
   }
 
-  const lpUsd = parseFloat(stateObj.state.liquidityUsdAmount || stateObj.state.dexLiquidityUsd || 0);
+  const lpUsd = Math.max(parseFloat(stateObj.state.dexLiquidityUsd || 0), parseFloat(stateObj.state.liquidityUsdAmount || 0));
   let lpMult = 1.0;
   if (lpUsd >= 150) {
     lpMult = 1.30;

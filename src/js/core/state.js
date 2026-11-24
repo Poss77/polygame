@@ -1239,7 +1239,7 @@ export class PolyState {
     let totalEstPol = basePol * (1 + multis.totalFaucetBoostPercent / 100);
     
     // Tiered DEX Liquidity Provider Bonus ($50 = 1.1x, $100 = 1.2x, $150 = 1.3x)
-    const lpUsd = parseFloat(this.state.liquidityUsdAmount || this.state.dexLiquidityUsd || 0);
+    const lpUsd = Math.max(parseFloat(this.state.dexLiquidityUsd || 0), parseFloat(this.state.liquidityUsdAmount || 0));
     
     let lpMult = 1.0;
     if (lpUsd >= 150) {
