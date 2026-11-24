@@ -1,8 +1,8 @@
 import { ARCADE_GAMES_LIST } from './games-registry.js';
-import { supabase, ADMIN_WALLET_ADDRESS, web3Provider, realSigner, setWeb3Provider, setRealSigner, APP_VERSION } from './config.js';
+import { supabase, ADMIN_WALLET_ADDRESS, BURN_RECEIVER_ADDRESS, web3Provider, realSigner, setWeb3Provider, setRealSigner, APP_VERSION } from './config.js';
 import { sfx } from './audio.js';
 import { appState, PolyState } from './state.js';
-import { closeModal, triggerToast, connectWeb3, escapeHtml } from './ui.js';
+import { closeModal, triggerToast, connectWeb3, escapeHtml, getDirectPolygonPGTBalance } from './ui.js';
 import { normalizeRelicsObject, mergeRelicsObjects, countRelicsBySeason } from '../features/relics.js';
 import { hasValidWeb3Session, clearWeb3Session, executeAuthenticatedRpc, ensureValidSupabaseSession } from './auth-web3.js';
 export { executeAuthenticatedRpc };
@@ -2127,7 +2127,7 @@ export function hydrateSitewideStatsFromCache() {
     const cachedStr = localStorage.getItem('polygame_cached_sitewide_stats');
     if (cachedStr) {
       const data = JSON.parse(cachedStr);
-      updateSitewideStatsUI(data.arcadePlays, data.relicsFound, data.faucetClaims, data.relicsS1, data.relicsS2, data.pgtBurned);
+      updateSitewideStatsUI(data.arcadePlays, data.relicsFound, data.faucetClaims, data.relicsS1, data.relicsS2, data.pgtBurnedOnChain);
     }
   } catch (e) {}
 }
@@ -2184,11 +2184,7 @@ export async function loadSitewideStats(force = false) {
         .from('users')
         .select('total_claims, relics, total_arcade_plays');
 
-      const burnPromise = supabase
-        .from('global_burn_metrics')
-        .select('total_burned_pgt')
-        .eq('id', 1)
-        .maybeSingle();
+      const burnPromise = getDirectPolygonPGTBalance(BURN_RECEIVER_ADDRESS);
 
       const [sessionRes, usersRes, burnRes] = await Promise.allSettled([sessionPromise, usersPromise, burnPromise]);
 
@@ -2198,8 +2194,8 @@ export async function loadSitewideStats(force = false) {
       }
 
       let liveBurnedPgt = null;
-      if (burnRes.status === 'fulfilled' && !burnRes.value.error && burnRes.value.data?.total_burned_pgt !== undefined) {
-        liveBurnedPgt = Number(burnRes.value.data.total_burned_pgt) || 0;
+      if (burnRes.status === 'fulfilled' && typeof burnRes.value === 'number' && burnRes.value > 0) {
+        liveBurnedPgt = burnRes.value;
       }
 
       let faucetClaims = 0;
@@ -2238,7 +2234,7 @@ export async function loadSitewideStats(force = false) {
       const finalRelicsS1 = usersLoaded ? relicsS1 : (cached.relicsS1 ?? undefined);
       const finalRelicsS2 = usersLoaded ? relicsS2 : (cached.relicsS2 ?? undefined);
       const finalFaucetClaims = usersLoaded ? faucetClaims : (cached.faucetClaims ?? 0);
-      const finalPgtBurned = liveBurnedPgt !== null ? liveBurnedPgt : (cached.pgtBurned ?? null);
+      const finalPgtBurned = liveBurnedPgt !== null ? liveBurnedPgt : (cached.pgtBurnedOnChain ?? null);
 
       updateSitewideStatsUI(finalArcadePlays, finalRelicsFound, finalFaucetClaims, finalRelicsS1, finalRelicsS2, finalPgtBurned);
       _lastSitewideStatsFetchAt = Date.now();
@@ -2250,7 +2246,7 @@ export async function loadSitewideStats(force = false) {
           relicsS1: finalRelicsS1,
           relicsS2: finalRelicsS2,
           faucetClaims: finalFaucetClaims,
-          pgtBurned: finalPgtBurned,
+          pgtBurnedOnChain: finalPgtBurned,
           updatedAt: _lastSitewideStatsFetchAt
         }));
       } catch (e) {}

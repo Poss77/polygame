@@ -225,7 +225,7 @@ export async function loadHoldersLeaderboard(initialMode = null, force = false) 
           relicsS1: globalRelicsS1,
           relicsS2: globalRelicsS2,
           faucetClaims: globalFaucetClaims,
-          pgtBurned: prevCached.pgtBurned ?? null,
+          pgtBurnedOnChain: prevCached.pgtBurnedOnChain ?? null,
           updatedAt: lastHoldersFetchAt
         }));
       } catch (e) {}
