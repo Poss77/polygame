@@ -366,6 +366,28 @@ export function initArcadeHost() {
 
   wrapSwitch();
   PolyArcadeHost.syncMuteUI();
+
+  if (typeof document !== 'undefined' && !window._arcadeSelectionGuardInstalled) {
+    window._arcadeSelectionGuardInstalled = true;
+    const blockMobileCopySelection = (e) => {
+      const target = e.target;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+        return;
+      }
+      const inGameContainer = target && typeof target.closest === 'function' && (
+        target.closest('.game-window-container') ||
+        target.closest('.game-canvas-wrapper') ||
+        target.tagName === 'CANVAS'
+      );
+      const isPlaying = typeof window.isAnyArcadeGamePlaying === 'function' && window.isAnyArcadeGamePlaying();
+      if (inGameContainer || isPlaying) {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('selectstart', blockMobileCopySelection);
+    document.addEventListener('contextmenu', blockMobileCopySelection);
+  }
+
   if (typeof document !== 'undefined' && document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       wrapSwitch();

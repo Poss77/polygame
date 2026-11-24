@@ -18,6 +18,27 @@
   align-items: center;
 }
 
+/* Prevent mobile tap + long-press copy/selection callout during games */
+.game-window-container,
+.game-window-container *,
+.game-canvas-wrapper,
+.game-canvas-wrapper *,
+#view-games canvas,
+#view-space canvas {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.game-window-container input,
+.game-window-container textarea,
+.game-canvas-wrapper input,
+.game-canvas-wrapper textarea {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
 .game-canvas-wrapper {
   position: relative;
   width: 100%;
