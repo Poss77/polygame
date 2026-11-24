@@ -359,16 +359,12 @@ export class PolyState {
         if (cleanName) dbPayload.username = cleanName;
       }
 
-      // Only include space_state if explicitly marked dirty by PolySpace actions
-      // This guarantees that routine background saves (arcade sessions, quests, highscores) never overwrite cloud fleet expeditions
-      if (this.state.spaceState && typeof this.state.spaceState === 'object' && Object.keys(this.state.spaceState).length > 0) {
-        const sp = this.state.spaceState;
-        const hasRealProgress = ((sp.warpLevel || 1) > 1 || (sp.laserLevel || 1) > 1 || (sp.cargoLevel || 1) > 1 || (sp.iron || 0) > 50 || (sp.titanium || 0) > 10 || (sp.quantum || 0) > 0 || (Array.isArray(sp.expeditions) && sp.expeditions.length > 0));
-        if ((this._spaceStateLoaded || hasRealProgress) && this._spaceStateDirty) {
-          dbPayload.space_state = this.state.spaceState;
-          this._spaceStateDirty = false;
-        }
-      }
+      // NOTE: space_state is intentionally omitted from direct table PATCH payloads.
+      // All PolySpace state, expeditions, modules, minerals, and mission logs are strictly
+      // managed server-side via authoritative PolySpace RPCs (claim_polyspace_expedition,
+      // upgrade_polyspace_module, smelt_space_ore, launch_outpost_raid, scan_polyspace_anomaly,
+      // strike_world_boss, save_polyspace_state), while equipped_starship has its own column below.
+      this._spaceStateDirty = false;
 
       // Only include relics if populated to prevent overwriting existing DB relics with empty default object during multi-device sync
       if (this.state.relics && typeof this.state.relics === 'object' && Object.keys(this.state.relics).length > 0) {

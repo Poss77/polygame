@@ -693,7 +693,9 @@ export function setEquippedStarship(ship) {
         window.appState.state.spaceState = {};
       }
       window.appState.state.spaceState.equippedStarship = enrichedShip;
-      window.appState._spaceStateDirty = true;
+      if (typeof window.appState.save === 'function') {
+        window.appState.save();
+      }
       if (typeof window.appState.saveToDB === 'function') {
         window.appState.saveToDB();
       }
@@ -848,9 +850,8 @@ export async function syncFleetFromChain(userAddress = null, showToast = false) 
         if (window.appState && window.appState.state) {
           if (!window.appState.state.spaceState) window.appState.state.spaceState = {};
           window.appState.state.spaceState.starshipFleet = chainFleet;
-          window.appState._spaceStateDirty = true;
-          if (typeof window.appState.saveToDB === 'function') {
-            window.appState.saveToDB();
+          if (typeof window.appState.save === 'function') {
+            window.appState.save();
           }
         }
 

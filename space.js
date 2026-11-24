@@ -704,7 +704,10 @@ class PolySpaceEngine {
     }
     if (window.appState) {
       window.appState.state.spaceState = spaceData;
-      window.appState._spaceStateDirty = true;
+      window.appState._spaceStateDirty = false;
+      if (typeof window.appState.save === 'function') {
+        window.appState.save();
+      }
     }
 
     // Instant local UI update
@@ -2010,8 +2013,11 @@ class PolySpaceEngine {
             this.state = data.space_state;
             this._lastLocalSaveTimestamp = Date.now();
             if (window.appState) {
-              window.appState.state.spaceState = this.state;
+              window.appState.state.spaceState = { ...this.state };
               window.appState._spaceStateDirty = false;
+              if (typeof window.appState.save === 'function') {
+                window.appState.save();
+              }
             }
             try {
               localStorage.setItem('polyspace_state', JSON.stringify(this.state));
@@ -2196,6 +2202,9 @@ class PolySpaceEngine {
             this.state = { ...this.state, ...new_space_state };
             if (window.appState) {
               window.appState.state.spaceState = { ...this.state };
+              if (typeof window.appState.save === 'function') {
+                window.appState.save();
+              }
             }
             try {
               localStorage.setItem('polyspace_state', JSON.stringify(this.state));
@@ -2480,6 +2489,9 @@ class PolySpaceEngine {
             this.state = { ...this.state, ...new_space_state };
             if (window.appState) {
               window.appState.state.spaceState = { ...this.state };
+              if (typeof window.appState.save === 'function') {
+                window.appState.save();
+              }
             }
             try {
               localStorage.setItem('polyspace_state', JSON.stringify(this.state));
@@ -2576,7 +2588,10 @@ class PolySpaceEngine {
 
   clearMissionLogs() {
     this.state.missionLogs = [];
-    this.saveSpaceState();
+    this.state._clearMissionLogs = true;
+    this.saveSpaceState().finally(() => {
+      delete this.state._clearMissionLogs;
+    });
   }
 
   async cancelAllExpeditions() {
@@ -2612,6 +2627,9 @@ class PolySpaceEngine {
               this.state = { ...this.state, ...data.new_space_state };
               if (window.appState) {
                 window.appState.state.spaceState = { ...this.state };
+                if (typeof window.appState.save === 'function') {
+                  window.appState.save();
+                }
               }
             } else {
               this.state.expeditions = [];
@@ -2671,6 +2689,9 @@ class PolySpaceEngine {
               this.state = { ...this.state, ...data.new_space_state };
               if (window.appState) {
                 window.appState.state.spaceState = { ...this.state };
+                if (typeof window.appState.save === 'function') {
+                  window.appState.save();
+                }
               }
             } else {
               this.state.expeditions = (this.state.expeditions || []).filter(e => e.id !== expId);
@@ -3268,6 +3289,15 @@ class PolySpaceEngine {
       if (res && res.success) {
         if (res.space_state) {
           this.state = { ...this.state, ...res.space_state };
+          if (window.appState) {
+            window.appState.state.spaceState = { ...this.state };
+            if (typeof window.appState.save === 'function') {
+              window.appState.save();
+            }
+          }
+          try {
+            localStorage.setItem('polyspace_state', JSON.stringify(this.state));
+          } catch (e) {}
         }
         if (window.triggerToast) {
           window.triggerToast(`Poked Allied Outpost! Boosted their shield & gained +${res.bonus_iron} Iron & +${res.bonus_pgt} PGT!`, "success");
@@ -3331,6 +3361,15 @@ class PolySpaceEngine {
       if (res && res.success) {
         if (res.space_state) {
           this.state = { ...this.state, ...res.space_state };
+          if (window.appState) {
+            window.appState.state.spaceState = { ...this.state };
+            if (typeof window.appState.save === 'function') {
+              window.appState.save();
+            }
+          }
+          try {
+            localStorage.setItem('polyspace_state', JSON.stringify(this.state));
+          } catch (e) {}
         }
         if (res.victory) {
           const rewards = [];
@@ -3974,7 +4013,13 @@ class PolySpaceEngine {
         }
         if (window.appState && window.appState.state && window.appState.state.spaceState) {
           window.appState.state.spaceState.quantum = this.state.quantum;
+          if (typeof window.appState.save === 'function') {
+            window.appState.save();
+          }
         }
+        try {
+          localStorage.setItem('polyspace_state', JSON.stringify(this.state));
+        } catch (e) {}
         this.updateUI();
         this.renderWorldBossStats(res);
         this.loadWorldBossLeaderboard();
@@ -5735,6 +5780,15 @@ class PolySpaceEngine {
     if (res && res.success) {
       if (res.space_state) {
         this.state = { ...this.state, ...res.space_state };
+        if (window.appState) {
+          window.appState.state.spaceState = { ...this.state };
+          if (typeof window.appState.save === 'function') {
+            window.appState.save();
+          }
+        }
+        try {
+          localStorage.setItem('polyspace_state', JSON.stringify(this.state));
+        } catch (e) {}
       }
       if (res.victory) {
         if (titleEl) {
