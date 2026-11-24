@@ -53,7 +53,10 @@ export const getFaucetAppState = () => {
   return null;
 };
 
-// Background Liquidity Scanner Sync
+let _lastServerDexSyncAt = 0;
+const DEX_SERVER_SYNC_TTL_MS = 15 * 60 * 1000;
+
+// Background Liquidity Scanner Sync (Server-Verified via sync-dex-liquidity Edge Function)
 export async function syncUserLiquidity(force = false) {
   const stateObj = getFaucetAppState();
   if (!stateObj || !stateObj.state) return;
@@ -66,6 +69,32 @@ export async function syncUserLiquidity(force = false) {
   if (!wallet || wallet.startsWith('0xguest') || wallet.startsWith('0xpgt') || wallet.startsWith('0xg_') || wallet.length !== 42) return;
 
   try {
+    // 1. Server-verified sync (updates users.dex_liquidity_usd in Supabase both up & down)
+    const now = Date.now();
+    if (supabase && (force || (now - _lastServerDexSyncAt >= DEX_SERVER_SYNC_TTL_MS))) {
+      const hasSession = await ensureValidSupabaseSession().catch(() => false);
+      if (hasSession) {
+        const { data: fnData, error: fnErr } = await supabase.functions.invoke('sync-dex-liquidity', {
+          body: {}
+        });
+        if (!fnErr && fnData?.success && !fnData?.skipped && typeof fnData.dex_liquidity_usd === 'number') {
+          _lastServerDexSyncAt = now;
+          const serverUsd = fnData.dex_liquidity_usd;
+          const serverMult = fnData.multiplier || (serverUsd >= 150 ? 1.30 : (serverUsd >= 100 ? 1.20 : (serverUsd >= 50 ? 1.10 : 1.0)));
+          stateObj.update({
+            liquidityPgtAmount: fnData.total_pgt ?? stateObj.state.liquidityPgtAmount ?? 0,
+            liquidityUsdAmount: serverUsd,
+            dexLiquidityUsd: serverUsd,
+            liquidityMultiplier: serverMult,
+            isLiquidityProvider: serverMult > 1.0
+          });
+          if (typeof stateObj.syncUI === 'function') stateObj.syncUI();
+          return;
+        }
+      }
+    }
+
+    // 2. Fallback: local read-only DEX scan (never lowers authoritative DB dexLiquidityUsd)
     const res = await fetchUserTotalPgtLiquidity(wallet, force);
     if (res && typeof res.totalPgt === 'number') {
       const liveUsd = res.totalUsd || 0;
