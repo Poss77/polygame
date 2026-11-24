@@ -645,6 +645,7 @@ export async function syncProfileWithDb(address, pgtBalance, flrBalance, maticBa
             window.polySpace.updateUI();
           }
         }
+        updateSpaceNavBadge();
 
         activeAppState.state.equippedNft = data.equipped_nft;
         activeAppState.state.stakedBalancePgt = data.staked_balance_pgt || 0;
@@ -2284,15 +2285,62 @@ export function initHeaderUtcClock() {
   _utcClockTimer = setInterval(updateUtcClock, 1000);
 }
 
+let _spaceBadgeTimer = null;
+export function updateSpaceNavBadge() {
+  if (typeof document === 'undefined') return;
+  const navBadge = document.getElementById('space-nav-badge');
+  if (!navBadge) return;
+
+  let expeditions = window.polySpace?.state?.expeditions;
+  if (!Array.isArray(expeditions)) {
+    const activeAppState = getAppState();
+    expeditions = activeAppState?.state?.spaceState?.expeditions;
+  }
+  if (!Array.isArray(expeditions)) {
+    try {
+      const raw = localStorage.getItem('polyspace_state');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed?.expeditions)) expeditions = parsed.expeditions;
+      }
+    } catch (e) {}
+  }
+
+  const now = Date.now();
+  const readyCount = Array.isArray(expeditions)
+    ? expeditions.filter(e => e && typeof e.endTime === 'number' && now >= e.endTime).length
+    : 0;
+
+  if (readyCount > 0) {
+    navBadge.innerText = readyCount > 9 ? '9+' : String(readyCount);
+    navBadge.style.display = 'inline-flex';
+    navBadge.setAttribute('title', `${readyCount} expedition${readyCount > 1 ? 's' : ''} returned to base!`);
+  } else {
+    navBadge.style.display = 'none';
+  }
+}
+
+export function initSpaceNavBadgeWatcher() {
+  updateSpaceNavBadge();
+  if (_spaceBadgeTimer) clearInterval(_spaceBadgeTimer);
+  _spaceBadgeTimer = setInterval(updateSpaceNavBadge, 5000);
+}
+
 if (typeof window !== 'undefined') {
   window.loadSitewideStats = loadSitewideStats;
   window.updateSitewideStatsUI = updateSitewideStatsUI;
   window.hydrateSitewideStatsFromCache = hydrateSitewideStatsFromCache;
   window.initHeaderUtcClock = initHeaderUtcClock;
+  window.updateSpaceNavBadge = updateSpaceNavBadge;
+  window.initSpaceNavBadgeWatcher = initSpaceNavBadgeWatcher;
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initHeaderUtcClock, { once: true });
+    document.addEventListener('DOMContentLoaded', () => {
+      initHeaderUtcClock();
+      initSpaceNavBadgeWatcher();
+    }, { once: true });
   } else {
     initHeaderUtcClock();
+    initSpaceNavBadgeWatcher();
   }
 }
 
@@ -3123,6 +3171,7 @@ async function syncAuthenticatedUser(user, force = false) {
       if (window.polySpace && typeof window.polySpace.loadSpaceState === 'function') {
         window.polySpace.loadSpaceState();
       }
+      updateSpaceNavBadge();
 
       const isWeb3Active = !!(window.realSigner && window.web3Provider && linked && activeWeb3Address && linked.toLowerCase() === activeWeb3Address.toLowerCase());
 
