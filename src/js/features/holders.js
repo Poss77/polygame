@@ -218,12 +218,14 @@ export async function loadHoldersLeaderboard(initialMode = null, force = false) 
 
       lastHoldersFetchAt = Date.now();
       try {
+        const prevCached = JSON.parse(localStorage.getItem('polygame_cached_sitewide_stats') || '{}');
         localStorage.setItem('polygame_cached_sitewide_stats', JSON.stringify({
           arcadePlays: globalArcadePlays,
           relicsFound: globalRelicsFound,
           relicsS1: globalRelicsS1,
           relicsS2: globalRelicsS2,
           faucetClaims: globalFaucetClaims,
+          pgtBurned: prevCached.pgtBurned ?? null,
           updatedAt: lastHoldersFetchAt
         }));
       } catch (e) {}

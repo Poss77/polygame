@@ -2127,16 +2127,17 @@ export function hydrateSitewideStatsFromCache() {
     const cachedStr = localStorage.getItem('polygame_cached_sitewide_stats');
     if (cachedStr) {
       const data = JSON.parse(cachedStr);
-      updateSitewideStatsUI(data.arcadePlays, data.relicsFound, data.faucetClaims, data.relicsS1, data.relicsS2);
+      updateSitewideStatsUI(data.arcadePlays, data.relicsFound, data.faucetClaims, data.relicsS1, data.relicsS2, data.pgtBurned);
     }
   } catch (e) {}
 }
 
-export function updateSitewideStatsUI(arcadePlays, relicsFound, faucetClaims, relicsS1, relicsS2) {
+export function updateSitewideStatsUI(arcadePlays, relicsFound, faucetClaims, relicsS1, relicsS2, pgtBurned) {
   const elArcade = document.getElementById('sitewide-stat-arcade-plays');
   const elRelics = document.getElementById('sitewide-stat-relics-found');
   const elRelicsSplit = document.getElementById('sitewide-stat-relics-split');
   const elClaims = document.getElementById('sitewide-stat-faucet-claims');
+  const elBurned = document.getElementById('sitewide-stat-pgt-burned');
 
   if (elArcade && arcadePlays !== undefined && arcadePlays !== null) {
     elArcade.innerText = Number(arcadePlays).toLocaleString();
@@ -2149,6 +2150,9 @@ export function updateSitewideStatsUI(arcadePlays, relicsFound, faucetClaims, re
   }
   if (elClaims && faucetClaims !== undefined && faucetClaims !== null) {
     elClaims.innerText = Number(faucetClaims).toLocaleString();
+  }
+  if (elBurned && pgtBurned !== undefined && pgtBurned !== null) {
+    elBurned.innerText = `${Number(pgtBurned).toLocaleString(undefined, { maximumFractionDigits: 2 })} PGT`;
   }
 }
 
@@ -2171,7 +2175,7 @@ export async function loadSitewideStats(force = false) {
 
   _sitewideStatsInFlight = (async () => {
     try {
-      // 2. Fetch arcade plays count (exact, head only) and users stats in parallel
+      // 2. Fetch arcade plays count (exact, head only), users stats, and global burn metrics in parallel
       const sessionPromise = supabase
         .from('arcade_sessions')
         .select('id', { count: 'exact', head: true });
@@ -2180,11 +2184,22 @@ export async function loadSitewideStats(force = false) {
         .from('users')
         .select('total_claims, relics, total_arcade_plays');
 
-      const [sessionRes, usersRes] = await Promise.allSettled([sessionPromise, usersPromise]);
+      const burnPromise = supabase
+        .from('global_burn_metrics')
+        .select('total_burned_pgt')
+        .eq('id', 1)
+        .maybeSingle();
+
+      const [sessionRes, usersRes, burnRes] = await Promise.allSettled([sessionPromise, usersPromise, burnPromise]);
 
       let sessionArcadePlays = null;
       if (sessionRes.status === 'fulfilled' && !sessionRes.value.error && typeof sessionRes.value.count === 'number') {
         sessionArcadePlays = sessionRes.value.count;
+      }
+
+      let liveBurnedPgt = null;
+      if (burnRes.status === 'fulfilled' && !burnRes.value.error && burnRes.value.data?.total_burned_pgt !== undefined) {
+        liveBurnedPgt = Number(burnRes.value.data.total_burned_pgt) || 0;
       }
 
       let faucetClaims = 0;
@@ -2223,8 +2238,9 @@ export async function loadSitewideStats(force = false) {
       const finalRelicsS1 = usersLoaded ? relicsS1 : (cached.relicsS1 ?? undefined);
       const finalRelicsS2 = usersLoaded ? relicsS2 : (cached.relicsS2 ?? undefined);
       const finalFaucetClaims = usersLoaded ? faucetClaims : (cached.faucetClaims ?? 0);
+      const finalPgtBurned = liveBurnedPgt !== null ? liveBurnedPgt : (cached.pgtBurned ?? null);
 
-      updateSitewideStatsUI(finalArcadePlays, finalRelicsFound, finalFaucetClaims, finalRelicsS1, finalRelicsS2);
+      updateSitewideStatsUI(finalArcadePlays, finalRelicsFound, finalFaucetClaims, finalRelicsS1, finalRelicsS2, finalPgtBurned);
       _lastSitewideStatsFetchAt = Date.now();
 
       try {
@@ -2234,6 +2250,7 @@ export async function loadSitewideStats(force = false) {
           relicsS1: finalRelicsS1,
           relicsS2: finalRelicsS2,
           faucetClaims: finalFaucetClaims,
+          pgtBurned: finalPgtBurned,
           updatedAt: _lastSitewideStatsFetchAt
         }));
       } catch (e) {}
@@ -2247,10 +2264,40 @@ export async function loadSitewideStats(force = false) {
   return _sitewideStatsInFlight;
 }
 
+let _utcClockTimer = null;
+export function initHeaderUtcClock() {
+  const updateUtcClock = () => {
+    const textEl = document.getElementById('header-utc-clock-text');
+    const pillEl = document.getElementById('header-utc-clock');
+    if (!textEl) return;
+    const now = new Date();
+    const hh = String(now.getUTCHours()).padStart(2, '0');
+    const mm = String(now.getUTCMinutes()).padStart(2, '0');
+    const ss = String(now.getUTCSeconds()).padStart(2, '0');
+    textEl.textContent = `${hh}:${mm}:${ss} UTC`;
+    if (pillEl) {
+      const yyyy = now.getUTCFullYear();
+      const mon = String(now.getUTCMonth() + 1).padStart(2, '0');
+      const dd = String(now.getUTCDate()).padStart(2, '0');
+      pillEl.title = `Current Universal Time: ${yyyy}-${mon}-${dd} ${hh}:${mm}:${ss} UTC (Daily resets & events follow UTC)`;
+    }
+  };
+
+  updateUtcClock();
+  if (_utcClockTimer) clearInterval(_utcClockTimer);
+  _utcClockTimer = setInterval(updateUtcClock, 1000);
+}
+
 if (typeof window !== 'undefined') {
   window.loadSitewideStats = loadSitewideStats;
   window.updateSitewideStatsUI = updateSitewideStatsUI;
   window.hydrateSitewideStatsFromCache = hydrateSitewideStatsFromCache;
+  window.initHeaderUtcClock = initHeaderUtcClock;
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initHeaderUtcClock, { once: true });
+  } else {
+    initHeaderUtcClock();
+  }
 }
 
 export function updateLeaderboardPoolHeaders(settings) {
