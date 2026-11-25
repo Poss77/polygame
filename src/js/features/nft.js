@@ -579,6 +579,169 @@ if (typeof window !== 'undefined') {
   window.loadMyNftMintRequests = loadMyNftMintRequests;
 }
 
+// --- Black Friday 2026 BOGO NFT Promo (Buy 1 Get 1 Equal or Cheaper) ---
+const BF_PROMO_END_MS = Date.parse('2026-12-01T04:59:59Z');
+const BF_PENDING_KEY = 'polygame_pending_bf_bogo';
+
+export function isBlackFridayBogoActive() {
+  return Date.now() <= BF_PROMO_END_MS;
+}
+
+function savePendingBlackFridayBogo(payload) {
+  try {
+    if (payload) localStorage.setItem(BF_PENDING_KEY, JSON.stringify(payload));
+    else localStorage.removeItem(BF_PENDING_KEY);
+  } catch (e) {}
+  updateBlackFridayBannerUI();
+}
+
+function getPendingBlackFridayBogo() {
+  try {
+    const raw = localStorage.getItem(BF_PENDING_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+export function updateBlackFridayBannerUI() {
+  if (typeof document === 'undefined') return;
+  const banner = document.getElementById('black-friday-top-banner');
+  if (!banner) return;
+
+  if (!isBlackFridayBogoActive()) {
+    banner.style.display = 'none';
+    return;
+  }
+
+  const pending = getPendingBlackFridayBogo();
+  const resumeBtn = document.getElementById('btn-bf-resume-bogo');
+  if (resumeBtn) {
+    resumeBtn.style.display = pending ? 'inline-block' : 'none';
+  }
+
+  let dismissed = false;
+  try { dismissed = sessionStorage.getItem('bf_banner_dismissed') === '1'; } catch (e) {}
+  if (dismissed && !pending) {
+    banner.style.display = 'none';
+    return;
+  }
+
+  const countdownEl = document.getElementById('bf-banner-countdown');
+  if (countdownEl) {
+    const diffSec = Math.max(0, Math.floor((BF_PROMO_END_MS - Date.now()) / 1000));
+    const d = Math.floor(diffSec / 86400);
+    const h = Math.floor((diffSec % 86400) / 3600);
+    const m = Math.floor((diffSec % 3600) / 60);
+    countdownEl.textContent = `⏳ ${d}d ${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m left`;
+  }
+}
+
+export function resumePendingBlackFridayBogo() {
+  const pending = getPendingBlackFridayBogo();
+  if (!pending || !pending.txHash) {
+    triggerToast('No pending Black Friday BOGO claim found.', 'info');
+    return;
+  }
+  openBlackFridayBogoModal(pending.txHash, pending.purchasedNftId, pending.purchasedNftName, pending.purchasedPricePol);
+}
+
+export function openBlackFridayBogoModal(txHash, purchasedNftId, purchasedNftName, purchasedPricePol) {
+  if (typeof document === 'undefined') return;
+  let overlay = document.getElementById('bf-bogo-modal-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'bf-bogo-modal-overlay';
+    overlay.style.cssText = 'position:fixed; inset:0; z-index:100000010; background:rgba(3,5,15,0.88); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; padding:1rem;';
+    document.body.appendChild(overlay);
+  }
+
+  const eligible = NFT_REGISTRY
+    .filter(n => n.price <= Number(purchasedPricePol || 0) + 0.0001 && n.group !== 'mystery')
+    .sort((a, b) => b.price - a.price);
+
+  const safeTx = String(txHash || '').replace(/'/g, '');
+  overlay.innerHTML = `
+    <div style="width:100%; max-width:720px; max-height:88vh; overflow-y:auto; background:linear-gradient(160deg, #120921 0%, #090d1a 100%); border:2px solid rgba(255,215,0,0.65); border-radius:16px; padding:1.4rem; box-shadow:0 0 40px rgba(255,149,0,0.35); color:#fff;">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem; margin-bottom:0.75rem;">
+        <div>
+          <span style="background:linear-gradient(135deg,#ffd700,#ff6b00); color:#000; font-weight:900; font-size:0.72rem; padding:0.2rem 0.6rem; border-radius:999px; letter-spacing:0.8px;">🔥 BLACK FRIDAY BOGO UNLOCKED</span>
+          <h3 style="margin:0.45rem 0 0 0; font-size:1.3rem; color:#ffd700;">Pick Your FREE Bonus NFT!</h3>
+        </div>
+        <button type="button" onclick="document.getElementById('bf-bogo-modal-overlay').remove()" style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:#fff; border-radius:8px; padding:0.35rem 0.65rem; cursor:pointer; font-weight:700;">✕</button>
+      </div>
+      <p style="font-size:0.86rem; color:var(--text-dim); margin-bottom:1rem; line-height:1.45;">
+        Thanks for purchasing <strong style="color:#fff;">${String(purchasedNftName || purchasedNftId).replace(/</g, '&lt;')} (${purchasedPricePol} POL)</strong>!
+        Choose any <strong>1 NFT</strong> below worth <strong>${purchasedPricePol} POL or less</strong> completely FREE. It activates immediately in-game, and you can also request a free on-chain mint anytime from <em>My Inventory</em>.
+      </p>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(195px, 1fr)); gap:0.85rem;">
+        ${eligible.map(n => `
+          <div style="background:rgba(0,0,0,0.45); border:1px solid rgba(255,215,0,0.3); border-radius:10px; padding:0.75rem; display:flex; flex-direction:column; justify-content:space-between; gap:0.5rem;">
+            <div style="display:flex; align-items:center; gap:0.6rem;">
+              <img src="metadata/images/${n.id}.png" alt="${n.name}" style="width:48px; height:48px; border-radius:8px; object-fit:cover; border:1px solid rgba(255,255,255,0.15);" onerror="this.style.display='none'" />
+              <div>
+                <div style="font-weight:800; font-size:0.88rem; color:#fff;">${n.name}</div>
+                <div style="font-size:0.75rem; color:#ffd700; font-weight:700;"><span style="text-decoration:line-through; opacity:0.65; margin-right:4px;">${n.price} POL</span> FREE</div>
+              </div>
+            </div>
+            <button type="button" class="btn-bf-claim-pick" onclick="window.claimBlackFridayBogoPick('${safeTx}', '${n.id}', '${String(n.name).replace(/'/g, "\\'")}')" style="width:100%; background:linear-gradient(135deg,#00ff88,#00f0ff); color:#000; font-weight:900; font-size:0.78rem; padding:0.45rem; border:none; border-radius:6px; cursor:pointer;">
+              🎁 Claim FREE
+            </button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+export async function claimBlackFridayBogoPick(txHash, freeNftId, freeNftName) {
+  if (!supabase) return;
+  const btns = document.querySelectorAll('.btn-bf-claim-pick');
+  btns.forEach(b => { b.disabled = true; b.style.opacity = '0.6'; });
+
+  try {
+    triggerToast(`Verifying Polygon purchase & claiming FREE ${freeNftName || freeNftId}...`, 'info');
+    const { data, error } = await supabase.functions.invoke('claim-black-friday-bogo', {
+      body: { txHash, freeNftId }
+    });
+    if (error || !data?.success) {
+      triggerToast(data?.error || error?.message || 'Could not claim Black Friday BOGO NFT.', 'error');
+      btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+      return;
+    }
+
+    if (Array.isArray(data.crate_nfts)) {
+      appState.update({ crateNfts: data.crate_nfts });
+    }
+    savePendingBlackFridayBogo(null);
+    document.getElementById('bf-bogo-modal-overlay')?.remove();
+    sfx.playPowerUp();
+    triggerToast(`🎉 BLACK FRIDAY BOGO! FREE ${data.free_nft_name || freeNftName} added to your Inventory!`, 'success');
+    renderNftInventory();
+    renderNftMarketplace();
+  } catch (err) {
+    console.error('[claimBlackFridayBogoPick] Error:', err);
+    triggerToast(err?.message || 'BOGO claim failed. You can retry from the top banner.', 'error');
+    btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.isBlackFridayBogoActive = isBlackFridayBogoActive;
+  window.openBlackFridayBogoModal = openBlackFridayBogoModal;
+  window.resumePendingBlackFridayBogo = resumePendingBlackFridayBogo;
+  window.claimBlackFridayBogoPick = claimBlackFridayBogoPick;
+  const startBfBanner = () => {
+    updateBlackFridayBannerUI();
+    setInterval(updateBlackFridayBannerUI, 30000);
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', startBfBanner, { once: true });
+  } else {
+    startBfBanner();
+  }
+}
+
 export function renderNftInventory() {
   const grid = document.getElementById('nft-inventory-grid');
   if (!grid) return;
@@ -863,6 +1026,19 @@ export async function purchaseNft(nftId) {
 
     sfx.playPowerUp();
     triggerToast(`Success! Purchased ${nft.name} NFT!`, 'success');
+
+    // Black Friday 2026 BOGO: Save eligible tx & open Free NFT Picker modal
+    if (isBlackFridayBogoActive() && tx && tx.hash) {
+      savePendingBlackFridayBogo({
+        txHash: tx.hash,
+        purchasedNftId: nftId,
+        purchasedNftName: nft.name,
+        purchasedPricePol: nft.price
+      });
+      setTimeout(() => {
+        openBlackFridayBogoModal(tx.hash, nftId, nft.name, nft.price);
+      }, 600);
+    }
 
     // Sync on-chain NFT possession directly via authoritative Edge Function
     const buyerIdentifier = (appState.state.linkedWalletAddress || appState.state.walletAddress || (typeof appState.getPlayerId === 'function' ? appState.getPlayerId() : appState.state.playerId) || '').toLowerCase();
