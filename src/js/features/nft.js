@@ -2,7 +2,7 @@ import { realSigner, setRealSigner, setWeb3Provider, NFT_CONTRACT_ADDRESS, supab
 import { sfx } from '../core/audio.js';
 import { appState } from '../core/state.js';
 import { triggerToast, openModal, closeModal } from '../core/ui.js';
-import { executeAuthenticatedRpc } from '../core/auth-web3.js';
+import { executeAuthenticatedRpc, ensureValidSupabaseSession } from '../core/auth-web3.js';
 
 // --- Static NFT Cards Registry ---
 
@@ -700,10 +700,18 @@ export async function claimBlackFridayBogoPick(txHash, freeNftId, freeNftName) {
   btns.forEach(b => { b.disabled = true; b.style.opacity = '0.6'; });
 
   try {
+    await ensureValidSupabaseSession(true).catch(() => {});
     triggerToast(`Verifying Polygon purchase & claiming FREE ${freeNftName || freeNftId}...`, 'info');
-    const { data, error } = await supabase.functions.invoke('claim-black-friday-bogo', {
+    let { data, error } = await supabase.functions.invoke('claim-black-friday-bogo', {
       body: { txHash, freeNftId }
     });
+    // Retry once after 2.5s if Polygon public RPC hasn't indexed the fresh receipt yet
+    if ((error || !data?.success) && String(data?.error || error?.message || '').toLowerCase().includes('not yet confirmed')) {
+      await new Promise(r => setTimeout(r, 2500));
+      ({ data, error } = await supabase.functions.invoke('claim-black-friday-bogo', {
+        body: { txHash, freeNftId }
+      }));
+    }
     if (error || !data?.success) {
       triggerToast(data?.error || error?.message || 'Could not claim Black Friday BOGO NFT.', 'error');
       btns.forEach(b => { b.disabled = false; b.style.opacity = '1'; });
