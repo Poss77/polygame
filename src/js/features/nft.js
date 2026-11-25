@@ -662,7 +662,7 @@ export function openBlackFridayBogoModal(txHash, purchasedNftId, purchasedNftNam
   }
 
   const eligible = NFT_REGISTRY
-    .filter(n => n.price <= Number(purchasedPricePol || 0) + 0.0001 && n.group !== 'mystery')
+    .filter(n => n.price <= Number(purchasedPricePol || 0) + 0.0001 && n.group !== 'mystery' && n.currency !== 'PGT')
     .sort((a, b) => b.price - a.price);
 
   const safeTx = String(txHash || '').replace(/'/g, '');
@@ -938,7 +938,7 @@ export function renderNftInventory() {
                  ${isEquipped ? 'Undisplay' : 'Display NFT'}
                </button>`
           }
-          ${offchainQty > 0 ? `
+          ${offchainQty > 0 && nft.currency !== 'PGT' ? `
             <button class="btn-nft-action" style="width:100%; background:linear-gradient(135deg, rgba(0,240,255,0.16), rgba(189,0,255,0.18)); border:1px solid var(--color-primary); color:#00f0ff; font-weight:800; font-size:0.78rem;" onclick="requestFreeNftMint('${nft.id}', '${safeName}')">
               🚀 Request Free On-Chain Mint (0 POL)
             </button>` : ''}
@@ -1547,7 +1547,9 @@ export async function syncNftBackpack() {
 
 // --- Mystery Box Logic ---
 
+let _isBuyingPgtBox = false;
 export async function buyPgtMysteryBox() {
+  if (_isBuyingPgtBox) return;
   if (appState.state.balancePgt < 1000) {
     triggerToast("Insufficient PGT balance! (Requires 1,000 PGT)", "error");
     return;
@@ -1560,6 +1562,7 @@ export async function buyPgtMysteryBox() {
     return;
   }
 
+  _isBuyingPgtBox = true;
   openModal('mystery-box');
   const animContainer = document.getElementById('mystery-box-anim-container');
   const resultContent = document.getElementById('mystery-box-result-content');
@@ -1591,6 +1594,8 @@ export async function buyPgtMysteryBox() {
     console.error("PGT Mystery Box failed:", err);
     closeModal('mystery-box');
     triggerToast("Opening failed: " + (err.message || err), "error");
+  } finally {
+    _isBuyingPgtBox = false;
   }
 }
 
