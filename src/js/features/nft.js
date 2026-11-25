@@ -488,9 +488,103 @@ export function renderNftMarketplace() {
   });
 }
 
+let _pendingNftMintRequests = [];
+let _hasLoadedNftMintRequests = false;
+let _isLoadingNftMintRequests = false;
+
+export async function loadMyNftMintRequests(force = false) {
+  if (_isLoadingNftMintRequests) return;
+  if (!force && _hasLoadedNftMintRequests) return;
+  if (!appState?.isPlayerConnected?.()) return;
+
+  const pid = typeof appState.getPlayerId === 'function' ? appState.getPlayerId() : appState.state.playerId;
+  if (!pid || pid.startsWith('0xguest')) return;
+
+  _isLoadingNftMintRequests = true;
+  try {
+    const { data, error } = await executeAuthenticatedRpc('get_my_nft_mint_requests', {
+      p_player_id: pid
+    });
+    if (!error && data?.success && Array.isArray(data.requests)) {
+      _pendingNftMintRequests = data.requests.filter(r => r && r.status === 'pending');
+      _hasLoadedNftMintRequests = true;
+      renderNftInventory();
+    }
+  } catch (e) {
+    console.warn('[loadMyNftMintRequests] Notice:', e);
+  } finally {
+    _isLoadingNftMintRequests = false;
+  }
+}
+
+export async function requestFreeNftMint(nftId, nftName) {
+  if (!appState?.isPlayerConnected?.()) {
+    triggerToast('Please log in to request a free on-chain NFT mint.', 'error');
+    if (window.openModal) window.openModal('wallet');
+    return;
+  }
+
+  const wallet = (appState.state.linkedWalletAddress || '').trim();
+  if (!/^0x[a-fA-F0-9]{40}$/.test(wallet) || wallet.toLowerCase().startsWith('0xpgt') || wallet.toLowerCase().startsWith('0xg')) {
+    triggerToast('Please link your Polygon EVM wallet in Profile first so we know where to mint your NFT!', 'warning');
+    if (window.switchTab) window.switchTab('profile');
+    return;
+  }
+
+  const pid = typeof appState.getPlayerId === 'function' ? appState.getPlayerId() : appState.state.playerId;
+  const shortWallet = `${wallet.slice(0, 6)}...${wallet.slice(-4)}`;
+  const confirmed = window.confirm(
+    `Request a FREE on-chain Polygon mint for "${nftName || nftId}"?\n\n` +
+    `Recipient Wallet: ${shortWallet}\n` +
+    `Cost: 0 POL (Admin covers gas)\n\n` +
+    `Note: The in-game copy will be escrowed (removed from in-game inventory) immediately while Admin approves and mints it to your Polygon wallet.`
+  );
+  if (!confirmed) return;
+
+  try {
+    triggerToast(`Submitting free on-chain mint request for ${nftName || nftId}...`, 'info');
+    const { data, error } = await executeAuthenticatedRpc('submit_nft_mint_request', {
+      p_player_id: pid,
+      p_nft_id: nftId,
+      p_nft_name: nftName || nftId
+    });
+    if (error || !data?.success) {
+      triggerToast(data?.error || error?.message || 'Could not submit mint request.', 'error');
+      return;
+    }
+
+    if (Array.isArray(data.crate_nfts)) {
+      appState.update({ crateNfts: data.crate_nfts });
+    }
+    _pendingNftMintRequests.unshift({
+      id: data.request_id,
+      nft_id: data.nft_id || nftId,
+      nft_name: data.nft_name || nftName || nftId,
+      linked_wallet_address: data.linked_wallet_address || wallet,
+      status: 'pending',
+      created_at: new Date().toISOString()
+    });
+    _hasLoadedNftMintRequests = true;
+    sfx.playPowerUp();
+    triggerToast(`🚀 Mint request #${data.request_id} submitted! In-game copy escrowed while Admin mints ${data.nft_name || nftName || nftId} to ${shortWallet}.`, 'success');
+    renderNftInventory();
+  } catch (err) {
+    console.error('[requestFreeNftMint] Error:', err);
+    triggerToast(err?.message || 'Failed to submit mint request.', 'error');
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.requestFreeNftMint = requestFreeNftMint;
+  window.loadMyNftMintRequests = loadMyNftMintRequests;
+}
+
 export function renderNftInventory() {
   const grid = document.getElementById('nft-inventory-grid');
   if (!grid) return;
+  if (!_hasLoadedNftMintRequests && appState?.isPlayerConnected?.()) {
+    loadMyNftMintRequests();
+  }
   
   grid.innerHTML = '';
   const chainIds = appState.state.ownedNfts || [];
@@ -500,7 +594,7 @@ export function renderNftInventory() {
   const badgeEl = document.getElementById('inventory-count-badge');
   if (badgeEl) badgeEl.innerText = combinedIds.length;
 
-  if (combinedIds.length === 0) {
+  if (combinedIds.length === 0 && _pendingNftMintRequests.length === 0) {
     grid.innerHTML = `
       <div style="grid-column: 1/-1; text-align: center; padding: 3rem 0; color: var(--text-dim);">
         <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎒</div>
@@ -542,6 +636,16 @@ export function renderNftInventory() {
       ℹ️ <strong>Backpack Multiplier Notice</strong>: ALL owned NFTs in your backpack grant their passive multipliers automatically by default! The <strong>"Display / Undisplay"</strong> action selects which showcase NFT appears on your <strong>Public Player Profile</strong>.
     </div>
   `;
+  if (_pendingNftMintRequests.length > 0) {
+    html += `
+      <div style="grid-column: 1/-1; margin-bottom: 1rem; background: rgba(255, 170, 0, 0.09); border: 1px solid rgba(255, 170, 0, 0.45); border-radius: 10px; padding: 0.9rem 1.2rem; font-size: 0.85rem; color: #fff;">
+        <div style="font-weight: 800; color: #ffbb33; margin-bottom: 0.4rem;">⏳ Pending Free On-Chain Mint Requests (${_pendingNftMintRequests.length})</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+          ${_pendingNftMintRequests.map(r => `<span style="background: rgba(0,0,0,0.45); border: 1px solid rgba(255,170,0,0.35); border-radius: 6px; padding: 0.25rem 0.6rem; font-size: 0.78rem;"><strong>${String(r.nft_name || r.nft_id).replace(/</g, '&lt;')}</strong> &bull; Request #${r.id} (Escrowed)</span>`).join('')}
+        </div>
+      </div>
+    `;
+  }
   const resolveNftMeta = (nftId) => {
     let item = NFT_REGISTRY.find(n => n.id === nftId);
     if (!item) {
@@ -591,6 +695,7 @@ export function renderNftInventory() {
     const onchainQty = onchainCounts[nftId] || 0;
     const offchainQty = offchainCounts[nftId] || 0;
     const qty = onchainQty + offchainQty;
+    const safeName = String(nft.name || nftId).replace(/'/g, "\\'");
     const isEquipped = appState.state.equippedNft === nftId;
     let bonuses = [];
     if (nft.id === 'nft_vip_pass_t1') {
@@ -643,7 +748,7 @@ export function renderNftInventory() {
         <div class="nft-bonus">
           ${bonuses.map(b => `<span>🚀 ${b}</span>`).join('<br>')}
         </div>
-        <div class="nft-buy-footer" style="border:none; padding-top:0.5rem; margin-top:0.5rem;">
+        <div class="nft-buy-footer" style="border:none; padding-top:0.5rem; margin-top:0.5rem; flex-wrap:wrap; gap:0.5rem;">
           ${nft.id === 'nft_vip_pass_t1'
             ? `<button class="btn-nft-action" style="width: 100%; background: #c0c0c0; color: #000; border-color: #c0c0c0; font-weight:700;" onclick="activateVipPass('nft_vip_pass_t1')">🥈 Activate 30 Days Silver VIP</button>`
             : nft.id === 'nft_vip_pass' 
@@ -657,6 +762,10 @@ export function renderNftInventory() {
                  ${isEquipped ? 'Undisplay' : 'Display NFT'}
                </button>`
           }
+          ${offchainQty > 0 ? `
+            <button class="btn-nft-action" style="width:100%; background:linear-gradient(135deg, rgba(0,240,255,0.16), rgba(189,0,255,0.18)); border:1px solid var(--color-primary); color:#00f0ff; font-weight:800; font-size:0.78rem;" onclick="requestFreeNftMint('${nft.id}', '${safeName}')">
+              🚀 Request Free On-Chain Mint (0 POL)
+            </button>` : ''}
         </div>
       </div>
     `;
