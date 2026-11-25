@@ -517,7 +517,9 @@ export async function loadMyNftMintRequests(force = false) {
   }
 }
 
+let _isSubmittingMintRequest = false;
 export async function requestFreeNftMint(nftId, nftName) {
+  if (_isSubmittingMintRequest) return;
   if (!appState?.isPlayerConnected?.()) {
     triggerToast('Please log in to request a free on-chain NFT mint.', 'error');
     if (window.openModal) window.openModal('wallet');
@@ -541,6 +543,7 @@ export async function requestFreeNftMint(nftId, nftName) {
   );
   if (!confirmed) return;
 
+  _isSubmittingMintRequest = true;
   try {
     triggerToast(`Submitting free on-chain mint request for ${nftName || nftId}...`, 'info');
     const { data, error } = await executeAuthenticatedRpc('submit_nft_mint_request', {
@@ -571,6 +574,8 @@ export async function requestFreeNftMint(nftId, nftName) {
   } catch (err) {
     console.error('[requestFreeNftMint] Error:', err);
     triggerToast(err?.message || 'Failed to submit mint request.', 'error');
+  } finally {
+    _isSubmittingMintRequest = false;
   }
 }
 
@@ -1253,30 +1258,36 @@ export function promptSilverToGoldConversion(passType) {
 }
 window.promptSilverToGoldConversion = promptSilverToGoldConversion;
 
+let _isActivatingVipPass = false;
 export async function activateVipPass(passType) {
+  if (_isActivatingVipPass) {
+    triggerToast("VIP Pass activation already in progress, please wait...", "info");
+    return;
+  }
+  _isActivatingVipPass = true;
+  try {
+    let isConvertingSilverToGold = false;
 
-  let isConvertingSilverToGold = false;
+    // Tier cross-activation safeguard (Mutual Exclusion between Gold and Silver)
+    if (appState.isVipActive && appState.isVipActive() && appState.state.vipUntil) {
+      const currentLevel = (typeof appState.getVipLevel === 'function') ? appState.getVipLevel() : Number(appState.state.vipLevel || 2);
+      const targetLevel = (passType === 'nft_vip_pass_t1') ? 1 : 2;
 
-  // Tier cross-activation safeguard (Mutual Exclusion between Gold and Silver)
-  if (appState.isVipActive && appState.isVipActive() && appState.state.vipUntil) {
-    const currentLevel = (typeof appState.getVipLevel === 'function') ? appState.getVipLevel() : Number(appState.state.vipLevel || 2);
-    const targetLevel = (passType === 'nft_vip_pass_t1') ? 1 : 2;
-
-    if (currentLevel === 2 && targetLevel === 1) {
-      triggerToast("⚠️ You already have active Gold VIP! You cannot activate a Silver Pass until your Gold status expires.", "warning");
-      return;
-    }
-    if (currentLevel === 1 && targetLevel === 2) {
-      const confirmed = await promptSilverToGoldConversion(passType);
-      if (!confirmed) {
-        triggerToast("Gold VIP activation cancelled. Your Silver VIP remains active.", "info");
+      if (currentLevel === 2 && targetLevel === 1) {
+        triggerToast("⚠️ You already have active Gold VIP! You cannot activate a Silver Pass until your Gold status expires.", "warning");
         return;
       }
-      isConvertingSilverToGold = true;
+      if (currentLevel === 1 && targetLevel === 2) {
+        const confirmed = await promptSilverToGoldConversion(passType);
+        if (!confirmed) {
+          triggerToast("Gold VIP activation cancelled. Your Silver VIP remains active.", "info");
+          return;
+        }
+        isConvertingSilverToGold = true;
+      }
     }
-  }
 
-  const address = (appState.getActiveWeb3Address() || appState.state.linkedWalletAddress || appState.state.walletAddress || "").toLowerCase();
+    const address = (appState.getActiveWeb3Address() || appState.state.linkedWalletAddress || appState.state.walletAddress || "").toLowerCase();
   
   try {
     // 1. Check for In-Game (Off-Chain) Pass first (saves gas!)
@@ -1479,6 +1490,9 @@ export async function activateVipPass(passType) {
       triggerToast("Failed to activate VIP pass: " + (err.reason || err.message || err), "error");
     }
     renderNftInventory();
+  }
+  } finally {
+    _isActivatingVipPass = false;
   }
 }
 
