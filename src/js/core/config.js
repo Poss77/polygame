@@ -10,7 +10,7 @@ export const WALLETCONNECT_PROJECT_ID = "00950c9a536e980dd84dbc015411baa7";
 export const ADMIN_WALLET_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // Master Admin Wallet
 export const VAULT_RECEIVER_ADDRESS = "0x10B9993990c9EF8a212c9557cB02aD94da9a654d"; // 50% Treasury Pool (Master Admin)
 export const BURN_RECEIVER_ADDRESS = "0x000000000000000000000000000000000000dEaD"; // 50% Deflationary Burn
-export const APP_VERSION = "1.5.903"; // Hide on-chain mint button for PGT-only NFTs and add rapid-click mutex to PGT Mystery Box
+export const APP_VERSION = "1.5.904"; // Add rapid-click mutexes to staking unstake and daily quest claims
 
 // Development / Debug Flag
 export const POLY_DEBUG = (typeof window !== 'undefined' && (Boolean(window.POLY_DEBUG) || window.location?.search?.includes('debug=true')));

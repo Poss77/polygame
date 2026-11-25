@@ -327,6 +327,10 @@ window.harvestIndividualStake = harvestIndividualStake;
 
 export async function unstakeIndividualPosition(id) {
   if (!appState.isPlayerConnected() || !supabase) return;
+  if (processingHarvestIds.has(id)) {
+    triggerToast("Unstake already in progress...", "info");
+    return;
+  }
   const stakes = appState.state.stakes || [];
   const stake = stakes.find(s => s.id === id);
   if (!stake) return;
@@ -340,6 +344,7 @@ export async function unstakeIndividualPosition(id) {
     return;
   }
 
+  processingHarvestIds.add(id);
   try {
     let { data: res, error } = await executeAuthenticatedRpc('unstake_position', {
       p_wallet: getStakingWalletAddress(),
@@ -360,6 +365,8 @@ export async function unstakeIndividualPosition(id) {
     }
   } catch (err) {
     console.error(err);
+  } finally {
+    processingHarvestIds.delete(id);
   }
 }
 window.unstakeIndividualPosition = unstakeIndividualPosition;
@@ -673,11 +680,14 @@ if (btnHarvest) {
   btnHarvest.addEventListener('click', harvestAllYield);
 }
 
+let _isUnstakingAll = false;
 export async function unstakeAllPositions(targetPool = null) {
+  if (_isUnstakingAll) return { success: false, error: 'Unstake already in progress' };
   const pool = targetPool || activeStakingPool;
   const isPgt = pool === 'pgt';
   if (!appState.isPlayerConnected() || !supabase) return { success: false, error: 'Wallet not connected' };
 
+  _isUnstakingAll = true;
   try {
     let res = null;
     let error = null;
@@ -738,6 +748,8 @@ export async function unstakeAllPositions(targetPool = null) {
   } catch (err) {
     console.error("[unstakeAllPositions] Error:", err);
     return { success: false, error: err.message };
+  } finally {
+    _isUnstakingAll = false;
   }
 }
 window.unstakeAllPositions = unstakeAllPositions;

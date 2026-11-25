@@ -409,7 +409,9 @@ export function renderDailyQuestsUI() {
 }
 window.renderDailyQuestsUI = renderDailyQuestsUI;
 
+const _claimingQuestTypes = new Set();
 export async function claimQuestReward(questType) {
+  if (_claimingQuestTypes.has(questType)) return;
   const q = getUserQuests();
   
   if (questType === 'games' && (q.games || 0) < 3) {
@@ -435,6 +437,7 @@ export async function claimQuestReward(questType) {
   }
 
   if (appState.isPlayerConnected() && supabase) {
+    _claimingQuestTypes.add(questType);
     try {
 
       let { data: res, error } = await executeAuthenticatedRpc('claim_daily_quest', {
@@ -477,6 +480,8 @@ export async function claimQuestReward(questType) {
       console.warn("RPC claim_daily_quest error:", err);
       triggerToast("Failed to claim quest: " + (err.message || err), "error");
       return;
+    } finally {
+      _claimingQuestTypes.delete(questType);
     }
   }
 
