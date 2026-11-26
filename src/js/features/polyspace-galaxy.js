@@ -1759,6 +1759,39 @@
       // --------------------------------------------------------------------------
       // 4. 3D SOLAR SYSTEM DOGFIGHT ENGINE (6-DOF Physics + 3D AI + 360° Mini-Radar)
       // --------------------------------------------------------------------------
+      setFullscreen(enabled) {
+        const root = document.getElementById('psg-root');
+        const host = document.getElementById('space-galaxy-host');
+        if (!root) return;
+        if (enabled) {
+          if (root.parentElement !== document.body) {
+            document.body.appendChild(root);
+          }
+          root.classList.add('psg-fullscreen');
+          root.style.position = 'fixed';
+          root.style.inset = '0';
+          root.style.width = '100vw';
+          root.style.height = '100vh';
+          root.style.zIndex = '99999';
+          document.body.style.overflow = 'hidden';
+        } else {
+          root.classList.remove('psg-fullscreen');
+          root.style.position = '';
+          root.style.inset = '';
+          root.style.width = '';
+          root.style.height = '';
+          root.style.zIndex = '';
+          if (host && root.parentElement !== host) {
+            host.appendChild(root);
+          }
+          document.body.style.overflow = '';
+        }
+        const fsBtn = document.getElementById('psg-btn-fullscreen');
+        if (fsBtn) fsBtn.innerText = enabled ? '✕ Collapse' : '⛶ Expand';
+        this.resize();
+        setTimeout(() => this.resize(), 40);
+      }
+
       switchMode(newMode) {
         this.mode = newMode;
         const h2 = document.getElementById('hud-2d');
@@ -1771,24 +1804,19 @@
         if (root) {
           if (newMode === 'combat3d') {
             this._wasFullscreenBefore3D = root.classList.contains('psg-fullscreen');
-            root.classList.add('psg-fullscreen');
-          } else if (!this._wasFullscreenBefore3D) {
-            root.classList.remove('psg-fullscreen');
+            this.setFullscreen(true);
+          } else {
+            this.setFullscreen(Boolean(this._wasFullscreenBefore3D));
           }
-          const fsBtn = document.getElementById('psg-btn-fullscreen');
-          if (fsBtn) fsBtn.innerText = root.classList.contains('psg-fullscreen') ? '✕ Collapse' : '⛶ Expand';
         }
-        setTimeout(() => this.resize(), 30);
       }
 
       toggleFullscreen() {
         const root = document.getElementById('psg-root');
         if (!root) return;
-        const isFs = root.classList.toggle('psg-fullscreen');
-        this._wasFullscreenBefore3D = isFs;
-        const fsBtn = document.getElementById('psg-btn-fullscreen');
-        if (fsBtn) fsBtn.innerText = isFs ? '✕ Collapse' : '⛶ Expand';
-        setTimeout(() => this.resize(), 30);
+        const nextFs = !root.classList.contains('psg-fullscreen');
+        this._wasFullscreenBefore3D = nextFs;
+        this.setFullscreen(nextFs);
       }
 
       launch3DMission(systemId = 15) {
@@ -3523,8 +3551,9 @@
     pause() {
       if (this.instance) {
         this.instance.paused = true;
-        const root = document.getElementById('psg-root');
-        if (root) root.classList.remove('psg-fullscreen');
+        if (typeof this.instance.setFullscreen === 'function') {
+          this.instance.setFullscreen(false);
+        }
       }
     }
   };
