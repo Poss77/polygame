@@ -273,7 +273,7 @@ export const NFT_REGISTRY = [
     stakingBoost: 0,
     referralMultiplier: 1.0,
     relicBoost: 2.0,
-    description: 'Advanced quantum resonance detector. Permanently doubles (2x) the spawn probability of Quantum Relics across all arcade games and PolySpace missions.',
+    description: 'Advanced quantum resonance detector. Permanently doubles (2x) Quantum Relic spawn rates AND doubles (2x) Mythic & Legendary rarity odds across all arcade games and PolySpace missions.',
     svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="none" stroke="#00f0ff" stroke-width="3" stroke-dasharray="6,4"/><polygon points="50,15 85,50 50,85 15,50" fill="none" stroke="#bd00ff" stroke-width="3"/><circle cx="50" cy="50" r="14" fill="#00f0ff" opacity="0.3"/><circle cx="50" cy="50" r="6" fill="#ffd700"/><path d="M50,22 L50,78 M22,50 L78,50" stroke="#00f0ff" stroke-width="2" opacity="0.7"/></svg>`
   }
 ];

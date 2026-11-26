@@ -1783,16 +1783,19 @@ class NeonAstroDodge {
 
       if (isRelic) {
         this.sessionRelicsDroppedCount = (this.sessionRelicsDroppedCount || 0) + 1;
-        // Weighted Relic Rarity: 2% Mythic (Singularity/Genesis), 13% Legendary (Compass), 35% Epic (Deflector), 50% Rare (Prism)
+        // Weighted Relic Rarity: Base 2% Mythic / 13% Legendary / 35% Epic / 50% Rare (Relic Seeker doubles Mythic -> 4% & Legendary -> 26%)
         const relicRand = Math.random();
+        const mythicCut = relicMult > 1 ? 0.04 : 0.02;
+        const legendaryCut = relicMult > 1 ? 0.30 : 0.15;
+        const epicCut = relicMult > 1 ? 0.65 : 0.50;
         let pickedRelic = { id: 'relic_astrododge_prism', name: 'Quantum Prism', rarity: 'rare', color: '#00f0ff' };
-        if (relicRand < 0.02) {
+        if (relicRand < mythicCut) {
           pickedRelic = Math.random() < 0.5
             ? { id: 'relic_apex_singularity', name: 'Quantum Singularity Core', rarity: 'mythic', color: '#ff0055' }
             : { id: 'relic_apex_genesis', name: 'Genesis Matrix', rarity: 'mythic', color: '#ff0055' };
-        } else if (relicRand < 0.15) {
+        } else if (relicRand < legendaryCut) {
           pickedRelic = { id: 'relic_astrododge_compass', name: 'Chrono Compass', rarity: 'legendary', color: '#ffd700' };
-        } else if (relicRand < 0.50) {
+        } else if (relicRand < epicCut) {
           pickedRelic = { id: 'relic_astrododge_deflector', name: 'Kinetic Deflector', rarity: 'epic', color: '#bd00ff' };
         }
 

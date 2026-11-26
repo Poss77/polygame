@@ -1137,14 +1137,17 @@ class CyberInvaders {
     if ((this.sessionRelicsDroppedCount || 0) < 1 && Math.random() < relicChance) {
       this.sessionRelicsDroppedCount = (this.sessionRelicsDroppedCount || 0) + 1;
       const relicRand = Math.random();
+      const mythicCut = relicMult > 1 ? 0.04 : 0.02;
+      const legendaryCut = relicMult > 1 ? 0.30 : 0.15;
+      const epicCut = relicMult > 1 ? 0.65 : 0.50;
       let pickedRelic = { id: 'relic_invaders_core', name: 'Pulsar Core', rarity: 'rare', color: '#00f0ff' };
-      if (relicRand < 0.02) {
+      if (relicRand < mythicCut) {
         pickedRelic = Math.random() < 0.5
           ? { id: 'relic_apex_singularity', name: 'Quantum Singularity Core', rarity: 'mythic', color: '#ff0055' }
           : { id: 'relic_apex_genesis', name: 'Genesis Matrix', rarity: 'mythic', color: '#ff0055' };
-      } else if (relicRand < 0.15) {
+      } else if (relicRand < legendaryCut) {
         pickedRelic = { id: 'relic_invaders_transmitter', name: 'Quantum Transmitter', rarity: 'legendary', color: '#ffd700' };
-      } else if (relicRand < 0.50) {
+      } else if (relicRand < epicCut) {
         pickedRelic = { id: 'relic_invaders_dynamo', name: 'Warp Dynamo', rarity: 'epic', color: '#bd00ff' };
       }
 
