@@ -353,20 +353,74 @@ class PolySpaceEngine {
     this.startAnimationLoop();
   }
 
+  _isGalaxyBetaTester() {
+    const st = (window.appState && window.appState.state) || window.PolyState || {};
+    const pid = String(st.player_id || st.playerId || st.wallet || '').toLowerCase();
+    const uname = String(st.username || '').toLowerCase();
+    const lwal = String(st.linked_wallet_address || st.linkedWalletAddress || '').toLowerCase();
+    return (
+      pid === '0xpgt8312e02d37185b5983e6922d1dae1cce' ||
+      pid === '0xpgt85c8416473bd6a8c45ada81ac85aeabb' ||
+      uname === 'poss' ||
+      uname === 'origin' ||
+      lwal === '0x92206284cae2b1be18c8bcc9042ee5cd3cfcd7a5' ||
+      lwal === '0x10b9993990c9ef8a212c9557cb02ad94da9a654d'
+    );
+  }
+
+  _ensureGalaxyModuleLoaded(cb) {
+    if (window.PolySpaceGalaxy) {
+      if (cb) cb();
+      return;
+    }
+    if (this._galaxyLoading) return;
+    this._galaxyLoading = true;
+    const s = document.createElement('script');
+    const ver = (window.APP_VERSION || Date.now());
+    s.src = `src/js/features/polyspace-galaxy.js?v=${encodeURIComponent(ver)}`;
+    s.onload = () => {
+      this._galaxyLoading = false;
+      if (cb) cb();
+    };
+    s.onerror = () => {
+      this._galaxyLoading = false;
+      console.error('[PolySpace] Failed to load polyspace-galaxy.js');
+    };
+    document.body.appendChild(s);
+  }
+
   setCanvasMode(mode) {
-    if (mode !== 'radar' && mode !== 'hangar' && mode !== 'split') {
+    if (mode === 'galaxy' && !this._isGalaxyBetaTester()) {
+      mode = 'radar';
+    }
+    if (mode !== 'radar' && mode !== 'hangar' && mode !== 'split' && mode !== 'galaxy') {
       mode = 'radar';
     }
     this._canvasMode = mode;
     try {
-      if (typeof localStorage !== 'undefined') {
+      if (typeof localStorage !== 'undefined' && mode !== 'galaxy') {
         localStorage.setItem('polyspace_canvas_mode', mode);
       }
     } catch (e) {}
 
     this._updateCanvasModeUI();
-    if (this.ctx && this.canvas) {
-      this.renderHangarView();
+    if (mode === 'galaxy') {
+      const host = document.getElementById('space-galaxy-host');
+      if (host) host.style.display = 'block';
+      this._ensureGalaxyModuleLoaded(() => {
+        if (this._canvasMode === 'galaxy' && window.PolySpaceGalaxy) {
+          window.PolySpaceGalaxy.mount(document.getElementById('space-galaxy-host'));
+        }
+      });
+    } else {
+      const host = document.getElementById('space-galaxy-host');
+      if (host) host.style.display = 'none';
+      if (window.PolySpaceGalaxy && typeof window.PolySpaceGalaxy.pause === 'function') {
+        window.PolySpaceGalaxy.pause();
+      }
+      if (this.ctx && this.canvas) {
+        this.renderHangarView();
+      }
     }
     if (window.sfx && window.sfx.playClick) {
       window.sfx.playClick();
@@ -376,6 +430,7 @@ class PolySpaceEngine {
   _updateCanvasModeUI() {
     const mode = this._canvasMode || 'radar';
     const btnRadar = document.getElementById('btn-mode-radar');
+    const btnGalaxy = document.getElementById('btn-mode-galaxy');
     const btnHangar = document.getElementById('btn-mode-hangar');
     const btnSplit = document.getElementById('btn-mode-split');
     const zoomHud = document.getElementById('space-map-zoom-hud');
@@ -387,6 +442,13 @@ class PolySpaceEngine {
     const inactiveBg = 'transparent';
     const inactiveColor = '#94a3b8';
 
+    if (btnGalaxy) {
+      const isBeta = this._isGalaxyBetaTester();
+      btnGalaxy.style.display = isBeta ? 'inline-block' : 'none';
+      btnGalaxy.style.background = mode === 'galaxy' ? 'rgba(168, 85, 247, 0.35)' : inactiveBg;
+      btnGalaxy.style.color = mode === 'galaxy' ? '#e9d5ff' : '#c084fc';
+      btnGalaxy.style.boxShadow = mode === 'galaxy' ? '0 0 10px rgba(168, 85, 247, 0.45)' : 'none';
+    }
     if (btnRadar) {
       btnRadar.style.background = mode === 'radar' ? activeBg : inactiveBg;
       btnRadar.style.color = mode === 'radar' ? activeColor : inactiveColor;
@@ -404,7 +466,7 @@ class PolySpaceEngine {
     }
 
     if (zoomHud) {
-      zoomHud.style.display = mode === 'hangar' ? 'none' : 'flex';
+      zoomHud.style.display = (mode === 'hangar' || mode === 'galaxy') ? 'none' : 'flex';
     }
 
     if (titleEl) {
@@ -1343,6 +1405,7 @@ class PolySpaceEngine {
   }
 
   updateUI() {
+    this._updateCanvasModeUI();
     // Notification Badge: Ready/Completed Expeditions for Header & Navigation
     const now = Date.now();
     const readyExpeditions = (this.state.expeditions || []).filter(e => now >= e.endTime);
