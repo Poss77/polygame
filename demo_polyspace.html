@@ -625,8 +625,11 @@
           </button>
         </div>
       </div>
-      <!-- Mobile Compact Top-Right Trade Beacon Button -->
-      <button id="mobile-trade-btn" class="btn" style="border-color:var(--green); color:#a7f3d0; padding:6px 10px; font-size:0.72rem;" onclick="window.demoApp.openPostTradeBeacon()">🤝 Drop Trade</button>
+      <!-- Top-Right Compact Buttons: Rank Leaderboard + Drop Trade Beacon -->
+      <div id="mobile-trade-btn" style="gap:6px;">
+        <button class="btn" style="border-color:var(--gold); color:#fde047; padding:6px 10px; font-size:0.72rem;" onclick="window.demoApp.openRankLeaderboard()">🏆 <span id="hud-rank-badge">Cadet • 0 XP</span></button>
+        <button class="btn" style="border-color:var(--green); color:#a7f3d0; padding:6px 10px; font-size:0.72rem;" onclick="window.demoApp.openPostTradeBeacon()">🤝 Drop Trade</button>
+      </div>
 
       <!-- Mobile 2D Map Zoom Buttons -->
       <div id="mobile-zoom-btns">
@@ -860,6 +863,28 @@
         </div>
       </div>
     </div>
+
+    <!-- Ace Pilot Combat Ranking Leaderboard Modal (Weekly & All-Time) -->
+    <div class="overlay-modal" id="rank-modal">
+      <div class="trade-box" style="border-color:var(--gold); max-width:580px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <div>
+            <div style="font-size:0.68rem; color:var(--gold); font-weight:900; letter-spacing:0.8px;">COMBAT XP • KILLS & TACTICAL DUELS</div>
+            <h3 style="font-size:1.08rem; font-weight:900; color:#fff;">🏆 ACE PILOT COMBAT RANKING</h3>
+          </div>
+          <button class="btn" style="padding:4px 10px; font-size:0.75rem;" onclick="document.getElementById('rank-modal').style.display='none'">✕ Close</button>
+        </div>
+
+        <div id="rank-my-summary" style="background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.3); border-radius:8px; padding:8px 12px; margin-bottom:10px; font-size:0.78rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;"></div>
+
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+          <button id="tab-rank-weekly" class="btn active" style="flex:1; justify-content:center; font-size:0.76rem;" onclick="window.demoApp.switchRankTab('weekly')">📅 Weekly Sprint</button>
+          <button id="tab-rank-alltime" class="btn" style="flex:1; justify-content:center; font-size:0.76rem;" onclick="window.demoApp.switchRankTab('alltime')">🌌 All-Time Legends</button>
+        </div>
+
+        <div id="rank-table-wrap" style="max-height:260px; overflow-y:auto; font-size:0.76rem;"></div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -906,6 +931,11 @@
 
         this.clearedSystems = new Set();
         this.selectedSystemId = 15;
+        this.combatXpAllTime = 0;
+        this.combatXpWeekly = 0;
+        this.totalKills = 0;
+        this.duelWins = 0;
+        this.rankTab = 'weekly';
 
         this.initGalaxyData();
         this.initEvents();
@@ -1554,6 +1584,85 @@
           `🛡️ Shield Lvl ${pilot.shield} • ☄️ Turret Lvl ${pilot.turret} • Coords: (${Math.round(pilot.x)}, ${Math.round(pilot.y)})`;
       }
 
+      getPilotRank(xp) {
+        if (xp >= 250000) return { title: 'Galactic Legend', icon: '👑', color: '#ffd700' };
+        if (xp >= 100000) return { title: 'Fleet Admiral', icon: '💎', color: '#c084fc' };
+        if (xp >= 40000) return { title: 'Star Commander', icon: '🔥', color: '#ff4d79' };
+        if (xp >= 15000) return { title: 'Ace Pilot', icon: '⭐', color: '#f59e0b' };
+        if (xp >= 5000) return { title: 'Vanguard', icon: '🔷', color: '#38bdf8' };
+        if (xp >= 1000) return { title: 'Ensign', icon: '🟢', color: '#00ff88' };
+        return { title: 'Cadet', icon: '🔹', color: '#94a3b8' };
+      }
+
+      awardCombatXp(amount, isKill = false) {
+        if (!amount || amount <= 0) return;
+        this.combatXpAllTime += amount;
+        this.combatXpWeekly += amount;
+        if (isKill) this.totalKills += 1;
+        const rk = this.getPilotRank(this.combatXpAllTime);
+        const badge = document.getElementById('hud-rank-badge');
+        if (badge) badge.innerText = `${rk.icon} ${rk.title} • ${this.combatXpAllTime.toLocaleString()} XP`;
+      }
+
+      openRankLeaderboard() {
+        document.getElementById('rank-modal').style.display = 'flex';
+        this.renderRankLeaderboard();
+      }
+
+      switchRankTab(tab) {
+        this.rankTab = tab;
+        document.getElementById('tab-rank-weekly').classList.toggle('active', tab === 'weekly');
+        document.getElementById('tab-rank-alltime').classList.toggle('active', tab === 'alltime');
+        this.renderRankLeaderboard();
+      }
+
+      renderRankLeaderboard() {
+        const myRank = this.getPilotRank(this.combatXpAllTime);
+        document.getElementById('rank-my-summary').innerHTML = `
+          <span><strong>Your Rank:</strong> <span style="color:${myRank.color}; font-weight:900;">${myRank.icon} ${myRank.title}</span></span>
+          <span>Weekly: <strong style="color:#00ff88;">${this.combatXpWeekly.toLocaleString()} XP</strong> • All-Time: <strong style="color:#ffd700;">${this.combatXpAllTime.toLocaleString()} XP</strong> • Kills: <strong>${this.totalKills}</strong></span>
+        `;
+
+        const isWeekly = this.rankTab === 'weekly';
+        const rows = this.otherPilots.map((pl, i) => ({
+          name: pl.name,
+          isMe: false,
+          xp: isWeekly ? (1800 + (pl.turret * 185) + (i * 220)) : (8500 + (pl.turret * 3800) + (i * 1900)),
+          kills: isWeekly ? (18 + pl.turret * 2) : (140 + pl.turret * 28),
+          cleared: Math.min(50, Math.round(pl.turret * 1.25))
+        }));
+        rows.push({
+          name: 'YOU',
+          isMe: true,
+          xp: isWeekly ? this.combatXpWeekly : this.combatXpAllTime,
+          kills: this.totalKills,
+          cleared: this.clearedSystems.size
+        });
+        rows.sort((a, b) => b.xp - a.xp);
+
+        let html = `<table style="width:100%; border-collapse:collapse;">
+          <tr style="color:#94a3b8; border-bottom:1px solid rgba(255,255,255,0.12); text-align:left;">
+            <th style="padding:6px;">#</th>
+            <th style="padding:6px;">Pilot & Rank</th>
+            <th style="padding:6px; text-align:right;">${isWeekly ? 'Weekly XP' : 'All-Time XP'}</th>
+            <th style="padding:6px; text-align:right;">Kills</th>
+            <th style="padding:6px; text-align:right;">Sys</th>
+          </tr>`;
+        rows.forEach((r, idx) => {
+          const rk = this.getPilotRank(isWeekly ? r.xp * 4 : r.xp);
+          const bg = r.isMe ? 'rgba(0,240,255,0.14)' : (idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent');
+          html += `<tr style="background:${bg}; border-bottom:1px solid rgba(255,255,255,0.05);">
+            <td style="padding:6px; font-weight:900; color:${idx < 3 ? '#ffd700' : '#94a3b8'};">#${idx + 1}</td>
+            <td style="padding:6px; font-weight:${r.isMe ? '900' : '700'}; color:${r.isMe ? '#00f0ff' : '#fff'};">${r.name} <span style="font-size:0.68rem; color:${rk.color};">${rk.icon} ${rk.title}</span></td>
+            <td style="padding:6px; text-align:right; font-family:monospace; font-weight:800; color:${isWeekly ? '#00ff88' : '#ffd700'};">${r.xp.toLocaleString()}</td>
+            <td style="padding:6px; text-align:right; font-family:monospace;">${r.kills}</td>
+            <td style="padding:6px; text-align:right; font-family:monospace; color:#cbd5e1;">${r.cleared}/50</td>
+          </tr>`;
+        });
+        html += '</table>';
+        document.getElementById('rank-table-wrap').innerHTML = html;
+      }
+
       openPostTradeBeacon() {
         this.selectedBeacon = null;
         document.getElementById('trade-subtitle').innerText = `POST AT YOUR COORDS (X: ${Math.round(this.ship2D.x)}, Y: ${Math.round(this.ship2D.y)})`;
@@ -1941,6 +2050,11 @@
 
         // Final Victory / Defeat Banner Overlay
         if (elapsed >= totalDur) {
+          if (!sim.finished && sim.winner === 'p1') {
+            this.duelWins += 1;
+            const duelXp = Math.round(25 * ((sim.rival.shield + sim.rival.turret) / 2));
+            this.awardCombatXp(duelXp, false);
+          }
           sim.finished = true;
           ctx.fillStyle = 'rgba(2, 6, 18, 0.72)';
           ctx.fillRect(0, h / 2 - 36, w, 72);
@@ -3049,6 +3163,8 @@
                 hit = true;
                 this.spawn3DExplosion(l.pos, l.color, 6);
                 if (e.hp <= 0) {
+                  const killXp = (e.isBoss ? 50 : (e.color === '#f59e0b' ? 15 : 10)) * this.activeSystem.level;
+                  this.awardCombatXp(killXp, true);
                   this.spawn3DExplosion(e.pos, e.color, e.isBoss ? 45 : 22);
                   this.enemies3D.splice(j, 1);
                   this.checkWaveProgression();
@@ -3139,6 +3255,8 @@
                 dmg: m.dmg
               };
               if (killed) {
+                const killXp = (e.isBoss ? 50 : (e.color === '#f59e0b' ? 15 : 10)) * this.activeSystem.level;
+                this.awardCombatXp(killXp, true);
                 this.enemies3D.splice(j, 1);
                 this.checkWaveProgression();
               }
