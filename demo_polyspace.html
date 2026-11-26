@@ -1137,9 +1137,14 @@
         this.mouseX = 0;
         this.mouseY = 0;
         this.mouseDown = false;
+        this.useKeyboardSteer = false;
 
         window.addEventListener('keydown', (e) => {
           this.keys[e.code] = true;
+          if (this.mode === 'combat3d' && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+            this.useKeyboardSteer = true;
+            e.preventDefault();
+          }
           if (e.code === 'Space' && this.mode === 'combat3d') {
             e.preventDefault();
           }
@@ -1183,6 +1188,9 @@
           const rect = this.canvas.getBoundingClientRect();
           const mx = e.clientX - rect.left;
           const my = e.clientY - rect.top;
+          if (this.useKeyboardSteer && Math.hypot(mx - this.mouseX, my - this.mouseY) > 4) {
+            this.useKeyboardSteer = false;
+          }
           this.mouseX = mx;
           this.mouseY = my;
 
@@ -2705,7 +2713,7 @@
         const dmgPerShot = Math.round(18 + Math.pow(this.turretLevel, 1.55) * 1.45);
         const laserSpeed = 1850 + this.turretLevel * 12;
 
-        // Aim gently toward mouse cursor (desktop) or soft aim-assist toward nearest front enemy (mobile touch)
+        // Aim gently toward mouse cursor (desktop mouse mode) or straight ahead (keyboard mode) or soft aim-assist (mobile touch)
         let aimDir;
         if (this.isTouchDevice) {
           let assistTarget = null;
@@ -2729,6 +2737,8 @@
           } else {
             aimDir = { x: p.forward.x, y: p.forward.y, z: p.forward.z };
           }
+        } else if (this.useKeyboardSteer) {
+          aimDir = { x: p.forward.x, y: p.forward.y, z: p.forward.z };
         } else {
           const normMx = (this.mouseX - this.width / 2) / (this.width / 2);
           const normMy = -(this.mouseY - this.height / 2) / (this.height / 2);
@@ -2839,7 +2849,7 @@
         if (this.touchStick && this.touchStick.active) {
           if (Math.abs(this.touchStick.nx) > 0.08) targetYaw += this.touchStick.nx * 1.65;
           if (Math.abs(this.touchStick.ny) > 0.08) targetPitch -= this.touchStick.ny * 1.55;
-        } else if (!this.isTouchDevice) {
+        } else if (!this.isTouchDevice && !this.useKeyboardSteer) {
           // Mouse flight deadzone near center
           const mxNorm = (this.mouseX - this.width / 2) / (this.width / 2);
           const myNorm = (this.mouseY - this.height / 2) / (this.height / 2);
@@ -3498,15 +3508,17 @@
         ctx.arc(cx, cy, 18, 0, Math.PI * 2);
         ctx.stroke();
 
-        ctx.strokeStyle = '#00ff88';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(this.mouseX, this.mouseY, 12, 0, Math.PI * 2);
-        ctx.moveTo(this.mouseX - 18, this.mouseY);
-        ctx.lineTo(this.mouseX + 18, this.mouseY);
-        ctx.moveTo(this.mouseX, this.mouseY - 18);
-        ctx.lineTo(this.mouseX, this.mouseY + 18);
-        ctx.stroke();
+        if (!this.isTouchDevice && !this.useKeyboardSteer) {
+          ctx.strokeStyle = '#00ff88';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(this.mouseX, this.mouseY, 12, 0, Math.PI * 2);
+          ctx.moveTo(this.mouseX - 18, this.mouseY);
+          ctx.lineTo(this.mouseX + 18, this.mouseY);
+          ctx.moveTo(this.mouseX, this.mouseY - 18);
+          ctx.lineTo(this.mouseX, this.mouseY + 18);
+          ctx.stroke();
+        }
 
         // 7. Render 360° 3D Tactical Combat Mini-Radar Scope (Bottom-Center)
         this.render3DCombatMiniRadar(cx, h - 82);
