@@ -447,10 +447,10 @@
       z-index: 25;
     }
     #mobile-trade-btn {
-      display: none;
+      display: flex;
       position: absolute;
-      top: 10px;
-      right: 10px;
+      top: 12px;
+      right: 14px;
       pointer-events: auto;
       z-index: 25;
     }
@@ -575,12 +575,6 @@
           <div id="sector-readout" style="font-size:0.7rem; color:var(--muted); margin-top:2px;">Inner Core Sector (Outpost Hub)</div>
         </div>
 
-        <div class="nav-help-text" style="font-size:0.72rem; color:var(--muted); margin-bottom:8px; line-height:1.35;">
-          • <strong>Left-Click anywhere</strong> on the Milky Way to pilot your ship in 2D.<br/>
-          • <strong>Mouse Wheel</strong> to Zoom In/Out • <strong>Right-Click / Drag</strong> to Pan.<br/>
-          • Fly near <strong>Solar Systems (1–50)</strong> or secret <strong>Hidden Gifts</strong>!
-        </div>
-
         <!-- Coordinate Autopilot & Share Location -->
         <div style="display:flex; gap:5px; margin-bottom:6px;">
           <input type="number" id="input-gx" placeholder="X" style="width:72px; background:rgba(0,0,0,0.6); border:1px solid rgba(0,240,255,0.3); color:#fff; padding:4px 6px; border-radius:5px; font-size:0.75rem;" />
@@ -590,35 +584,6 @@
         <div style="display:flex; gap:6px;">
           <button class="btn" style="flex:1; padding:5px 8px; font-size:0.72rem; justify-content:center;" onclick="window.demoApp.shareLocation()">📤 Share My Coordinates</button>
           <button class="btn" style="padding:5px 8px; font-size:0.72rem;" onclick="window.demoApp.centerOnShip()" title="Center Camera on Ship">🎯 Center</button>
-        </div>
-      </div>
-
-      <!-- Top-Right: Quick Presets & Hidden Gift Radar Hints -->
-      <div class="hud-panel" id="galaxy-Quick-Jump">
-        <div style="font-size:0.78rem; font-weight:900; color:var(--gold); margin-bottom:6px;">⚡ QUICK AUTOPILOT TARGETS</div>
-        <div style="display:flex; flex-direction:column; gap:5px;">
-          <button class="btn" style="font-size:0.72rem; padding:5px 8px; justify-content:space-between;" onclick="window.demoApp.flyToSystem(1)">
-            <span>☀️ System #1 (Orion Rim)</span> <span style="color:var(--green);">Lvl 1</span>
-          </button>
-          <button class="btn" style="font-size:0.72rem; padding:5px 8px; justify-content:space-between;" onclick="window.demoApp.flyToSystem(15)">
-            <span>🪐 System #15 (Perseus Arm)</span> <span style="color:var(--cyan);">Lvl 15</span>
-          </button>
-          <button class="btn" style="font-size:0.72rem; padding:5px 8px; justify-content:space-between;" onclick="window.demoApp.flyToSystem(35)">
-            <span>☄️ System #35 (Dreadnought)</span> <span style="color:#c084fc;">Lvl 35</span>
-          </button>
-          <button class="btn btn-danger" style="font-size:0.72rem; padding:5px 8px; justify-content:space-between;" onclick="window.demoApp.flyToSystem(50)">
-            <span>👑 System #50 (Singularity)</span> <span style="color:var(--gold);">Lvl 50</span>
-          </button>
-          <div style="border-top:1px solid rgba(255,255,255,0.1); margin:3px 0;"></div>
-          <button class="btn" style="font-size:0.71rem; padding:5px 8px; border-color:var(--purple); color:#e9d5ff; justify-content:space-between;" onclick="window.demoApp.flyToGiftHint()">
-            <span>🎁 Fly Near Hidden Gift #1</span> <span>(-1150, +820)</span>
-          </button>
-          <button class="btn" style="font-size:0.71rem; padding:5px 8px; border-color:var(--green); color:#a7f3d0; justify-content:space-between;" onclick="window.demoApp.flyToNearestPilot()">
-            <span>👥 Hail Nearest Pilot</span> <span>Tactical Duel</span>
-          </button>
-          <button class="btn" style="font-size:0.71rem; padding:5px 8px; border-color:var(--cyan); color:#bae6fd; justify-content:space-between;" onclick="window.demoApp.openPostTradeBeacon()">
-            <span>🤝 Drop Trade Beacon</span> <span>At My (X,Y)</span>
-          </button>
         </div>
       </div>
 
