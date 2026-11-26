@@ -3496,10 +3496,6 @@
       }
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      window.PolySpaceGalaxy.instance = new Plan023StandaloneDemo();
-    });
-
   window.PolySpaceGalaxy = {
     instance: null,
     mount(hostEl) {
@@ -3516,7 +3512,7 @@
 
       if (!this.instance) {
         hostEl.innerHTML = '<div id="psg-root">' + PSG_HTML + '</div>';
-        this.instance = new PolySpacePlan023Demo();
+        this.instance = new Plan023StandaloneDemo();
         this.instance.paused = false;
       } else {
         this.instance.paused = false;
