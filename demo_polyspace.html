@@ -690,7 +690,7 @@
           <span id="hud3d-dps-txt" style="font-family:monospace;">165 DMG</span>
         </div>
         <div style="font-size:0.73rem; font-weight:900; color:var(--gold); margin-bottom:3px; display:flex; justify-content:space-between; align-items:center;">
-          <span>🚀 AUTO-LOCK MISSILE [E / R-Click]</span>
+          <span>🚀 AUTO-LOCK MISSILE [SPACE]</span>
           <span id="hud3d-missile-txt" style="font-family:monospace; color:var(--green);">READY</span>
         </div>
         <div class="bar-wrap" style="margin-bottom:6px;">
@@ -698,8 +698,8 @@
         </div>
         <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
           <div style="font-size:0.67rem; color:var(--muted); line-height:1.35;">
-            • <strong>Steer:</strong> Mouse or <strong>WASD / Arrows</strong><br/>
-            • <strong>Fire:</strong> <strong>L-Click / Space</strong> • <strong>Missile:</strong> <strong>E / R-Click</strong>
+            • <strong>Steer:</strong> Mouse or <strong>WASD / Arrows</strong> (Auto-Fire ON)<br/>
+            • <strong>Homing Missile:</strong> <strong>Spacebar</strong> or <strong>R-Click</strong>
           </div>
           <button class="btn btn-gold" id="btn-fire-missile" style="padding:5px 9px; font-size:0.7rem; white-space:nowrap;" onclick="window.demoApp.fireHomingMissile()">🚀 LAUNCH</button>
         </div>
@@ -1147,6 +1147,7 @@
           }
           if (e.code === 'Space' && this.mode === 'combat3d') {
             e.preventDefault();
+            if (!e.repeat) this.fireHomingMissile();
           }
           if (e.code === 'KeyE' && this.mode === 'combat3d' && !e.repeat) {
             this.fireHomingMissile();
@@ -2877,9 +2878,9 @@
           else if (d.z - p.pos.z < -1500) d.z += 3000;
         }
 
-        // 3. Fire Player Lasers (Desktop click/Space, or Always-On Smart Auto-Fire on mobile when target in front cone)
+        // 3. Always-On Smart Auto-Shoot (Desktop + Mobile) when any enemy is in front cone (L-Click also fires manually)
         let shouldAutoFire = false;
-        if ((this.autoFire3D || this.isTouchDevice) && this.enemies3D.length > 0) {
+        if (this.enemies3D.length > 0) {
           for (const e of this.enemies3D) {
             const loc = this.worldToShipLocal(e.pos);
             if (loc.z > 40 && loc.z < 3000 && Math.abs(loc.x / loc.z) < 0.50 && Math.abs(loc.y / loc.z) < 0.50) {
@@ -2888,7 +2889,7 @@
             }
           }
         }
-        if (this.mouseDown || this.keys['Space'] || shouldAutoFire) {
+        if (this.mouseDown || shouldAutoFire) {
           this.firePlayerLasers();
         }
 
@@ -3421,7 +3422,7 @@
                 ctx.fillStyle = '#ffd700';
                 ctx.font = 'bold 9px monospace';
                 ctx.textAlign = 'center';
-                ctx.fillText('🎯 MISSILE LOCK [E]', 0, -bSize - 17);
+                ctx.fillText('🎯 MISSILE LOCK [SPACE]', 0, -bSize - 17);
               }
 
               // HP Bar above enemy
