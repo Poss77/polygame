@@ -2713,31 +2713,9 @@
         const dmgPerShot = Math.round(18 + Math.pow(this.turretLevel, 1.55) * 1.45);
         const laserSpeed = 1850 + this.turretLevel * 12;
 
-        // Aim gently toward mouse cursor (desktop mouse mode) or straight ahead (keyboard mode) or soft aim-assist (mobile touch)
+        // Aim gently toward mouse cursor (desktop mouse mode) or straight ahead (mobile touch & keyboard mode — no auto-aim)
         let aimDir;
-        if (this.isTouchDevice) {
-          let assistTarget = null;
-          let bestAngle = 0.42;
-          for (const e of this.enemies3D) {
-            const loc = this.worldToShipLocal(e.pos);
-            if (loc.z > 40) {
-              const ang = Math.hypot(loc.x / loc.z, loc.y / loc.z);
-              if (ang < bestAngle) {
-                bestAngle = ang;
-                assistTarget = e;
-              }
-            }
-          }
-          if (assistTarget) {
-            aimDir = this.vecNorm({
-              x: assistTarget.pos.x - p.pos.x,
-              y: assistTarget.pos.y - p.pos.y,
-              z: assistTarget.pos.z - p.pos.z
-            });
-          } else {
-            aimDir = { x: p.forward.x, y: p.forward.y, z: p.forward.z };
-          }
-        } else if (this.useKeyboardSteer) {
+        if (this.isTouchDevice || this.useKeyboardSteer) {
           aimDir = { x: p.forward.x, y: p.forward.y, z: p.forward.z };
         } else {
           const normMx = (this.mouseX - this.width / 2) / (this.width / 2);
