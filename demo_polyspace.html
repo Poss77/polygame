@@ -841,7 +841,7 @@
             </div>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-            <span style="font-size:0.7rem; color:var(--muted);">🔒 Resources only • Auto-refunds if cancelled or expired (24h).</span>
+            <span style="font-size:0.7rem; color:var(--muted);">🔥 5% resource burn fee • Auto-refunds if cancelled or expired (24h).</span>
             <button class="btn" style="border-color:var(--green); background:rgba(0,255,136,0.18); color:#fff; padding:8px 16px;" onclick="window.demoApp.deployTradeBeacon()">
               📡 DROP BEACON ON MAP
             </button>
@@ -852,7 +852,7 @@
         <div id="trade-accept-view" style="display:none;">
           <div id="beacon-detail-box" style="background:rgba(0,255,136,0.07); border:1px solid rgba(0,255,136,0.3); border-radius:10px; padding:14px; margin-bottom:14px; font-size:0.84rem; line-height:1.6;"></div>
           <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-            <span style="font-size:0.7rem; color:var(--muted);">🔒 Atomic 1-click resource swap (0% fee).</span>
+            <span style="font-size:0.7rem; color:var(--muted);">🔥 Atomic 1-click resource swap (5% burn fee).</span>
             <button id="btn-accept-beacon" class="btn" style="border-color:var(--green); background:rgba(0,255,136,0.2); color:#fff; padding:8px 18px;" onclick="window.demoApp.acceptSelectedBeacon()">
               ✅ ACCEPT TRADE
             </button>
@@ -1467,8 +1467,10 @@
         lvlEl.style.borderColor = isHard ? '#ff0055' : '#00ff88';
 
         const nftTag = sys.hasNft ? ' + 👑 EXCLUSIVE CONQUEROR NFT!' : '';
-        document.getElementById('brief-sys-desc').innerText =
-          `Coords: (X: ${sys.x}, Y: ${sys.y}) • 3D Physics Dogfight (2 Waves + System Boss) • Reward: +${sys.rewardPgt} PGT${nftTag}`;
+        const alreadyCleared = this.clearedSystems.has(sys.id);
+        document.getElementById('brief-sys-desc').innerText = alreadyCleared
+          ? `Coords: (X: ${sys.x}, Y: ${sys.y}) • ✅ ALREADY CLEARED — Replayable for practice (First-Clear Reward already claimed)`
+          : `Coords: (X: ${sys.x}, Y: ${sys.y}) • 3D Dogfight (2 Waves + Boss) • First-Clear Reward (Once): +${sys.rewardPgt} PGT${nftTag}`;
       }
 
       flyToSystem(id) {
@@ -1586,13 +1588,15 @@
 
       openInspectTradeBeacon(tb) {
         this.selectedBeacon = tb;
+        const netReceive = Math.max(1, Math.floor(tb.offerAmt * 0.95));
+        const burnedOffer = tb.offerAmt - netReceive;
         document.getElementById('trade-subtitle').innerText = `TRADE BEACON AT (X: ${tb.x}, Y: ${tb.y}) • POSTED BY ${tb.seller.toUpperCase()}`;
         document.getElementById('trade-title').innerText = tb.isMine ? '📡 YOUR ACTIVE TRADE BEACON' : `🤝 TRADE OFFER FROM ${tb.seller.toUpperCase()}`;
         document.getElementById('trade-post-view').style.display = 'none';
         document.getElementById('trade-accept-view').style.display = 'block';
         document.getElementById('beacon-detail-box').innerHTML = `
-          <div><strong style="color:#00ff88;">YOU RECEIVE:</strong> ${tb.offerAmt.toLocaleString()} ${tb.offerAsset}</div>
-          <div><strong style="color:#ffd700;">YOU PAY:</strong> ${tb.wantAmt.toLocaleString()} ${tb.wantAsset}</div>
+          <div><strong style="color:#00ff88;">YOU RECEIVE:</strong> ${netReceive.toLocaleString()} ${tb.offerAsset} <span style="color:#94a3b8; font-size:0.74rem;">(${tb.offerAmt.toLocaleString()} − ${burnedOffer.toLocaleString()} burned)</span></div>
+          <div><strong style="color:#ffd700;">YOU PAY:</strong> ${tb.wantAmt.toLocaleString()} ${tb.wantAsset} <span style="color:#94a3b8; font-size:0.74rem;">(5% burn fee applies)</span></div>
         `;
         const btn = document.getElementById('btn-accept-beacon');
         btn.innerText = tb.isMine ? '🗑️ CANCEL & RECLAIM' : '✅ 1-CLICK ACCEPT TRADE';
@@ -1609,7 +1613,8 @@
         if (tb.isMine) {
           this.showToast(`🔄 Cancelled Trade Beacon — ${tb.offerAmt} ${tb.offerAsset} returned to your cargo!`);
         } else {
-          this.showToast(`✅ Trade Complete with ${tb.seller}! Received ${tb.offerAmt} ${tb.offerAsset} for ${tb.wantAmt} ${tb.wantAsset}.`);
+          const netReceive = Math.max(1, Math.floor(tb.offerAmt * 0.95));
+          this.showToast(`✅ Trade Complete with ${tb.seller}! Received ${netReceive.toLocaleString()} ${tb.offerAsset} (5% burn applied).`);
         }
       }
 
@@ -3191,15 +3196,21 @@
         modal.style.display = 'flex';
 
         if (victory) {
+          const alreadyCleared = this.clearedSystems.has(sys.id);
           this.clearedSystems.add(sys.id);
           document.getElementById('modal-icon').innerText = sys.id === 50 ? '👑' : '🏆';
-          document.getElementById('modal-title').innerText = sys.id === 50 ? 'SYSTEM #50 CONQUERED!' : `SYSTEM #${sys.id} CLEARED!`;
+          document.getElementById('modal-title').innerText = alreadyCleared
+            ? `SYSTEM #${sys.id} REPLAY CLEARED!`
+            : (sys.id === 50 ? 'SYSTEM #50 CONQUERED!' : `SYSTEM #${sys.id} CLEARED!`);
           document.getElementById('modal-title').style.color = '#00ff88';
-          document.getElementById('modal-desc').innerText =
-            `You destroyed all hostile squadrons and the Command Boss in ${sys.name} (Lvl ${sys.level})!`;
-          document.getElementById('modal-loot').innerHTML = sys.hasNft
-            ? `💰 +${sys.rewardPgt} PGT Grand Prize<br/>👑 +1 EXCLUSIVE SINGULARITY CONQUEROR NFT!`
-            : `💰 +${sys.rewardPgt} PGT • 🪨 +${sys.level * 40} Iron • 💎 +${sys.level * 15} Titanium`;
+          document.getElementById('modal-desc').innerText = alreadyCleared
+            ? `Great flying in ${sys.name} (Lvl ${sys.level})! You already claimed this system's one-time first-clear reward.`
+            : `You destroyed all hostile squadrons and the Command Boss in ${sys.name} (Lvl ${sys.level})!`;
+          document.getElementById('modal-loot').innerHTML = alreadyCleared
+            ? '✅ First-Clear Reward Already Claimed (Replay Mode — 0 PGT)'
+            : (sys.hasNft
+              ? `💰 +${sys.rewardPgt} PGT Grand Prize (First-Clear)<br/>👑 +1 EXCLUSIVE SINGULARITY CONQUEROR NFT!`
+              : `💰 +${sys.rewardPgt} PGT • 🪨 +${sys.level * 40} Iron • 💎 +${sys.level * 15} Titanium (First-Clear)`);
         } else {
           document.getElementById('modal-icon').innerText = '💥';
           document.getElementById('modal-title').innerText = 'SHIP DESTROYED!';
