@@ -122,12 +122,12 @@
 
         // Inner Core 6 Original Idle Mining Nodes (Unchanged in center around Outpost Hub)
         this.innerDestinations = [
-          { name: '🪨 Asteroids (15m)', x: -120, y: -110, color: '#38bdf8' },
-          { name: '🪐 Nebula (2h)', x: -140, y: 115, color: '#a855f7' },
-          { name: '🌌 Deep Void (8h)', x: 0, y: 155, color: '#f59e0b' },
-          { name: '🛸 Sector 9 (24h)', x: 130, y: -110, color: '#ff0055' },
-          { name: '🚀 Deep Space (3d)', x: 165, y: 10, color: '#00ffff' },
-          { name: '🌌 Odyssey (7d)', x: 135, y: 130, color: '#ffea00' }
+          { type: 'asteroids', name: '🪨 Asteroids (15m)', x: -120, y: -110, color: '#38bdf8' },
+          { type: 'nebula',    name: '🪐 Nebula (2h)',     x: -140, y: 115,  color: '#a855f7' },
+          { type: 'void',      name: '🌌 Deep Void (8h)',  x: 0,    y: 155,  color: '#f59e0b' },
+          { type: 'sector9',   name: '🛸 Sector 9 (24h)',  x: 130,  y: -110, color: '#ff0055' },
+          { type: 'deepspace', name: '🚀 Deep Space (3d)', x: 165,  y: 10,   color: '#00ffff' },
+          { type: 'odyssey',   name: '🌌 Odyssey (7d)',    x: 135,  y: 130,  color: '#ffea00' }
         ];
 
         // 50 Outer Solar Systems distributed along the 4 spiral arms from radius 420 to 3050
@@ -388,6 +388,7 @@
         this.canvas.addEventListener('wheel', (e) => {
           if (this.mode !== 'galaxy') return;
           e.preventDefault();
+          this._introZoomTarget = null;
           const factor = e.deltaY < 0 ? 1.16 : 0.86;
           this.camZoom = Math.max(0.06, Math.min(2.2, this.camZoom * factor));
         }, { passive: false });
@@ -1241,6 +1242,15 @@
           }
         }
 
+        // Smooth Radar -> Galaxy Zoom-Out Intro Transition
+        if (this._introZoomTarget != null) {
+          this.camZoom += (this._introZoomTarget - this.camZoom) * Math.min(1, dt * 3.8);
+          if (Math.abs(this.camZoom - this._introZoomTarget) < 0.006) {
+            this.camZoom = this._introZoomTarget;
+            this._introZoomTarget = null;
+          }
+        }
+
         // Update thruster trail
         for (let i = s.trail.length - 1; i >= 0; i--) {
           s.trail[i].life -= dt * 1.4;
@@ -1371,8 +1381,17 @@
         }
         ctx.globalAlpha = 1.0;
 
-        // 3. Inner Core Outpost Hub & 6 Unchanged Idle Mining Missions
+        // 3. Inner Core Tactical Radar (Outpost Hub + 6 Live Idle Mining Missions + Radar Sweep)
         ctx.save();
+        // Rotating Tactical Radar Sweep Cone
+        const sweepAng = (Date.now() / 2200) % (Math.PI * 2);
+        ctx.fillStyle = 'rgba(0, 240, 255, 0.06)';
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, 230, sweepAng, sweepAng + 0.55);
+        ctx.closePath();
+        ctx.fill();
+
         ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
         ctx.setLineDash([6, 6]);
         ctx.lineWidth = 1.5;
@@ -1394,7 +1413,9 @@
         ctx.textAlign = 'center';
         ctx.fillText('🌍 Outpost Hub (0,0)', 0, 30);
 
+        const destMap = {};
         for (const dest of this.innerDestinations) {
+          destMap[dest.type] = dest;
           ctx.strokeStyle = 'rgba(255,255,255,0.14)';
           ctx.beginPath();
           ctx.moveTo(0, 0);
@@ -1411,6 +1432,53 @@
             ctx.font = '9px sans-serif';
             ctx.fillText(dest.name, dest.x, dest.y + 15);
           }
+        }
+
+        // Mirror Live Active PolySpace Expeditions Flying Around the Inner Core!
+        const liveExps = (window.polySpace && window.polySpace.state && Array.isArray(window.polySpace.state.expeditions))
+          ? window.polySpace.state.expeditions : [];
+        if (liveExps.length > 0) {
+          const nowMs = Date.now();
+          const routeCounts = {};
+          liveExps.forEach((exp) => {
+            const key = String(exp.type || 'asteroids').toLowerCase();
+            const dNode = destMap[key] || this.innerDestinations[0];
+            const idxOnRoute = routeCounts[key] || 0;
+            routeCounts[key] = idxOnRoute + 1;
+
+            const dur = Math.max(1, (exp.endTime || 0) - (exp.startTime || 0));
+            const prog = Math.max(0.05, Math.min(1, (nowMs - (exp.startTime || 0)) / dur));
+            const isReady = nowMs >= (exp.endTime || 0);
+
+            // Slight perpendicular offset when multiple ships share the same route
+            const len = Math.hypot(dNode.x, dNode.y) || 1;
+            const perpX = (-dNode.y / len) * (idxOnRoute * 7 - 3);
+            const perpY = (dNode.x / len) * (idxOnRoute * 7 - 3);
+
+            // Dashed glowing expedition flight line
+            ctx.strokeStyle = isReady ? '#00ff88' : dNode.color;
+            ctx.lineWidth = 1.6;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(perpX * 0.25, perpY * 0.25);
+            ctx.lineTo(dNode.x + perpX * 0.5, dNode.y + perpY * 0.5);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Live expedition shuttle position
+            const ex = dNode.x * prog + perpX * (0.25 + prog * 0.25);
+            const ey = dNode.y * prog + perpY * (0.25 + prog * 0.25);
+            ctx.fillStyle = isReady ? '#00ff88' : '#ffd700';
+            ctx.beginPath();
+            ctx.arc(ex, ey, 3.8, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (this.camZoom > 0.35) {
+              ctx.fillStyle = isReady ? '#00ff88' : '#fde047';
+              ctx.font = 'bold 8px monospace';
+              ctx.fillText(isReady ? 'READY' : `${Math.floor(prog * 100)}%`, ex, ey - 6);
+            }
+          });
         }
         ctx.restore();
 
@@ -3542,9 +3610,18 @@
         hostEl.innerHTML = '<div id="psg-root">' + PSG_HTML + '</div>';
         this.instance = new Plan023StandaloneDemo();
         this.instance.paused = false;
+        // Start zoomed into the Inner Core Radar and smoothly zoom out to reveal the Milky Way!
+        this.instance.camX = 0;
+        this.instance.camY = 0;
+        this.instance.camZoom = 1.05;
+        this.instance._introZoomTarget = 0.42;
       } else {
         this.instance.paused = false;
         this.instance.updateUpgrades();
+        if (this.instance.mode === 'galaxy') {
+          this.instance.camZoom = 1.05;
+          this.instance._introZoomTarget = 0.42;
+        }
         setTimeout(() => this.instance.resize(), 30);
       }
     },
