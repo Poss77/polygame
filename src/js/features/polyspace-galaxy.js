@@ -1830,7 +1830,10 @@
       setFullscreen(enabled) {
         const root = document.getElementById('psg-root');
         const host = document.getElementById('space-galaxy-host');
+        const vp = document.getElementById('psg-viewport');
+        const dc = document.getElementById('demo-canvas');
         if (!root) return;
+        this._isFullscreen = Boolean(enabled);
         if (enabled) {
           if (root.parentElement !== document.body) {
             document.body.appendChild(root);
@@ -1841,6 +1844,9 @@
           root.style.width = '100vw';
           root.style.height = '100vh';
           root.style.zIndex = '99999';
+          root.style.pointerEvents = 'auto';
+          if (vp) { vp.style.background = '#02040a'; vp.style.pointerEvents = 'auto'; }
+          if (dc) dc.style.display = 'block';
           document.body.style.overflow = 'hidden';
         } else {
           root.classList.remove('psg-fullscreen');
@@ -1849,6 +1855,9 @@
           root.style.width = '';
           root.style.height = '';
           root.style.zIndex = '';
+          root.style.pointerEvents = 'none';
+          if (vp) { vp.style.background = 'transparent'; vp.style.pointerEvents = 'none'; }
+          if (dc) dc.style.display = 'none';
           if (host && root.parentElement !== host) {
             host.appendChild(root);
           }
@@ -3582,7 +3591,9 @@
 
         if (this.mode === 'galaxy') {
           this.updateGalaxy2D(dt);
-          this.renderGalaxy2D();
+          if (this._isFullscreen) {
+            this.renderGalaxy2D();
+          }
         } else {
           this.updateCombat3D(dt);
           this.renderCombat3D();
@@ -3610,20 +3621,229 @@
         hostEl.innerHTML = '<div id="psg-root">' + PSG_HTML + '</div>';
         this.instance = new Plan023StandaloneDemo();
         this.instance.paused = false;
-        // Start zoomed into the Inner Core Radar and smoothly zoom out to reveal the Milky Way!
-        this.instance.camX = 0;
-        this.instance.camY = 0;
-        this.instance.camZoom = 1.05;
-        this.instance._introZoomTarget = 0.42;
+        this.instance.setFullscreen(false);
       } else {
         this.instance.paused = false;
         this.instance.updateUpgrades();
         if (this.instance.mode === 'galaxy') {
-          this.instance.camZoom = 1.05;
-          this.instance._introZoomTarget = 0.42;
+          this.instance.setFullscreen(false);
         }
-        setTimeout(() => this.instance.resize(), 30);
       }
+    },
+    renderBackdropOnRadar(ctx, baseX, baseY, zoom) {
+      const inst = this.instance;
+      if (!inst || inst.paused || inst.mode !== 'galaxy' || inst._isFullscreen) return;
+      ctx.save();
+      ctx.translate(baseX, baseY);
+
+      // 1. Milky Way Spiral Core Glow
+      const coreGrad = ctx.createRadialGradient(0, 0, 40, 0, 0, 3200);
+      coreGrad.addColorStop(0, 'rgba(255, 215, 0, 0.16)');
+      coreGrad.addColorStop(0.14, 'rgba(168, 85, 247, 0.12)');
+      coreGrad.addColorStop(0.45, 'rgba(56, 189, 248, 0.05)');
+      coreGrad.addColorStop(1, 'rgba(2, 4, 10, 0)');
+      ctx.fillStyle = coreGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, 3200, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Concentric Galactic Rings + ±10,000 Sector Perimeter
+      ctx.strokeStyle = 'rgba(0, 240, 255, 0.09)';
+      ctx.lineWidth = 1 / zoom;
+      [280, 1000, 1800, 2600, 3200, 6000, 10000].forEach(r => {
+        ctx.beginPath();
+        ctx.arc(0, 0, r, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      const B = inst.galaxyBound || 10000;
+      ctx.strokeStyle = 'rgba(255, 0, 85, 0.45)';
+      ctx.lineWidth = 2.2 / zoom;
+      ctx.setLineDash([28 / zoom, 18 / zoom]);
+      ctx.strokeRect(-B, -B, B * 2, B * 2);
+      ctx.setLineDash([]);
+
+      // Spiral & Outer Deep-Space Stars
+      for (const st of inst.galaxyStars) {
+        ctx.fillStyle = st.color;
+        ctx.globalAlpha = st.alpha;
+        ctx.fillRect(st.x, st.y, st.size * 1.5, st.size * 1.5);
+      }
+      ctx.globalAlpha = 1.0;
+      ctx.restore();
+    },
+    renderForegroundOnRadar(ctx, baseX, baseY, zoom) {
+      const inst = this.instance;
+      if (!inst || inst.paused || inst.mode !== 'galaxy' || inst._isFullscreen) return;
+      ctx.save();
+      ctx.translate(baseX, baseY);
+
+      // 50 Solar Systems
+      for (const sys of inst.solarSystems) {
+        const isSelected = inst.selectedSystemId === sys.id;
+        const isCleared = inst.clearedSystems.has(sys.id);
+        if (isSelected || sys.id === 50 || isCleared) {
+          ctx.strokeStyle = isCleared ? '#00ff88' : sys.color;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(sys.x, sys.y, sys.radius + 6 + Math.sin(Date.now() / 250) * 2, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.fillStyle = isCleared ? '#00ff88' : sys.color;
+        ctx.beginPath();
+        ctx.arc(sys.x, sys.y, sys.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.ellipse(sys.x, sys.y, sys.radius * 1.7, sys.radius * 0.65, 0.3, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = sys.id === 50 ? 'bold 13px sans-serif' : 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${sys.id === 50 ? '👑 ' : ''}#${sys.id} ${sys.name} (Lvl ${sys.level})`, sys.x, sys.y + sys.radius + 14);
+      }
+
+      // Open Map Resource Trade Beacons
+      if (inst.tradeBeacons) {
+        const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 280);
+        const bScale = Math.max(0.85, 1.05 / Math.sqrt(zoom));
+        for (const tb of inst.tradeBeacons) {
+          ctx.save();
+          ctx.translate(tb.x, tb.y);
+          ctx.strokeStyle = tb.isMine ? `rgba(0,240,255,${0.4 + pulse * 0.45})` : `rgba(0,255,136,${0.4 + pulse * 0.45})`;
+          ctx.lineWidth = 2 / zoom;
+          ctx.beginPath();
+          ctx.arc(0, 0, (16 + pulse * 6) * bScale, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.fillStyle = tb.isMine ? 'rgba(6,30,52,0.92)' : 'rgba(4,34,24,0.92)';
+          ctx.strokeStyle = tb.isMine ? '#00f0ff' : '#00ff88';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(0, 0, 13 * bScale, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.font = `${Math.round(13 * bScale)}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('🤝', 0, 1);
+          ctx.restore();
+        }
+      }
+
+      // Other Live Pilots
+      if (inst.otherPilots) {
+        const pScale = Math.max(0.75, 1.0 / Math.sqrt(zoom));
+        for (const pl of inst.otherPilots) {
+          ctx.save();
+          ctx.translate(pl.x, pl.y);
+          ctx.rotate(pl.angle);
+          ctx.scale(pScale, pScale);
+          ctx.fillStyle = '#0f172a';
+          ctx.strokeStyle = pl.color;
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.moveTo(13, 0); ctx.lineTo(-4, -10); ctx.lineTo(-9, -7); ctx.lineTo(-6, 0); ctx.lineTo(-9, 7); ctx.lineTo(-4, 10);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+          if (zoom > 0.22) {
+            ctx.fillStyle = pl.color;
+            ctx.font = `bold ${Math.max(9, Math.round(10 / Math.sqrt(zoom)))}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText(`🛸 ${pl.name}`, pl.x, pl.y - 14 * pScale);
+          }
+        }
+      }
+
+      // Player Waypoint + Real Equipped On-Chain NFT Flagship!
+      const s = inst.ship2D;
+      if (s.targetX !== null && s.targetY !== null) {
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth = 1.5 / zoom;
+        ctx.setLineDash([6 / zoom, 6 / zoom]);
+        ctx.beginPath();
+        ctx.moveTo(s.x, s.y);
+        ctx.lineTo(s.targetX, s.targetY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.rotate(s.angle);
+      const shipScale = Math.max(0.95, 1.3 / Math.sqrt(zoom));
+      ctx.scale(shipScale, shipScale);
+      const _psShip = (window.polySpace && typeof window.polySpace.getEquippedStarshipMultiplier === 'function')
+        ? window.polySpace.getEquippedStarshipMultiplier() : null;
+      if (_psShip && _psShip.ship && _psShip.ship.dna && window.PolyHangar && typeof window.PolyHangar.renderProceduralShip === 'function') {
+        window.PolyHangar.renderProceduralShip(ctx, 0, 0, _psShip.ship.dna, 0.34, 0, Date.now() / 300, s.targetX !== null);
+      } else {
+        ctx.fillStyle = '#0f172a';
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(20, 0); ctx.lineTo(-10, -14); ctx.lineTo(-6, 0); ctx.lineTo(-10, 14);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+      ctx.restore();
+    },
+    handleWorldClick(wx, wy, zoom) {
+      const inst = this.instance;
+      if (!inst || inst.paused || inst.mode !== 'galaxy') return;
+      const oldZoom = inst.camZoom;
+      inst.camZoom = zoom || oldZoom;
+      // Reuse the exact galaxy click resolution against world coords (wx, wy)
+      const B = inst.galaxyBound || 10000;
+      for (const g of inst.hiddenGifts) {
+        const distToShip = Math.hypot(inst.ship2D.x - g.x, inst.ship2D.y - g.y);
+        const distClick = Math.hypot(wx - g.x, wy - g.y);
+        if (!g.claimed && distToShip <= 210 && distClick <= 65 / inst.camZoom) {
+          g.claimed = true;
+          inst.showToast(`🎁 HIDDEN COORDINATE GIFT CLAIMED at (${g.x}, ${g.y}): ${g.reward}!`);
+          return;
+        }
+      }
+      if (inst.tradeBeacons) {
+        for (const tb of inst.tradeBeacons) {
+          if (Math.hypot(wx - tb.x, wy - tb.y) <= Math.max(44, 28 / inst.camZoom)) {
+            inst.ship2D.targetX = tb.x;
+            inst.ship2D.targetY = tb.y;
+            inst.followShip2D = true;
+            inst.openInspectTradeBeacon(tb);
+            return;
+          }
+        }
+      }
+      if (inst.otherPilots) {
+        for (const pl of inst.otherPilots) {
+          if (Math.hypot(wx - pl.x, wy - pl.y) <= Math.max(42, 26 / inst.camZoom)) {
+            inst.ship2D.targetX = Math.round(pl.x);
+            inst.ship2D.targetY = Math.round(pl.y);
+            inst.followShip2D = true;
+            inst.showPilotHailCard(pl);
+            return;
+          }
+        }
+      }
+      for (const sys of inst.solarSystems) {
+        if (Math.hypot(wx - sys.x, wy - sys.y) <= Math.max(38, 22 / inst.camZoom)) {
+          inst.ship2D.targetX = sys.x;
+          inst.ship2D.targetY = sys.y;
+          inst.selectedSystemId = sys.id;
+          inst.followShip2D = true;
+          inst.showSystemBriefing(sys);
+          return;
+        }
+      }
+      inst.ship2D.targetX = Math.max(-B, Math.min(B, Math.round(wx)));
+      inst.ship2D.targetY = Math.max(-B, Math.min(B, Math.round(wy)));
+      inst.followShip2D = true;
     },
     pause() {
       if (this.instance) {

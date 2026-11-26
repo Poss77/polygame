@@ -182,6 +182,20 @@ class PolySpaceEngine {
             }
           }
         }
+
+        // 3. In integrated Galaxy mode, forward non-drag clicks on #space-canvas to Galaxy world coords
+        if (mode === 'galaxy' && !this._dragMoved && window.PolySpaceGalaxy && typeof window.PolySpaceGalaxy.handleWorldClick === 'function') {
+          const zoom = this._mapZoom || 0.42;
+          const panX = this._mapPanX || 0;
+          const panY = this._mapPanY || 0;
+          const mapCenterX = (rect.width || this.width) * 0.5;
+          const mapCenterY = (rect.height || this.height) * 0.5;
+          const baseX = this._lastRadarBaseX != null ? this._lastRadarBaseX : mapCenterX;
+          const baseY = this._lastRadarBaseY != null ? this._lastRadarBaseY : mapCenterY;
+          const canvasX = (clickX - (mapCenterX + panX)) / zoom + mapCenterX;
+          const canvasY = (clickY - (mapCenterY + panY)) / zoom + mapCenterY;
+          window.PolySpaceGalaxy.handleWorldClick(canvasX - baseX, canvasY - baseY, zoom);
+        }
       });
 
       this.canvas.addEventListener('mousemove', (e) => {
@@ -189,7 +203,7 @@ class PolySpaceEngine {
         const mx = e.clientX - rect.left;
         const my = e.clientY - rect.top;
         const mode = this._canvasMode || 'radar';
-        const isRadarOnly = mode === 'radar';
+        const isRadarOnly = mode === 'radar' || mode === 'galaxy';
         const isHangarOnly = mode === 'hangar';
         const divX = (rect.width || this.width) * 0.43;
         const mapMinX = isRadarOnly ? 0 : divX;
@@ -207,7 +221,7 @@ class PolySpaceEngine {
 
         if (!isRadarOnly && b && mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
           this.canvas.style.cursor = 'pointer';
-        } else if (!isHangarOnly && mx >= mapMinX && (this._mapZoom || 1.0) > 1.0) {
+        } else if (!isHangarOnly && mx >= mapMinX && (mode === 'galaxy' || (this._mapZoom || 1.0) > 1.0)) {
           this.canvas.style.cursor = this._isDraggingMap ? 'grabbing' : 'grab';
         } else {
           this.canvas.style.cursor = 'default';
@@ -224,7 +238,7 @@ class PolySpaceEngine {
         const mouseX = e.clientX - rect.left;
         const mode = this._canvasMode || 'radar';
         if (mode === 'hangar') return;
-        const mapMinX = mode === 'radar' ? 0 : (rect.width || this.width) * 0.43;
+        const mapMinX = (mode === 'radar' || mode === 'galaxy') ? 0 : (rect.width || this.width) * 0.43;
         if (mouseX >= mapMinX) {
           e.preventDefault();
           if (e.deltaY < 0) {
@@ -240,9 +254,10 @@ class PolySpaceEngine {
         const mouseX = e.clientX - rect.left;
         const mode = this._canvasMode || 'radar';
         if (mode === 'hangar') return;
-        const mapMinX = mode === 'radar' ? 0 : (rect.width || this.width) * 0.43;
-        if (mouseX >= mapMinX && (this._mapZoom || 1.0) > 1.0) {
+        const mapMinX = (mode === 'radar' || mode === 'galaxy') ? 0 : (rect.width || this.width) * 0.43;
+        if (mouseX >= mapMinX && (mode === 'galaxy' || (this._mapZoom || 1.0) > 1.0)) {
           this._isDraggingMap = true;
+          this._dragMoved = false;
           this._dragStartX = e.clientX;
           this._dragStartY = e.clientY;
           this._dragStartPanX = this._mapPanX || 0;
@@ -257,6 +272,12 @@ class PolySpaceEngine {
         if (!this._isDraggingMap) return;
         const dx = e.clientX - this._dragStartX;
         const dy = e.clientY - this._dragStartY;
+        if (Math.hypot(dx, dy) > 6) {
+          this._dragMoved = true;
+          if (this._canvasMode === 'galaxy' && window.PolySpaceGalaxy && window.PolySpaceGalaxy.instance) {
+            window.PolySpaceGalaxy.instance.followShip2D = false;
+          }
+        }
         this._mapPanX = this._dragStartPanX + dx;
         this._mapPanY = this._dragStartPanY + dy;
       });
@@ -406,7 +427,13 @@ class PolySpaceEngine {
     this._updateCanvasModeUI();
     if (mode === 'galaxy') {
       const host = document.getElementById('space-galaxy-host');
-      if (host) host.style.display = 'block';
+      if (host) {
+        host.style.display = 'block';
+        host.style.pointerEvents = 'none';
+      }
+      this._mapZoom = 0.42;
+      this._mapPanX = 0;
+      this._mapPanY = 0;
       this._ensureGalaxyModuleLoaded(() => {
         if (this._canvasMode === 'galaxy' && window.PolySpaceGalaxy) {
           window.PolySpaceGalaxy.mount(document.getElementById('space-galaxy-host'));
@@ -417,6 +444,11 @@ class PolySpaceEngine {
       if (host) host.style.display = 'none';
       if (window.PolySpaceGalaxy && typeof window.PolySpaceGalaxy.pause === 'function') {
         window.PolySpaceGalaxy.pause();
+      }
+      if ((this._mapZoom || 1.0) < 1.0) {
+        this._mapZoom = 1.0;
+        this._mapPanX = 0;
+        this._mapPanY = 0;
       }
       if (this.ctx && this.canvas) {
         this.renderHangarView();
@@ -481,9 +513,14 @@ class PolySpaceEngine {
   }
 
   setMapZoom(level, centerOnShip = false) {
-    const clamped = Math.max(1.0, Math.min(5.0, Math.round(level * 10) / 10));
+    const isGalaxy = this._canvasMode === 'galaxy';
+    const minZ = isGalaxy ? 0.06 : 1.0;
+    const maxZ = isGalaxy ? 3.0 : 5.0;
+    const clamped = isGalaxy
+      ? Math.max(minZ, Math.min(maxZ, level))
+      : Math.max(minZ, Math.min(maxZ, Math.round(level * 10) / 10));
     this._mapZoom = clamped;
-    if (clamped === 1.0) {
+    if (!isGalaxy && clamped === 1.0) {
       this._mapPanX = 0;
       this._mapPanY = 0;
       this._isTrackingShip = false;
@@ -495,11 +532,19 @@ class PolySpaceEngine {
   }
 
   zoomIn() {
-    this.setMapZoom((this._mapZoom || 1.0) + 0.3);
+    if (this._canvasMode === 'galaxy') {
+      this.setMapZoom((this._mapZoom || 0.42) * 1.22);
+    } else {
+      this.setMapZoom((this._mapZoom || 1.0) + 0.3);
+    }
   }
 
   zoomOut() {
-    this.setMapZoom((this._mapZoom || 1.0) - 0.3);
+    if (this._canvasMode === 'galaxy') {
+      this.setMapZoom((this._mapZoom || 0.42) * 0.82);
+    } else {
+      this.setMapZoom((this._mapZoom || 1.0) - 0.3);
+    }
   }
 
   resetMapZoom() {
@@ -2804,7 +2849,8 @@ class PolySpaceEngine {
     const w = this.width;
     const h = this.height;
     const mode = this._canvasMode || 'radar';
-    const isRadarOnly = mode === 'radar';
+    const isGalaxyMode = mode === 'galaxy';
+    const isRadarOnly = mode === 'radar' || isGalaxyMode;
     const isHangarOnly = mode === 'hangar';
     const isSplit = mode === 'split';
     const divX = isRadarOnly ? 0 : (isHangarOnly ? w : w * 0.43);
@@ -2976,7 +3022,20 @@ class PolySpaceEngine {
       }
 
       // Clamp pan bounds so player cannot scroll map completely out of view
-      if (zoom > 1.0) {
+      this._lastRadarBaseX = baseX;
+      this._lastRadarBaseY = baseY;
+      if (isGalaxyMode) {
+        const gInst = window.PolySpaceGalaxy && window.PolySpaceGalaxy.instance;
+        if (gInst && gInst.followShip2D && !this._isDraggingMap) {
+          const targetPanX = (mapCenterX - (baseX + gInst.ship2D.x)) * zoom;
+          const targetPanY = (mapCenterY - (baseY + gInst.ship2D.y)) * zoom;
+          this._mapPanX = (this._mapPanX || 0) + (targetPanX - (this._mapPanX || 0)) * 0.14;
+          this._mapPanY = (this._mapPanY || 0) + (targetPanY - (this._mapPanY || 0)) * 0.14;
+        }
+        const maxGalPan = 10000 * zoom;
+        this._mapPanX = Math.max(-maxGalPan, Math.min(maxGalPan, this._mapPanX || 0));
+        this._mapPanY = Math.max(-maxGalPan, Math.min(maxGalPan, this._mapPanY || 0));
+      } else if (zoom > 1.0) {
         const maxPanX = mapWidth * (zoom - 1) * 0.55;
         const maxPanY = h * (zoom - 1) * 0.55;
         this._mapPanX = Math.max(-maxPanX, Math.min(maxPanX, this._mapPanX || 0));
@@ -2993,6 +3052,11 @@ class PolySpaceEngine {
         this.ctx.translate(mapCenterX + panX, mapCenterY + panY);
         this.ctx.scale(zoom, zoom);
         this.ctx.translate(-mapCenterX, -mapCenterY);
+      }
+
+      // Integrated Milky Way Galaxy Backdrop (behind native Radar planets, Black Hole & expeditions!)
+      if (isGalaxyMode && window.PolySpaceGalaxy && typeof window.PolySpaceGalaxy.renderBackdropOnRadar === 'function') {
+        window.PolySpaceGalaxy.renderBackdropOnRadar(this.ctx, baseX, baseY, zoom);
       }
 
       // ----------------------------------------------------------------------
@@ -3216,6 +3280,11 @@ class PolySpaceEngine {
         this.ctx.restore();
         this.ctx.restore();
       });
+
+      // Integrated Milky Way Galaxy Foreground (50 Solar Systems, Trade Beacons, Live Pilots & NFT Flagship!)
+      if (isGalaxyMode && window.PolySpaceGalaxy && typeof window.PolySpaceGalaxy.renderForegroundOnRadar === 'function') {
+        window.PolySpaceGalaxy.renderForegroundOnRadar(this.ctx, baseX, baseY, zoom);
+      }
 
       this.ctx.restore(); // end map clip
     }
