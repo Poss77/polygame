@@ -4302,8 +4302,8 @@
           ctx.restore();
         }
 
-        // 5. Render Player 3D Starfighter in Foreground (Third-Person Banking View)
-        this.renderPlayer3DShip(cx, h - 135);
+        // 5. Render Player 3D Starfighter in Foreground (Positioned cleanly above the 3D Mini-Radar)
+        this.renderPlayer3DShip(cx, Math.max(cy + 40, h - 208));
 
         // 6. Render Center Aiming Crosshair, Hitmarker Flash & Mouse Vector Guide
         ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
@@ -4349,8 +4349,8 @@
           ctx.stroke();
         }
 
-        // 7. Render 360° 3D Tactical Combat Mini-Radar Scope (Bottom-Center)
-        this.render3DCombatMiniRadar(cx, h - 82);
+        // 7. Render 360° 3D Tactical Combat Mini-Radar Scope (Bottom-Center, below Player Ship)
+        this.render3DCombatMiniRadar(cx, h - 72);
 
         // 8. Render Picture-in-Picture Missile-Cam Viewport (Top-Right when missile active or just impacted)
         this.renderMissileCamPiP(w, h, nowMs);
@@ -5098,7 +5098,7 @@
       // 360° 3D Spherical Combat Mini-Radar with Elevation Stems (Front/Rear/Above/Below)
       render3DCombatMiniRadar(rx, ry) {
         const ctx = this.ctx;
-        const rad = 64;
+        const rad = 56;
         const maxRange = 2200;
 
         ctx.save();
