@@ -5306,9 +5306,11 @@
       ctx.restore();
     },
     renderOutpostHub(ctx, x, y, showCoords = false) {
-      const inst = this.instance;
-      if (inst && typeof inst.renderOutpostHub === 'function') {
-        inst.renderOutpostHub(ctx, x, y, Date.now(), showCoords);
+      const fn = (this.instance && typeof this.instance.renderOutpostHub === 'function')
+        ? this.instance.renderOutpostHub.bind(this.instance)
+        : (Plan023StandaloneDemo && Plan023StandaloneDemo.prototype && Plan023StandaloneDemo.prototype.renderOutpostHub);
+      if (typeof fn === 'function') {
+        fn(ctx, x, y, Date.now(), showCoords);
         return true;
       }
       return false;
