@@ -2617,8 +2617,10 @@
         }
 
         // Initialize 3D Player Ship with 6-DOF Orientation Basis Vectors (Forward, Up, Right)
-        const maxShield = 400 + this.shieldLevel * 120; // Lvl 1: 520 -> Lvl 50: 6,400
-        const maxHull = 500 + this.shieldLevel * 60;
+        const maxShield = 260 + this.shieldLevel * 105; // Lvl 1: 365 -> Lvl 5: 785 -> Lvl 50: 5,510
+        const maxHull = 380 + this.shieldLevel * 55;    // Lvl 1: 435 -> Lvl 5: 655 -> Lvl 50: 3,130
+        this.hullHitFlash = 0;
+        this.shieldHitFlash = 0;
         this.player3D = {
           pos: { x: 0, y: 0, z: 0 },
           vel: { x: 0, y: 0, z: 0 },
@@ -2680,9 +2682,10 @@
         this.combatWave = waveNum;
         const sysLvl = this.activeSystem.level;
 
-        // Enemy HP & Damage scale with Solar System Level (1..50)
-        const baseEnemyHp = 80 + Math.pow(sysLvl, 1.65) * 14;
-        const baseEnemyDmg = 10 + Math.pow(sysLvl, 1.45) * 2.2;
+        // Enemy HP & Damage scale steeply with Solar System Level (1..50)
+        const baseEnemyHp = 135 + Math.pow(sysLvl, 1.72) * 21;
+        const baseEnemyDmg = 24 + Math.pow(sysLvl, 1.52) * 4.4;
+        const speedBonus = Math.min(90, sysLvl * 1.8);
 
         this.waveSpawnQueue = [];
         this.nextSpawnAt = performance.now(); // First ship warps in immediately; each subsequent ship every 1.0s
@@ -2694,9 +2697,9 @@
               id: `e_${waveNum}_${i}`,
               name: waveNum === 1 ? `Scout Interceptor α-${i + 1}` : `Heavy Raider β-${i + 1}`,
               isBoss: false,
-              hp: Math.round(baseEnemyHp * (waveNum === 2 ? 1.35 : 1.0)),
-              dmg: baseEnemyDmg,
-              speed: 135 + (i * 10),
+              hp: Math.round(baseEnemyHp * (waveNum === 2 ? 1.45 : 1.0)),
+              dmg: Math.round(baseEnemyDmg * (waveNum === 2 ? 1.2 : 1.0)),
+              speed: 165 + speedBonus + (i * 10),
               radius: 42,
               color: waveNum === 1 ? '#ff0055' : '#f59e0b',
               dist: 3200 + (i % 3) * 260,
@@ -2713,9 +2716,9 @@
             id: 'boss_main',
             name: this.activeSystem.id === 50 ? '👑 SINGULARITY LEVIATHAN MOTHERSHIP' : `👑 ${this.activeSystem.name} Dreadnought`,
             isBoss: true,
-            hp: Math.round(baseEnemyHp * 4.5),
-            dmg: baseEnemyDmg * 1.6,
-            speed: 105,
+            hp: Math.round(baseEnemyHp * 5.2),
+            dmg: Math.round(baseEnemyDmg * 1.85),
+            speed: 125 + Math.min(55, sysLvl * 1.1),
             radius: 88,
             color: '#c084fc',
             dist: 3500,
@@ -2995,14 +2998,17 @@
           this.firePlayerLasers();
         }
 
-        // 4. Shield Auto-Regeneration after 2.5s out of enemy fire
-        if (now - p.lastHitTime > 2500 && p.shield < p.maxShield) {
-          const regenRate = 30 + this.shieldLevel * 14;
+        // 4. Shield Auto-Regeneration after 4.0s out of enemy fire & hit-flash decay
+        if (this.hullHitFlash > 0) this.hullHitFlash = Math.max(0, this.hullHitFlash - dt * 1.6);
+        if (this.shieldHitFlash > 0) this.shieldHitFlash = Math.max(0, this.shieldHitFlash - dt * 2.2);
+        if (now - p.lastHitTime > 4000 && p.shield < p.maxShield) {
+          const regenRate = 18 + this.shieldLevel * 8;
           p.shield = Math.min(p.maxShield, p.shield + regenRate * dt);
         }
 
         // 5. Update 3D Enemy AI
-        // Loop: Slow Face-to-Face Approach -> Brief Rear Flyby -> Wide Side Flank Overtake -> Curve Back Face-to-Face!
+        // Loop: Aggressive Face-to-Face Approach (ramming hazard!) -> Brief Rear Flyby -> Wide Side Flank Overtake -> Curve Back Face-to-Face!
+        const sysLvl = this.activeSystem ? this.activeSystem.level : 1;
         for (let i = this.enemies3D.length - 1; i >= 0; i--) {
           const e = this.enemies3D[i];
           const local = this.worldToShipLocal(e.pos); // local.z > 0 is in front of player, local.x is right
@@ -3018,8 +3024,8 @@
           let targetEnemySpeed = e.speed;
 
           if (e.aiState === 'attack_pass') {
-            // Steady face-to-face approach; once close or behind player, transition to rear flyby & flank turn
-            if (dist < 340 || local.z < -60) {
+            // Aggressive face-to-face approach; closes inside ramming danger zone unless dodged or destroyed
+            if (dist < 155 || local.z < -60) {
               e.aiState = 'pass_behind';
               e.aiTimer = 0.85;
               // Choose flank side away from current side or alternate for cinematic crossing passes
@@ -3103,22 +3109,70 @@
           e.pos.y += e.vel.y * dt;
           e.pos.z += e.vel.z * dt;
 
-          // Enemy Firing Plasma Bolts toward player (only when attacking from the front hemisphere)
-          if (e.aiState === 'attack_pass' && local.z > 200 && dist < 2400 && now - e.lastShot > (e.isBoss ? 900 : 1550)) {
+          // Direct Ship-to-Ship Collision -> Bypasses Shield and damages HULL directly!
+          const postDist = Math.hypot(p.pos.x - e.pos.x, p.pos.y - e.pos.y, p.pos.z - e.pos.z);
+          if (postDist <= (e.radius + 42) && now - (e.lastCollisionAt || 0) > 1100) {
+            e.lastCollisionAt = now;
+            const collisionHullDmg = Math.round(p.maxHull * (e.isBoss ? 0.34 : 0.22) + e.dmg * 0.55);
+            p.hull = Math.max(0, p.hull - collisionHullDmg);
+            p.lastHitTime = now;
+            this.hullHitFlash = 0.65;
+            this.spawn3DExplosion(e.pos, '#ff3300', 22);
+            this.showToast(`💥 HULL COLLISION! -${collisionHullDmg.toLocaleString()} HULL!`);
+
+            // Knock enemy into break-off pass and inflict minor ramming damage to enemy
+            e.aiState = 'pass_behind';
+            e.aiTimer = 0.9;
+            e.hp -= Math.round(e.maxHp * 0.12);
+            if (e.hp <= 0) {
+              const killXp = (e.isBoss ? 50 : (e.color === '#f59e0b' ? 15 : 10)) * this.activeSystem.level;
+              this.awardCombatXp(killXp, true);
+              this.spawn3DExplosion(e.pos, e.color, e.isBoss ? 45 : 22);
+              this.enemies3D.splice(i, 1);
+              this.checkWaveProgression();
+            }
+
+            if (p.hull <= 0) {
+              this.end3DMission(false);
+              return;
+            }
+            continue;
+          }
+
+          // Enemy Firing Predictive Plasma Bolts toward player (lead-aimed; Boss fires 3-bolt spread)
+          const fireCd = e.isBoss
+            ? Math.max(420, 720 - sysLvl * 6)
+            : Math.max(580, 1100 - sysLvl * 10);
+          if (e.aiState === 'attack_pass' && local.z > 140 && dist < 2600 && now - e.lastShot > fireCd) {
             e.lastShot = now;
-            const boltSpeed = 860;
-            this.lasers3D.push({
-              isPlayer: false,
-              pos: { x: e.pos.x, y: e.pos.y, z: e.pos.z },
-              vel: {
-                x: dirToPlayer.x * boltSpeed,
-                y: dirToPlayer.y * boltSpeed,
-                z: dirToPlayer.z * boltSpeed
-              },
-              dmg: e.dmg,
-              color: e.isBoss ? '#c084fc' : '#ff0055',
-              life: 2.6
+            const boltSpeed = 1150 + sysLvl * 8;
+            const leadTime = Math.min(1.4, dist / boltSpeed) * 0.65;
+            const aimTarget = {
+              x: p.pos.x + p.vel.x * leadTime,
+              y: p.pos.y + p.vel.y * leadTime,
+              z: p.pos.z + p.vel.z * leadTime
+            };
+            const leadDir = this.vecNorm({
+              x: aimTarget.x - e.pos.x,
+              y: aimTarget.y - e.pos.y,
+              z: aimTarget.z - e.pos.z
             });
+            const spreadOffsets = e.isBoss ? [-0.085, 0, 0.085] : [0];
+            for (const ang of spreadOffsets) {
+              const shotDir = ang === 0 ? leadDir : this.rotateBasis(leadDir, p.up, ang);
+              this.lasers3D.push({
+                isPlayer: false,
+                pos: { x: e.pos.x, y: e.pos.y, z: e.pos.z },
+                vel: {
+                  x: shotDir.x * boltSpeed,
+                  y: shotDir.y * boltSpeed,
+                  z: shotDir.z * boltSpeed
+                },
+                dmg: e.isBoss && ang !== 0 ? Math.round(e.dmg * 0.72) : e.dmg,
+                color: e.isBoss ? '#c084fc' : '#ff0055',
+                life: 2.8
+              });
+            }
           }
         }
 
@@ -3159,14 +3213,16 @@
           } else {
             // Check collision against Player Ship
             const dPlayer = Math.hypot(l.pos.x - p.pos.x, l.pos.y - p.pos.y, l.pos.z - p.pos.z);
-            if (dPlayer <= 42) {
+            if (dPlayer <= 52) {
               p.lastHitTime = now;
               if (p.shield >= l.dmg) {
                 p.shield -= l.dmg;
+                this.shieldHitFlash = Math.max(this.shieldHitFlash || 0, 0.28);
               } else {
                 const rem = l.dmg - p.shield;
                 p.shield = 0;
                 p.hull = Math.max(0, p.hull - rem);
+                this.hullHitFlash = Math.max(this.hullHitFlash || 0, 0.42);
               }
               this.lasers3D.splice(i, 1);
               if (p.hull <= 0) {
@@ -3728,6 +3784,25 @@
           ctx.arc(this.touchStick.curX, this.touchStick.curY, 22, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
+          ctx.restore();
+        }
+
+        // 10. Cockpit Damage Vignette Flash (Red on Direct Hull / Collision Hit, Cyan on Shield Hit)
+        if ((this.hullHitFlash || 0) > 0.01) {
+          ctx.save();
+          const grad = ctx.createRadialGradient(cx, cy, Math.min(w, h) * 0.25, cx, cy, Math.max(w, h) * 0.72);
+          grad.addColorStop(0, 'rgba(255, 0, 50, 0)');
+          grad.addColorStop(1, `rgba(255, 20, 40, ${Math.min(0.62, this.hullHitFlash)})`);
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
+          ctx.restore();
+        } else if ((this.shieldHitFlash || 0) > 0.01) {
+          ctx.save();
+          const grad = ctx.createRadialGradient(cx, cy, Math.min(w, h) * 0.35, cx, cy, Math.max(w, h) * 0.75);
+          grad.addColorStop(0, 'rgba(0, 240, 255, 0)');
+          grad.addColorStop(1, `rgba(0, 220, 255, ${Math.min(0.32, this.shieldHitFlash)})`);
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
           ctx.restore();
         }
       }
