@@ -434,6 +434,7 @@ class PolySpaceEngine {
       this._mapZoom = 0.42;
       this._mapPanX = 0;
       this._mapPanY = 0;
+      this._updateMapZoomUI();
       this._ensureGalaxyModuleLoaded(() => {
         if (this._canvasMode === 'galaxy' && window.PolySpaceGalaxy) {
           window.PolySpaceGalaxy.mount(document.getElementById('space-galaxy-host'));
@@ -450,6 +451,7 @@ class PolySpaceEngine {
         this._mapPanX = 0;
         this._mapPanY = 0;
       }
+      this._updateMapZoomUI();
       if (this.ctx && this.canvas) {
         this.renderHangarView();
       }
@@ -559,7 +561,9 @@ class PolySpaceEngine {
   resetMapZoom() {
     this._isTrackingShip = false;
     this._trackingExpIndex = 0;
-    this.setMapZoom(1.0);
+    this._mapPanX = 0;
+    this._mapPanY = 0;
+    this.setMapZoom(this._canvasMode === 'galaxy' ? 0.42 : 1.0);
   }
 
   toggleShipTracking(targetId = null) {
@@ -626,7 +630,8 @@ class PolySpaceEngine {
   _updateMapZoomUI() {
     const zoomDisp = document.getElementById('map-zoom-display');
     if (zoomDisp) {
-      zoomDisp.innerText = `${(this._mapZoom || 1.0).toFixed(1)}x`;
+      const z = this._mapZoom || 1.0;
+      zoomDisp.innerText = `${z < 1.0 ? z.toFixed(2) : z.toFixed(1)}x`;
     }
     const trackBtn = document.getElementById('btn-map-track-ship');
     if (trackBtn) {
