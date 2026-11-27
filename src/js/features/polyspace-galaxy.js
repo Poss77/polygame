@@ -1127,6 +1127,7 @@
                   name: isMe ? `${safeName} (You)` : safeName,
                   isMe,
                   xp: Number(r.xp || 0),
+                  pgtEarned: Number(r.pgt_earned || 0),
                   totalXp: Number(r.combat_xp_total || r.xp || 0),
                   kills: Number(r.kills || 0),
                   cleared: Number(r.cleared || 0),
@@ -1153,6 +1154,7 @@
             <th style="padding:6px;">#</th>
             <th style="padding:6px;">Pilot & Rank</th>
             <th style="padding:6px; text-align:center;">Ship</th>
+            <th style="padding:6px; text-align:right;">PGT</th>
             <th style="padding:6px; text-align:right;">${isWeekly ? 'Weekly XP' : 'All-Time XP'}</th>
             <th style="padding:6px; text-align:right;">Kills</th>
             <th style="padding:6px; text-align:right;">Sys</th>
@@ -1167,6 +1169,7 @@
               <span title="Quantum Shield Level" style="font-size:0.66rem; font-weight:800; padding:1px 5px; border-radius:4px; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.32); color:#38bdf8;">🛡️${r.shield}</span>
               <span title="Plasma Turrets Level" style="font-size:0.66rem; font-weight:800; padding:1px 5px; border-radius:4px; background:rgba(255,77,121,0.12); border:1px solid rgba(255,77,121,0.32); color:#ff4d79;">☄️${r.turret}</span>
             </td>
+            <td style="padding:6px; text-align:right; font-family:monospace; font-weight:800; color:#ffd700; white-space:nowrap;">${Math.round(r.pgtEarned).toLocaleString()}</td>
             <td style="padding:6px; text-align:right; font-family:monospace; font-weight:800; color:${isWeekly ? '#00ff88' : '#ffd700'};">${r.xp.toLocaleString()}</td>
             <td style="padding:6px; text-align:right; font-family:monospace;">${r.kills.toLocaleString()}</td>
             <td style="padding:6px; text-align:right; font-family:monospace; color:#cbd5e1;">${r.cleared}/50</td>
