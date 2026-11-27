@@ -1775,15 +1775,26 @@ class PolySpaceEngine {
     }
     this._lastExpeditionStructSig = structSig;
 
+    // Anti-clicker layout randomization (stable per ready cycle, never flickers mid-hover)
+    if (!this._claimBtnSideMap) this._claimBtnSideMap = {};
+    if (readyCount === 0) {
+      this._claimBtnSideMap = {};
+      this._claimAllOnLeft = null;
+    } else if (this._claimAllOnLeft === null || this._claimAllOnLeft === undefined) {
+      this._claimAllOnLeft = Math.random() < 0.5;
+    }
+    const claimAllBtnHtml = readyCount > 0 ? `
+      <button class="btn-primary" onclick="claimAllExpeditions()" style="background: linear-gradient(135deg, #00ff66, #00f0ff); color: #000; font-weight: 800; font-size: 0.74rem; padding: 0.25rem 0.65rem; border-radius: 4px; box-shadow: 0 0 10px rgba(0,255,102,0.45); cursor:pointer; border:none; display:inline-flex; align-items:center; gap:0.3rem;" title="Claim all returned starships at once">
+        ⚡ CLAIM ALL (${readyCount})
+      </button>
+    ` : '';
+
     let html = `
       <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
         <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+          ${this._claimAllOnLeft ? claimAllBtnHtml : ''}
           <h4 style="color: #fff; font-size: 1.1rem; margin:0;">🛸 Fleet Command Center</h4>
-          ${readyCount > 0 ? `
-            <button class="btn-primary" onclick="claimAllExpeditions()" style="background: linear-gradient(135deg, #00ff66, #00f0ff); color: #000; font-weight: 800; font-size: 0.74rem; padding: 0.25rem 0.65rem; border-radius: 4px; box-shadow: 0 0 10px rgba(0,255,102,0.45); cursor:pointer; border:none; display:inline-flex; align-items:center; gap:0.3rem;" title="Claim all returned starships at once">
-              ⚡ CLAIM ALL (${readyCount})
-            </button>
-          ` : ''}
+          ${!this._claimAllOnLeft ? claimAllBtnHtml : ''}
           ${activeCount > 0 ? `
             <button class="btn-secondary" onclick="cancelAllExpeditions()" style="background: rgba(255, 0, 85, 0.15); border: 1px solid rgba(255, 0, 85, 0.5); color: #ff0055; font-weight: 800; font-size: 0.74rem; padding: 0.25rem 0.65rem; border-radius: 4px; cursor:pointer; display:inline-flex; align-items:center; gap:0.3rem; transition: all 0.2s ease;" title="Recall and cancel all active expeditions (with confirmation)">
               🛑 CANCEL ALL (${activeCount})
@@ -1823,14 +1834,20 @@ class PolySpaceEngine {
         const meta = destMeta[exp.type] || { icon: '🪐', label: exp.name, color: '#00f0ff' };
 
         if (now >= exp.endTime) {
+          if (this._claimBtnSideMap[exp.id] === undefined) {
+            this._claimBtnSideMap[exp.id] = Math.random() < 0.5;
+          }
+          const claimOnLeft = !!this._claimBtnSideMap[exp.id];
+          const claimBtnHtml = `<button class="btn-primary" onclick="claimExpeditionLoot('${exp.id}')" style="background: var(--color-success); color: #000; font-weight: 800; font-size: 0.76rem; padding: 0.35rem 0.75rem; border-radius: 4px; box-shadow: 0 0 8px rgba(0,255,102,0.4); cursor:pointer; flex-shrink: 0;">🎁 CLAIM LOOT</button>`;
           html += `
             <div style="background: rgba(0, 255, 102, 0.10); border: 1px solid var(--color-success); border-radius: 8px; padding: 0.55rem 0.85rem; box-shadow: 0 4px 12px rgba(0,255,102,0.15); box-sizing: border-box;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem; flex-wrap: wrap; gap: 0.35rem;">
-                <div style="display:flex; align-items:center; gap:0.45rem; min-width: 0; flex: 1 1 auto;">
+                ${claimOnLeft ? claimBtnHtml : ''}
+                <div style="display:flex; align-items:center; gap:0.45rem; min-width: 0; flex: 1 1 auto; ${claimOnLeft ? 'justify-content:flex-end;' : ''}">
                   <span style="font-size:1.15rem; filter:drop-shadow(0 0 6px var(--color-success)); flex-shrink: 0;">${meta.icon}</span>
                   <strong style="color:var(--color-success); font-size:0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">🎉 ${exp.name} Returned!</strong>
                 </div>
-                <button class="btn-primary" onclick="claimExpeditionLoot('${exp.id}')" style="background: var(--color-success); color: #000; font-weight: 800; font-size: 0.76rem; padding: 0.35rem 0.75rem; border-radius: 4px; box-shadow: 0 0 8px rgba(0,255,102,0.4); cursor:pointer; flex-shrink: 0;">🎁 CLAIM LOOT</button>
+                ${!claimOnLeft ? claimBtnHtml : ''}
               </div>
 
               <!-- Completed Flight Corridor (Arrived at Destination) -->
