@@ -14,6 +14,7 @@
 
   window.isPolySpaceGalaxyBetaTester = function() {
     const st = (window.appState && window.appState.state) || window.PolyState || {};
+    if (st.isAmbassador || st.is_ambassador) return true;
     const pid = String(st.player_id || st.playerId || st.wallet || '').toLowerCase();
     const uname = String(st.username || '').toLowerCase();
     const lwal = String(st.linked_wallet_address || st.linkedWalletAddress || '').toLowerCase();
