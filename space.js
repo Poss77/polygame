@@ -417,6 +417,21 @@ class PolySpaceEngine {
     if (mode !== 'radar' && mode !== 'hangar' && mode !== 'split' && mode !== 'galaxy') {
       mode = 'radar';
     }
+    const prevMode = this._canvasMode || 'radar';
+    if (prevMode === 'galaxy') {
+      this._savedGalaxyCam = {
+        zoom: this._mapZoom || 0.42,
+        panX: this._mapPanX || 0,
+        panY: this._mapPanY || 0
+      };
+    } else if (prevMode === 'radar' || prevMode === 'split') {
+      this._savedRadarCam = {
+        zoom: Math.max(1.0, this._mapZoom || 1.0),
+        panX: this._mapPanX || 0,
+        panY: this._mapPanY || 0
+      };
+    }
+
     this._canvasMode = mode;
     try {
       if (typeof localStorage !== 'undefined' && mode !== 'galaxy') {
@@ -431,9 +446,10 @@ class PolySpaceEngine {
         host.style.display = 'block';
         host.style.pointerEvents = 'none';
       }
-      this._mapZoom = 0.42;
-      this._mapPanX = 0;
-      this._mapPanY = 0;
+      const gCam = this._savedGalaxyCam || { zoom: 0.42, panX: 0, panY: 0 };
+      this._mapZoom = gCam.zoom;
+      this._mapPanX = gCam.panX;
+      this._mapPanY = gCam.panY;
       this._updateMapZoomUI();
       this._ensureGalaxyModuleLoaded(() => {
         if (this._canvasMode === 'galaxy' && window.PolySpaceGalaxy) {
@@ -446,10 +462,11 @@ class PolySpaceEngine {
       if (window.PolySpaceGalaxy && typeof window.PolySpaceGalaxy.pause === 'function') {
         window.PolySpaceGalaxy.pause();
       }
-      if ((this._mapZoom || 1.0) < 1.0) {
-        this._mapZoom = 1.0;
-        this._mapPanX = 0;
-        this._mapPanY = 0;
+      if (mode === 'radar' || mode === 'split') {
+        const rCam = this._savedRadarCam || { zoom: 1.0, panX: 0, panY: 0 };
+        this._mapZoom = Math.max(1.0, rCam.zoom || 1.0);
+        this._mapPanX = rCam.panX || 0;
+        this._mapPanY = rCam.panY || 0;
       }
       this._updateMapZoomUI();
       if (this.ctx && this.canvas) {
