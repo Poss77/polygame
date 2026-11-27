@@ -2978,22 +2978,24 @@
             });
           }
         } else {
-          // Wave 3: Solar System Command Boss
+          // Wave 3: Solar System Command Boss (System #50 = Colossal Singularity Leviathan Mothership!)
+          const isFinalBoss = this.activeSystem.id === 50;
           this.waveSpawnQueue.push({
             id: 'boss_main',
-            name: this.activeSystem.id === 50 ? '👑 SINGULARITY LEVIATHAN MOTHERSHIP' : `👑 ${this.activeSystem.name} Dreadnought`,
+            name: isFinalBoss ? '👑 SINGULARITY LEVIATHAN MOTHERSHIP' : `👑 ${this.activeSystem.name} Dreadnought`,
             isBoss: true,
-            hp: Math.round(baseEnemyHp * 4.6),
-            dmg: Math.round(baseEnemyDmg * 1.6),
-            speed: 112 + Math.min(35, sysLvl * 0.7),
-            radius: 88,
-            color: '#c084fc',
-            dist: 3500,
+            isSingularityBoss: isFinalBoss,
+            hp: Math.round(baseEnemyHp * (isFinalBoss ? 5.4 : 4.6)),
+            dmg: Math.round(baseEnemyDmg * (isFinalBoss ? 1.75 : 1.6)),
+            speed: isFinalBoss ? 128 : (112 + Math.min(35, sysLvl * 0.7)),
+            radius: isFinalBoss ? 172 : 88,
+            color: isFinalBoss ? '#ffd700' : '#c084fc',
+            dist: isFinalBoss ? 3900 : 3500,
             spreadX: 0,
-            spreadY: 60,
+            spreadY: isFinalBoss ? 90 : 60,
             flankSide: 1,
-            flankUp: 120,
-            reengageDist: 3000
+            flankUp: isFinalBoss ? 160 : 120,
+            reengageDist: isFinalBoss ? 3400 : 3000
           });
         }
       }
@@ -3016,6 +3018,7 @@
           id: spec.id,
           name: spec.name,
           isBoss: spec.isBoss,
+          isSingularityBoss: !!spec.isSingularityBoss,
           pos: spawnPos,
           vel: { x: -p.forward.x * spec.speed, y: -p.forward.y * spec.speed, z: -p.forward.z * spec.speed },
           hp: spec.hp,
@@ -3507,7 +3510,8 @@
 
           if (e.aiState === 'attack_pass') {
             // Face-to-face approach; breaks off late enough that flying straight into an enemy risks a hull collision
-            if (dist < 215 || local.z < -60) {
+            const breakOffDist = e.isSingularityBoss ? 340 : 215;
+            if (dist < breakOffDist || local.z < -60) {
               e.aiState = 'pass_behind';
               e.aiTimer = 0.85;
               // Choose flank side away from current side or alternate for cinematic crossing passes
@@ -3641,7 +3645,9 @@
               y: aimTarget.y - e.pos.y,
               z: aimTarget.z - e.pos.z
             });
-            const spreadOffsets = e.isBoss ? [-0.12, 0, 0.12] : [0];
+            const spreadOffsets = e.isSingularityBoss
+              ? [-0.19, -0.095, 0, 0.095, 0.19]
+              : (e.isBoss ? [-0.12, 0, 0.12] : [0]);
             for (const ang of spreadOffsets) {
               const shotDir = ang === 0 ? leadDir : this.rotateBasis(leadDir, p.up, ang);
               this.lasers3D.push({
@@ -3653,8 +3659,8 @@
                   z: shotDir.z * boltSpeed
                 },
                 dmg: e.isBoss && ang !== 0 ? Math.round(e.dmg * 0.55) : e.dmg,
-                color: e.isBoss ? '#c084fc' : '#ff0055',
-                life: 2.6
+                color: e.isSingularityBoss ? (ang === 0 ? '#ffd700' : '#00f0ff') : (e.isBoss ? '#c084fc' : '#ff0055'),
+                life: 2.8
               });
             }
           }
@@ -4412,7 +4418,68 @@
         let verts = [];
         let faces = []; // [i0, i1, i2, fillColor, strokeColor]
 
-        if (e.isBoss) {
+        if (e.isSingularityBoss) {
+          // SYSTEM #50 FINAL BOSS: Colossal Imperial Singularity Leviathan Mothership
+          verts = [
+            [0, 0.04, 1.55],     // 0: central singularity prow
+            [0.62, 0.16, 1.38],  // 1: starboard plasma mandible tip
+            [-0.62, 0.16, 1.38], // 2: port plasma mandible tip
+            [0.48, 0.34, 0.45],  // 3: starboard upper citadel hull
+            [-0.48, 0.34, 0.45], // 4: port upper citadel hull
+            [0.48, -0.30, 0.45], // 5: starboard lower hull
+            [-0.48, -0.30, 0.45],// 6: port lower hull
+            [1.95, 0.10, -0.15], // 7: colossal starboard crescent wingtip
+            [-1.95, 0.10, -0.15],// 8: colossal port crescent wingtip
+            [1.28, 0.28, -0.78], // 9: starboard rear wing barb
+            [-1.28, 0.28, -0.78],// 10: port rear wing barb
+            [0, 0.78, -0.15],    // 11: imperial crown spire apex
+            [0, -0.62, -0.18],   // 12: lower singularity keel
+            [0.68, 0.26, -1.28], // 13: stern starboard upper
+            [-0.68, 0.26, -1.28],// 14: stern port upper
+            [0.68, -0.24, -1.28],// 15: stern starboard lower
+            [-0.68, -0.24, -1.28],// 16: stern port lower
+            [1.15, 0.0, 0.55],   // 17: starboard forward wing shoulder
+            [-1.15, 0.0, 0.55]   // 18: port forward wing shoulder
+          ];
+          faces = [
+            // Twin Forward Mandibles & Prow
+            [0, 1, 3, '#3b0764', '#ffd700'],
+            [0, 4, 2, '#3b0764', '#ffd700'],
+            [0, 3, 4, '#581c87', '#00f0ff'],
+            [0, 6, 5, '#1e0538', '#c084fc'],
+            [0, 5, 1, '#2e1065', '#ffd700'],
+            [0, 2, 6, '#2e1065', '#ffd700'],
+            [1, 17, 3, '#4c1d95', '#ffd700'],
+            [2, 4, 18, '#4c1d95', '#ffd700'],
+            // Imperial Crown Spire
+            [3, 11, 4, '#6b21a8', '#ffd700'],
+            [3, 13, 11, '#3b0764', '#e879f9'],
+            [4, 11, 14, '#3b0764', '#e879f9'],
+            [11, 13, 14, '#581c87', '#ffd700'],
+            // Colossal Starboard Crescent Wing
+            [3, 17, 7, '#1e1b4b', '#00f0ff'],
+            [3, 7, 9, '#312e81', '#ffd700'],
+            [3, 9, 13, '#2e1065', '#c084fc'],
+            [5, 7, 17, '#0f172a', '#00f0ff'],
+            [5, 9, 7, '#17153b', '#a855f7'],
+            [5, 15, 9, '#0f172a', '#c084fc'],
+            // Colossal Port Crescent Wing
+            [4, 8, 18, '#1e1b4b', '#00f0ff'],
+            [4, 10, 8, '#312e81', '#ffd700'],
+            [4, 14, 10, '#2e1065', '#c084fc'],
+            [6, 18, 8, '#0f172a', '#00f0ff'],
+            [6, 8, 10, '#17153b', '#a855f7'],
+            [6, 10, 16, '#0f172a', '#c084fc'],
+            // Ventral Keel & Armored Belly
+            [5, 6, 12, '#140b2d', '#a855f7'],
+            [5, 12, 15, '#090d1f', '#c084fc'],
+            [6, 16, 12, '#090d1f', '#c084fc'],
+            [12, 16, 15, '#1e0538', '#ffd700'],
+            // Radiant Stern Reactor Bay
+            [13, 15, 16, '#ffd700', '#00f0ff'],
+            [13, 16, 14, '#e879f9', '#ffd700']
+          ];
+        } else if (e.isBoss) {
           // WAVE 3: Massive 3D Faceted Dreadnought Cruiser
           verts = [
             [0, 0, 1.35],       // 0: bow nose
@@ -4539,8 +4606,65 @@
           ctx.stroke();
         }
 
-        // Boss 3D Rotating Energy Halo Ring (projected in true 3D around the ship!)
-        if (e.isBoss) {
+        // Boss 3D Rotating Energy Halo Rings (projected in true 3D around the ship!)
+        if (e.isSingularityBoss) {
+          // Outer Golden Accretion Halo Ring
+          const rot1 = nowMs / 850;
+          ctx.strokeStyle = 'rgba(255, 215, 0, 0.9)';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          let started1 = false;
+          for (let k = 0; k <= 24; k++) {
+            const a = (k / 24) * Math.PI * 2 + rot1;
+            const loc = toCamLocal(toWorld(Math.cos(a) * 1.75, Math.sin(a) * 0.45, Math.sin(a) * 0.85));
+            if (loc.z > 12) {
+              const sc = fov / loc.z;
+              const rx = cx + loc.x * sc;
+              const ry = cy - loc.y * sc;
+              if (!started1) { ctx.moveTo(rx, ry); started1 = true; }
+              else ctx.lineTo(rx, ry);
+            }
+          }
+          if (started1) ctx.stroke();
+
+          // Inner Counter-Rotating Cyan/Violet Quantum Ring
+          const rot2 = -nowMs / 620;
+          ctx.strokeStyle = 'rgba(0, 240, 255, 0.85)';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          let started2 = false;
+          for (let k = 0; k <= 20; k++) {
+            const a = (k / 20) * Math.PI * 2 + rot2;
+            const loc = toCamLocal(toWorld(Math.cos(a) * 1.38, -Math.sin(a) * 0.78, Math.sin(a) * 0.55));
+            if (loc.z > 12) {
+              const sc = fov / loc.z;
+              const rx = cx + loc.x * sc;
+              const ry = cy - loc.y * sc;
+              if (!started2) { ctx.moveTo(rx, ry); started2 = true; }
+              else ctx.lineTo(rx, ry);
+            }
+          }
+          if (started2) ctx.stroke();
+
+          // Central Glowing Singularity Event Horizon Core suspended between Mandibles
+          const coreLoc = toCamLocal(toWorld(0, 0.04, 0.55));
+          if (coreLoc.z > 12) {
+            const sc = fov / coreLoc.z;
+            const sxCore = cx + coreLoc.x * sc;
+            const syCore = cy - coreLoc.y * sc;
+            const cr = Math.max(8, 42 * sc);
+            const cg = ctx.createRadialGradient(sxCore, syCore, cr * 0.18, sxCore, syCore, cr);
+            cg.addColorStop(0, '#02000a');
+            cg.addColorStop(0.38, '#581c87');
+            cg.addColorStop(0.65, '#00f0ff');
+            cg.addColorStop(0.84, 'rgba(255, 215, 0, 0.85)');
+            cg.addColorStop(1, 'rgba(255, 215, 0, 0)');
+            ctx.fillStyle = cg;
+            ctx.beginPath();
+            ctx.arc(sxCore, syCore, cr, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else if (e.isBoss) {
           const rot = nowMs / 900;
           ctx.strokeStyle = 'rgba(232, 121, 249, 0.78)';
           ctx.lineWidth = 2;
