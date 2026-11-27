@@ -773,51 +773,88 @@
         this.renderRankLeaderboard();
       }
 
-      renderRankLeaderboard() {
+      async renderRankLeaderboard() {
+        this.updateUpgrades();
         const myRank = this.getPilotRank(this.combatXpAllTime);
         document.getElementById('rank-my-summary').innerHTML = `
-          <span><strong>Your Rank:</strong> <span style="color:${myRank.color}; font-weight:900;">${myRank.icon} ${myRank.title}</span></span>
+          <span><strong>Your Rank:</strong> <span style="color:${myRank.color}; font-weight:900;">${myRank.icon} ${myRank.title}</span> &nbsp;<span style="font-size:0.7rem; padding:1px 6px; border-radius:4px; background:rgba(56,189,248,0.14); border:1px solid rgba(56,189,248,0.35); color:#38bdf8;">🛡️ S${this.shieldLevel}</span> <span style="font-size:0.7rem; padding:1px 6px; border-radius:4px; background:rgba(255,77,121,0.14); border:1px solid rgba(255,77,121,0.35); color:#ff4d79;">☄️ T${this.turretLevel}</span></span>
           <span>Weekly: <strong style="color:#00ff88;">${this.combatXpWeekly.toLocaleString()} XP</strong> • All-Time: <strong style="color:#ffd700;">${this.combatXpAllTime.toLocaleString()} XP</strong> • Kills: <strong>${this.totalKills}</strong></span>
         `;
 
+        const wrapEl = document.getElementById('rank-table-wrap');
         const isWeekly = this.rankTab === 'weekly';
-        const rows = this.otherPilots.map((pl, i) => ({
-          name: pl.name,
-          isMe: false,
-          xp: isWeekly ? (1800 + (pl.turret * 185) + (i * 220)) : (8500 + (pl.turret * 3800) + (i * 1900)),
-          kills: isWeekly ? (18 + pl.turret * 2) : (140 + pl.turret * 28),
-          cleared: Math.min(50, Math.round(pl.turret * 1.25))
-        }));
-        rows.push({
-          name: 'YOU',
-          isMe: true,
-          xp: isWeekly ? this.combatXpWeekly : this.combatXpAllTime,
-          kills: this.totalKills,
-          cleared: this.clearedSystems.size
-        });
-        rows.sort((a, b) => b.xp - a.xp);
+        const mode = isWeekly ? 'weekly' : 'alltime';
+        if (wrapEl) {
+          wrapEl.innerHTML = '<div style="text-align:center; padding:18px; color:#94a3b8;">⏳ Loading live Ace Pilot rankings...</div>';
+        }
+
+        const { sb, pid } = this._getSupabaseAndPlayerId();
+        let rows = [];
+        if (sb) {
+          try {
+            const { data, error } = await sb.rpc('get_polyspace_combat_leaderboard', {
+              p_mode: mode,
+              p_limit: 50
+            });
+            if (!error && data && data.success && Array.isArray(data.rows)) {
+              rows = data.rows.map((r) => {
+                const rPid = String(r.player_id || '').toLowerCase();
+                const isMe = Boolean(pid && rPid === pid);
+                const rawName = r.username || (rPid.length > 10 ? `${rPid.slice(0, 6)}…${rPid.slice(-4)}` : (rPid || 'Pilot'));
+                const safeName = typeof window.escapeHtml === 'function'
+                  ? window.escapeHtml(rawName)
+                  : rawName.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+                return {
+                  name: isMe ? `${safeName} (You)` : safeName,
+                  isMe,
+                  xp: Number(r.xp || 0),
+                  totalXp: Number(r.combat_xp_total || r.xp || 0),
+                  kills: Number(r.kills || 0),
+                  cleared: Number(r.cleared || 0),
+                  shield: Number(r.shield_level || 1),
+                  turret: Number(r.turret_level || 1)
+                };
+              });
+            }
+          } catch (err) {
+            console.warn('[PolySpaceGalaxy] get_polyspace_combat_leaderboard error:', err);
+          }
+        }
+
+        if (!wrapEl) return;
+        if (rows.length === 0) {
+          wrapEl.innerHTML = `<div style="text-align:center; padding:22px 12px; color:#94a3b8;">
+            🚀 No ${isWeekly ? 'Weekly Sprint' : 'All-Time'} combat clears yet — launch a 3D Solar System mission to claim <strong>#1</strong>!
+          </div>`;
+          return;
+        }
 
         let html = `<table style="width:100%; border-collapse:collapse;">
           <tr style="color:#94a3b8; border-bottom:1px solid rgba(255,255,255,0.12); text-align:left;">
             <th style="padding:6px;">#</th>
             <th style="padding:6px;">Pilot & Rank</th>
+            <th style="padding:6px; text-align:center;">Ship</th>
             <th style="padding:6px; text-align:right;">${isWeekly ? 'Weekly XP' : 'All-Time XP'}</th>
             <th style="padding:6px; text-align:right;">Kills</th>
             <th style="padding:6px; text-align:right;">Sys</th>
           </tr>`;
         rows.forEach((r, idx) => {
-          const rk = this.getPilotRank(isWeekly ? r.xp * 4 : r.xp);
+          const rk = this.getPilotRank(r.totalXp);
           const bg = r.isMe ? 'rgba(0,240,255,0.14)' : (idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent');
           html += `<tr style="background:${bg}; border-bottom:1px solid rgba(255,255,255,0.05);">
             <td style="padding:6px; font-weight:900; color:${idx < 3 ? '#ffd700' : '#94a3b8'};">#${idx + 1}</td>
             <td style="padding:6px; font-weight:${r.isMe ? '900' : '700'}; color:${r.isMe ? '#00f0ff' : '#fff'};">${r.name} <span style="font-size:0.68rem; color:${rk.color};">${rk.icon} ${rk.title}</span></td>
+            <td style="padding:6px; text-align:center; white-space:nowrap;">
+              <span title="Quantum Shield Level" style="font-size:0.66rem; font-weight:800; padding:1px 5px; border-radius:4px; background:rgba(56,189,248,0.12); border:1px solid rgba(56,189,248,0.32); color:#38bdf8;">🛡️${r.shield}</span>
+              <span title="Plasma Turrets Level" style="font-size:0.66rem; font-weight:800; padding:1px 5px; border-radius:4px; background:rgba(255,77,121,0.12); border:1px solid rgba(255,77,121,0.32); color:#ff4d79;">☄️${r.turret}</span>
+            </td>
             <td style="padding:6px; text-align:right; font-family:monospace; font-weight:800; color:${isWeekly ? '#00ff88' : '#ffd700'};">${r.xp.toLocaleString()}</td>
-            <td style="padding:6px; text-align:right; font-family:monospace;">${r.kills}</td>
+            <td style="padding:6px; text-align:right; font-family:monospace;">${r.kills.toLocaleString()}</td>
             <td style="padding:6px; text-align:right; font-family:monospace; color:#cbd5e1;">${r.cleared}/50</td>
           </tr>`;
         });
         html += '</table>';
-        document.getElementById('rank-table-wrap').innerHTML = html;
+        wrapEl.innerHTML = html;
       }
 
       openPostTradeBeacon() {
