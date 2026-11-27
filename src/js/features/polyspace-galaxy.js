@@ -175,7 +175,7 @@
             x: sx,
             y: sy,
             color,
-            radius: i === 50 ? 18 : (i % 10 === 0 ? 14 : 10),
+            radius: i === 50 ? 36 : (i % 10 === 0 ? 28 : 20),
             rewardPgt,
             hasNft: i === 50
           });
@@ -940,7 +940,7 @@
         let clickedSys = null;
         for (const sys of this.solarSystems) {
           const d = Math.hypot(world.x - sys.x, world.y - sys.y);
-          if (d <= Math.max(38, 22 / this.camZoom)) {
+          if (d <= Math.max(sys.radius + 14, 28 / this.camZoom)) {
             clickedSys = sys;
             break;
           }
@@ -2069,18 +2069,118 @@
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Outpost Hub at (0,0)
-        ctx.fillStyle = '#1d4ed8';
+        // Outpost Hub at (0,0) — Detailed Multi-Ring Orbital Starbase
+        const nowOutpost = Date.now();
+        const hubPulse = 0.5 + 0.5 * Math.sin(nowOutpost / 650);
+        const hubRot = (nowOutpost / 9000) % (Math.PI * 2);
+
+        // Soft Outer Energy Shield Halo
+        const hubHalo = ctx.createRadialGradient(0, 0, 14, 0, 0, 56);
+        hubHalo.addColorStop(0, 'rgba(0, 240, 255, 0.34)');
+        hubHalo.addColorStop(0.55, 'rgba(29, 78, 216, 0.16)');
+        hubHalo.addColorStop(1, 'rgba(0, 240, 255, 0)');
+        ctx.fillStyle = hubHalo;
+        ctx.beginPath();
+        ctx.arc(0, 0, 56, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Rotating Outer Starbase Docking Ring + 4 Cardinal Solar Wing Pylons
+        ctx.save();
+        ctx.rotate(hubRot);
+
+        // 4 Cardinal Docking Arms & Solar Arrays
+        for (let a = 0; a < 4; a++) {
+          ctx.save();
+          ctx.rotate((a * Math.PI) / 2);
+          // Structural Truss Arm
+          ctx.fillStyle = '#1e293b';
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1.2;
+          ctx.fillRect(14, -3.5, 24, 7);
+          ctx.strokeRect(14, -3.5, 24, 7);
+          // Twin Solar Collector Fins
+          ctx.fillStyle = 'rgba(0, 240, 255, 0.28)';
+          ctx.strokeStyle = '#00f0ff';
+          ctx.lineWidth = 1;
+          ctx.fillRect(22, -10, 11, 5.5);
+          ctx.strokeRect(22, -10, 11, 5.5);
+          ctx.fillRect(22, 4.5, 11, 5.5);
+          ctx.strokeRect(22, 4.5, 11, 5.5);
+          // Docking Pad Tip & Blinking Beacon Strobe
+          ctx.fillStyle = '#0f172a';
+          ctx.beginPath();
+          ctx.arc(40, 0, 4.2, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#ffd700';
+          ctx.stroke();
+          ctx.fillStyle = (Math.floor(nowOutpost / 450 + a) % 2 === 0) ? '#00ff88' : '#ffd700';
+          ctx.beginPath();
+          ctx.arc(40, 0, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Outer Habitat Ring
+        ctx.strokeStyle = '#334155';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 27, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth = 1.4;
+        ctx.setLineDash([10, 6]);
+        ctx.beginPath();
+        ctx.arc(0, 0, 27, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+
+        // Central Octagonal Command Citadel
+        ctx.save();
+        ctx.rotate(-hubRot * 0.6);
+        const coreGrad = ctx.createRadialGradient(-4, -4, 2, 0, 0, 18);
+        coreGrad.addColorStop(0, '#38bdf8');
+        coreGrad.addColorStop(0.5, '#1d4ed8');
+        coreGrad.addColorStop(1, '#0b1636');
+        ctx.fillStyle = coreGrad;
         ctx.strokeStyle = '#00f0ff';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(0, 0, 16, 0, Math.PI * 2);
+        for (let k = 0; k < 8; k++) {
+          const ang = (k * Math.PI) / 4;
+          const px = Math.cos(ang) * 17;
+          const py = Math.sin(ang) * 17;
+          if (k === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Pulsing Quantum Reactor Core
+        const reactorGrad = ctx.createRadialGradient(0, 0, 1, 0, 0, 9 + hubPulse * 2);
+        reactorGrad.addColorStop(0, '#ffffff');
+        reactorGrad.addColorStop(0.45, '#00f0ff');
+        reactorGrad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+        ctx.fillStyle = reactorGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 9 + hubPulse * 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Outpost Label Pill
+        ctx.fillStyle = 'rgba(4, 12, 28, 0.82)';
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.55)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(-62, 46, 124, 18, 6);
         ctx.fill();
         ctx.stroke();
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 11px sans-serif';
+        ctx.font = 'bold 10.5px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('🌍 Outpost Hub (0,0)', 0, 30);
+        ctx.fillText('🛰️ Outpost Hub (0,0)', 0, 58.5);
 
         const destMap = {};
         for (const dest of this.innerDestinations) {
@@ -2091,15 +2191,23 @@
           ctx.lineTo(dest.x, dest.y);
           ctx.stroke();
 
-          ctx.fillStyle = dest.color;
+          // Shaded Inner Core Mining Node Orb
+          const dGrad = ctx.createRadialGradient(dest.x - 2.5, dest.y - 2.5, 1, dest.x, dest.y, 9);
+          dGrad.addColorStop(0, '#ffffff');
+          dGrad.addColorStop(0.35, dest.color);
+          dGrad.addColorStop(1, '#091020');
+          ctx.fillStyle = dGrad;
           ctx.beginPath();
-          ctx.arc(dest.x, dest.y, 6, 0, Math.PI * 2);
+          ctx.arc(dest.x, dest.y, 8.5, 0, Math.PI * 2);
           ctx.fill();
+          ctx.strokeStyle = dest.color;
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
 
           if (this.camZoom > 0.35) {
-            ctx.fillStyle = 'rgba(255,255,255,0.75)';
-            ctx.font = '9px sans-serif';
-            ctx.fillText(dest.name, dest.x, dest.y + 15);
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            ctx.font = 'bold 9.5px sans-serif';
+            ctx.fillText(dest.name, dest.x, dest.y + 19);
           }
         }
 
@@ -2151,42 +2259,187 @@
         }
         ctx.restore();
 
-        // 4. Render 50 Outer Solar Systems (All Unlocked, Difficulty-Scaled)
+        // 4. Render 50 Outer Solar Systems (2× Larger, 3D-Shaded Procedural Planets with Rings, Moons & Atmospheres)
+        const nowPlanet = Date.now();
+        const viewHalfW = (w / this.camZoom) * 0.65 + 180;
+        const viewHalfH = (h / this.camZoom) * 0.65 + 180;
+
         for (const sys of this.solarSystems) {
+          if (Math.abs(sys.x - this.camX) > viewHalfW || Math.abs(sys.y - this.camY) > viewHalfH) continue;
+
           const isSelected = this.selectedSystemId === sys.id;
           const isCleared = this.clearedSystems.has(sys.id);
+          const r = sys.radius;
+          const baseColor = isCleared ? '#00ff88' : sys.color;
+          const hasRing = sys.id === 50 || sys.id % 2 === 0 || sys.id % 10 === 0;
+          const ringTilt = ((sys.id % 5) - 2) * 0.16 + 0.25;
+          const pulse = Math.sin(nowPlanet / 280 + sys.id) * 2.5;
 
-          // Outer Aura
-          if (isSelected || sys.id === 50 || isCleared) {
-            ctx.strokeStyle = isCleared ? '#00ff88' : sys.color;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(sys.x, sys.y, sys.radius + 6 + Math.sin(Date.now() / 250) * 2, 0, Math.PI * 2);
-            ctx.stroke();
-          }
+          ctx.save();
+          ctx.translate(sys.x, sys.y);
 
-          // Sun Body
-          ctx.fillStyle = isCleared ? '#00ff88' : sys.color;
+          // 4a. Atmospheric Halo Glow
+          const haloR = r * (sys.id === 50 ? 2.25 : 1.75);
+          const halo = ctx.createRadialGradient(0, 0, r * 0.55, 0, 0, haloR);
+          halo.addColorStop(0, sys.id === 50 ? 'rgba(255, 215, 0, 0.42)' : `${baseColor}55`);
+          halo.addColorStop(0.55, sys.id === 50 ? 'rgba(192, 132, 252, 0.22)' : `${baseColor}1f`);
+          halo.addColorStop(1, 'rgba(0, 0, 0, 0)');
+          ctx.fillStyle = halo;
           ctx.beginPath();
-          ctx.arc(sys.x, sys.y, sys.radius, 0, Math.PI * 2);
+          ctx.arc(0, 0, haloR, 0, Math.PI * 2);
           ctx.fill();
 
-          // Orbiting Planet Ring
-          ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-          ctx.lineWidth = 1;
+          // 4b. Back Half of Planetary Ring (drawn behind the planet sphere for 3D depth)
+          if (hasRing) {
+            ctx.save();
+            ctx.rotate(ringTilt);
+            ctx.strokeStyle = sys.id === 50 ? 'rgba(255, 215, 0, 0.55)' : 'rgba(255, 255, 255, 0.28)';
+            ctx.lineWidth = sys.id === 50 ? 4.5 : 3;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r * 1.72, r * 0.48, 0, Math.PI, Math.PI * 2);
+            ctx.stroke();
+            ctx.strokeStyle = sys.id === 50 ? 'rgba(0, 240, 255, 0.45)' : `${baseColor}66`;
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r * 1.98, r * 0.56, 0, Math.PI, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          // 4c. 3D-Shaded Planet Sphere + Clipped Procedural Surface Details
+          ctx.save();
           ctx.beginPath();
-          ctx.ellipse(sys.x, sys.y, sys.radius * 1.7, sys.radius * 0.65, 0.3, 0, Math.PI * 2);
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
+          ctx.clip();
+
+          if (sys.id === 50) {
+            // System #50: Aethelgard Singularity Black-Hole Core
+            const bhGrad = ctx.createRadialGradient(0, 0, r * 0.3, 0, 0, r);
+            bhGrad.addColorStop(0, '#02000a');
+            bhGrad.addColorStop(0.62, '#1e0538');
+            bhGrad.addColorStop(0.84, '#c084fc');
+            bhGrad.addColorStop(1, '#ffd700');
+            ctx.fillStyle = bhGrad;
+            ctx.fillRect(-r, -r, r * 2, r * 2);
+            // Swirling Event Horizon Arcs
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, r * 0.62, (nowPlanet / 500) % (Math.PI * 2), (nowPlanet / 500) % (Math.PI * 2) + 2.4);
+            ctx.stroke();
+          } else {
+            // Lit 3D Sphere Gradient (sunlight from top-left)
+            const pGrad = ctx.createRadialGradient(-r * 0.36, -r * 0.36, r * 0.1, 0, 0, r * 1.15);
+            pGrad.addColorStop(0, '#ffffff');
+            pGrad.addColorStop(0.24, baseColor);
+            pGrad.addColorStop(0.74, '#0c1630');
+            pGrad.addColorStop(1, '#020612');
+            ctx.fillStyle = pGrad;
+            ctx.fillRect(-r, -r, r * 2, r * 2);
+
+            const biome = sys.id % 3;
+            if (biome === 0) {
+              // Gas Giant Atmospheric Cloud Bands + Storm Oval
+              ctx.rotate(ringTilt * 0.5);
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
+              ctx.fillRect(-r, -r * 0.52, r * 2, r * 0.22);
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+              ctx.fillRect(-r, -r * 0.12, r * 2, r * 0.24);
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.11)';
+              ctx.fillRect(-r, r * 0.28, r * 2, r * 0.18);
+              ctx.fillStyle = 'rgba(255, 230, 160, 0.28)';
+              ctx.beginPath();
+              ctx.ellipse(r * 0.2, r * 0.16, r * 0.26, r * 0.13, 0, 0, Math.PI * 2);
+              ctx.fill();
+            } else if (biome === 1) {
+              // Ocean / Terran / Ice World Continents & Cloud Swirls
+              ctx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+              ctx.beginPath();
+              ctx.ellipse(-r * 0.22, -r * 0.22, r * 0.42, r * 0.24, -0.4, 0, Math.PI * 2);
+              ctx.ellipse(r * 0.28, r * 0.22, r * 0.36, r * 0.2, 0.5, 0, Math.PI * 2);
+              ctx.fill();
+              // Polar Ice Cap
+              ctx.fillStyle = 'rgba(230, 250, 255, 0.35)';
+              ctx.beginPath();
+              ctx.ellipse(0, -r * 0.85, r * 0.55, r * 0.22, 0, 0, Math.PI * 2);
+              ctx.fill();
+            } else {
+              // Cratered / Volcanic World
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+              ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+              ctx.lineWidth = 1;
+              const craters = [[-0.3, -0.15, 0.22], [0.22, 0.24, 0.18], [-0.08, 0.38, 0.14]];
+              for (const [cxOff, cyOff, cr] of craters) {
+                ctx.beginPath();
+                ctx.arc(r * cxOff, r * cyOff, r * cr, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+              }
+            }
+
+            // Deep Shadow Terminator Crescent
+            const shadowGrad = ctx.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.55, 0, 0, r);
+            shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+            shadowGrad.addColorStop(1, 'rgba(2, 4, 14, 0.62)');
+            ctx.fillStyle = shadowGrad;
+            ctx.fillRect(-r, -r, r * 2, r * 2);
+          }
+          ctx.restore();
+
+          // Crisp Lit Rim-Light Border
+          ctx.strokeStyle = sys.id === 50 ? '#ffd700' : `${baseColor}cc`;
+          ctx.lineWidth = sys.id === 50 ? 2.4 : 1.5;
+          ctx.beginPath();
+          ctx.arc(0, 0, r, 0, Math.PI * 2);
           ctx.stroke();
 
-          // System Number & Level Label
+          // 4d. Front Half of Planetary Ring (wraps in front of the sphere!)
+          if (hasRing) {
+            ctx.save();
+            ctx.rotate(ringTilt);
+            ctx.strokeStyle = sys.id === 50 ? 'rgba(255, 215, 0, 0.85)' : 'rgba(255, 255, 255, 0.48)';
+            ctx.lineWidth = sys.id === 50 ? 4.5 : 3;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r * 1.72, r * 0.48, 0, 0, Math.PI);
+            ctx.stroke();
+            ctx.strokeStyle = sys.id === 50 ? 'rgba(0, 240, 255, 0.72)' : `${baseColor}aa`;
+            ctx.lineWidth = 1.4;
+            ctx.beginPath();
+            ctx.ellipse(0, 0, r * 1.98, r * 0.56, 0, 0, Math.PI);
+            ctx.stroke();
+            ctx.restore();
+          }
+
+          // 4e. Orbiting Moon
+          const moonAng = (nowPlanet / (2400 + sys.id * 90)) + sys.id * 1.7;
+          const mx = Math.cos(moonAng) * (r * 1.48);
+          const my = Math.sin(moonAng) * (r * 0.62);
+          ctx.fillStyle = '#e2e8f0';
+          ctx.beginPath();
+          ctx.arc(mx, my, Math.max(2.4, r * 0.13), 0, Math.PI * 2);
+          ctx.fill();
+
+          // 4f. Selection / Cleared / Boss Outer Tactical Ring
+          if (isSelected || sys.id === 50 || isCleared) {
+            ctx.strokeStyle = isSelected ? '#ffd700' : (isCleared ? '#00ff88' : '#c084fc');
+            ctx.lineWidth = isSelected ? 2.5 : 1.8;
+            ctx.setLineDash(isSelected ? [8, 5] : []);
+            ctx.beginPath();
+            ctx.arc(0, 0, r + 9 + pulse, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+
+          // 4g. System Number & Level Label
           ctx.fillStyle = '#ffffff';
-          ctx.font = sys.id === 50 ? 'bold 13px sans-serif' : 'bold 10px sans-serif';
+          ctx.font = sys.id === 50 ? 'bold 13px sans-serif' : 'bold 11px sans-serif';
           ctx.textAlign = 'center';
           ctx.fillText(
-            `${sys.id === 50 ? '👑 ' : ''}#${sys.id} ${sys.name} (Lvl ${sys.level})`,
-            sys.x,
-            sys.y + sys.radius + 14
+            `${sys.id === 50 ? '👑 ' : (isCleared ? '✅ ' : '')}#${sys.id} ${sys.name} (Lvl ${sys.level})`,
+            0,
+            r + 22
           );
+          ctx.restore();
         }
 
         // 5. Hidden Coordinate Gifts (Radar Scanner Discovery Radius <= 210 units)
