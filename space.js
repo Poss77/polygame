@@ -517,8 +517,8 @@ class PolySpaceEngine {
     }
 
     if (zoomHud) {
-      zoomHud.style.display = (mode === 'hangar') ? 'none' : 'flex';
-      zoomHud.style.top = (mode === 'galaxy') ? '42px' : '8px';
+      zoomHud.style.display = (mode === 'hangar' || mode === 'galaxy') ? 'none' : 'flex';
+      zoomHud.style.top = '8px';
       zoomHud.style.right = '8px';
       zoomHud.style.zIndex = '45';
     }
