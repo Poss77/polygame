@@ -2139,11 +2139,11 @@
         // Central Octagonal Command Citadel
         ctx.save();
         ctx.rotate(-hubRot * 0.6);
-        const coreGrad = ctx.createRadialGradient(-4, -4, 2, 0, 0, 18);
-        coreGrad.addColorStop(0, '#38bdf8');
-        coreGrad.addColorStop(0.5, '#1d4ed8');
-        coreGrad.addColorStop(1, '#0b1636');
-        ctx.fillStyle = coreGrad;
+        const hubCitadelGrad = ctx.createRadialGradient(-4, -4, 2, 0, 0, 18);
+        hubCitadelGrad.addColorStop(0, '#38bdf8');
+        hubCitadelGrad.addColorStop(0.5, '#1d4ed8');
+        hubCitadelGrad.addColorStop(1, '#0b1636');
+        ctx.fillStyle = hubCitadelGrad;
         ctx.strokeStyle = '#00f0ff';
         ctx.lineWidth = 2;
         ctx.beginPath();
