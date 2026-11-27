@@ -2617,8 +2617,8 @@
         }
 
         // Initialize 3D Player Ship with 6-DOF Orientation Basis Vectors (Forward, Up, Right)
-        const maxShield = 260 + this.shieldLevel * 105; // Lvl 1: 365 -> Lvl 5: 785 -> Lvl 50: 5,510
-        const maxHull = 380 + this.shieldLevel * 55;    // Lvl 1: 435 -> Lvl 5: 655 -> Lvl 50: 3,130
+        const maxShield = 340 + this.shieldLevel * 115; // Lvl 1: 455 -> Lvl 5: 915 -> Lvl 50: 6,090
+        const maxHull = 440 + this.shieldLevel * 60;    // Lvl 1: 500 -> Lvl 5: 740 -> Lvl 50: 3,440
         this.hullHitFlash = 0;
         this.shieldHitFlash = 0;
         this.player3D = {
@@ -2682,10 +2682,10 @@
         this.combatWave = waveNum;
         const sysLvl = this.activeSystem.level;
 
-        // Enemy HP & Damage scale steeply with Solar System Level (1..50)
-        const baseEnemyHp = 135 + Math.pow(sysLvl, 1.72) * 21;
-        const baseEnemyDmg = 24 + Math.pow(sysLvl, 1.52) * 4.4;
-        const speedBonus = Math.min(90, sysLvl * 1.8);
+        // Enemy HP & Damage scale with Solar System Level (1..50)
+        const baseEnemyHp = 105 + Math.pow(sysLvl, 1.68) * 16.5;
+        const baseEnemyDmg = 16 + Math.pow(sysLvl, 1.48) * 3.0;
+        const speedBonus = Math.min(60, sysLvl * 1.2);
 
         this.waveSpawnQueue = [];
         this.nextSpawnAt = performance.now(); // First ship warps in immediately; each subsequent ship every 1.0s
@@ -2697,9 +2697,9 @@
               id: `e_${waveNum}_${i}`,
               name: waveNum === 1 ? `Scout Interceptor α-${i + 1}` : `Heavy Raider β-${i + 1}`,
               isBoss: false,
-              hp: Math.round(baseEnemyHp * (waveNum === 2 ? 1.45 : 1.0)),
-              dmg: Math.round(baseEnemyDmg * (waveNum === 2 ? 1.2 : 1.0)),
-              speed: 165 + speedBonus + (i * 10),
+              hp: Math.round(baseEnemyHp * (waveNum === 2 ? 1.35 : 1.0)),
+              dmg: Math.round(baseEnemyDmg * (waveNum === 2 ? 1.1 : 1.0)),
+              speed: 148 + speedBonus + (i * 10),
               radius: 42,
               color: waveNum === 1 ? '#ff0055' : '#f59e0b',
               dist: 3200 + (i % 3) * 260,
@@ -2716,9 +2716,9 @@
             id: 'boss_main',
             name: this.activeSystem.id === 50 ? '👑 SINGULARITY LEVIATHAN MOTHERSHIP' : `👑 ${this.activeSystem.name} Dreadnought`,
             isBoss: true,
-            hp: Math.round(baseEnemyHp * 5.2),
-            dmg: Math.round(baseEnemyDmg * 1.85),
-            speed: 125 + Math.min(55, sysLvl * 1.1),
+            hp: Math.round(baseEnemyHp * 4.6),
+            dmg: Math.round(baseEnemyDmg * 1.6),
+            speed: 112 + Math.min(35, sysLvl * 0.7),
             radius: 88,
             color: '#c084fc',
             dist: 3500,
@@ -2998,16 +2998,16 @@
           this.firePlayerLasers();
         }
 
-        // 4. Shield Auto-Regeneration after 4.0s out of enemy fire & hit-flash decay
+        // 4. Shield Auto-Regeneration after 3.2s out of enemy fire & hit-flash decay
         if (this.hullHitFlash > 0) this.hullHitFlash = Math.max(0, this.hullHitFlash - dt * 1.6);
         if (this.shieldHitFlash > 0) this.shieldHitFlash = Math.max(0, this.shieldHitFlash - dt * 2.2);
-        if (now - p.lastHitTime > 4000 && p.shield < p.maxShield) {
-          const regenRate = 18 + this.shieldLevel * 8;
+        if (now - p.lastHitTime > 3200 && p.shield < p.maxShield) {
+          const regenRate = 24 + this.shieldLevel * 11;
           p.shield = Math.min(p.maxShield, p.shield + regenRate * dt);
         }
 
         // 5. Update 3D Enemy AI
-        // Loop: Aggressive Face-to-Face Approach (ramming hazard!) -> Brief Rear Flyby -> Wide Side Flank Overtake -> Curve Back Face-to-Face!
+        // Loop: Face-to-Face Approach (ramming hazard if you fly straight in!) -> Brief Rear Flyby -> Wide Side Flank Overtake -> Curve Back Face-to-Face!
         const sysLvl = this.activeSystem ? this.activeSystem.level : 1;
         for (let i = this.enemies3D.length - 1; i >= 0; i--) {
           const e = this.enemies3D[i];
@@ -3024,8 +3024,8 @@
           let targetEnemySpeed = e.speed;
 
           if (e.aiState === 'attack_pass') {
-            // Aggressive face-to-face approach; closes inside ramming danger zone unless dodged or destroyed
-            if (dist < 155 || local.z < -60) {
+            // Face-to-face approach; breaks off late enough that flying straight into an enemy risks a hull collision
+            if (dist < 215 || local.z < -60) {
               e.aiState = 'pass_behind';
               e.aiTimer = 0.85;
               // Choose flank side away from current side or alternate for cinematic crossing passes
@@ -3111,9 +3111,9 @@
 
           // Direct Ship-to-Ship Collision -> Bypasses Shield and damages HULL directly!
           const postDist = Math.hypot(p.pos.x - e.pos.x, p.pos.y - e.pos.y, p.pos.z - e.pos.z);
-          if (postDist <= (e.radius + 42) && now - (e.lastCollisionAt || 0) > 1100) {
+          if (postDist <= (e.radius + 34) && now - (e.lastCollisionAt || 0) > 1200) {
             e.lastCollisionAt = now;
-            const collisionHullDmg = Math.round(p.maxHull * (e.isBoss ? 0.34 : 0.22) + e.dmg * 0.55);
+            const collisionHullDmg = Math.round(p.maxHull * (e.isBoss ? 0.24 : 0.14) + e.dmg * 0.35);
             p.hull = Math.max(0, p.hull - collisionHullDmg);
             p.lastHitTime = now;
             this.hullHitFlash = 0.65;
@@ -3139,14 +3139,14 @@
             continue;
           }
 
-          // Enemy Firing Predictive Plasma Bolts toward player (lead-aimed; Boss fires 3-bolt spread)
+          // Enemy Firing Predictive Plasma Bolts toward player (35% lead; Boss fires 3-bolt spread)
           const fireCd = e.isBoss
-            ? Math.max(420, 720 - sysLvl * 6)
-            : Math.max(580, 1100 - sysLvl * 10);
-          if (e.aiState === 'attack_pass' && local.z > 140 && dist < 2600 && now - e.lastShot > fireCd) {
+            ? Math.max(620, 920 - sysLvl * 6)
+            : Math.max(850, 1400 - sysLvl * 10);
+          if (e.aiState === 'attack_pass' && local.z > 180 && dist < 2450 && now - e.lastShot > fireCd) {
             e.lastShot = now;
-            const boltSpeed = 1150 + sysLvl * 8;
-            const leadTime = Math.min(1.4, dist / boltSpeed) * 0.65;
+            const boltSpeed = 980 + sysLvl * 6;
+            const leadTime = Math.min(1.1, dist / boltSpeed) * 0.35;
             const aimTarget = {
               x: p.pos.x + p.vel.x * leadTime,
               y: p.pos.y + p.vel.y * leadTime,
@@ -3157,7 +3157,7 @@
               y: aimTarget.y - e.pos.y,
               z: aimTarget.z - e.pos.z
             });
-            const spreadOffsets = e.isBoss ? [-0.085, 0, 0.085] : [0];
+            const spreadOffsets = e.isBoss ? [-0.12, 0, 0.12] : [0];
             for (const ang of spreadOffsets) {
               const shotDir = ang === 0 ? leadDir : this.rotateBasis(leadDir, p.up, ang);
               this.lasers3D.push({
@@ -3168,9 +3168,9 @@
                   y: shotDir.y * boltSpeed,
                   z: shotDir.z * boltSpeed
                 },
-                dmg: e.isBoss && ang !== 0 ? Math.round(e.dmg * 0.72) : e.dmg,
+                dmg: e.isBoss && ang !== 0 ? Math.round(e.dmg * 0.55) : e.dmg,
                 color: e.isBoss ? '#c084fc' : '#ff0055',
-                life: 2.8
+                life: 2.6
               });
             }
           }
@@ -3213,7 +3213,7 @@
           } else {
             // Check collision against Player Ship
             const dPlayer = Math.hypot(l.pos.x - p.pos.x, l.pos.y - p.pos.y, l.pos.z - p.pos.z);
-            if (dPlayer <= 52) {
+            if (dPlayer <= 44) {
               p.lastHitTime = now;
               if (p.shield >= l.dmg) {
                 p.shield -= l.dmg;
