@@ -3139,34 +3139,35 @@ class PolySpaceEngine {
       this.drawTacticalRadarSweep(baseX, baseY);
 
       this.ctx.save();
-      
-      // Pulsing Outer Hub Ring
-      const pulseRadius = 22 + Math.sin(Date.now() / 300) * 4;
-      this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
-      this.ctx.lineWidth = 1.5;
-      this.ctx.beginPath();
-      this.ctx.ellipse(baseX, baseY, pulseRadius, pulseRadius / 3, -0.2, 0, Math.PI * 2);
-      this.ctx.stroke();
+      if (window.PolySpaceGalaxy && typeof window.PolySpaceGalaxy.renderOutpostHub === 'function' && window.PolySpaceGalaxy.renderOutpostHub(this.ctx, baseX, baseY, false)) {
+        // Rendered unified multi-ring orbital starbase Outpost Hub
+      } else {
+        // Fallback Outpost Hub
+        const pulseRadius = 22 + Math.sin(Date.now() / 300) * 4;
+        this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.ellipse(baseX, baseY, pulseRadius, pulseRadius / 3, -0.2, 0, Math.PI * 2);
+        this.ctx.stroke();
 
-      // Base Node Planet Body
-      this.ctx.fillStyle = '#1d4ed8';
-      this.ctx.strokeStyle = '#38bdf8';
-      this.ctx.lineWidth = 2;
-      this.ctx.beginPath();
-      this.ctx.arc(baseX, baseY, 15, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.stroke();
+        this.ctx.fillStyle = '#1d4ed8';
+        this.ctx.strokeStyle = '#38bdf8';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.arc(baseX, baseY, 15, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
 
-      // Orbital Base Ring
-      this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
-      this.ctx.beginPath();
-      this.ctx.ellipse(baseX, baseY, 22, 7, -0.2, 0, Math.PI * 2);
-      this.ctx.stroke();
+        this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
+        this.ctx.beginPath();
+        this.ctx.ellipse(baseX, baseY, 22, 7, -0.2, 0, Math.PI * 2);
+        this.ctx.stroke();
 
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.font = 'bold 9px sans-serif';
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText('🌍 Outpost Hub', baseX, baseY + 28);
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = 'bold 9px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText('🌍 Outpost Hub', baseX, baseY + 28);
+      }
       this.ctx.restore();
 
       this._shipScreenPositions = [];
