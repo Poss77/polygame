@@ -3428,8 +3428,8 @@
         let targetPitch = 0;
 
         if (this.touchStick && this.touchStick.active) {
-          if (Math.abs(this.touchStick.nx) > 0.08) targetYaw += this.touchStick.nx * 1.65;
-          if (Math.abs(this.touchStick.ny) > 0.08) targetPitch -= this.touchStick.ny * 1.55;
+          if (Math.abs(this.touchStick.nx) > 0.08) targetYaw += this.touchStick.nx * 0.82;
+          if (Math.abs(this.touchStick.ny) > 0.08) targetPitch -= this.touchStick.ny * 0.78;
         } else if (!this.isTouchDevice && !this.useKeyboardSteer) {
           // Mouse flight deadzone near center
           const mxNorm = (this.mouseX - this.width / 2) / (this.width / 2);
