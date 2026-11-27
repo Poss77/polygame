@@ -3343,8 +3343,21 @@
                   if (res.new_space_state && typeof res.new_space_state === 'object') {
                     patch.spaceState = res.new_space_state;
                   }
+                  if (res.nft_awarded) {
+                    const existingCrates = Array.isArray(window.appState.state?.crateNfts)
+                      ? [...window.appState.state.crateNfts]
+                      : [];
+                    if (!existingCrates.includes('nft_singularity_conqueror')) {
+                      existingCrates.push('nft_singularity_conqueror');
+                    }
+                    patch.crateNfts = existingCrates;
+                  }
                   window.appState.update(patch);
                   if (typeof window.appState.syncUI === 'function') window.appState.syncUI();
+                  if (res.nft_awarded) {
+                    if (typeof window.renderNftInventory === 'function') window.renderNftInventory();
+                    if (typeof window.renderNftMarketplace === 'function') window.renderNftMarketplace();
+                  }
                 }
                 if (window.polySpace && typeof window.polySpace.syncCloudSpaceState === 'function') {
                   window.polySpace.syncCloudSpaceState(true);

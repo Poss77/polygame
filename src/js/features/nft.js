@@ -275,6 +275,28 @@ export const NFT_REGISTRY = [
     relicBoost: 2.0,
     description: 'Advanced quantum resonance detector. Permanently doubles (2x) Quantum Relic spawn rates AND doubles (2x) Mythic & Legendary rarity odds across all arcade games and PolySpace missions.',
     svg: `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="38" fill="none" stroke="#00f0ff" stroke-width="3" stroke-dasharray="6,4"/><polygon points="50,15 85,50 50,85 15,50" fill="none" stroke="#bd00ff" stroke-width="3"/><circle cx="50" cy="50" r="14" fill="#00f0ff" opacity="0.3"/><circle cx="50" cy="50" r="6" fill="#ffd700"/><path d="M50,22 L50,78 M22,50 L78,50" stroke="#00f0ff" stroke-width="2" opacity="0.7"/></svg>`
+  },
+// --- SPECIAL & ACHIEVEMENT NFTS (EARN-ONLY) ---
+  {
+    id: 'nft_singularity_conqueror',
+    name: 'Singularity Conqueror',
+    rarity: 'legendary',
+    group: 'trophy',
+    price: 0,
+    earnOnly: true,
+    mintable: false,
+    unlockHint: '🔒 Conquer System #50',
+    icon: '👑',
+    faucetBoost: 0,
+    gameMultiplier: 0,
+    stakingBoost: 0,
+    referralMultiplier: 1.0,
+    customBonuses: [
+      'Exclusive Solar System #50 (Aethelgard Singularity) Trophy',
+      'Legendary Prestige Badge & Public Profile Showcase'
+    ],
+    description: 'Awarded exclusively to Ace Pilots who defeat the Singularity Leviathan Mothership in Solar System #50 (Aethelgard Singularity). Non-purchasable.',
+    svg: `<svg viewBox="0 0 100 100"><defs><radialGradient id="sc-core" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#050014"/><stop offset="55%" stop-color="#4c0099"/><stop offset="82%" stop-color="#00f0ff" stop-opacity="0.85"/><stop offset="100%" stop-color="#ffd700" stop-opacity="0"/></radialGradient></defs><circle cx="50" cy="52" r="40" fill="url(#sc-core)"/><ellipse cx="50" cy="52" rx="42" ry="13" fill="none" stroke="#00f0ff" stroke-width="2.5" transform="rotate(-18 50 52)" opacity="0.9"/><ellipse cx="50" cy="52" rx="34" ry="10" fill="none" stroke="#ff007f" stroke-width="2" transform="rotate(20 50 52)" opacity="0.85"/><circle cx="50" cy="52" r="15" fill="#050014" stroke="#ffd700" stroke-width="2.5"/><path d="M35 28 L41 16 L50 23 L59 16 L65 28 Z" fill="#ffd700" stroke="#fff6b8" stroke-width="1.5" stroke-linejoin="round"/><circle cx="50" cy="52" r="4" fill="#00f0ff"/><circle cx="22" cy="30" r="1.5" fill="#fff"/><circle cx="80" cy="34" r="1.8" fill="#ffd700"/><circle cx="76" cy="76" r="1.5" fill="#00f0ff"/><circle cx="25" cy="74" r="1.5" fill="#ff007f"/></svg>`
   }
 ];
 
@@ -378,7 +400,12 @@ export function renderNftMarketplace() {
     <div style="grid-column: 1/-1; margin-bottom: 1rem;">
       <h3 style="color: var(--color-success); border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">📈 Staking Yield Cores</h3>
     </div>
-    <div id="nft-group-staking" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 1rem;"></div>
+    <div id="nft-group-staking" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
+
+    <div style="grid-column: 1/-1; margin-bottom: 1rem;">
+      <h3 style="color: #ffd700; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1rem;">🌟 Special NFTs (Earn-Only)</h3>
+    </div>
+    <div id="nft-group-trophy" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 1rem;"></div>
   `;
 
   const specialContainer = document.getElementById('nft-group-special');
@@ -388,6 +415,7 @@ export function renderNftMarketplace() {
   const gameContainer = document.getElementById('nft-group-game');
   const referralContainer = document.getElementById('nft-group-referral');
   const stakingContainer = document.getElementById('nft-group-staking');
+  const trophyContainer = document.getElementById('nft-group-trophy');
 
   NFT_REGISTRY.forEach(nft => {
     const combinedIds = [...(appState.state.ownedNfts || []), ...(appState.state.crateNfts || [])];
@@ -426,14 +454,23 @@ export function renderNftMarketplace() {
       if (nft.relicBoost && nft.relicBoost > 1.0) {
         bonuses.push(`Quantum Relic spawn chance x${nft.relicBoost} (+100%)`);
       }
+      if (Array.isArray(nft.customBonuses) && nft.customBonuses.length > 0) {
+        bonuses.push(...nft.customBonuses);
+      }
     }
 
-    const priceLabel = (nft.currency === 'PGT')
-      ? `${(nft.price).toLocaleString()} PGT`
-      : `${parseFloat(nft.price || 0).toFixed(2)} POL`;
+    const priceLabel = nft.earnOnly
+      ? 'Special NFT'
+      : (nft.currency === 'PGT')
+        ? `${(nft.price).toLocaleString()} PGT`
+        : `${parseFloat(nft.price || 0).toFixed(2)} POL`;
 
     let actionButtonHtml = '';
-    if (nft.currency === 'PGT') {
+    if (nft.earnOnly) {
+      actionButtonHtml = isOwned
+        ? `<button class="btn-nft-action" style="cursor:not-allowed; opacity:0.9; background: linear-gradient(135deg, rgba(255, 215, 0, 0.22), rgba(189, 0, 255, 0.22)); color: #ffd700; border: 1px solid #ffd700; font-weight: 800;" disabled>👑 Earned / Owned</button>`
+        : `<button class="btn-nft-action" style="cursor:not-allowed; opacity:0.8; background: rgba(189, 0, 255, 0.14); color: #e2b8ff; border: 1px solid rgba(189, 0, 255, 0.45); font-weight: 700;" disabled>${nft.unlockHint || '🔒 Earn-Only'}</button>`;
+    } else if (nft.currency === 'PGT') {
       actionButtonHtml = isOwned
         ? `<button class="btn-nft-action" style="cursor:not-allowed; opacity:0.7; background: rgba(0, 240, 255, 0.15); color: #00f0ff; border: 1px solid #00f0ff;" disabled>⚡ Active / Owned</button>`
         : `<button class="btn-nft-action" style="background: linear-gradient(135deg, #00f0ff, #bd00ff); color: #000; font-weight: 700; border: none;" onclick="buyOnsiteNft('${nft.id}')">Buy with PGT</button>`;
@@ -484,6 +521,8 @@ export function renderNftMarketplace() {
       stakingContainer.appendChild(card);
     } else if (nft.group === 'special' && specialContainer) {
       specialContainer.appendChild(card);
+    } else if (nft.group === 'trophy' && trophyContainer) {
+      trophyContainer.appendChild(card);
     }
   });
 }
@@ -662,7 +701,7 @@ export function openBlackFridayBogoModal(txHash, purchasedNftId, purchasedNftNam
   }
 
   const eligible = NFT_REGISTRY
-    .filter(n => n.price <= Number(purchasedPricePol || 0) + 0.0001 && n.group !== 'mystery' && n.currency !== 'PGT')
+    .filter(n => !n.earnOnly && n.price > 0 && n.price <= Number(purchasedPricePol || 0) + 0.0001 && n.group !== 'mystery' && n.currency !== 'PGT')
     .sort((a, b) => b.price - a.price);
 
   const safeTx = String(txHash || '').replace(/'/g, '');
@@ -804,7 +843,8 @@ export function renderNftInventory() {
     'game': { title: '🎮 Arcade PGT Payout Cores', color: 'var(--color-accent)' },
     'referral': { title: '🔗 Referral Multiplier Cores', color: 'var(--color-secondary)' },
     'staking': { title: '📈 Staking Yield Cores', color: 'var(--color-success)' },
-    'mystery': { title: '🎁 Mystery Crates', color: 'var(--color-warning)' }
+    'mystery': { title: '🎁 Mystery Crates', color: 'var(--color-warning)' },
+    'trophy': { title: '🌟 Special NFTs', color: '#ffd700' }
   };
 
   let html = `
@@ -842,23 +882,28 @@ export function renderNftInventory() {
     return item;
   };
 
-  const renderedCategories = new Set();
-
-  // Pre-build category sections
-  Object.keys(allUniqueIds).forEach(index => {
-    const nftId = allUniqueIds[index];
+  const presentGroups = new Set();
+  allUniqueIds.forEach(nftId => {
     const nft = resolveNftMeta(nftId);
-    if (!nft) return;
-    if (!renderedCategories.has(nft.group)) {
-      renderedCategories.add(nft.group);
-      const cat = categories[nft.group] || { title: 'Other Items', color: '#ffffff' };
-      html += `
-        <div style="grid-column: 1/-1; margin-bottom: 0.5rem; margin-top: 1rem;">
-          <h3 style="color: ${cat.color}; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em;">${cat.title}</h3>
-        </div>
-        <div id="inv-group-${nft.group}" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
-      `;
-    }
+    if (nft && nft.group) presentGroups.add(nft.group);
+  });
+
+  // Render category sections in deterministic order with Special NFTs ('trophy') always at the bottom
+  const categoryOrder = [
+    'special', 'leaderboard', 'relic', 'faucet', 'game', 'referral', 'staking', 'mystery',
+    ...Array.from(presentGroups).filter(g => g !== 'trophy' && !['special', 'leaderboard', 'relic', 'faucet', 'game', 'referral', 'staking', 'mystery'].includes(g)),
+    'trophy'
+  ];
+
+  categoryOrder.forEach(groupKey => {
+    if (!presentGroups.has(groupKey)) return;
+    const cat = categories[groupKey] || { title: 'Other Items', color: '#ffffff' };
+    html += `
+      <div style="grid-column: 1/-1; margin-bottom: 0.5rem; margin-top: 1rem;">
+        <h3 style="color: ${cat.color}; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.5rem; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.05em;">${cat.title}</h3>
+      </div>
+      <div id="inv-group-${groupKey}" class="nft-sub-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; grid-column: 1/-1; margin-bottom: 2rem;"></div>
+    `;
   });
 
   grid.innerHTML = html;
@@ -903,6 +948,9 @@ export function renderNftInventory() {
       if (nft.relicBoost && nft.relicBoost > 1.0) {
         bonuses.push(`Quantum Relic spawn chance x${nft.relicBoost} (+100%)`);
       }
+      if (Array.isArray(nft.customBonuses) && nft.customBonuses.length > 0) {
+        bonuses.push(...nft.customBonuses);
+      }
     }
 
     const card = document.createElement('div');
@@ -931,14 +979,14 @@ export function renderNftInventory() {
             ? `<button class="btn-nft-action" style="width: 100%; background: var(--color-warning); color: #000; border-color: var(--color-warning); font-weight:700;" onclick="activateVipPass('nft_vip_pass')">👑 Activate 30 Days Gold VIP</button>`
             : nft.id === 'nft_vip_pass_yearly'
             ? `<button class="btn-nft-action" style="width: 100%; background: #ff00ff; color: #fff; border-color: #ff00ff; font-weight:700;" onclick="activateVipPass('nft_vip_pass_yearly')">👑 Activate 1-Year Gold VIP</button>`
-            : `<span style="font-size: 0.8rem; font-weight: 700; color: ${isEquipped ? 'var(--color-accent)' : 'var(--color-success)'}">
-                ${isEquipped ? '⭐ Displayed on Profile' : '⚡ Active Boost (Passive)'}
+            : `<span style="font-size: 0.8rem; font-weight: 700; color: ${isEquipped ? 'var(--color-accent)' : (nft.earnOnly ? '#ffd700' : 'var(--color-success)')}">
+                ${isEquipped ? '⭐ Displayed on Profile' : (nft.earnOnly ? '👑 Prestige Trophy (Earned)' : '⚡ Active Boost (Passive)')}
                </span>
                <button class="btn-nft-action" onclick="toggleEquipNft('${nft.id}')">
                  ${isEquipped ? 'Undisplay' : 'Display NFT'}
                </button>`
           }
-          ${offchainQty > 0 && nft.currency !== 'PGT' ? `
+          ${offchainQty > 0 && nft.currency !== 'PGT' && nft.mintable !== false && !nft.earnOnly ? `
             <button class="btn-nft-action" style="width:100%; background:linear-gradient(135deg, rgba(0,240,255,0.16), rgba(189,0,255,0.18)); border:1px solid var(--color-primary); color:#00f0ff; font-weight:800; font-size:0.78rem;" onclick="requestFreeNftMint('${nft.id}', '${safeName}')">
               🚀 Request Free On-Chain Mint (0 POL)
             </button>` : ''}
@@ -974,6 +1022,11 @@ export function toggleEquipNft(nftId) {
 export async function purchaseNft(nftId) {
   const nft = NFT_REGISTRY.find(n => n.id === nftId);
   if (!nft) return;
+
+  if (nft.earnOnly) {
+    triggerToast(`${nft.name} cannot be purchased — conquer Solar System #50 in PolySpace Galaxy to earn it!`, 'info');
+    return;
+  }
 
   if (nft.currency === 'PGT') {
     return buyOnsiteNft(nftId);
@@ -1775,6 +1828,11 @@ export function showMysteryBoxResult(data, crateType = 'PGT Cyber Mystery Crate'
 export async function buyOnsiteNft(nftId) {
   const nft = NFT_REGISTRY.find(n => n.id === nftId);
   if (!nft) return;
+
+  if (nft.earnOnly) {
+    triggerToast(`${nft.name} cannot be purchased — conquer Solar System #50 in PolySpace Galaxy to earn it!`, 'info');
+    return;
+  }
 
   const combinedIds = [...(appState.state.ownedNfts || []), ...(appState.state.crateNfts || [])];
   if (combinedIds.includes(nftId)) {
