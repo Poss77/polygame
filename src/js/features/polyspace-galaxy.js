@@ -3661,8 +3661,8 @@
 
         const ctx = this.ctx;
         const isSmall = w < 640;
-        const pw = isSmall ? 168 : 248;
-        const ph = isSmall ? 108 : 152;
+        const pw = isSmall ? Math.min(240, Math.round(w * 0.56)) : Math.min(390, Math.round(w * 0.30));
+        const ph = Math.round(pw * 0.62);
         const px = w - pw - (isSmall ? 8 : 16);
         const py = isSmall ? 64 : 74;
 
@@ -3688,7 +3688,7 @@
           const worldUp = Math.abs(mFwd.y) > 0.92 ? { x: 1, y: 0, z: 0 } : { x: 0, y: 1, z: 0 };
           const mRight = this.vecNorm(this.vecCross(mFwd, worldUp));
           const mUp = this.vecNorm(this.vecCross(mRight, mFwd));
-          const mFov = 230;
+          const mFov = Math.round(pw * 0.96);
 
           const toMissileLocal = (pt) => {
             const dx = pt.x - activeMissile.pos.x;
