@@ -765,6 +765,9 @@ class PolySpaceEngine {
           window.appState._spaceStateLoaded = true;
           this.calculateFleetPower();
           this.updateUI();
+          if (window.PolySpaceGalaxy && window.PolySpaceGalaxy.instance && typeof window.PolySpaceGalaxy.instance.updateUpgrades === 'function') {
+            window.PolySpaceGalaxy.instance.updateUpgrades();
+          }
           return true;
         }
       }
@@ -1495,10 +1498,17 @@ class PolySpaceEngine {
     const warpLvl = document.getElementById('space-lvl-warp');
     const laserLvl = document.getElementById('space-lvl-laser');
     const cargoLvl = document.getElementById('space-lvl-cargo');
+    const shieldLvl = document.getElementById('space-lvl-shield');
+    const turretLvl = document.getElementById('space-lvl-turret');
+
+    const curShieldLvl = Math.max(1, parseInt(this.state.shieldLevel, 10) || 1);
+    const curTurretLvl = Math.max(1, parseInt(this.state.turretLevel, 10) || 1);
 
     if (warpLvl) warpLvl.innerText = `Lvl ${this.state.warpLevel}`;
     if (laserLvl) laserLvl.innerText = `Lvl ${this.state.laserLevel}`;
     if (cargoLvl) cargoLvl.innerText = `Lvl ${this.state.cargoLevel}`;
+    if (shieldLvl) shieldLvl.innerText = `Lvl ${curShieldLvl}`;
+    if (turretLvl) turretLvl.innerText = `Lvl ${curTurretLvl}`;
 
     const warpBonus = document.getElementById('space-bonus-warp');
     const warpCost = document.getElementById('space-cost-warp');
@@ -1506,6 +1516,10 @@ class PolySpaceEngine {
     const laserCost = document.getElementById('space-cost-laser');
     const cargoBonus = document.getElementById('space-bonus-cargo');
     const cargoCost = document.getElementById('space-cost-cargo');
+    const shieldBonus = document.getElementById('space-bonus-shield');
+    const shieldCost = document.getElementById('space-cost-shield');
+    const turretBonus = document.getElementById('space-bonus-turret');
+    const turretCost = document.getElementById('space-cost-turret');
 
     if (warpBonus) {
       const curSpeed = Math.round((this.state.warpLevel - 1) * 5);
@@ -1563,6 +1577,46 @@ class PolySpaceEngine {
       } else {
         const c = this.getModuleUpgradeCost(this.state.cargoLevel);
         cargoCost.innerText = `Cost: ${c.iron.toLocaleString()} Iron | ${c.tit.toLocaleString()} Tit | ${c.pgt.toLocaleString()} PGT`;
+      }
+    }
+
+    if (shieldBonus) {
+      const curShieldHp = 400 + curShieldLvl * 120;
+      const curHullHp = 500 + curShieldLvl * 60;
+      const nextShieldHp = 400 + (curShieldLvl + 1) * 120;
+      const nextHullHp = 500 + (curShieldLvl + 1) * 60;
+      shieldBonus.innerHTML = curShieldLvl >= 50
+        ? `Current: <strong>${curShieldHp.toLocaleString()} Shield</strong> • ${curHullHp.toLocaleString()} Hull<br><span style="color:var(--color-success); font-size:0.7rem;">✨ Max 3D Combat Defense Active</span>`
+        : `Current: <strong>${curShieldHp.toLocaleString()} Shield</strong> • ${curHullHp.toLocaleString()} Hull<br><span style="color:#38bdf8; font-size:0.7rem;">Next Lvl ${curShieldLvl + 1}: ${nextShieldHp.toLocaleString()} Shield • ${nextHullHp.toLocaleString()} Hull (+60 Power)</span>`;
+    }
+    if (shieldCost) {
+      if (curShieldLvl >= 50) {
+        shieldCost.innerText = "⭐ MAX LEVEL 50 REACHED";
+        shieldCost.style.color = "var(--color-success)";
+      } else {
+        const c = this.getModuleUpgradeCost(curShieldLvl);
+        shieldCost.innerText = `Cost: ${c.iron.toLocaleString()} Iron | ${c.tit.toLocaleString()} Tit | ${c.pgt.toLocaleString()} PGT`;
+      }
+    }
+
+    if (turretBonus) {
+      const curDmg = Math.round(18 + Math.pow(curTurretLvl, 1.55) * 1.45);
+      const nextDmg = Math.round(18 + Math.pow(curTurretLvl + 1, 1.55) * 1.45);
+      const turretPattern = curTurretLvl >= 25 ? 'Quad Singularity' : 'Twin Plasma';
+      const quadStatus = curTurretLvl >= 25
+        ? `<span style="color:#ffd700; font-size:0.7rem; font-weight:800; display:block; margin-top:2px;">✨ Quad Singularity Turrets Active (Lvl 25+)</span>`
+        : `<span style="color:var(--text-muted); font-size:0.7rem; display:block; margin-top:2px;">🔒 Unlocks Quad Turrets at Lvl 25 (${curTurretLvl}/25)</span>`;
+      turretBonus.innerHTML = curTurretLvl >= 50
+        ? `Current: <strong>${curDmg.toLocaleString()} DMG</strong> (${turretPattern})<br>${quadStatus}`
+        : `Current: <strong>${curDmg.toLocaleString()} DMG</strong> (${turretPattern})<br><span style="color:#ff4d79; font-size:0.7rem;">Next Lvl ${curTurretLvl + 1}: ${nextDmg.toLocaleString()} DMG (+90 Power)</span><br>${quadStatus}`;
+    }
+    if (turretCost) {
+      if (curTurretLvl >= 50) {
+        turretCost.innerText = "⭐ MAX LEVEL 50 REACHED";
+        turretCost.style.color = "var(--color-success)";
+      } else {
+        const c = this.getModuleUpgradeCost(curTurretLvl);
+        turretCost.innerText = `Cost: ${c.iron.toLocaleString()} Iron | ${c.tit.toLocaleString()} Tit | ${c.pgt.toLocaleString()} PGT`;
       }
     }
 
@@ -3310,7 +3364,8 @@ class PolySpaceEngine {
 
   async upgrade(part) {
     await this.syncCloudSpaceState(true);
-    const currentLvl = this.state[`${part}Level`];
+    const currentLvl = Math.max(1, parseInt(this.state[`${part}Level`], 10) || 1);
+    this.state[`${part}Level`] = currentLvl;
     if (currentLvl >= 50) {
       if (window.triggerToast) window.triggerToast(`Maximum Level 50 already reached for ${part.toUpperCase()}!`, "error");
       return;
@@ -3353,6 +3408,9 @@ class PolySpaceEngine {
           if (typeof window.appState.syncUI === 'function') window.appState.syncUI();
           this.calculateFleetPower();
           this.updateUI();
+          if (window.PolySpaceGalaxy && window.PolySpaceGalaxy.instance && typeof window.PolySpaceGalaxy.instance.updateUpgrades === 'function') {
+            window.PolySpaceGalaxy.instance.updateUpgrades();
+          }
           if (window.triggerToast) window.triggerToast(`🚀 ${part.toUpperCase()} Upgraded to Level ${res.new_level || this.state[`${part}Level`]}!`, "success");
           if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
           return;
@@ -3847,6 +3905,8 @@ class PolySpaceEngine {
       let warpLevel = Math.max(1, parseInt(ss.warpLevel, 10) || 1);
       let laserLevel = Math.max(1, parseInt(ss.laserLevel, 10) || 1);
       let cargoLevel = Math.max(1, parseInt(ss.cargoLevel, 10) || 1);
+      let shieldLevel = Math.max(1, parseInt(ss.shieldLevel, 10) || 1);
+      let turretLevel = Math.max(1, parseInt(ss.turretLevel, 10) || 1);
       let pgtMined = Math.max(0, parseFloat(ss.pgtMinedTotal) || 0);
       let mineralsMined = Math.max(0, parseInt(ss.mineralsMinedTotal, 10) || 0);
       let raidsWon = Math.max(0, parseInt(ss.raidsWon, 10) || 0);
@@ -3856,6 +3916,8 @@ class PolySpaceEngine {
         if (typeof this.state.warpLevel === 'number') warpLevel = Math.max(warpLevel, this.state.warpLevel);
         if (typeof this.state.laserLevel === 'number') laserLevel = Math.max(laserLevel, this.state.laserLevel);
         if (typeof this.state.cargoLevel === 'number') cargoLevel = Math.max(cargoLevel, this.state.cargoLevel);
+        if (typeof this.state.shieldLevel === 'number') shieldLevel = Math.max(shieldLevel, this.state.shieldLevel);
+        if (typeof this.state.turretLevel === 'number') turretLevel = Math.max(turretLevel, this.state.turretLevel);
         if (typeof this.state.pgtMinedTotal === 'number') pgtMined = Math.max(pgtMined, this.state.pgtMinedTotal);
         if (typeof this.state.mineralsMinedTotal === 'number') mineralsMined = Math.max(mineralsMined, this.state.mineralsMinedTotal);
         if (typeof this.state.raidsWon === 'number') raidsWon = Math.max(raidsWon, this.state.raidsWon);
@@ -3868,7 +3930,9 @@ class PolySpaceEngine {
         warpLevel,
         laserLevel,
         cargoLevel,
-        totalModulesLv: warpLevel + laserLevel + cargoLevel,
+        shieldLevel,
+        turretLevel,
+        totalModulesLv: warpLevel + laserLevel + cargoLevel + shieldLevel + turretLevel,
         pgtMined,
         mineralsMined,
         raidsWon,
@@ -3890,6 +3954,8 @@ class PolySpaceEngine {
       const warpLevel = Math.max(1, Number(this.state.warpLevel) || 1);
       const laserLevel = Math.max(1, Number(this.state.laserLevel) || 1);
       const cargoLevel = Math.max(1, Number(this.state.cargoLevel) || 1);
+      const shieldLevel = Math.max(1, Number(this.state.shieldLevel) || 1);
+      const turretLevel = Math.max(1, Number(this.state.turretLevel) || 1);
       mapped.push({
         rawUser: fakeRow,
         playerId: fakeRow.player_id,
@@ -3897,7 +3963,9 @@ class PolySpaceEngine {
         warpLevel,
         laserLevel,
         cargoLevel,
-        totalModulesLv: warpLevel + laserLevel + cargoLevel,
+        shieldLevel,
+        turretLevel,
+        totalModulesLv: warpLevel + laserLevel + cargoLevel + shieldLevel + turretLevel,
         pgtMined: Math.max(0, Number(this.state.pgtMinedTotal) || 0),
         mineralsMined: Math.max(0, parseInt(this.state.mineralsMinedTotal, 10) || 0),
         raidsWon: Math.max(0, Number(this.state.raidsWon) || 0),
@@ -4038,6 +4106,8 @@ class PolySpaceEngine {
             <span title="Warp Drive Level" style="font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: rgba(0,240,255,0.1); border: 1px solid rgba(0,240,255,0.28); color: #67e8f9;">🚀 W${player.warpLevel}</span>
             <span title="Mining Laser Level" style="font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: rgba(255,153,0,0.1); border: 1px solid rgba(255,153,0,0.3); color: #fdba74;">🔫 L${player.laserLevel}</span>
             <span title="Quantum Cargo Level" style="font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.28); color: #86efac;">📦 C${player.cargoLevel}</span>
+            <span title="Quantum Shield Level" style="font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.32); color: #38bdf8;">🛡️ S${player.shieldLevel || 1}</span>
+            <span title="Plasma Turrets Level" style="font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: rgba(255,77,121,0.12); border: 1px solid rgba(255,77,121,0.32); color: #ff4d79;">☄️ T${player.turretLevel || 1}</span>
           </div>
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px; white-space: nowrap;">
