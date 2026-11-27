@@ -457,7 +457,7 @@
           el.style.display = 'none';
           return;
         }
-        const safeName = typeof window.escapeHtml === 'function' ? window.escapeHtml(inc.challenger_name) : inc.challenger_name;
+        const safeName = this._escapeHtml(inc.challenger_name);
         el.style.display = 'flex';
         el.innerHTML = `
           <span>⚔️ <strong style="color:#ff4d79;">${safeName}</strong> challenges you (${Number(inc.wager_pgt || 0)} PGT • 5% fee)</span>
@@ -1195,10 +1195,10 @@
       async deployTradeBeacon() {
         const offerLabel = document.getElementById('beacon-offer-asset').value;
         const offerKey = this._assetLabelToKey(offerLabel);
-        const offerAmt = Math.max(1, parseInt(document.getElementById('beacon-offer-amt').value, 10) || 1);
+        const offerAmt = Math.max(2, parseInt(document.getElementById('beacon-offer-amt').value, 10) || 2);
         const wantLabel = document.getElementById('beacon-want-asset').value;
         const wantKey = this._assetLabelToKey(wantLabel);
-        const wantAmt = Math.max(1, parseInt(document.getElementById('beacon-want-amt').value, 10) || 1);
+        const wantAmt = Math.max(2, parseInt(document.getElementById('beacon-want-amt').value, 10) || 2);
         const bx = Math.round(this.ship2D.x);
         const by = Math.round(this.ship2D.y);
 
@@ -1234,8 +1234,8 @@
 
       openInspectTradeBeacon(tb) {
         this.selectedBeacon = tb;
-        const netReceive = Math.max(1, Math.floor(tb.offerAmt * 0.95));
-        const burnedOffer = tb.offerAmt - netReceive;
+        const burnedOffer = Math.max(1, Math.ceil(tb.offerAmt * 0.05));
+        const netReceive = Math.max(1, tb.offerAmt - burnedOffer);
         document.getElementById('trade-subtitle').innerText = `TRADE BEACON AT (X: ${tb.x}, Y: ${tb.y}) • POSTED BY ${tb.seller.toUpperCase()}`;
         document.getElementById('trade-title').innerText = tb.isMine ? '📡 YOUR ACTIVE TRADE BEACON' : `🤝 TRADE OFFER FROM ${tb.seller.toUpperCase()}`;
         document.getElementById('trade-post-view').style.display = 'none';
@@ -1422,7 +1422,7 @@
           document.getElementById('duel-playback-phase').style.display = 'block';
           document.getElementById('duel-result-actions').style.display = 'none';
           document.getElementById('duel-p2-name').innerText = rival.name.toUpperCase();
-          document.getElementById('duel-log-box').innerHTML = `⏳ <strong>Challenge sent to ${rival.name}!</strong> Waiting up to <strong>60 seconds</strong> for them to accept (${wager} PGT escrowed, 5% fee on win; auto-refunds if declined/expired).`;
+          document.getElementById('duel-log-box').innerHTML = `⏳ <strong>Challenge sent to ${this._escapeHtml(rival.name)}!</strong> Waiting up to <strong>60 seconds</strong> for them to accept (${wager} PGT escrowed, 5% fee on win; auto-refunds if declined/expired).`;
           this.showToast(`⚔️ Duel challenge sent to ${rival.name} (60s to accept)!`);
           return;
         }
@@ -2841,6 +2841,10 @@
         this.setFullscreen(nextFs);
       }
 
+      _escapeHtml(str) {
+        return String(str ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+      }
+
       _getSupabaseAndPlayerId() {
         const sb = (window.polySpace && typeof window.polySpace.getSupabaseClient === 'function' && window.polySpace.getSupabaseClient())
           || window.supabaseClient
@@ -3986,7 +3990,7 @@
               } else {
                 const errMsg = (res && res.error) || (error && error.message) || 'Verification failed.';
                 document.getElementById('modal-desc').innerText = `System #${sys.id} cleared, but server verification returned an error.`;
-                lootEl.innerHTML = `⚠️ ${errMsg}`;
+                lootEl.innerText = `⚠️ ${errMsg}`;
                 return;
               }
             } catch (e) {
