@@ -188,65 +188,384 @@
           { id: 'gift_3', name: 'Singularity Core Hidden Chest', x: -2350, y: -1920, reward: '+500 PGT & +10 Rare PGT Ore', claimed: false }
         ];
 
-        // Simulated Live Pilots Flying Across the 2D Milky Way (for Pre-Decided Tactical Duels)
+        // Live Pilots (Supabase Realtime Presence) + 1 Calm Sparring Bot
         this.selectedPilot = null;
         this.selectedBeacon = null;
         this.duelMyAttacks = ['RIGHT', 'TOP', 'RIGHT'];
         this.duelMyDefenses = ['LEFT', 'LEFT', 'LEFT'];
         this.duelAnimId = null;
+        this.livePresenceChannel = null;
+        this._lastPresencePushAt = 0;
+        this._lastPresenceX = 0;
+        this._lastPresenceY = 0;
+        this.pendingIncomingDuel = null;
+        this.pendingOutgoingDuel = null;
+        this.acceptingDuelId = null;
+        this._playedDuelIds = new Set();
         this.initOtherPilots();
 
-        // Open Map Trade Beacons (Resources Only — No Relics, No PGT)
-        this.tradeBeacons = [
-          { id: 'tb_1', seller: 'Poss', isMine: false, x: 210, y: -165, offerAmt: 800, offerAsset: '💎 Quantum Crystals', wantAmt: 2400, wantAsset: '⚙️ Titanium Alloy' },
-          { id: 'tb_2', seller: 'Patesz', isMine: false, x: -240, y: 175, offerAmt: 5000, offerAsset: '🪨 Iron Ore', wantAmt: 1100, wantAsset: '⚙️ Titanium Alloy' },
-          { id: 'tb_3', seller: 'StarForge', isMine: false, x: 580, y: 410, offerAmt: 5, offerAsset: '☄️ Rare PGT Ore', wantAmt: 1800, wantAsset: '💎 Quantum Crystals' },
-          { id: 'tb_4', seller: 'Valkyrie', isMine: false, x: -640, y: -480, offerAmt: 1800, offerAsset: '⚙️ Titanium Alloy', wantAmt: 6000, wantAsset: '🪨 Iron Ore' }
-        ];
+        // Live Open Map Trade Beacons (loaded from Supabase)
+        this.tradeBeacons = [];
       }
 
       initOtherPilots() {
-        const roster = [
-          { name: 'Poss', rarity: 'Mythic', color: '#ffd700', shield: 28, turret: 30, offer: '• 🪨 2,400 Titanium Alloy<br/>• 🔮 1× Singularity Relic<br/>• ⚡ 150 PGT' },
-          { name: 'Patesz', rarity: 'Legendary', color: '#c084fc', shield: 22, turret: 24, offer: '• 💎 900 Quantum Crystals<br/>• 🔮 1× Warp Coil Relic<br/>• ⚡ 80 PGT' },
-          { name: 'Valkyrie', rarity: 'Epic', color: '#38bdf8', shield: 17, turret: 19, offer: '• 🪨 1,500 Iron Ore<br/>• 💎 400 Quantum Crystals<br/>• ⚡ 60 PGT' },
-          { name: 'NeonAce', rarity: 'Rare', color: '#00ff88', shield: 12, turret: 14, offer: '• 🪨 950 Titanium Alloy<br/>• 🔮 1× Darkmatter Relic<br/>• ⚡ 40 PGT' },
-          { name: 'StarForge', rarity: 'Mythic', color: '#ffd700', shield: 35, turret: 34, offer: '• ☄️ 5× Rare PGT Ore<br/>• 💎 1,200 Quantum Crystals<br/>• ⚡ 200 PGT' },
-          { name: 'VoidWalker', rarity: 'Legendary', color: '#c084fc', shield: 25, turret: 22, offer: '• 🪨 1,800 Titanium Alloy<br/>• 🔮 1× Plasma Core Relic<br/>• ⚡ 95 PGT' },
-          { name: 'NovaPrime', rarity: 'Epic', color: '#38bdf8', shield: 16, turret: 18, offer: '• 💎 650 Quantum Crystals<br/>• 🪨 1,400 Iron Ore<br/>• ⚡ 55 PGT' },
-          { name: 'CyberFox', rarity: 'Rare', color: '#00ff88', shield: 11, turret: 13, offer: '• 🪨 1,100 Iron Ore<br/>• 💎 300 Quantum Crystals<br/>• ⚡ 35 PGT' },
-          { name: 'Solaris', rarity: 'Legendary', color: '#c084fc', shield: 26, turret: 27, offer: '• ☄️ 3× Rare PGT Ore<br/>• 🔮 1× Starforge Relic<br/>• ⚡ 120 PGT' },
-          { name: 'Orion9', rarity: 'Epic', color: '#38bdf8', shield: 19, turret: 16, offer: '• 🪨 1,600 Titanium Alloy<br/>• 💎 500 Quantum Crystals<br/>• ⚡ 70 PGT' },
-          { name: 'DracoX', rarity: 'Rare', color: '#00ff88', shield: 14, turret: 15, offer: '• 🪨 800 Titanium Alloy<br/>• 💎 420 Quantum Crystals<br/>• ⚡ 45 PGT' },
-          { name: 'Aether', rarity: 'Mythic', color: '#ffd700', shield: 40, turret: 38, offer: '• ☄️ 8× Rare PGT Ore<br/>• 🔮 1× Genesis Relic<br/>• ⚡ 250 PGT' }
-        ];
+        // 1 Calm Sparring Bot near the Outpost Hub (idles quietly, hops occasionally, accepts 0 PGT friendly duels)
+        this.sparringBot = {
+          id: 'bot_sentinel',
+          playerId: 'bot_sentinel',
+          isBot: true,
+          name: '🤖 Sentinel Bot',
+          rarity: 'Sparring',
+          color: '#38bdf8',
+          shield: 12,
+          turret: 12,
+          x: 215,
+          y: -145,
+          angle: 2.4,
+          speed: 75,
+          targetX: 215,
+          targetY: -145,
+          nextHopAt: performance.now() + 26000,
+          nearHub: true,
+          trail: []
+        };
+        this.otherPilots = [this.sparringBot];
+      }
 
-        this.otherPilots = roster.map((r, idx) => {
-          // Place first 4 near the Outpost Hub so players immediately see traffic!
-          const nearHub = idx < 4;
-          const ang = (idx / roster.length) * Math.PI * 2 + 0.4;
-          const dist = nearHub ? (190 + idx * 65) : (550 + idx * 240);
-          const x = Math.round(Math.cos(ang) * dist);
-          const y = Math.round(Math.sin(ang) * dist);
-          const wpSys = this.solarSystems[(idx * 4 + 2) % this.solarSystems.length];
+      _assetKeyToLabel(key) {
+        const map = {
+          iron: '🪨 Iron Ore',
+          titanium: '⚙️ Titanium Alloy',
+          quantum: '💎 Quantum Crystals',
+          pgtOre: '☄️ Rare PGT Ore'
+        };
+        return map[key] || key;
+      }
+
+      _assetLabelToKey(val) {
+        const v = String(val || '').toLowerCase();
+        if (v.includes('iron')) return 'iron';
+        if (v.includes('titanium')) return 'titanium';
+        if (v.includes('quantum')) return 'quantum';
+        if (v.includes('pgt')) return 'pgtOre';
+        return 'iron';
+      }
+
+      async loadTradeBeaconsFromDB() {
+        const { sb, pid } = this._getSupabaseAndPlayerId();
+        if (!sb) return;
+        try {
+          const { data, error } = await sb.rpc('list_polyspace_trade_beacons');
+          if (error || !data || !data.success || !Array.isArray(data.beacons)) return;
+          this.tradeBeacons = data.beacons.map((b) => ({
+            id: b.id,
+            sellerId: String(b.seller_id || '').toLowerCase(),
+            seller: b.seller_name || 'Pilot',
+            isMine: Boolean(pid && String(b.seller_id || '').toLowerCase() === pid),
+            x: Number(b.x || 0),
+            y: Number(b.y || 0),
+            offerKey: b.offer_asset,
+            offerAmt: Number(b.offer_amount || 0),
+            offerAsset: this._assetKeyToLabel(b.offer_asset),
+            wantKey: b.want_asset,
+            wantAmt: Number(b.want_amount || 0),
+            wantAsset: this._assetKeyToLabel(b.want_asset)
+          }));
+        } catch (err) {
+          console.warn('[PolySpaceGalaxy] loadTradeBeaconsFromDB warning:', err);
+        }
+      }
+
+      connectRealtimeGalaxy() {
+        const { sb, pid } = this._getSupabaseAndPlayerId();
+        if (!sb || !pid || typeof sb.channel !== 'function') return;
+        if (this.livePresenceChannel) return;
+
+        const st = (window.appState && window.appState.state) || {};
+        const myName = st.username || (pid.length > 10 ? `${pid.slice(0, 6)}…${pid.slice(-4)}` : pid);
+        const _psShip = (window.polySpace && typeof window.polySpace.getEquippedStarshipMultiplier === 'function')
+          ? window.polySpace.getEquippedStarshipMultiplier() : null;
+        const myDna = (_psShip && _psShip.ship && _psShip.ship.dna) || null;
+        const myRarity = (_psShip && _psShip.ship && _psShip.ship.rarity) || 'Pilot';
+
+        const ch = sb.channel('polyspace-galaxy-live', { config: { presence: { key: pid } } });
+        ch.on('presence', { event: 'sync' }, () => {
+          const state = ch.presenceState();
+          const prevById = new Map((this.otherPilots || []).map(p => [p.id, p]));
+          const liveList = [this.sparringBot];
+          Object.keys(state).forEach((key) => {
+            if (key.toLowerCase() === pid) return;
+            const entries = state[key];
+            if (!entries || !entries.length) return;
+            const p = entries[entries.length - 1];
+            const prev = prevById.get(key);
+            const tx = Number(p.x || 0);
+            const ty = Number(p.y || 0);
+            liveList.push({
+              id: key,
+              playerId: key,
+              isBot: false,
+              name: p.username || 'Pilot',
+              rarity: p.rarity || 'Pilot',
+              color: p.rarity === 'Mythic' ? '#ffd700' : (p.rarity === 'Legendary' ? '#c084fc' : '#00ff88'),
+              shield: Number(p.shield || 1),
+              turret: Number(p.turret || 1),
+              dna: p.dna || null,
+              x: prev ? prev.x : tx,
+              y: prev ? prev.y : ty,
+              targetX: tx,
+              targetY: ty,
+              angle: Number(p.angle || 0),
+              speed: 260,
+              trail: prev ? prev.trail : []
+            });
+          });
+          this.otherPilots = liveList;
+        });
+
+        ch.on('broadcast', { event: 'beacon_updated' }, () => {
+          this.loadTradeBeaconsFromDB();
+        });
+        ch.on('broadcast', { event: 'duel_challenge' }, (msg) => {
+          if (msg && msg.payload && String(msg.payload.opponent_id || '').toLowerCase() === pid) {
+            this.pollMyDuels();
+          }
+        });
+        ch.on('broadcast', { event: 'duel_resolved' }, (msg) => {
+          if (msg && msg.payload && (String(msg.payload.p1Id || '').toLowerCase() === pid || String(msg.payload.p2Id || '').toLowerCase() === pid)) {
+            this.pollMyDuels();
+          }
+        });
+
+        ch.subscribe(async (status) => {
+          if (status === 'SUBSCRIBED') {
+            this._lastPresencePushAt = performance.now();
+            this._lastPresenceX = Math.round(this.ship2D.x);
+            this._lastPresenceY = Math.round(this.ship2D.y);
+            await ch.track({
+              player_id: pid,
+              username: myName,
+              x: this._lastPresenceX,
+              y: this._lastPresenceY,
+              angle: Number(this.ship2D.angle.toFixed(2)),
+              shield: this.shieldLevel,
+              turret: this.turretLevel,
+              dna: myDna,
+              rarity: myRarity
+            });
+          }
+        });
+        this.livePresenceChannel = ch;
+
+        if (!this._socialPollTimer) {
+          this._socialPollTimer = setInterval(() => {
+            if (!this.paused && this.mode === 'galaxy') {
+              this.pollMyDuels();
+            }
+          }, 5000);
+        }
+        if (!this._beaconPollTimer) {
+          this._beaconPollTimer = setInterval(() => {
+            if (!this.paused && this.mode === 'galaxy') {
+              this.loadTradeBeaconsFromDB();
+            }
+          }, 20000);
+        }
+      }
+
+      pushPresenceIfMoved(force = false) {
+        if (!this.livePresenceChannel) return;
+        const now = performance.now();
+        const sx = Math.round(this.ship2D.x);
+        const sy = Math.round(this.ship2D.y);
+        const moved = Math.hypot(sx - this._lastPresenceX, sy - this._lastPresenceY);
+        if (!force && (moved < 8 || now - this._lastPresencePushAt < 1500)) return;
+        this._lastPresencePushAt = now;
+        this._lastPresenceX = sx;
+        this._lastPresenceY = sy;
+
+        const { pid } = this._getSupabaseAndPlayerId();
+        const st = (window.appState && window.appState.state) || {};
+        const myName = st.username || (pid.length > 10 ? `${pid.slice(0, 6)}…${pid.slice(-4)}` : pid);
+        const _psShip = (window.polySpace && typeof window.polySpace.getEquippedStarshipMultiplier === 'function')
+          ? window.polySpace.getEquippedStarshipMultiplier() : null;
+        this.livePresenceChannel.track({
+          player_id: pid,
+          username: myName,
+          x: sx,
+          y: sy,
+          angle: Number(this.ship2D.angle.toFixed(2)),
+          shield: this.shieldLevel,
+          turret: this.turretLevel,
+          dna: (_psShip && _psShip.ship && _psShip.ship.dna) || null,
+          rarity: (_psShip && _psShip.ship && _psShip.ship.rarity) || 'Pilot'
+        });
+      }
+
+      async pollMyDuels() {
+        const { sb, pid } = this._getSupabaseAndPlayerId();
+        if (!sb || !pid) return;
+        try {
+          const { data, error } = await sb.rpc('get_my_polyspace_duels', { p_player_id: pid });
+          if (error || !data || !data.success) return;
+
+          // 1. Incoming 60s challenge banner
+          const inc = Array.isArray(data.incoming) && data.incoming.length > 0 ? data.incoming[0] : null;
+          this.pendingIncomingDuel = inc;
+          this.renderIncomingDuelBanner();
+
+          // 2. Outgoing pending status
+          const out = Array.isArray(data.outgoing) && data.outgoing.length > 0 ? data.outgoing[0] : null;
+          this.pendingOutgoingDuel = out;
+
+          // 3. Recently completed duel -> trigger synchronized 5s playback if not yet played
+          if (Array.isArray(data.recent)) {
+            for (const d of data.recent) {
+              if (d.status === 'completed' && d.battle_log && !this._playedDuelIds.has(d.id)) {
+                this._playedDuelIds.add(d.id);
+                this.playServerDuelLog(d.battle_log);
+                if (window.appState && typeof window.appState.syncUI === 'function') window.appState.syncUI();
+                break;
+              } else if ((d.status === 'declined' || d.status === 'expired') && this._waitingDuelId === d.id) {
+                this._waitingDuelId = null;
+                this.showToast(d.status === 'expired' ? '⏱️ Duel challenge expired (60s) — wager refunded!' : '❌ Opponent declined the duel — wager refunded!');
+                this.closeTacticalDuel();
+                if (window.polySpace && typeof window.polySpace.syncCloudSpaceState === 'function') window.polySpace.syncCloudSpaceState(true);
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[PolySpaceGalaxy] pollMyDuels warning:', err);
+        }
+      }
+
+      renderIncomingDuelBanner() {
+        let el = document.getElementById('psg-incoming-duel-banner');
+        const inc = this.pendingIncomingDuel;
+        if (!inc) {
+          if (el) el.style.display = 'none';
+          return;
+        }
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'psg-incoming-duel-banner';
+          el.style.cssText = 'position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:100001; background:rgba(12,18,38,0.96); border:2px solid #ff0055; border-radius:10px; padding:8px 14px; display:flex; align-items:center; gap:10px; color:#fff; font-size:0.8rem; font-weight:800; box-shadow:0 0 28px rgba(255,0,85,0.45); max-width:94vw;';
+          document.body.appendChild(el);
+        }
+        const remSec = Math.max(0, Math.ceil((new Date(inc.expires_at).getTime() - Date.now()) / 1000));
+        if (remSec <= 0) {
+          el.style.display = 'none';
+          return;
+        }
+        const safeName = typeof window.escapeHtml === 'function' ? window.escapeHtml(inc.challenger_name) : inc.challenger_name;
+        el.style.display = 'flex';
+        el.innerHTML = `
+          <span>⚔️ <strong style="color:#ff4d79;">${safeName}</strong> challenges you (${Number(inc.wager_pgt || 0)} PGT • 5% fee)</span>
+          <button style="background:linear-gradient(135deg,#00ff88,#059669); color:#000; border:none; border-radius:6px; padding:4px 10px; font-weight:900; cursor:pointer;" onclick="window.PolySpaceGalaxy.instance.openAcceptIncomingDuel()">✅ Accept (${remSec}s)</button>
+          <button style="background:rgba(255,0,85,0.25); color:#ff94b4; border:1px solid #ff0055; border-radius:6px; padding:4px 8px; font-weight:800; cursor:pointer;" onclick="window.PolySpaceGalaxy.instance.declineIncomingDuel()">✕</button>
+        `;
+      }
+
+      openAcceptIncomingDuel() {
+        const inc = this.pendingIncomingDuel;
+        if (!inc) return;
+        this.acceptingDuelId = inc.id;
+        this.selectedPilot = {
+          id: inc.challenger_id,
+          playerId: inc.challenger_id,
+          isBot: false,
+          name: inc.challenger_name,
+          rarity: 'Live Pilot',
+          shield: 15,
+          turret: 15
+        };
+        const banner = document.getElementById('psg-incoming-duel-banner');
+        if (banner) banner.style.display = 'none';
+        document.getElementById('duel-title').innerText = `⚔️ ACCEPT DUEL vs. ${inc.challenger_name.toUpperCase()} (${Number(inc.wager_pgt || 0)} PGT)`;
+        const wagerSel = document.getElementById('duel-wager');
+        if (wagerSel) {
+          wagerSel.value = String(Number(inc.wager_pgt || 0));
+          wagerSel.disabled = true;
+        }
+        document.getElementById('duel-setup-phase').style.display = 'block';
+        document.getElementById('duel-playback-phase').style.display = 'none';
+        document.getElementById('tactical-duel-modal').style.display = 'flex';
+        this.renderDuelSelector();
+      }
+
+      async declineIncomingDuel() {
+        const inc = this.pendingIncomingDuel;
+        if (!inc) return;
+        const { sb, pid } = this._getSupabaseAndPlayerId();
+        this.pendingIncomingDuel = null;
+        this.renderIncomingDuelBanner();
+        if (!sb || !pid) return;
+        await sb.rpc('cancel_or_decline_polyspace_duel', { p_player_id: pid, p_duel_id: inc.id });
+        if (this.livePresenceChannel) {
+          this.livePresenceChannel.send({ type: 'broadcast', event: 'duel_resolved', payload: { p1Id: inc.challenger_id, p2Id: pid } });
+        }
+        this.showToast('❌ Duel declined.');
+      }
+
+      playServerDuelLog(log) {
+        if (!log || !Array.isArray(log.rounds)) return;
+        const { pid } = this._getSupabaseAndPlayerId();
+        const iAmP1 = String(log.p1Id || '').toLowerCase() === pid;
+        const myMaxHp = iAmP1 ? log.p1MaxHp : log.p2MaxHp;
+        const rivalMaxHp = iAmP1 ? log.p2MaxHp : log.p1MaxHp;
+        const rivalName = iAmP1 ? log.p2Name : log.p1Name;
+
+        let curP1 = myMaxHp;
+        let curP2 = rivalMaxHp;
+        const rounds = log.rounds.map((r) => {
+          const startP1 = curP1;
+          const startP2 = curP2;
+          const endP1 = iAmP1 ? r.p1HpAfter : r.p2HpAfter;
+          const endP2 = iAmP1 ? r.p2HpAfter : r.p1HpAfter;
+          curP1 = endP1;
+          curP2 = endP2;
           return {
-            id: `pilot_${idx}`,
-            name: r.name,
-            rarity: r.rarity,
-            color: r.color,
-            shield: r.shield,
-            turret: r.turret,
-            offer: r.offer,
-            x,
-            y,
-            angle: ang,
-            speed: 120 + (idx % 5) * 28,
-            targetX: nearHub ? Math.round(Math.cos(ang + 1.8) * 320) : wpSys.x,
-            targetY: nearHub ? Math.round(Math.sin(ang + 1.8) * 320) : wpSys.y,
-            nearHub,
-            trail: []
+            num: r.round,
+            p1Atk: iAmP1 ? r.p1Atk : r.p2Atk,
+            p1Def: iAmP1 ? r.p1Def : r.p2Def,
+            p2Atk: iAmP1 ? r.p2Atk : r.p1Atk,
+            p2Def: iAmP1 ? r.p2Def : r.p1Def,
+            p1BlockedByP2: iAmP1 ? r.p2Blocked : r.p1Blocked,
+            p2BlockedByP1: iAmP1 ? r.p1Blocked : r.p2Blocked,
+            dmgToP2: iAmP1 ? r.p1Dmg : r.p2Dmg,
+            dmgToP1: iAmP1 ? r.p2Dmg : r.p1Dmg,
+            startP1, startP2, endP1, endP2
           };
         });
+
+        const winner = !log.winnerId ? 'draw' : (String(log.winnerId).toLowerCase() === pid ? 'p1' : 'p2');
+        document.getElementById('duel-title').innerText = `⚔️ YOU vs. ${String(rivalName || 'RIVAL').toUpperCase()}`;
+        document.getElementById('duel-setup-phase').style.display = 'none';
+        document.getElementById('duel-playback-phase').style.display = 'block';
+        document.getElementById('duel-result-actions').style.display = 'none';
+        document.getElementById('duel-p2-name').innerText = String(rivalName || 'RIVAL').toUpperCase();
+        document.getElementById('duel-log-box').innerHTML = `⚡ Server-verified 5s battle (Pot: ${Number(log.wager || 0) * 2} PGT • 5% fee: ${Number(log.fee || 0)} PGT)...`;
+        document.getElementById('tactical-duel-modal').style.display = 'flex';
+
+        this.duelSim = {
+          rival: { name: rivalName || 'RIVAL' },
+          rounds, myMaxHp, rivalMaxHp,
+          wager: Number(log.wager || 0),
+          fee: Number(log.fee || 0),
+          payout: Number(log.payout || 0),
+          winner,
+          startTime: performance.now(),
+          roundDuration: 1650,
+          lastLoggedRound: -1,
+          finished: false
+        };
+        const tick = (now) => {
+          this.animateDuelFrame(now);
+          if (this.duelSim && !this.duelSim.finished) {
+            this.duelAnimId = requestAnimationFrame(tick);
+          }
+        };
+        this.duelAnimId = requestAnimationFrame(tick);
       }
 
       // --------------------------------------------------------------------------
@@ -866,27 +1185,44 @@
         document.getElementById('trade-modal').style.display = 'flex';
       }
 
-      deployTradeBeacon() {
-        const offerAsset = document.getElementById('beacon-offer-asset').value;
+      async deployTradeBeacon() {
+        const offerLabel = document.getElementById('beacon-offer-asset').value;
+        const offerKey = this._assetLabelToKey(offerLabel);
         const offerAmt = Math.max(1, parseInt(document.getElementById('beacon-offer-amt').value, 10) || 1);
-        const wantAsset = document.getElementById('beacon-want-asset').value;
+        const wantLabel = document.getElementById('beacon-want-asset').value;
+        const wantKey = this._assetLabelToKey(wantLabel);
         const wantAmt = Math.max(1, parseInt(document.getElementById('beacon-want-amt').value, 10) || 1);
         const bx = Math.round(this.ship2D.x);
         const by = Math.round(this.ship2D.y);
 
-        this.tradeBeacons.push({
-          id: `tb_${Date.now()}`,
-          seller: 'You',
-          isMine: true,
-          x: bx,
-          y: by,
-          offerAmt,
-          offerAsset,
-          wantAmt,
-          wantAsset
+        const { sb, pid } = this._getSupabaseAndPlayerId();
+        if (!sb || !pid) {
+          this.showToast('⚠️ Connect your account to drop a live Trade Beacon.');
+          return;
+        }
+        const { data, error } = await sb.rpc('create_polyspace_trade_beacon', {
+          p_player_id: pid,
+          p_x: bx,
+          p_y: by,
+          p_offer_asset: offerKey,
+          p_offer_amount: offerAmt,
+          p_want_asset: wantKey,
+          p_want_amount: wantAmt
         });
+        if (error || !data || !data.success) {
+          this.showToast(`❌ ${(data && data.error) || (error && error.message) || 'Could not drop Trade Beacon.'}`);
+          return;
+        }
+        if (data.new_space_state && window.appState) {
+          window.appState.update({ spaceState: data.new_space_state });
+          if (window.polySpace && typeof window.polySpace.syncCloudSpaceState === 'function') window.polySpace.syncCloudSpaceState(true);
+        }
         document.getElementById('trade-modal').style.display = 'none';
-        this.showToast(`📡 Trade Beacon dropped at (${bx}, ${by}): ${offerAmt} ${offerAsset} for ${wantAmt} ${wantAsset}!`);
+        await this.loadTradeBeaconsFromDB();
+        if (this.livePresenceChannel) {
+          this.livePresenceChannel.send({ type: 'broadcast', event: 'beacon_updated', payload: { by: pid } });
+        }
+        this.showToast(`📡 Live Trade Beacon dropped at (${bx}, ${by}): ${offerAmt.toLocaleString()} ${offerLabel} for ${wantAmt.toLocaleString()} ${wantLabel}!`);
       }
 
       openInspectTradeBeacon(tb) {
@@ -907,27 +1243,58 @@
         document.getElementById('trade-modal').style.display = 'flex';
       }
 
-      acceptSelectedBeacon() {
+      async acceptSelectedBeacon() {
         const tb = this.selectedBeacon;
         if (!tb) return;
-        this.tradeBeacons = this.tradeBeacons.filter(b => b.id !== tb.id);
+        const { sb, pid } = this._getSupabaseAndPlayerId();
+        if (!sb || !pid) {
+          this.showToast('⚠️ Connect your account to trade.');
+          return;
+        }
+        const rpcName = tb.isMine ? 'cancel_polyspace_trade_beacon' : 'accept_polyspace_trade_beacon';
+        const { data, error } = await sb.rpc(rpcName, { p_player_id: pid, p_beacon_id: tb.id });
+        if (error || !data || !data.success) {
+          this.showToast(`❌ ${(data && data.error) || (error && error.message) || 'Trade failed.'}`);
+          return;
+        }
+        if (data.new_space_state && window.appState) {
+          window.appState.update({ spaceState: data.new_space_state });
+          if (window.polySpace && typeof window.polySpace.syncCloudSpaceState === 'function') window.polySpace.syncCloudSpaceState(true);
+        }
         this.selectedBeacon = null;
         document.getElementById('trade-modal').style.display = 'none';
+        await this.loadTradeBeaconsFromDB();
+        if (this.livePresenceChannel) {
+          this.livePresenceChannel.send({ type: 'broadcast', event: 'beacon_updated', payload: { by: pid } });
+        }
         if (tb.isMine) {
-          this.showToast(`🔄 Cancelled Trade Beacon — ${tb.offerAmt} ${tb.offerAsset} returned to your cargo!`);
+          this.showToast(`🔄 Cancelled Trade Beacon — ${tb.offerAmt.toLocaleString()} ${tb.offerAsset} refunded!`);
         } else {
-          const netReceive = Math.max(1, Math.floor(tb.offerAmt * 0.95));
+          const netReceive = Number(data.received_amount || Math.max(1, Math.floor(tb.offerAmt * 0.95)));
           this.showToast(`✅ Trade Complete with ${tb.seller}! Received ${netReceive.toLocaleString()} ${tb.offerAsset} (5% burn applied).`);
         }
       }
 
       openTacticalDuel() {
         if (!this.selectedPilot) return;
+        this.acceptingDuelId = null;
         if (this.duelAnimId) {
           cancelAnimationFrame(this.duelAnimId);
           this.duelAnimId = null;
         }
-        document.getElementById('duel-title').innerText = `⚔️ YOU vs. ${this.selectedPilot.name.toUpperCase()} (${this.selectedPilot.rarity})`;
+        const isBot = Boolean(this.selectedPilot.isBot);
+        document.getElementById('duel-title').innerText = isBot
+          ? `🤖 SPARRING vs. ${this.selectedPilot.name.toUpperCase()} (0 PGT Friendly)`
+          : `⚔️ CHALLENGE ${this.selectedPilot.name.toUpperCase()} (60s Accept • 5% Fee)`;
+        const wagerSel = document.getElementById('duel-wager');
+        if (wagerSel) {
+          if (isBot) {
+            wagerSel.value = '0';
+            wagerSel.disabled = true;
+          } else {
+            wagerSel.disabled = false;
+          }
+        }
         document.getElementById('duel-setup-phase').style.display = 'block';
         document.getElementById('duel-playback-phase').style.display = 'none';
         document.getElementById('tactical-duel-modal').style.display = 'flex';
@@ -989,9 +1356,71 @@
         wrap.innerHTML = html;
       }
 
-      startTacticalDuelPlayback() {
+      async startTacticalDuelPlayback() {
         const rival = this.selectedPilot;
         if (!rival) return;
+
+        // 1. Live PvP: Accepting an incoming 60s challenge
+        if (this.acceptingDuelId) {
+          const duelId = this.acceptingDuelId;
+          this.acceptingDuelId = null;
+          const { sb, pid } = this._getSupabaseAndPlayerId();
+          const { data, error } = await sb.rpc('accept_polyspace_duel', {
+            p_player_id: pid,
+            p_duel_id: duelId,
+            p_attacks: this.duelMyAttacks,
+            p_defenses: this.duelMyDefenses
+          });
+          if (error || !data || !data.success) {
+            this.showToast(`❌ ${(data && data.error) || (error && error.message) || 'Could not accept duel.'}`);
+            this.closeTacticalDuel();
+            return;
+          }
+          if (data.new_balance !== undefined && window.appState) {
+            window.appState.update({ balancePgt: parseFloat(parseFloat(data.new_balance).toFixed(2)) });
+            if (typeof window.appState.syncUI === 'function') window.appState.syncUI();
+          }
+          this._playedDuelIds.add(duelId);
+          if (this.livePresenceChannel && data.battle_log) {
+            this.livePresenceChannel.send({ type: 'broadcast', event: 'duel_resolved', payload: { p1Id: data.battle_log.p1Id, p2Id: data.battle_log.p2Id } });
+          }
+          this.playServerDuelLog(data.battle_log);
+          return;
+        }
+
+        // 2. Live PvP: Sending a 60-second challenge to a real online pilot
+        if (!rival.isBot) {
+          const { sb, pid } = this._getSupabaseAndPlayerId();
+          const wager = parseInt(document.getElementById('duel-wager').value, 10) || 0;
+          const { data, error } = await sb.rpc('create_polyspace_duel', {
+            p_player_id: pid,
+            p_opponent_id: rival.playerId || rival.id,
+            p_wager_pgt: wager,
+            p_attacks: this.duelMyAttacks,
+            p_defenses: this.duelMyDefenses
+          });
+          if (error || !data || !data.success) {
+            this.showToast(`❌ ${(data && data.error) || (error && error.message) || 'Could not send challenge.'}`);
+            return;
+          }
+          if (data.new_balance !== undefined && window.appState) {
+            window.appState.update({ balancePgt: parseFloat(parseFloat(data.new_balance).toFixed(2)) });
+            if (typeof window.appState.syncUI === 'function') window.appState.syncUI();
+          }
+          this._waitingDuelId = data.duel_id;
+          if (this.livePresenceChannel) {
+            this.livePresenceChannel.send({ type: 'broadcast', event: 'duel_challenge', payload: { duel_id: data.duel_id, opponent_id: rival.playerId || rival.id } });
+          }
+          document.getElementById('duel-setup-phase').style.display = 'none';
+          document.getElementById('duel-playback-phase').style.display = 'block';
+          document.getElementById('duel-result-actions').style.display = 'none';
+          document.getElementById('duel-p2-name').innerText = rival.name.toUpperCase();
+          document.getElementById('duel-log-box').innerHTML = `⏳ <strong>Challenge sent to ${rival.name}!</strong> Waiting up to <strong>60 seconds</strong> for them to accept (${wager} PGT escrowed, 5% fee on win; auto-refunds if declined/expired).`;
+          this.showToast(`⚔️ Duel challenge sent to ${rival.name} (60s to accept)!`);
+          return;
+        }
+
+        // 3. Calm Sparring Bot (0 PGT Friendly Practice Duel)
         const dirs = ['LEFT', 'TOP', 'RIGHT'];
         const rivalAtks = [0, 1, 2].map(() => dirs[Math.floor(Math.random() * 3)]);
         const rivalDefs = [0, 1, 2].map(() => dirs[Math.floor(Math.random() * 3)]);
@@ -1001,7 +1430,6 @@
         const myBaseDmg = 140 + this.turretLevel * 14;
         const rivalBaseDmg = 140 + rival.turret * 14;
 
-        // Pre-compute all 3 rounds deterministically (just like a Supabase RPC would!)
         const rounds = [];
         let p1Hp = myMaxHp;
         let p2Hp = rivalMaxHp;
@@ -1032,7 +1460,7 @@
           });
         }
 
-        const wager = parseInt(document.getElementById('duel-wager').value, 10) || 0;
+        const wager = 0;
         const winner = p1Hp > p2Hp ? 'p1' : (p2Hp > p1Hp ? 'p2' : 'draw');
 
         document.getElementById('duel-setup-phase').style.display = 'none';
@@ -1481,32 +1909,42 @@
           if (s.trail[i].life <= 0) s.trail.splice(i, 1);
         }
 
-        // Update Simulated Other Pilots Flying Across the Galaxy
+        // Push our own live coordinates to Supabase Realtime Presence (throttled ~1.5s while moving, 0 traffic while parked)
+        this.pushPresenceIfMoved(false);
+        if (this.pendingIncomingDuel) {
+          this.renderIncomingDuelBanner();
+        }
+
+        // Update Calm Sparring Bot (idles, hops every 25-40s) & Smoothly Interpolate Real Online Pilots
         if (this.otherPilots) {
+          const nowMs = performance.now();
           for (const pl of this.otherPilots) {
             const dx = pl.targetX - pl.x;
             const dy = pl.targetY - pl.y;
             const dist = Math.hypot(dx, dy);
-            if (dist > 14) {
-              const ang = Math.atan2(dy, dx);
-              let diff = ang - pl.angle;
-              while (diff > Math.PI) diff -= Math.PI * 2;
-              while (diff < -Math.PI) diff += Math.PI * 2;
-              pl.angle += diff * Math.min(1, dt * 6);
-              pl.x += Math.cos(pl.angle) * pl.speed * dt;
-              pl.y += Math.sin(pl.angle) * pl.speed * dt;
-              if (Math.random() < 0.35) pl.trail.push({ x: pl.x, y: pl.y, life: 1.0 });
-            } else {
-              // Pick a fresh destination (hub patrol or random solar system)
-              if (pl.nearHub) {
+            if (pl.isBot) {
+              if (dist > 8) {
+                const ang = Math.atan2(dy, dx);
+                let diff = ang - pl.angle;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                pl.angle += diff * Math.min(1, dt * 4);
+                pl.x += Math.cos(pl.angle) * pl.speed * dt;
+                pl.y += Math.sin(pl.angle) * pl.speed * dt;
+                if (Math.random() < 0.25) pl.trail.push({ x: pl.x, y: pl.y, life: 1.0 });
+              } else if (nowMs >= (pl.nextHopAt || 0)) {
                 const a = Math.random() * Math.PI * 2;
-                const r = 170 + Math.random() * 240;
+                const r = 170 + Math.random() * 190;
                 pl.targetX = Math.round(Math.cos(a) * r);
                 pl.targetY = Math.round(Math.sin(a) * r);
-              } else {
-                const nextSys = this.solarSystems[Math.floor(Math.random() * this.solarSystems.length)];
-                pl.targetX = nextSys.x + (Math.random() - 0.5) * 140;
-                pl.targetY = nextSys.y + (Math.random() - 0.5) * 140;
+                pl.nextHopAt = nowMs + 25000 + Math.random() * 15000;
+              }
+            } else {
+              // Real online pilot: smooth 60 FPS lerp toward their latest Presence coordinates
+              if (dist > 2) {
+                pl.x += dx * Math.min(1, dt * 4.5);
+                pl.y += dy * Math.min(1, dt * 4.5);
+                if (dist > 14 && Math.random() < 0.35) pl.trail.push({ x: pl.x, y: pl.y, life: 1.0 });
               }
             }
             for (let k = pl.trail.length - 1; k >= 0; k--) {
@@ -3999,10 +4437,16 @@
         this.instance.paused = false;
         this.instance.setFullscreen(false);
         this.instance.loadGalaxyProfileFromDB();
+        this.instance.loadTradeBeaconsFromDB();
+        this.instance.connectRealtimeGalaxy();
+        this.instance.pollMyDuels();
       } else {
         this.instance.paused = false;
         this.instance.updateUpgrades();
         this.instance.loadGalaxyProfileFromDB();
+        this.instance.loadTradeBeaconsFromDB();
+        this.instance.connectRealtimeGalaxy();
+        this.instance.pollMyDuels();
         if (this.instance.mode === 'galaxy') {
           this.instance.setFullscreen(false);
         }
