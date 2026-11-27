@@ -185,7 +185,7 @@ class PolySpaceEngine {
 
         // 3. In integrated Galaxy mode, forward non-drag clicks on #space-canvas to Galaxy world coords
         if (mode === 'galaxy' && !this._dragMoved && window.PolySpaceGalaxy && typeof window.PolySpaceGalaxy.handleWorldClick === 'function') {
-          const zoom = this._mapZoom || 0.42;
+          const zoom = this._mapZoom || 1.0;
           const panX = this._mapPanX || 0;
           const panY = this._mapPanY || 0;
           const mapCenterX = (rect.width || this.width) * 0.5;
@@ -420,7 +420,7 @@ class PolySpaceEngine {
     const prevMode = this._canvasMode || 'radar';
     if (prevMode === 'galaxy') {
       this._savedGalaxyCam = {
-        zoom: this._mapZoom || 0.42,
+        zoom: this._mapZoom || 1.0,
         panX: this._mapPanX || 0,
         panY: this._mapPanY || 0
       };
@@ -446,7 +446,7 @@ class PolySpaceEngine {
         host.style.display = 'block';
         host.style.pointerEvents = 'none';
       }
-      const gCam = this._savedGalaxyCam || { zoom: 0.42, panX: 0, panY: 0 };
+      const gCam = this._savedGalaxyCam || { zoom: 1.0, panX: 0, panY: 0 };
       this._mapZoom = gCam.zoom;
       this._mapPanX = gCam.panX;
       this._mapPanY = gCam.panY;
@@ -538,7 +538,7 @@ class PolySpaceEngine {
     const isGalaxy = this._canvasMode === 'galaxy';
     const minZ = isGalaxy ? 0.06 : 1.0;
     const maxZ = isGalaxy ? 3.0 : 5.0;
-    const oldZoom = this._mapZoom || (isGalaxy ? 0.42 : 1.0);
+    const oldZoom = this._mapZoom || 1.0;
     const clamped = isGalaxy
       ? Math.max(minZ, Math.min(maxZ, level))
       : Math.max(minZ, Math.min(maxZ, Math.round(level * 10) / 10));
@@ -561,7 +561,7 @@ class PolySpaceEngine {
 
   zoomIn() {
     if (this._canvasMode === 'galaxy') {
-      this.setMapZoom((this._mapZoom || 0.42) * 1.22);
+      this.setMapZoom((this._mapZoom || 1.0) * 1.22);
     } else {
       this.setMapZoom((this._mapZoom || 1.0) + 0.3);
     }
@@ -569,7 +569,7 @@ class PolySpaceEngine {
 
   zoomOut() {
     if (this._canvasMode === 'galaxy') {
-      this.setMapZoom((this._mapZoom || 0.42) * 0.82);
+      this.setMapZoom((this._mapZoom || 1.0) * 0.82);
     } else {
       this.setMapZoom((this._mapZoom || 1.0) - 0.3);
     }
@@ -580,7 +580,7 @@ class PolySpaceEngine {
     this._trackingExpIndex = 0;
     this._mapPanX = 0;
     this._mapPanY = 0;
-    this.setMapZoom(this._canvasMode === 'galaxy' ? 0.42 : 1.0);
+    this.setMapZoom(1.0);
   }
 
   toggleShipTracking(targetId = null) {
