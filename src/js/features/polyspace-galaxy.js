@@ -66,6 +66,9 @@
 
         this.clearedSystems = new Set();
         this.selectedSystemId = 15;
+        this.funLasers2D = [];
+        this.funSparks2D = [];
+        this.funLaserCd2D = 0;
         this.combatXpAllTime = 0;
         this.combatXpWeekly = 0;
         this.totalKills = 0;
@@ -302,14 +305,26 @@
         this.useKeyboardSteer = false;
 
         window.addEventListener('keydown', (e) => {
+          const tag = (e.target && e.target.tagName) || '';
+          const isTyping = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable);
+          if (isTyping || this.paused) return;
+
           this.keys[e.code] = true;
           if (this.mode === 'combat3d' && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
             this.useKeyboardSteer = true;
             e.preventDefault();
           }
-          if (e.code === 'Space' && this.mode === 'combat3d') {
+          if (this.mode === 'galaxy' && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
             e.preventDefault();
-            if (!e.repeat) this.fireHomingMissile();
+          }
+          if (e.code === 'Space') {
+            if (this.mode === 'combat3d') {
+              e.preventDefault();
+              if (!e.repeat) this.fireHomingMissile();
+            } else if (this.mode === 'galaxy') {
+              e.preventDefault();
+              if (!e.repeat && this.funLaserCd2D <= 0) this.fireFunLaser2D();
+            }
           }
           if (e.code === 'KeyE' && this.mode === 'combat3d' && !e.repeat) {
             this.fireHomingMissile();
@@ -317,6 +332,9 @@
         });
         window.addEventListener('keyup', (e) => {
           this.keys[e.code] = false;
+        });
+        window.addEventListener('blur', () => {
+          this.keys = {};
         });
 
         // Canvas Mouse Events for both 2D Galaxy and 3D Dogfight
@@ -1203,11 +1221,119 @@
         ctx.restore();
       }
 
+      fireFunLaser2D() {
+        const s = this.ship2D;
+        if (!s) return;
+        this.funLaserCd2D = 0.12;
+        const cos = Math.cos(s.angle);
+        const sin = Math.sin(s.angle);
+        const px = -sin;
+        const py = cos;
+        const boltSpeed = 1150;
+        const noseDist = 18;
+        const wingOffset = 7;
+
+        for (const side of [-1, 1]) {
+          const bx = s.x + cos * noseDist + px * wingOffset * side;
+          const by = s.y + sin * noseDist + py * wingOffset * side;
+          this.funLasers2D.push({
+            x: bx,
+            y: by,
+            vx: cos * boltSpeed + (s.vx || 0) * 0.25,
+            vy: sin * boltSpeed + (s.vy || 0) * 0.25,
+            angle: s.angle,
+            life: 0.75,
+            maxLife: 0.75,
+            color: side === -1 ? '#00f0ff' : '#ff4d94'
+          });
+          this.funSparks2D.push({
+            x: bx,
+            y: by,
+            vx: cos * 140 + (Math.random() - 0.5) * 90,
+            vy: sin * 140 + (Math.random() - 0.5) * 90,
+            life: 0.18,
+            maxLife: 0.18,
+            color: '#ffffff'
+          });
+        }
+        if (this.funLasers2D.length > 80) this.funLasers2D.splice(0, this.funLasers2D.length - 80);
+      }
+
+      renderFunLasers2D(ctx, zoom) {
+        const invZ = 1 / Math.max(0.25, Math.sqrt(zoom || 1));
+        if (this.funLasers2D && this.funLasers2D.length) {
+          ctx.save();
+          ctx.lineCap = 'round';
+          for (const b of this.funLasers2D) {
+            const alpha = Math.max(0, Math.min(1, b.life / b.maxLife));
+            const len = 18 * invZ;
+            const tx = b.x - Math.cos(b.angle) * len;
+            const ty = b.y - Math.sin(b.angle) * len;
+            ctx.strokeStyle = b.color;
+            ctx.globalAlpha = alpha * 0.9;
+            ctx.lineWidth = 3.2 * invZ;
+            ctx.beginPath();
+            ctx.moveTo(tx, ty);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.globalAlpha = alpha;
+            ctx.lineWidth = 1.4 * invZ;
+            ctx.beginPath();
+            ctx.moveTo(b.x - Math.cos(b.angle) * len * 0.45, b.y - Math.sin(b.angle) * len * 0.45);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+        if (this.funSparks2D && this.funSparks2D.length) {
+          ctx.save();
+          for (const sp of this.funSparks2D) {
+            const alpha = Math.max(0, Math.min(1, sp.life / sp.maxLife));
+            ctx.fillStyle = sp.color;
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.arc(sp.x, sp.y, Math.max(1.2, 2.8 * alpha * invZ), 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      }
+
       updateGalaxy2D(dt) {
         const s = this.ship2D;
         const maxSpeed = 240 + this.warpLevel * 12; // Warp level scales 2D galaxy cruise speed
+        const B = this.galaxyBound;
 
-        if (s.targetX !== null && s.targetY !== null) {
+        // Desktop Arrow-Key Manual Flight
+        const k = this.keys || {};
+        const ix = (k['ArrowRight'] ? 1 : 0) - (k['ArrowLeft'] ? 1 : 0);
+        const iy = (k['ArrowDown'] ? 1 : 0) - (k['ArrowUp'] ? 1 : 0);
+
+        if (ix !== 0 || iy !== 0) {
+          s.targetX = null;
+          s.targetY = null;
+          this.followShip2D = true;
+          s._isManualThrust = true;
+
+          const desiredAngle = Math.atan2(iy, ix);
+          let diff = desiredAngle - s.angle;
+          while (diff > Math.PI) diff -= Math.PI * 2;
+          while (diff < -Math.PI) diff += Math.PI * 2;
+          s.angle += diff * Math.min(1, dt * 14);
+
+          const mag = Math.hypot(ix, iy) || 1;
+          s.vx = (ix / mag) * maxSpeed;
+          s.vy = (iy / mag) * maxSpeed;
+          s.x = Math.max(-B, Math.min(B, s.x + s.vx * dt));
+          s.y = Math.max(-B, Math.min(B, s.y + s.vy * dt));
+
+          if (Math.random() < 0.75) {
+            s.trail.push({ x: s.x, y: s.y, life: 1.0 });
+          }
+        } else if (s.targetX !== null && s.targetY !== null) {
+          s._isManualThrust = false;
           const dx = s.targetX - s.x;
           const dy = s.targetY - s.y;
           const dist = Math.hypot(dx, dy);
@@ -1223,7 +1349,6 @@
             const speed = Math.min(maxSpeed, dist * 3.2 + 60);
             s.vx = Math.cos(s.angle) * speed;
             s.vy = Math.sin(s.angle) * speed;
-            const B = this.galaxyBound;
             s.x = Math.max(-B, Math.min(B, s.x + s.vx * dt));
             s.y = Math.max(-B, Math.min(B, s.y + s.vy * dt));
 
@@ -1238,6 +1363,62 @@
             s.targetX = null;
             s.targetY = null;
           }
+        } else {
+          s._isManualThrust = false;
+          if (Math.hypot(s.vx, s.vy) > 4) {
+            const damp = Math.pow(0.02, dt);
+            s.vx *= damp;
+            s.vy *= damp;
+            s.x = Math.max(-B, Math.min(B, s.x + s.vx * dt));
+            s.y = Math.max(-B, Math.min(B, s.y + s.vy * dt));
+          } else {
+            s.vx = 0;
+            s.vy = 0;
+          }
+        }
+
+        // Cosmetic Spacebar Rapid-Fire Lasers (Just for fun!)
+        this.funLaserCd2D = Math.max(0, (this.funLaserCd2D || 0) - dt);
+        if (k['Space'] && this.funLaserCd2D <= 0) {
+          this.fireFunLaser2D();
+        }
+        for (let i = this.funLasers2D.length - 1; i >= 0; i--) {
+          const b = this.funLasers2D[i];
+          b.x += b.vx * dt;
+          b.y += b.vy * dt;
+          b.life -= dt;
+          let hit = false;
+          for (const sys of this.solarSystems) {
+            if (Math.hypot(b.x - sys.x, b.y - sys.y) <= sys.radius + 3) {
+              hit = true;
+              break;
+            }
+          }
+          if (hit || b.life <= 0) {
+            if (hit) {
+              for (let p = 0; p < 5; p++) {
+                const a = Math.random() * Math.PI * 2;
+                const sp = 50 + Math.random() * 140;
+                this.funSparks2D.push({
+                  x: b.x,
+                  y: b.y,
+                  vx: Math.cos(a) * sp,
+                  vy: Math.sin(a) * sp,
+                  life: 0.28,
+                  maxLife: 0.28,
+                  color: b.color
+                });
+              }
+            }
+            this.funLasers2D.splice(i, 1);
+          }
+        }
+        for (let i = this.funSparks2D.length - 1; i >= 0; i--) {
+          const sp = this.funSparks2D[i];
+          sp.x += sp.vx * dt;
+          sp.y += sp.vy * dt;
+          sp.life -= dt;
+          if (sp.life <= 0) this.funSparks2D.splice(i, 1);
         }
 
         // Smooth Radar -> Galaxy Zoom-Out Intro Transition
@@ -1664,6 +1845,9 @@
           ctx.fill();
         }
 
+        // Cosmetic 2D Fun Plasma Lasers
+        this.renderFunLasers2D(ctx, this.camZoom);
+
         // Draw Player Flagship (Real Equipped On-Chain NFT Starship if available, else Cyber Starfighter)
         ctx.save();
         ctx.translate(s.x, s.y);
@@ -1674,14 +1858,14 @@
         const _psShip = (window.polySpace && typeof window.polySpace.getEquippedStarshipMultiplier === 'function')
           ? window.polySpace.getEquippedStarshipMultiplier() : null;
         if (_psShip && _psShip.ship && _psShip.ship.dna && window.PolyHangar && typeof window.PolyHangar.renderProceduralShip === 'function') {
-          window.PolyHangar.renderProceduralShip(ctx, 0, 0, _psShip.ship.dna, 0.34, 0, Date.now() / 300, s.targetX !== null);
+          window.PolyHangar.renderProceduralShip(ctx, 0, 0, _psShip.ship.dna, 0.34, 0, Date.now() / 300, s.targetX !== null || Boolean(s._isManualThrust));
           ctx.restore();
           ctx.restore();
           return;
         }
 
         const tPulse = 0.5 + 0.5 * Math.sin(Date.now() / 220);
-        const isCruising = s.targetX !== null;
+        const isCruising = s.targetX !== null || Boolean(s._isManualThrust);
 
         // Subtle Shield Energy Halo
         const shieldGrad = ctx.createRadialGradient(2, 0, 6, 2, 0, 28);
@@ -3795,6 +3979,16 @@
         ctx.stroke();
         ctx.setLineDash([]);
       }
+      // Thruster Trail + Cosmetic 2D Fun Plasma Lasers on embedded radar
+      for (const tr of s.trail) {
+        const r = Math.max(1.2, tr.life * 4.2);
+        ctx.fillStyle = `rgba(0, 240, 255, ${tr.life * 0.55})`;
+        ctx.beginPath();
+        ctx.arc(tr.x, tr.y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      inst.renderFunLasers2D(ctx, zoom);
+
       ctx.save();
       ctx.translate(s.x, s.y);
       ctx.rotate(s.angle);
@@ -3803,7 +3997,7 @@
       const _psShip = (window.polySpace && typeof window.polySpace.getEquippedStarshipMultiplier === 'function')
         ? window.polySpace.getEquippedStarshipMultiplier() : null;
       if (_psShip && _psShip.ship && _psShip.ship.dna && window.PolyHangar && typeof window.PolyHangar.renderProceduralShip === 'function') {
-        window.PolyHangar.renderProceduralShip(ctx, 0, 0, _psShip.ship.dna, 0.34, 0, Date.now() / 300, s.targetX !== null);
+        window.PolyHangar.renderProceduralShip(ctx, 0, 0, _psShip.ship.dna, 0.34, 0, Date.now() / 300, s.targetX !== null || Boolean(s._isManualThrust));
       } else {
         ctx.fillStyle = '#0f172a';
         ctx.strokeStyle = '#00f0ff';
