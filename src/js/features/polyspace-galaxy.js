@@ -162,7 +162,7 @@
           else if (i > 20) color = '#f59e0b';
           else if (i > 10) color = '#38bdf8';
 
-          const rewardPgt = i === 50 ? 2500 : Math.round(15 + Math.pow(i, 1.45) * 1.8);
+          const rewardPgt = i === 50 ? 50000 : Math.floor(32 * Math.pow(1.14, i - 1));
 
           this.solarSystems.push({
             id: i,
@@ -648,9 +648,10 @@
         lvlEl.style.borderColor = isHard ? '#ff0055' : '#00ff88';
 
         const alreadyCleared = this.clearedSystems.has(sys.id);
+        const killRate = sys.level >= 26 ? 2 : 1;
         document.getElementById('brief-sys-desc').innerText = alreadyCleared
-          ? '✅ Cleared (XP only)'
-          : `+${sys.rewardPgt} PGT${sys.hasNft ? ' + 👑 NFT' : ''}`;
+          ? `✅ +${killRate} PGT/kill`
+          : `+${sys.rewardPgt.toLocaleString()} PGT${sys.hasNft ? ' + 👑 NFT' : ''}`;
       }
 
       flyToSystem(id) {
@@ -2776,11 +2777,13 @@
           document.getElementById('modal-desc').innerText = alreadyCleared
             ? `Great flying in ${sys.name} (Lvl ${sys.level})! You already claimed this system's one-time first-clear reward.`
             : `You destroyed all hostile squadrons and the Command Boss in ${sys.name} (Lvl ${sys.level})!`;
+          const killRate = sys.level >= 26 ? 2 : 1;
+          const killPgt = (this.missionKills || 0) * killRate;
           document.getElementById('modal-loot').innerHTML = alreadyCleared
-            ? '✅ First-Clear Reward Already Claimed (Replay Mode — 0 PGT)'
+            ? `✅ Replay Clear • 💰 +${killPgt.toLocaleString()} PGT (${this.missionKills || 0} kills × ${killRate} PGT, max 10 missions/day)`
             : (sys.hasNft
-              ? `💰 +${sys.rewardPgt} PGT Grand Prize (First-Clear)<br/>👑 +1 EXCLUSIVE SINGULARITY CONQUEROR NFT!`
-              : `💰 +${sys.rewardPgt} PGT • 🪨 +${sys.level * 40} Iron • 💎 +${sys.level * 15} Titanium (First-Clear)`);
+              ? `💰 +${sys.rewardPgt.toLocaleString()} PGT Grand Prize + ${killPgt.toLocaleString()} Kill PGT<br/>👑 +1 EXCLUSIVE SINGULARITY CONQUEROR NFT!`
+              : `💰 +${sys.rewardPgt.toLocaleString()} PGT + ${killPgt.toLocaleString()} Kill PGT • 🪨 +${sys.level * 40} Iron • 💎 +${sys.level * 15} Titanium`);
         } else {
           document.getElementById('modal-icon').innerText = '💥';
           document.getElementById('modal-title').innerText = 'SHIP DESTROYED!';

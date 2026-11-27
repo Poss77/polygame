@@ -961,8 +961,16 @@ class PolySpaceEngine {
     return { unlocked, mult: unlocked ? 1.5 : 1.0, ownedCount, totalCount: s2Ids.length };
   }
 
-  getModuleUpgradeCost(lvl) {
+  getModuleUpgradeCost(lvl, part = '') {
     const currentLvl = Math.max(1, lvl || 1);
+    const p = String(part || '').toLowerCase();
+    if (p === 'shield' || p === 'turret') {
+      return {
+        iron: Math.floor(60 * Math.pow(1.14, currentLvl - 1)),
+        tit: Math.floor(25 * Math.pow(1.14, currentLvl - 1)),
+        pgt: Math.floor(40 * Math.pow(1.14, currentLvl - 1))
+      };
+    }
     if (currentLvl <= 35) {
       return {
         iron: Math.floor(80 * Math.pow(1.22, currentLvl - 1)),
@@ -1600,7 +1608,7 @@ class PolySpaceEngine {
         shieldCost.innerText = "⭐ MAX LEVEL 50 REACHED";
         shieldCost.style.color = "var(--color-success)";
       } else {
-        const c = this.getModuleUpgradeCost(curShieldLvl);
+        const c = this.getModuleUpgradeCost(curShieldLvl, 'shield');
         shieldCost.innerText = `Cost: ${c.iron.toLocaleString()} Iron | ${c.tit.toLocaleString()} Tit | ${c.pgt.toLocaleString()} PGT`;
       }
     }
@@ -1621,7 +1629,7 @@ class PolySpaceEngine {
         turretCost.innerText = "⭐ MAX LEVEL 50 REACHED";
         turretCost.style.color = "var(--color-success)";
       } else {
-        const c = this.getModuleUpgradeCost(curTurretLvl);
+        const c = this.getModuleUpgradeCost(curTurretLvl, 'turret');
         turretCost.innerText = `Cost: ${c.iron.toLocaleString()} Iron | ${c.tit.toLocaleString()} Tit | ${c.pgt.toLocaleString()} PGT`;
       }
     }
@@ -3377,7 +3385,7 @@ class PolySpaceEngine {
       return;
     }
 
-    const costs = this.getModuleUpgradeCost(currentLvl);
+    const costs = this.getModuleUpgradeCost(currentLvl, part);
     const costIron = costs.iron;
     const costTit = costs.tit;
     const costPgt = costs.pgt;
