@@ -988,6 +988,27 @@
         box.scrollTop = box.scrollHeight;
       }
 
+      async loadGalaxyChatHistory() {
+        const { sb } = this._getSupabaseAndPlayerId();
+        if (!sb) return;
+        try {
+          const { data, error } = await sb.rpc('get_polyspace_galaxy_chat', { p_limit: 30 });
+          if (error || !data || !Array.isArray(data.messages)) return;
+          if (data.messages.length > 0) {
+            // Remove welcome placeholder if real persisted messages exist
+            this.galaxyChatMessages = (this.galaxyChatMessages || []).filter(m => m.id !== 'sys-welcome');
+            const prevCollapsed = this._galaxyChatCollapsed;
+            this._galaxyChatCollapsed = false; // don't trigger unread badge for initial history load
+            for (const m of data.messages) {
+              this._onIncomingGalaxyChat(m);
+            }
+            this._galaxyChatCollapsed = prevCollapsed;
+          }
+        } catch (err) {
+          console.warn('[PolySpaceGalaxy] loadGalaxyChatHistory warning:', err);
+        }
+      }
+
       async sendGalaxyChat(pinCoords = false) {
         const input = document.getElementById('psg-chat-input');
         const rawText = input ? input.value.trim() : '';
@@ -999,8 +1020,8 @@
           this.showToast('⏳ Slow down pilot — wait 2s between messages.');
           return;
         }
-        const { pid } = this._getSupabaseAndPlayerId();
-        if (!pid) {
+        const { sb, pid } = this._getSupabaseAndPlayerId();
+        if (!sb || !pid) {
           this.showToast('⚠️ Sign in to chat in Galaxy Comms!');
           return;
         }
@@ -1012,17 +1033,40 @@
         const _psShip = (window.polySpace && typeof window.polySpace.getEquippedStarshipMultiplier === 'function')
           ? window.polySpace.getEquippedStarshipMultiplier() : null;
         const myRarity = (_psShip && _psShip.ship && _psShip.ship.rarity) || 'Pilot';
+        const px = pinCoords ? Math.round(this.ship2D.x) : null;
+        const py = pinCoords ? Math.round(this.ship2D.y) : null;
 
-        const payload = {
-          id: `${pid.slice(0, 8)}-${now}-${Math.floor(Math.random() * 9999)}`,
-          playerId: pid,
-          username: myName,
-          rarity: myRarity,
-          text: text.slice(0, 140),
-          x: pinCoords ? Math.round(this.ship2D.x) : null,
-          y: pinCoords ? Math.round(this.ship2D.y) : null,
-          ts: now
-        };
+        let payload = null;
+        try {
+          const { data, error } = await sb.rpc('post_polyspace_galaxy_chat', {
+            p_player_id: pid,
+            p_message: text.slice(0, 140),
+            p_x: px,
+            p_y: py,
+            p_rarity: myRarity
+          });
+          if (!error && data && data.ok && data.msg) {
+            payload = data.msg;
+          } else if (data && data.error) {
+            this.showToast(`⚠️ ${data.error}`);
+            return;
+          }
+        } catch (err) {
+          console.warn('[PolySpaceGalaxy] post_polyspace_galaxy_chat fallback:', err);
+        }
+
+        if (!payload) {
+          payload = {
+            id: `${pid.slice(0, 8)}-${now}-${Math.floor(Math.random() * 9999)}`,
+            playerId: pid,
+            username: myName,
+            rarity: myRarity,
+            text: text.slice(0, 140),
+            x: px,
+            y: py,
+            ts: now
+          };
+        }
 
         this._onIncomingGalaxyChat(payload);
         if (this.livePresenceChannel && typeof this.livePresenceChannel.send === 'function') {
@@ -5708,6 +5752,7 @@
         this.instance = new Plan023StandaloneDemo();
         this.instance.paused = false;
         this.instance.initGalaxyChatUI();
+        this.instance.loadGalaxyChatHistory();
         this.instance.setFullscreen(false);
         this.instance.loadGalaxyProfileFromDB();
         this.instance.loadTradeBeaconsFromDB();
