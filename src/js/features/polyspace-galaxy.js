@@ -72,6 +72,10 @@
         this.combatXpAllTime = 0;
         this.combatXpWeekly = 0;
         this.totalKills = 0;
+        this.missionKills = 0;
+        this.activeMissionSessionId = null;
+        this.dailyMissionsCount = 0;
+        this.dailyMissionsMax = 10;
         this.duelWins = 0;
         this.rankTab = 'weekly';
 
@@ -748,7 +752,10 @@
         if (!amount || amount <= 0) return;
         this.combatXpAllTime += amount;
         this.combatXpWeekly += amount;
-        if (isKill) this.totalKills += 1;
+        if (isKill) {
+          this.totalKills += 1;
+          this.missionKills = (this.missionKills || 0) + 1;
+        }
         const rk = this.getPilotRank(this.combatXpAllTime);
         const badge = document.getElementById('hud-rank-badge');
         if (badge) badge.innerText = `${rk.icon} ${rk.title} • ${this.combatXpAllTime.toLocaleString()} XP`;
@@ -2079,12 +2086,57 @@
         this.setFullscreen(nextFs);
       }
 
+      _getSupabaseAndPlayerId() {
+        const sb = (window.polySpace && typeof window.polySpace.getSupabaseClient === 'function' && window.polySpace.getSupabaseClient())
+          || window.supabaseClient
+          || window.supabase
+          || null;
+        const st = (window.appState && window.appState.state) || window.PolyState || {};
+        const pid = String(st.playerId || st.player_id || st.walletAddress || '').trim().toLowerCase();
+        return { sb, pid };
+      }
+
+      async loadGalaxyProfileFromDB() {
+        const { sb, pid } = this._getSupabaseAndPlayerId();
+        if (!sb || !pid) return;
+        try {
+          const { data, error } = await sb.rpc('get_polyspace_galaxy_profile', { p_player_id: pid });
+          if (error || !data || !data.success) return;
+          if (Array.isArray(data.cleared_systems)) {
+            this.clearedSystems = new Set(data.cleared_systems.map(Number));
+          }
+          this.dailyMissionsCount = Number(data.daily_missions_count || 0);
+          this.dailyMissionsMax = Number(data.daily_missions_max || 10);
+          this.combatXpAllTime = Number(data.combat_xp_total || 0);
+          this.combatXpWeekly = Number(data.combat_xp_weekly || 0);
+          this.totalKills = Number(data.kills_total || 0);
+          this.duelWins = Number(data.duel_wins || 0);
+        } catch (err) {
+          console.warn('[PolySpaceGalaxy] loadGalaxyProfileFromDB warning:', err);
+        }
+      }
+
       launch3DMission(systemId = 15) {
         this.updateUpgrades();
         const sys = this.solarSystems.find(s => s.id === systemId) || this.solarSystems[0];
         this.activeSystem = sys;
         this.selectedSystemId = sys.id;
+        this.missionKills = 0;
+        this.activeMissionSessionId = null;
         this.switchMode('combat3d');
+
+        // Start authoritative server-side mission session (non-blocking)
+        const { sb, pid } = this._getSupabaseAndPlayerId();
+        if (sb && pid) {
+          sb.rpc('start_polyspace_solar_mission', {
+            p_player_id: pid,
+            p_system_id: sys.id
+          }).then(({ data, error }) => {
+            if (!error && data && data.success && data.session_id) {
+              this.activeMissionSessionId = data.session_id;
+            }
+          }).catch((e) => console.warn('[PolySpaceGalaxy] start_polyspace_solar_mission error:', e));
+        }
 
         // Initialize 3D Player Ship with 6-DOF Orientation Basis Vectors (Forward, Up, Right)
         const maxShield = 400 + this.shieldLevel * 120; // Lvl 1: 520 -> Lvl 50: 6,400
@@ -2760,7 +2812,7 @@
         }
       }
 
-      end3DMission(victory) {
+      async end3DMission(victory) {
         this.combatEnded = true;
         const sys = this.activeSystem;
         const modal = document.getElementById('mission-modal');
@@ -2775,21 +2827,97 @@
             : (sys.id === 50 ? 'SYSTEM #50 CONQUERED!' : `SYSTEM #${sys.id} CLEARED!`);
           document.getElementById('modal-title').style.color = '#00ff88';
           document.getElementById('modal-desc').innerText = alreadyCleared
-            ? `Great flying in ${sys.name} (Lvl ${sys.level})! You already claimed this system's one-time first-clear reward.`
-            : `You destroyed all hostile squadrons and the Command Boss in ${sys.name} (Lvl ${sys.level})!`;
+            ? `Great flying in ${sys.name} (Lvl ${sys.level})! Verifying combat rewards on server...`
+            : `You destroyed all hostile squadrons and the Command Boss in ${sys.name} (Lvl ${sys.level})! Verifying rewards...`;
+
+          const lootEl = document.getElementById('modal-loot');
+          lootEl.innerHTML = '⏳ Verifying mission rewards with Polygon Gaming server...';
+
+          const { sb, pid } = this._getSupabaseAndPlayerId();
+          const killsToReport = Math.max(1, Math.min(10, this.missionKills || 10));
+
+          if (sb && pid && this.activeMissionSessionId) {
+            try {
+              const { data: res, error } = await sb.rpc('complete_polyspace_solar_mission', {
+                p_player_id: pid,
+                p_session_id: this.activeMissionSessionId,
+                p_system_id: sys.id,
+                p_kills: killsToReport
+              });
+              this.activeMissionSessionId = null;
+
+              if (!error && res && res.success) {
+                if (Array.isArray(res.cleared_systems)) {
+                  this.clearedSystems = new Set(res.cleared_systems.map(Number));
+                }
+                this.dailyMissionsCount = Number(res.daily_missions_count || 0);
+                this.dailyMissionsMax = Number(res.daily_missions_max || 10);
+                this.combatXpAllTime = Number(res.combat_xp_total || this.combatXpAllTime);
+                this.combatXpWeekly = Number(res.combat_xp_weekly || this.combatXpWeekly);
+                this.totalKills = Number(res.kills_total || this.totalKills);
+
+                // Sync authoritative balance & space_state back into appState & PolySpace
+                if (window.appState && typeof window.appState.update === 'function') {
+                  const patch = {};
+                  if (res.new_balance !== undefined && res.new_balance !== null) {
+                    patch.balancePgt = parseFloat(parseFloat(res.new_balance).toFixed(2));
+                  }
+                  if (res.new_space_state && typeof res.new_space_state === 'object') {
+                    patch.spaceState = res.new_space_state;
+                  }
+                  window.appState.update(patch);
+                  if (typeof window.appState.syncUI === 'function') window.appState.syncUI();
+                }
+                if (window.polySpace && typeof window.polySpace.syncCloudSpaceState === 'function') {
+                  window.polySpace.syncCloudSpaceState(true);
+                }
+
+                const fcPgt = Number(res.first_clear_pgt || 0);
+                const kPgt = Number(res.kill_pgt || 0);
+                const kRate = Number(res.kill_rate || 1);
+                const rIron = Number(res.reward_iron || 0);
+                const rTit = Number(res.reward_tit || 0);
+                const xpGain = Number(res.xp_gained || 0);
+
+                const parts = [];
+                if (res.is_first_clear && fcPgt > 0) parts.push(`💰 +${fcPgt.toLocaleString()} PGT (First-Clear)`);
+                if (kPgt > 0) parts.push(`🎯 +${kPgt.toLocaleString()} Kill PGT (${res.kills}×${kRate})`);
+                else parts.push(`🎯 Daily Kill PGT cap reached (${this.dailyMissionsCount}/${this.dailyMissionsMax})`);
+                if (rIron > 0 || rTit > 0) parts.push(`🪨 +${rIron.toLocaleString()} Iron • 💎 +${rTit.toLocaleString()} Tit`);
+                parts.push(`⭐ +${xpGain.toLocaleString()} Combat XP`);
+                if (res.nft_awarded) parts.push(`<br/>👑 +1 EXCLUSIVE SINGULARITY CONQUEROR NFT CREDITED!`);
+
+                document.getElementById('modal-desc').innerText = res.is_first_clear
+                  ? `Victory verified! System #${sys.id} (${sys.name}) conquered!`
+                  : `Replay verified! Daily kill missions: ${this.dailyMissionsCount}/${this.dailyMissionsMax}`;
+                lootEl.innerHTML = parts.join(' • ');
+                return;
+              } else {
+                const errMsg = (res && res.error) || (error && error.message) || 'Verification failed.';
+                document.getElementById('modal-desc').innerText = `System #${sys.id} cleared, but server verification returned an error.`;
+                lootEl.innerHTML = `⚠️ ${errMsg}`;
+                return;
+              }
+            } catch (e) {
+              console.warn('[PolySpaceGalaxy] complete_polyspace_solar_mission exception:', e);
+              lootEl.innerHTML = '⚠️ Network error verifying rewards. Please try again.';
+              return;
+            }
+          }
+
+          // Fallback display if offline/disconnected
           const killRate = sys.level >= 26 ? 2 : 1;
-          const killPgt = (this.missionKills || 0) * killRate;
-          document.getElementById('modal-loot').innerHTML = alreadyCleared
-            ? `✅ Replay Clear • 💰 +${killPgt.toLocaleString()} PGT (${this.missionKills || 0} kills × ${killRate} PGT, max 10 missions/day)`
-            : (sys.hasNft
-              ? `💰 +${sys.rewardPgt.toLocaleString()} PGT Grand Prize + ${killPgt.toLocaleString()} Kill PGT<br/>👑 +1 EXCLUSIVE SINGULARITY CONQUEROR NFT!`
-              : `💰 +${sys.rewardPgt.toLocaleString()} PGT + ${killPgt.toLocaleString()} Kill PGT • 🪨 +${sys.level * 40} Iron • 💎 +${sys.level * 15} Titanium`);
+          const killPgt = killsToReport * killRate;
+          lootEl.innerHTML = alreadyCleared
+            ? `✅ Replay Clear (Offline) • +${killPgt.toLocaleString()} PGT preview`
+            : `💰 +${sys.rewardPgt.toLocaleString()} PGT preview (Connect account to claim on-chain/DB rewards)`;
         } else {
+          this.activeMissionSessionId = null;
           document.getElementById('modal-icon').innerText = '💥';
           document.getElementById('modal-title').innerText = 'SHIP DESTROYED!';
           document.getElementById('modal-title').style.color = '#ff0055';
           document.getElementById('modal-desc').innerText =
-            `System #${sys.id} (Lvl ${sys.level}) firepower overwhelmed your shields! Use the top sliders to upgrade your Shield & Turrets closer to Level ${sys.level} and try again.`;
+            `System #${sys.id} (Lvl ${sys.level}) firepower overwhelmed your shields! Upgrade your Quantum Shield & Plasma Turrets closer to Level ${sys.level} and try again.`;
           document.getElementById('modal-loot').innerText = '⚠️ 0 PGT — Upgrade Quantum Shield & Plasma Turrets to survive!';
         }
       }
@@ -3833,9 +3961,11 @@
         this.instance = new Plan023StandaloneDemo();
         this.instance.paused = false;
         this.instance.setFullscreen(false);
+        this.instance.loadGalaxyProfileFromDB();
       } else {
         this.instance.paused = false;
         this.instance.updateUpgrades();
+        this.instance.loadGalaxyProfileFromDB();
         if (this.instance.mode === 'galaxy') {
           this.instance.setFullscreen(false);
         }
