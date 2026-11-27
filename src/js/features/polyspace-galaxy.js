@@ -1193,12 +1193,32 @@
         if (!card) return;
         card.style.display = 'block';
         document.getElementById('brief-sys-title').innerText = `${sys.id === 50 ? '👑' : '☀️'} #${sys.id} ${sys.name}`;
-        const avgLvl = Math.round((this.shieldLevel + this.turretLevel + this.warpLevel) / 3);
+        const avgGear = (this.shieldLevel + this.turretLevel) / 2;
+        const reqAvg = Math.max(1, sys.level - 5);
+        const avgLabel = Number.isInteger(avgGear) ? String(avgGear) : avgGear.toFixed(1);
+        const isLocked = avgGear < reqAvg;
+        const isHard = !isLocked && sys.level > avgGear + 2;
         const lvlEl = document.getElementById('brief-sys-lvl');
-        const isHard = sys.level > avgLvl + 5;
-        lvlEl.innerText = `Lvl ${sys.level}${isHard ? ' ⚠️' : ''}`;
-        lvlEl.style.color = isHard ? '#ff4d79' : '#00ff88';
-        lvlEl.style.borderColor = isHard ? '#ff0055' : '#00ff88';
+        if (isLocked) {
+          lvlEl.innerText = `🔒 Req Avg ${reqAvg}`;
+          lvlEl.title = `Requires Avg Level ${reqAvg} Quantum Shield & Plasma Turrets (Yours: ${avgLabel})`;
+          lvlEl.style.color = '#ff4d79';
+          lvlEl.style.borderColor = '#ff0055';
+        } else {
+          lvlEl.innerText = `Lvl ${sys.level}${isHard ? ' ⚠️' : ''}`;
+          lvlEl.title = `Your Avg Combat Gear: Lvl ${avgLabel} (Can engage up to +5 levels above avg)`;
+          lvlEl.style.color = isHard ? '#f59e0b' : '#00ff88';
+          lvlEl.style.borderColor = isHard ? '#f59e0b' : '#00ff88';
+        }
+
+        const engageBtn = document.getElementById('btn-engage-system');
+        if (engageBtn) {
+          engageBtn.style.opacity = isLocked ? '0.6' : '1';
+          engageBtn.innerText = isLocked ? `🔒 AVG ${reqAvg}` : '⚔️ LAUNCH';
+          engageBtn.title = isLocked
+            ? `Upgrade Quantum Shield & Plasma Turrets to Avg Level ${reqAvg} (yours: ${avgLabel})`
+            : `Launch 3D Battle in System #${sys.id}`;
+        }
 
         const alreadyCleared = this.clearedSystems.has(sys.id);
         const killRate = sys.level >= 26 ? 2 : 1;
@@ -3364,6 +3384,13 @@
       launch3DMission(systemId = 15) {
         this.updateUpgrades();
         const sys = this.solarSystems.find(s => s.id === systemId) || this.solarSystems[0];
+        const avgGear = (this.shieldLevel + this.turretLevel) / 2;
+        const reqAvg = Math.max(1, sys.level - 5);
+        if (avgGear < reqAvg) {
+          const avgLabel = Number.isInteger(avgGear) ? String(avgGear) : avgGear.toFixed(1);
+          this.showToast(`🔒 System #${sys.id} requires Avg Level ${reqAvg} Shield & Turrets (yours: ${avgLabel}). Upgrade in Hangar!`);
+          return;
+        }
         this.activeSystem = sys;
         this.selectedSystemId = sys.id;
         this.missionKills = 0;
