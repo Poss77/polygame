@@ -285,6 +285,7 @@ export const NFT_REGISTRY = [
     price: 0,
     earnOnly: true,
     mintable: false,
+    useSvgArt: true,
     unlockHint: '🔒 Conquer System #50',
     icon: '👑',
     faucetBoost: 0,
@@ -490,7 +491,10 @@ export function renderNftMarketplace() {
       <div class="nft-art-container">
         <div class="nft-art-bg"></div>
         <div class="nft-art-svg" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
-          <img src="metadata/images/${nft.id}.png" alt="${nft.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; position: relative; z-index: 10;" onerror="window.handleNftImageError(this, '${nft.id}')" />
+          ${nft.useSvgArt && nft.svg
+            ? nft.svg
+            : `<img src="metadata/images/${nft.id}.png" alt="${nft.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; position: relative; z-index: 10;" onerror="window.handleNftImageError(this, '${nft.id}')" />`
+          }
         </div>
         <span class="nft-rarity-badge rarity-${nft.rarity}">${nft.rarity}</span>
       </div>
@@ -959,7 +963,10 @@ export function renderNftInventory() {
       <div class="nft-art-container">
         <div class="nft-art-bg" style="background-color: var(--border-color-rarity);"></div>
         <div class="nft-art-svg" style="display:flex; justify-content:center; align-items:center; width:100%; height:100%;">
-          <img src="metadata/images/${nft.id}.png" alt="${nft.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; position: relative; z-index: 10;" onerror="window.handleNftImageError(this, '${nft.id}')" />
+          ${nft.useSvgArt && nft.svg
+            ? nft.svg
+            : `<img src="metadata/images/${nft.id}.png" alt="${nft.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px; position: relative; z-index: 10;" onerror="window.handleNftImageError(this, '${nft.id}')" />`
+          }
         </div>
         <span class="nft-rarity-badge rarity-${nft.rarity}">${nft.rarity}</span>
       </div>
