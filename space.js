@@ -516,10 +516,16 @@ class PolySpaceEngine {
     const isGalaxy = this._canvasMode === 'galaxy';
     const minZ = isGalaxy ? 0.06 : 1.0;
     const maxZ = isGalaxy ? 3.0 : 5.0;
+    const oldZoom = this._mapZoom || (isGalaxy ? 0.42 : 1.0);
     const clamped = isGalaxy
       ? Math.max(minZ, Math.min(maxZ, level))
       : Math.max(minZ, Math.min(maxZ, Math.round(level * 10) / 10));
     this._mapZoom = clamped;
+    if (oldZoom > 0 && clamped !== oldZoom) {
+      const ratio = clamped / oldZoom;
+      this._mapPanX = (this._mapPanX || 0) * ratio;
+      this._mapPanY = (this._mapPanY || 0) * ratio;
+    }
     if (!isGalaxy && clamped === 1.0) {
       this._mapPanX = 0;
       this._mapPanY = 0;
