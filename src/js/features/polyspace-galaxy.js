@@ -1213,30 +1213,26 @@
         if (hint === 'signal_locked') {
           badge.style.display = 'inline-flex';
           badge.style.color = '#fbbf24';
-          badge.style.borderColor = 'rgba(251,191,36,0.75)';
-          badge.innerText = '🎁 CACHE DETECTED!';
+          badge.innerText = '🎁 FOUND!';
         } else if (hint === 'very_warm') {
           badge.style.display = 'inline-flex';
           badge.style.color = '#ff4d79';
-          badge.style.borderColor = 'rgba(255,77,121,0.65)';
-          badge.innerText = `🔥 VERY WARM (${rem ?? '?'} left)`;
+          badge.innerText = `🔥 HOT (${rem ?? '?'})`;
         } else if (hint === 'warm') {
           badge.style.display = 'inline-flex';
           badge.style.color = '#f59e0b';
-          badge.style.borderColor = 'rgba(245,158,11,0.55)';
-          badge.innerText = `📡 WARM (${rem ?? '?'} left)`;
+          badge.innerText = `📡 WARM (${rem ?? '?'})`;
         } else if (typeof rem === 'number') {
           badge.style.display = 'inline-flex';
           badge.style.color = '#67e8f9';
-          badge.style.borderColor = 'rgba(0,240,255,0.35)';
-          badge.innerText = `❄️ COLD · ${rem} Caches`;
+          badge.innerText = `❄️ ${rem} left`;
         }
       }
 
       async scanForGalacticGifts(isManual = false) {
         if (this._giftScanInFlight) return;
-        const pid = this._getPlayerId();
-        if (!pid) {
+        const { sb, pid } = this._getSupabaseAndPlayerId();
+        if (!sb || !pid) {
           if (isManual) this.showToast('⚠️ Sign in to scan for Galactic Caches!');
           return;
         }
@@ -1252,20 +1248,23 @@
         this._lastGiftPingX = Math.round(this.ship2D.x);
         this._lastGiftPingY = Math.round(this.ship2D.y);
 
-        const btn = document.getElementById('btn-gift-scan');
-        if (btn && isManual) btn.innerText = '📡 SCANNING...';
+        const badge = document.getElementById('gift-scan-badge');
+        const prevBadgeText = badge ? badge.innerText : '';
+        if (badge && isManual) badge.innerText = 'SCAN...';
 
         try {
-          const { data, error } = await supabase.rpc('ping_galactic_coordinates', {
+          const { data, error } = await sb.rpc('ping_galactic_coordinates', {
             p_player_id: pid,
             p_x: this._lastGiftPingX,
             p_y: this._lastGiftPingY
           });
           if (error) {
+            if (badge && isManual) badge.innerText = prevBadgeText || '❄️';
             if (isManual) this.showToast('⚠️ Scanner offline: ' + (error.message || 'RPC error'));
             return;
           }
           if (!data || data.throttled) {
+            if (badge && isManual) badge.innerText = prevBadgeText || '❄️';
             if (isManual) this.showToast('📡 Scanner cooling down — try again in 3s.');
             return;
           }
@@ -1322,23 +1321,23 @@
           }
         } catch (err) {
           console.warn('[PolySpaceGalaxy] scanForGalacticGifts error:', err);
+          if (badge && isManual) badge.innerText = prevBadgeText || '❄️';
           if (isManual) this.showToast('⚠️ Scanner interference — please retry.');
         } finally {
           this._giftScanInFlight = false;
-          if (btn) btn.innerText = '📡 SCAN';
         }
       }
 
       async claimGalacticGift(g) {
         if (!g || g.claimed || this._giftClaimInFlight) return;
-        const pid = this._getPlayerId();
-        if (!pid) {
+        const { sb, pid } = this._getSupabaseAndPlayerId();
+        if (!sb || !pid) {
           this.showToast('⚠️ Sign in to claim Galactic Caches!');
           return;
         }
         this._giftClaimInFlight = true;
         try {
-          const { data, error } = await supabase.rpc('claim_polyspace_coordinate_gift', {
+          const { data, error } = await sb.rpc('claim_polyspace_coordinate_gift', {
             p_player_id: pid,
             p_gift_id: g.id,
             p_x: Math.round(this.ship2D.x),
@@ -1360,11 +1359,19 @@
             this._updateGiftScanBadge('cold', this.giftRemainingCount);
           }
           const reward = Number(data.reward_pgt || g.reward_pgt || 0);
-          if (typeof data.new_balance === 'number' && window.PolyState) {
-            window.PolyState.balancePgt = data.new_balance;
+          if (typeof data.new_balance === 'number') {
+            if (window.appState && window.appState.state) {
+              window.appState.state.balance_pgt = data.new_balance;
+              window.appState.state.balancePgt = data.new_balance;
+            }
+            if (window.PolyState) {
+              window.PolyState.balancePgt = data.new_balance;
+              window.PolyState.balance_pgt = data.new_balance;
+            }
+            if (typeof window.updateHeaderBalance === 'function') window.updateHeaderBalance();
           }
-          if (typeof this.flashPgtHudDelta === 'function') {
-            this.flashPgtHudDelta(reward);
+          if (typeof this._updateGalaxyPgtHud === 'function') {
+            this._updateGalaxyPgtHud();
           }
           if (g.is_easter_egg || data.is_easter_egg) {
             this.showToast(`👑 BEYOND-THE-RIM VAULT UNLOCKED! +${reward.toLocaleString()} PGT credited!`, 6000);
@@ -5709,6 +5716,7 @@
         this.instance.loadTradeBeaconsFromDB();
         this.instance.connectRealtimeGalaxy();
         this.instance.pollMyDuels();
+        setTimeout(() => { if (this.instance && !this.instance.paused) this.instance.scanForGalacticGifts(false); }, 900);
       } else {
         this.instance.paused = false;
         this.instance.updateUpgrades();
@@ -5716,6 +5724,7 @@
         this.instance.loadTradeBeaconsFromDB();
         this.instance.connectRealtimeGalaxy();
         this.instance.pollMyDuels();
+        setTimeout(() => { if (this.instance && !this.instance.paused) this.instance.scanForGalacticGifts(false); }, 900);
         if (this.instance.mode === 'galaxy') {
           this.instance.setFullscreen(false);
         }
