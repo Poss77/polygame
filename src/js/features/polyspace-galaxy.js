@@ -685,6 +685,10 @@
           lastLoggedRound: -1,
           finished: false
         };
+        if (this.duelAnimId) {
+          cancelAnimationFrame(this.duelAnimId);
+          this.duelAnimId = null;
+        }
         const tick = (now) => {
           this.animateDuelFrame(now);
           if (this.duelSim && !this.duelSim.finished) {
@@ -2761,6 +2765,10 @@
           finished: false
         };
 
+        if (this.duelAnimId) {
+          cancelAnimationFrame(this.duelAnimId);
+          this.duelAnimId = null;
+        }
         const tick = (now) => {
           this.animateDuelFrame(now);
           if (this.duelSim && !this.duelSim.finished) {
@@ -2772,18 +2780,19 @@
 
       animateDuelFrame(now) {
         const sim = this.duelSim;
-        if (!sim) return;
+        if (!sim || !Array.isArray(sim.rounds) || sim.rounds.length === 0) return;
         const canvas = document.getElementById('duel-canvas');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         const w = canvas.width;
         const h = canvas.height;
 
-        const elapsed = now - sim.startTime;
-        const totalDur = sim.roundDuration * 3;
-        const rIdx = Math.min(2, Math.floor(elapsed / sim.roundDuration));
-        const rProg = Math.min(1, (elapsed - rIdx * sim.roundDuration) / sim.roundDuration);
+        const elapsed = Math.max(0, now - sim.startTime);
+        const totalDur = sim.roundDuration * sim.rounds.length;
+        const rIdx = Math.max(0, Math.min(sim.rounds.length - 1, Math.floor(elapsed / sim.roundDuration)));
+        const rProg = Math.max(0, Math.min(1, (elapsed - rIdx * sim.roundDuration) / sim.roundDuration));
         const rd = sim.rounds[rIdx];
+        if (!rd) return;
 
         // Update HP bars at impact moment (rProg >= 0.58)
         const curP1 = rProg >= 0.58 ? rd.endP1 : rd.startP1;
