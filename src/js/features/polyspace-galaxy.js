@@ -4151,6 +4151,138 @@
         }
       }
 
+      getShipRarityBonuses() {
+        const _psShip = (window.polySpace && typeof window.polySpace.getEquippedStarshipMultiplier === 'function')
+          ? window.polySpace.getEquippedStarshipMultiplier() : null;
+        const rarity = String((_psShip && _psShip.ship && _psShip.ship.rarity) || 'Pilot');
+        const table = {
+          Common:    { label: 'Common',    color: '#94a3b8', dmgMult: 1.04, shieldMult: 1.04, cdMult: 0.96, pct: 4 },
+          Uncommon:  { label: 'Uncommon',  color: '#4ade80', dmgMult: 1.07, shieldMult: 1.07, cdMult: 0.93, pct: 7 },
+          Rare:      { label: 'Rare',      color: '#38bdf8', dmgMult: 1.11, shieldMult: 1.11, cdMult: 0.90, pct: 11 },
+          Epic:      { label: 'Epic',      color: '#c084fc', dmgMult: 1.15, shieldMult: 1.15, cdMult: 0.86, pct: 15 },
+          Legendary: { label: 'Legendary', color: '#f59e0b', dmgMult: 1.20, shieldMult: 1.20, cdMult: 0.82, pct: 20 },
+          Mythic:    { label: 'Mythic',    color: '#ffd700', dmgMult: 1.26, shieldMult: 1.26, cdMult: 0.78, pct: 26 }
+        };
+        return table[rarity] || { label: 'Pilot', color: '#94a3b8', dmgMult: 1.0, shieldMult: 1.0, cdMult: 1.0, pct: 0 };
+      }
+
+      getSectorTheme(sys) {
+        const themes = [
+          {
+            id: 'asteroids',
+            label: '🪨 Asteroid Belt',
+            bgTop: '#030712',
+            bgBot: '#0b1120',
+            nebulaColor: 'rgba(56, 189, 248, 0.10)',
+            dustColor: 'rgba(148, 163, 184, 0.5)',
+            asteroidCount: 14,
+            missileCdMult: 1.0,
+            speedMult: 1.0,
+            dropBonus: 0.05
+          },
+          {
+            id: 'nebula',
+            label: '🟣 Ion Nebula',
+            bgTop: '#0e041d',
+            bgBot: '#1f0836',
+            nebulaColor: 'rgba(192, 132, 252, 0.20)',
+            dustColor: 'rgba(232, 121, 249, 0.55)',
+            asteroidCount: 0,
+            missileCdMult: 0.85,
+            speedMult: 1.0,
+            dropBonus: 0.0
+          },
+          {
+            id: 'corona',
+            label: '☀️ Solar Corona',
+            bgTop: '#160903',
+            bgBot: '#291206',
+            nebulaColor: 'rgba(251, 146, 60, 0.18)',
+            dustColor: 'rgba(253, 224, 71, 0.55)',
+            asteroidCount: 4,
+            missileCdMult: 1.0,
+            speedMult: 1.12,
+            dropBonus: 0.0
+          },
+          {
+            id: 'rift',
+            label: '💠 Deep Void Rift',
+            bgTop: '#020817',
+            bgBot: '#041e33',
+            nebulaColor: 'rgba(0, 240, 255, 0.16)',
+            dustColor: 'rgba(0, 240, 255, 0.55)',
+            asteroidCount: 8,
+            missileCdMult: 0.92,
+            speedMult: 1.05,
+            dropBonus: 0.08
+          }
+        ];
+        return themes[(sys ? sys.id : 1) % themes.length];
+      }
+
+      spawnSectorAsteroids3D() {
+        this.asteroids3D = [];
+        const count = (this.sectorTheme && this.sectorTheme.asteroidCount) || 0;
+        const p = this.player3D;
+        if (!p || count <= 0) return;
+        for (let i = 0; i < count; i++) {
+          const dist = 750 + Math.random() * 2400;
+          const offX = (Math.random() - 0.5) * 1900;
+          const offY = (Math.random() - 0.5) * 1200;
+          const rad = 36 + Math.random() * 44;
+          this.asteroids3D.push({
+            pos: {
+              x: p.pos.x + p.forward.x * dist + p.right.x * offX + p.up.x * offY,
+              y: p.pos.y + p.forward.y * dist + p.right.y * offX + p.up.y * offY,
+              z: p.pos.z + p.forward.z * dist + p.right.z * offX + p.up.z * offY
+            },
+            vel: {
+              x: (Math.random() - 0.5) * 55,
+              y: (Math.random() - 0.5) * 45,
+              z: (Math.random() - 0.5) * 55
+            },
+            radius: rad,
+            hp: Math.round(rad * 1.4),
+            maxHp: Math.round(rad * 1.4),
+            rot: Math.random() * Math.PI * 2,
+            rotSpd: (Math.random() - 0.5) * 1.8,
+            crystal: this.sectorTheme.id === 'rift'
+          });
+        }
+      }
+
+      spawnPowerup3D(pos, forceDrop = false) {
+        const dropChance = forceDrop ? 1.0 : (0.36 + ((this.sectorTheme && this.sectorTheme.dropBonus) || 0));
+        if (Math.random() > dropChance) return;
+        const roll = Math.random();
+        let kind = 'overcharge';
+        if (this.player3D && this.player3D.shield < this.player3D.maxShield * 0.55 && roll < 0.42) {
+          kind = 'shield';
+        } else if (roll < 0.30) {
+          kind = 'overcharge';
+        } else if (roll < 0.58) {
+          kind = 'shield';
+        } else if (roll < 0.80) {
+          kind = 'missile';
+        } else {
+          kind = 'warpslow';
+        }
+        const meta = {
+          overcharge: { icon: '⚡', label: 'OVERCHARGE', color: '#ffd700' },
+          shield:     { icon: '🛡️', label: 'SHIELD CELL', color: '#00ff88' },
+          missile:    { icon: '🚀', label: 'MISSILE RELOAD', color: '#f97316' },
+          warpslow:   { icon: '⏱️', label: 'WARP SLOW', color: '#38bdf8' }
+        }[kind];
+        this.powerups3D.push({
+          kind,
+          icon: meta.icon,
+          label: meta.label,
+          color: meta.color,
+          pos: { x: pos.x, y: pos.y, z: pos.z },
+          life: 14.0
+        });
+      }
+
       launch3DMission(systemId = 15) {
         this.updateUpgrades();
         const sys = this.solarSystems.find(s => s.id === systemId) || this.solarSystems[0];
@@ -4180,17 +4312,19 @@
           }).catch((e) => console.warn('[PolySpaceGalaxy] start_polyspace_solar_mission error:', e));
         }
 
-        // Initialize 3D Player Ship with 6-DOF Orientation Basis Vectors (Forward, Up, Right)
-        const maxShield = 340 + this.shieldLevel * 115; // Lvl 1: 455 -> Lvl 5: 915 -> Lvl 50: 6,090
-        const maxHull = 440 + this.shieldLevel * 60;    // Lvl 1: 500 -> Lvl 5: 740 -> Lvl 50: 3,440
+        // Initialize 3D Player Ship with 6-DOF Orientation Basis Vectors + NFT Rarity & Sector Modifiers
+        this.rarityBonus = this.getShipRarityBonuses();
+        this.sectorTheme = this.getSectorTheme(sys);
+        const maxShield = Math.round((340 + this.shieldLevel * 115) * this.rarityBonus.shieldMult);
+        const maxHull = Math.round((440 + this.shieldLevel * 60) * this.rarityBonus.shieldMult);
         this.hullHitFlash = 0;
         this.shieldHitFlash = 0;
         this.screenShake = 0;
         this.hitmarker = null;
         this.damagePopups3D = [];
         this.lastRollTime = 0;
-        this.rollCooldownMs = 4000;
-        this.rollDurationMs = 550;
+        this.rollCooldownMs = Math.round(4000 * this.rarityBonus.cdMult);
+        this.rollDurationMs = 620;
         this.rollDir = 1;
         this.player3D = {
           pos: { x: 0, y: 0, z: 0 },
@@ -4204,7 +4338,7 @@
           rollAnimAngle: 0,
           rollDir: 1,
           evadeTimer: 0,
-          speed: 220,
+          speed: Math.round(220 * this.sectorTheme.speedMult),
           shield: maxShield,
           maxShield: maxShield,
           hull: maxHull,
@@ -4225,8 +4359,13 @@
 
         this.lasers3D = [];
         this.missiles3D = [];
+        this.enemyMissiles3D = [];
+        this.powerups3D = [];
+        this.overchargeTimer = 0;
+        this.warpSlowTimer = 0;
+        this.bossPhase2Triggered = false;
         this.lastMissileTime = 0;
-        this.missileCooldownMs = 10000;
+        this.missileCooldownMs = Math.round(10000 * this.rarityBonus.cdMult * this.sectorTheme.missileCdMult);
         this.missileCamImpact = null;
         this.explosions3D = [];
         this.enemies3D = [];
@@ -4237,9 +4376,11 @@
         this.missionStartTime = performance.now();
         this.combatEnded = false;
 
+        this.spawnSectorAsteroids3D();
         this.spawnCombatWave(1);
         this.update3DHUD();
-        this.showToast(`⚔️ Entered 3D Dogfight in System #${sys.id}: ${sys.name} (Lvl ${sys.level})!`);
+        const rarityNote = this.rarityBonus.pct > 0 ? ` • ✨ ${this.rarityBonus.label} (+${this.rarityBonus.pct}%)` : '';
+        this.showToast(`⚔️ System #${sys.id}: ${sys.name} (${this.sectorTheme.label}${rarityNote})`);
       }
 
       retry3DMission() {
@@ -4265,34 +4406,70 @@
         this.nextSpawnAt = performance.now(); // First ship warps in immediately; each subsequent ship every 1.0s
 
         if (waveNum < 3) {
-          const count = waveNum === 1 ? 4 : 5;
+          // Mix distinct enemy archetypes per system & wave so every Solar System feels different!
+          const seed = this.activeSystem.id;
+          const wave1Pools = [
+            ['swarm', 'swarm', 'fighter', 'sniper'],
+            ['fighter', 'missile', 'swarm', 'swarm'],
+            ['shielded', 'fighter', 'swarm', 'sniper'],
+            ['swarm', 'missile', 'fighter', 'shielded']
+          ];
+          const wave2Pools = [
+            ['shielded', 'missile', 'sniper', 'fighter', 'swarm'],
+            ['missile', 'shielded', 'swarm', 'swarm', 'sniper'],
+            ['sniper', 'missile', 'shielded', 'fighter', 'missile'],
+            ['shielded', 'sniper', 'missile', 'swarm', 'fighter']
+          ];
+          const roster = waveNum === 1
+            ? wave1Pools[seed % wave1Pools.length]
+            : wave2Pools[(seed + 1) % wave2Pools.length];
+          const count = roster.length;
+
           for (let i = 0; i < count; i++) {
+            const arch = roster[i];
+            const isWave2 = waveNum === 2;
+            const cfg = {
+              swarm:    { name: `⚡ Swarm Drone ${i + 1}`,     hpM: 0.56, dmgM: 0.72, spd: 210, rad: 30, col: '#34d399', shieldM: 0 },
+              sniper:   { name: `🎯 Sniper Frigate ${i + 1}`,  hpM: 0.95, dmgM: 1.45, spd: 132, rad: 44, col: '#f43f5e', shieldM: 0 },
+              shielded: { name: `🛡️ Shield Cruiser ${i + 1}`,  hpM: 1.05, dmgM: 1.05, spd: 138, rad: 48, col: '#38bdf8', shieldM: 0.65 },
+              missile:  { name: `🚀 Missile Gunship ${i + 1}`, hpM: 1.15, dmgM: 1.15, spd: 145, rad: 46, col: '#f97316', shieldM: 0 },
+              fighter:  { name: isWave2 ? `Heavy Raider β-${i + 1}` : `Scout Interceptor α-${i + 1}`, hpM: isWave2 ? 1.25 : 1.0, dmgM: isWave2 ? 1.1 : 1.0, spd: 155, rad: 42, col: isWave2 ? '#f59e0b' : '#ff0055', shieldM: 0 }
+            }[arch];
+            const hpVal = Math.round(baseEnemyHp * cfg.hpM * (isWave2 ? 1.15 : 1.0));
+            const maxEShield = cfg.shieldM > 0 ? Math.round(baseEnemyHp * cfg.shieldM) : 0;
             this.waveSpawnQueue.push({
               id: `e_${waveNum}_${i}`,
-              name: waveNum === 1 ? `Scout Interceptor α-${i + 1}` : `Heavy Raider β-${i + 1}`,
+              name: cfg.name,
+              archetype: arch,
               isBoss: false,
-              hp: Math.round(baseEnemyHp * (waveNum === 2 ? 1.35 : 1.0)),
-              dmg: Math.round(baseEnemyDmg * (waveNum === 2 ? 1.1 : 1.0)),
-              speed: 148 + speedBonus + (i * 10),
-              radius: 42,
-              color: waveNum === 1 ? '#ff0055' : '#f59e0b',
-              dist: 3200 + (i % 3) * 260,
+              hp: hpVal,
+              enemyShield: maxEShield,
+              maxEnemyShield: maxEShield,
+              dmg: Math.round(baseEnemyDmg * cfg.dmgM),
+              speed: cfg.spd + speedBonus + (i * 6),
+              radius: cfg.rad,
+              color: cfg.col,
+              dist: arch === 'sniper' ? 3550 : (3100 + (i % 3) * 260),
               spreadX: (i - (count - 1) / 2) * 340,
               spreadY: ((i % 2 === 0 ? 1 : -1) * 180),
               flankSide: i % 2 === 0 ? 1 : -1,
               flankUp: ((i % 3) - 1) * 170,
-              reengageDist: 2800 + (i % 3) * 260
+              reengageDist: arch === 'sniper' ? 3200 : (2750 + (i % 3) * 260)
             });
           }
         } else {
           // Wave 3: Solar System Command Boss (System #50 = Colossal Singularity Leviathan Mothership!)
           const isFinalBoss = this.activeSystem.id === 50;
+          this.bossPhase2Triggered = false;
           this.waveSpawnQueue.push({
             id: 'boss_main',
             name: isFinalBoss ? '👑 SINGULARITY LEVIATHAN MOTHERSHIP' : `👑 ${this.activeSystem.name} Dreadnought`,
+            archetype: 'boss',
             isBoss: true,
             isSingularityBoss: isFinalBoss,
             hp: Math.round(baseEnemyHp * (isFinalBoss ? 5.4 : 4.6)),
+            enemyShield: Math.round(baseEnemyHp * (isFinalBoss ? 1.6 : 1.0)),
+            maxEnemyShield: Math.round(baseEnemyHp * (isFinalBoss ? 1.6 : 1.0)),
             dmg: Math.round(baseEnemyDmg * (isFinalBoss ? 1.75 : 1.6)),
             speed: isFinalBoss ? 128 : (112 + Math.min(35, sysLvl * 0.7)),
             radius: isFinalBoss ? 172 : 88,
@@ -4324,12 +4501,17 @@
         this.enemies3D.push({
           id: spec.id,
           name: spec.name,
+          archetype: spec.archetype || 'fighter',
           isBoss: spec.isBoss,
           isSingularityBoss: !!spec.isSingularityBoss,
           pos: spawnPos,
           vel: { x: -p.forward.x * spec.speed, y: -p.forward.y * spec.speed, z: -p.forward.z * spec.speed },
           hp: spec.hp,
           maxHp: spec.hp,
+          enemyShield: spec.enemyShield || 0,
+          maxEnemyShield: spec.maxEnemyShield || 0,
+          sniperCharge: 0,
+          lastMissileAt: performance.now() - 2500,
           dmg: spec.dmg,
           speed: spec.speed,
           curSpeed: spec.speed,
@@ -4584,16 +4766,42 @@
         p.rollAnimAngle = 0;
         this.screenShake = Math.max(this.screenShake || 0, 4);
         this.playCombatSfx('barrel_roll');
+
+        // Barrel Roll breaks enemy missile lock & evades incoming homing missiles!
+        if (this.enemyMissiles3D && this.enemyMissiles3D.length > 0) {
+          let evaded = 0;
+          for (let i = this.enemyMissiles3D.length - 1; i >= 0; i--) {
+            const em = this.enemyMissiles3D[i];
+            const dist = Math.hypot(em.pos.x - p.pos.x, em.pos.y - p.pos.y, em.pos.z - p.pos.z);
+            if (dist < 1450) {
+              this.spawn3DExplosion(em.pos, '#00f0ff', 14);
+              this.enemyMissiles3D.splice(i, 1);
+              evaded++;
+            }
+          }
+          if (evaded > 0) {
+            this.spawnDamagePopup3D(
+              { x: p.pos.x + p.forward.x * 260, y: p.pos.y + p.up.y * 40, z: p.pos.z + p.forward.z * 260 },
+              `💨 EVADED ${evaded} MISSILE${evaded > 1 ? 'S' : ''}!`,
+              '#00ff88',
+              true
+            );
+            this.showToast(`💨 BARREL ROLL EVADED ${evaded} INCOMING MISSILE${evaded > 1 ? 'S' : ''}!`);
+          }
+        }
       }
 
       firePlayerLasers() {
         const now = performance.now();
-        const cooldown = Math.max(95, 230 - this.turretLevel * 2.5);
+        const isOvercharged = (this.overchargeTimer || 0) > 0;
+        const baseCooldown = Math.max(95, 230 - this.turretLevel * 2.5);
+        const cooldown = isOvercharged ? Math.max(60, baseCooldown * 0.6) : baseCooldown;
         if (now - this.player3D.lastFireTime < cooldown) return;
         this.player3D.lastFireTime = now;
 
         const p = this.player3D;
-        const dmgPerShot = Math.round(18 + Math.pow(this.turretLevel, 1.55) * 1.45);
+        const rMult = (this.rarityBonus && this.rarityBonus.dmgMult) || 1.0;
+        const dmgPerShot = Math.round((18 + Math.pow(this.turretLevel, 1.55) * 1.45) * rMult * (isOvercharged ? 1.35 : 1.0));
         const laserSpeed = 1850 + this.turretLevel * 12;
 
         // Aim gently toward mouse cursor (desktop mouse mode) or straight ahead (mobile touch & keyboard mode — no auto-aim)
@@ -4672,7 +4880,8 @@
 
         this.lastMissileTime = now;
         const p = this.player3D;
-        const baseShotDmg = Math.round(18 + Math.pow(this.turretLevel, 1.55) * 1.45);
+        const rMult = (this.rarityBonus && this.rarityBonus.dmgMult) || 1.0;
+        const baseShotDmg = Math.round((18 + Math.pow(this.turretLevel, 1.55) * 1.45) * rMult);
         const missileDmg = Math.round(baseShotDmg * 5.0);
 
         this.missiles3D.push({
@@ -4696,6 +4905,92 @@
         this.screenShake = Math.max(this.screenShake || 0, 3.5);
         this.playCombatSfx('missile');
         this.showToast(`🚀 HOMING MISSILE LOCKED ON ${target.name.toUpperCase()}!`);
+      }
+
+      applyDamageToEnemy3D(e, rawDmg, isMissile = false) {
+        let rem = rawDmg;
+        if (e.enemyShield > 0) {
+          const shieldDmg = isMissile ? Math.round(rem * 2.0) : rem;
+          if (e.enemyShield >= shieldDmg) {
+            e.enemyShield -= shieldDmg;
+            rem = 0;
+          } else {
+            const absorbed = isMissile ? Math.round(e.enemyShield / 2.0) : e.enemyShield;
+            e.enemyShield = 0;
+            rem = Math.max(0, rem - absorbed);
+            this.spawnDamagePopup3D(e.pos, '💥 SHIELD BROKEN!', '#38bdf8', true);
+          }
+        }
+        if (rem > 0) e.hp -= rem;
+
+        // Wave 3 Command Boss Phase 2 Overdrive at 50% HP!
+        if (e.isBoss && !this.bossPhase2Triggered && e.hp > 0 && e.hp <= e.maxHp * 0.5) {
+          this.bossPhase2Triggered = true;
+          this.screenShake = Math.max(this.screenShake || 0, 12);
+          this.spawn3DExplosion(e.pos, '#ffd700', 30);
+          this.showToast('🔥 BOSS PHASE 2 OVERDRIVE! Escort drones & homing missile incoming!');
+          this.launchEnemyHomingMissile(e);
+          // Spawn 2 Swarm Escort Drones around the boss
+          const p = this.player3D;
+          const sysLvl = this.activeSystem ? this.activeSystem.level : 1;
+          const baseHp = 105 + Math.pow(sysLvl, 1.68) * 16.5;
+          const baseDmg = 16 + Math.pow(sysLvl, 1.48) * 3.0;
+          for (let k = 0; k < 2; k++) {
+            const side = k === 0 ? -1 : 1;
+            this.enemies3D.push({
+              id: `boss_escort_${Date.now()}_${k}`,
+              name: `⚡ Boss Escort Drone ${k + 1}`,
+              archetype: 'swarm',
+              isBoss: false,
+              isSingularityBoss: false,
+              pos: {
+                x: e.pos.x + (p ? p.right.x * side * 220 : side * 220),
+                y: e.pos.y + (p ? p.up.y * 80 : 80),
+                z: e.pos.z + (p ? p.right.z * side * 220 : 0)
+              },
+              vel: { x: e.vel.x, y: e.vel.y, z: e.vel.z },
+              hp: Math.round(baseHp * 0.55),
+              maxHp: Math.round(baseHp * 0.55),
+              enemyShield: 0,
+              maxEnemyShield: 0,
+              sniperCharge: 0,
+              lastMissileAt: performance.now(),
+              dmg: Math.round(baseDmg * 0.7),
+              speed: 215 + Math.min(60, sysLvl * 1.2),
+              curSpeed: 215,
+              radius: 30,
+              color: '#34d399',
+              aiState: 'attack_pass',
+              aiTimer: 0,
+              flankSide: side,
+              flankUp: side * 120,
+              reengageDist: 2600,
+              lastShot: performance.now(),
+              lastCollisionAt: 0
+            });
+          }
+        }
+        return e.hp <= 0;
+      }
+
+      launchEnemyHomingMissile(e) {
+        const p = this.player3D;
+        if (!p || !e) return;
+        const toP = this.vecNorm({
+          x: p.pos.x - e.pos.x,
+          y: p.pos.y - e.pos.y,
+          z: p.pos.z - e.pos.z
+        });
+        const mSpeed = e.isBoss ? 560 : 510;
+        this.enemyMissiles3D.push({
+          pos: { x: e.pos.x, y: e.pos.y, z: e.pos.z },
+          vel: { x: toP.x * mSpeed, y: toP.y * mSpeed, z: toP.z * mSpeed },
+          speed: mSpeed,
+          dmg: Math.round(e.dmg * (e.isBoss ? 2.1 : 1.75)),
+          life: 6.5,
+          trail: []
+        });
+        this.playCombatSfx('missile');
       }
 
       updateCombat3D(dt) {
@@ -4898,9 +5193,15 @@
           e.vel.y = newDir.y * e.curSpeed;
           e.vel.z = newDir.z * e.curSpeed;
 
-          e.pos.x += e.vel.x * dt;
-          e.pos.y += e.vel.y * dt;
-          e.pos.z += e.vel.z * dt;
+          const eDt = (this.warpSlowTimer || 0) > 0 ? dt * 0.48 : dt;
+          e.pos.x += e.vel.x * eDt;
+          e.pos.y += e.vel.y * eDt;
+          e.pos.z += e.vel.z * eDt;
+
+          // Shielded Cruiser & Boss slow shield regen
+          if (e.maxEnemyShield > 0 && e.enemyShield > 0 && e.enemyShield < e.maxEnemyShield) {
+            e.enemyShield = Math.min(e.maxEnemyShield, e.enemyShield + e.maxEnemyShield * 0.04 * eDt);
+          }
 
           // Direct Ship-to-Ship Collision -> Bypasses Shield and damages HULL directly! (Evaded during Barrel Roll)
           const postDist = Math.hypot(p.pos.x - e.pos.x, p.pos.y - e.pos.y, p.pos.z - e.pos.z);
@@ -4934,11 +5235,38 @@
             continue;
           }
 
-          // Enemy Firing Predictive Plasma Bolts toward player (35% lead; Boss fires 3-bolt spread)
+          // Enemy Archetype Weapons: Sniper Railgun Telegraph, Homing Missiles (Roll to Evade!), & Predictive Plasma Bolts
+          if (e.archetype === 'sniper' && e.aiState === 'attack_pass' && local.z > 240 && dist < 3200) {
+            e.sniperCharge = (e.sniperCharge || 0) + eDt;
+            if (e.sniperCharge >= 1.35) {
+              e.sniperCharge = 0;
+              e.lastShot = now;
+              const railSpeed = 1650 + sysLvl * 8;
+              const aimDir = this.vecNorm({ x: p.pos.x - e.pos.x, y: p.pos.y - e.pos.y, z: p.pos.z - e.pos.z });
+              this.lasers3D.push({
+                isPlayer: false,
+                pos: { x: e.pos.x, y: e.pos.y, z: e.pos.z },
+                vel: { x: aimDir.x * railSpeed, y: aimDir.y * railSpeed, z: aimDir.z * railSpeed },
+                dmg: Math.round(e.dmg * 1.45),
+                color: '#ff2d78',
+                life: 2.6
+              });
+            }
+          } else {
+            e.sniperCharge = 0;
+          }
+
+          // Missile Gunship & Command Boss launch Homing Missiles (Roll to evade!)
+          const missileCd = e.isBoss ? (this.bossPhase2Triggered ? 5200 : 7400) : 7200;
+          if ((e.archetype === 'missile' || e.isBoss) && e.aiState === 'attack_pass' && local.z > 300 && dist < 2700 && now - (e.lastMissileAt || 0) > missileCd) {
+            e.lastMissileAt = now;
+            this.launchEnemyHomingMissile(e);
+          }
+
           const fireCd = e.isBoss
             ? Math.max(620, 920 - sysLvl * 6)
             : Math.max(850, 1400 - sysLvl * 10);
-          if (e.aiState === 'attack_pass' && local.z > 180 && dist < 2450 && now - e.lastShot > fireCd) {
+          if (e.archetype !== 'sniper' && e.aiState === 'attack_pass' && local.z > 180 && dist < 2450 && now - e.lastShot > fireCd) {
             e.lastShot = now;
             const boltSpeed = 980 + sysLvl * 6;
             const leadTime = Math.min(1.1, dist / boltSpeed) * 0.35;
@@ -4973,12 +5301,17 @@
           }
         }
 
+        // Decay active 3D power-up timers
+        if ((this.overchargeTimer || 0) > 0) this.overchargeTimer = Math.max(0, this.overchargeTimer - dt);
+        if ((this.warpSlowTimer || 0) > 0) this.warpSlowTimer = Math.max(0, this.warpSlowTimer - dt);
+
         // 6. Update 3D Lasers & Hit Detection
         for (let i = this.lasers3D.length - 1; i >= 0; i--) {
           const l = this.lasers3D[i];
-          l.pos.x += l.vel.x * dt;
-          l.pos.y += l.vel.y * dt;
-          l.pos.z += l.vel.z * dt;
+          const lDt = (!l.isPlayer && (this.warpSlowTimer || 0) > 0) ? dt * 0.48 : dt;
+          l.pos.x += l.vel.x * lDt;
+          l.pos.y += l.vel.y * lDt;
+          l.pos.z += l.vel.z * lDt;
           l.life -= dt;
 
           if (l.life <= 0) {
@@ -4995,9 +5328,8 @@
               if (d <= e.radius + 18) {
                 const isCrit = Math.random() < 0.12;
                 const dealt = isCrit ? Math.round(l.dmg * 1.5) : l.dmg;
-                e.hp -= dealt;
+                const killed = this.applyDamageToEnemy3D(e, dealt, false);
                 hit = true;
-                const killed = e.hp <= 0;
                 this.hitmarker = { time: now, isCrit, isKill: killed };
                 this.spawn3DExplosion(l.pos, isCrit ? '#ffd700' : l.color, isCrit ? 9 : 6);
                 if (isCrit && !killed) {
@@ -5010,12 +5342,30 @@
                   this.spawnDamagePopup3D(e.pos, e.isBoss ? '👑 BOSS DOWN!' : '💥 KILL!', '#00ff88', true);
                   this.screenShake = Math.max(this.screenShake || 0, e.isBoss ? 14 : 6);
                   this.playCombatSfx(e.isBoss ? 'boss_explosion' : 'explosion');
+                  if (!e.isBoss) this.spawnPowerup3D(e.pos, false);
                   this.enemies3D.splice(j, 1);
                   this.checkWaveProgression();
                 } else {
                   this.playCombatSfx(isCrit ? 'crit' : 'hit');
                 }
                 break;
+              }
+            }
+            // Check player laser hits against destructible Sector Asteroids
+            if (!hit && this.asteroids3D && this.asteroids3D.length > 0) {
+              for (let a = this.asteroids3D.length - 1; a >= 0; a--) {
+                const ast = this.asteroids3D[a];
+                if (Math.hypot(l.pos.x - ast.pos.x, l.pos.y - ast.pos.y, l.pos.z - ast.pos.z) <= ast.radius + 16) {
+                  ast.hp -= l.dmg;
+                  hit = true;
+                  this.spawn3DExplosion(l.pos, ast.crystal ? '#00f0ff' : '#94a3b8', 5);
+                  if (ast.hp <= 0) {
+                    this.spawn3DExplosion(ast.pos, ast.crystal ? '#38bdf8' : '#f59e0b', 18);
+                    if (Math.random() < 0.32) this.spawnPowerup3D(ast.pos, true);
+                    this.asteroids3D.splice(a, 1);
+                  }
+                  break;
+                }
               }
             }
             if (hit) this.lasers3D.splice(i, 1);
@@ -5096,9 +5446,8 @@
             const e = this.enemies3D[j];
             const d = Math.hypot(m.pos.x - e.pos.x, m.pos.y - e.pos.y, m.pos.z - e.pos.z);
             if (d <= e.radius + 38) {
-              e.hp -= m.dmg;
+              const killed = this.applyDamageToEnemy3D(e, m.dmg, true);
               detonated = true;
-              const killed = e.hp <= 0;
               this.hitmarker = { time: now, isCrit: true, isKill: killed };
               this.screenShake = Math.max(this.screenShake || 0, (killed && e.isBoss) ? 16 : 9);
               this.playCombatSfx((killed && e.isBoss) ? 'boss_explosion' : 'explosion');
@@ -5114,6 +5463,7 @@
               if (killed) {
                 const killXp = (e.isBoss ? 50 : (e.color === '#f59e0b' ? 15 : 10)) * this.activeSystem.level;
                 this.awardCombatXp(killXp, true);
+                if (!e.isBoss) this.spawnPowerup3D(e.pos, false);
                 this.enemies3D.splice(j, 1);
                 this.checkWaveProgression();
               }
@@ -5122,6 +5472,134 @@
           }
           if (detonated) {
             this.missiles3D.splice(i, 1);
+          }
+        }
+
+        // 6c. Update Incoming Enemy Homing Missiles (Roll to Evade!)
+        if (this.enemyMissiles3D && this.enemyMissiles3D.length > 0) {
+          const emDt = (this.warpSlowTimer || 0) > 0 ? dt * 0.48 : dt;
+          for (let i = this.enemyMissiles3D.length - 1; i >= 0; i--) {
+            const em = this.enemyMissiles3D[i];
+            em.life -= dt;
+            if (em.life <= 0) {
+              this.enemyMissiles3D.splice(i, 1);
+              continue;
+            }
+            const toP = { x: p.pos.x - em.pos.x, y: p.pos.y - em.pos.y, z: p.pos.z - em.pos.z };
+            const distP = Math.hypot(toP.x, toP.y, toP.z) || 1;
+            const des = { x: toP.x / distP, y: toP.y / distP, z: toP.z / distP };
+            const cur = this.vecNorm(em.vel);
+            const steer = Math.min(1, emDt * 3.4);
+            const nd = this.vecNorm({
+              x: cur.x + (des.x - cur.x) * steer,
+              y: cur.y + (des.y - cur.y) * steer,
+              z: cur.z + (des.z - cur.z) * steer
+            });
+            em.vel.x = nd.x * em.speed;
+            em.vel.y = nd.y * em.speed;
+            em.vel.z = nd.z * em.speed;
+            em.trail.push({ x: em.pos.x, y: em.pos.y, z: em.pos.z });
+            if (em.trail.length > 16) em.trail.shift();
+            em.pos.x += em.vel.x * emDt;
+            em.pos.y += em.vel.y * emDt;
+            em.pos.z += em.vel.z * emDt;
+
+            if (distP <= 68) {
+              if (p.evadeTimer > 0) {
+                this.spawn3DExplosion(em.pos, '#00f0ff', 14);
+                this.enemyMissiles3D.splice(i, 1);
+                continue;
+              }
+              p.lastHitTime = now;
+              if (p.shield >= em.dmg) {
+                p.shield -= em.dmg;
+                this.shieldHitFlash = Math.max(this.shieldHitFlash || 0, 0.45);
+                this.playCombatSfx('shield_hit');
+              } else {
+                const rem = em.dmg - p.shield;
+                p.shield = 0;
+                p.hull = Math.max(0, p.hull - rem);
+                this.hullHitFlash = Math.max(this.hullHitFlash || 0, 0.65);
+                this.playCombatSfx('hull_hit');
+              }
+              this.screenShake = Math.max(this.screenShake || 0, 14);
+              this.spawn3DExplosion(em.pos, '#ff0055', 24);
+              this.showToast(`💥 HIT BY ENEMY MISSILE! (-${em.dmg.toLocaleString()} DMG — Roll to evade!)`);
+              this.enemyMissiles3D.splice(i, 1);
+              if (p.hull <= 0) {
+                this.end3DMission(false);
+                return;
+              }
+            }
+          }
+        }
+
+        // 6d. Update Sector Asteroids (Drift + Wrap + Ship Collision)
+        if (this.asteroids3D && this.asteroids3D.length > 0) {
+          for (let i = this.asteroids3D.length - 1; i >= 0; i--) {
+            const ast = this.asteroids3D[i];
+            ast.pos.x += ast.vel.x * dt;
+            ast.pos.y += ast.vel.y * dt;
+            ast.pos.z += ast.vel.z * dt;
+            ast.rot += ast.rotSpd * dt;
+            const dP = Math.hypot(ast.pos.x - p.pos.x, ast.pos.y - p.pos.y, ast.pos.z - p.pos.z);
+            if (dP > 3600) {
+              const dist = 2200 + Math.random() * 800;
+              const ox = (Math.random() - 0.5) * 1800;
+              const oy = (Math.random() - 0.5) * 1100;
+              ast.pos.x = p.pos.x + p.forward.x * dist + p.right.x * ox + p.up.x * oy;
+              ast.pos.y = p.pos.y + p.forward.y * dist + p.right.y * ox + p.up.y * oy;
+              ast.pos.z = p.pos.z + p.forward.z * dist + p.right.z * ox + p.up.z * oy;
+            } else if (p.evadeTimer <= 0 && dP <= ast.radius + 32) {
+              const dmg = Math.round(p.maxShield * 0.14);
+              if (p.shield >= dmg) p.shield -= dmg;
+              else { p.hull = Math.max(0, p.hull - (dmg - p.shield)); p.shield = 0; }
+              this.screenShake = Math.max(this.screenShake || 0, 10);
+              this.spawn3DExplosion(ast.pos, '#f59e0b', 20);
+              this.asteroids3D.splice(i, 1);
+              if (p.hull <= 0) { this.end3DMission(false); return; }
+            }
+          }
+        }
+
+        // 6e. Update 3D Power-Up Orbs (Magnet Pull + Collect!)
+        if (this.powerups3D && this.powerups3D.length > 0) {
+          for (let i = this.powerups3D.length - 1; i >= 0; i--) {
+            const pu = this.powerups3D[i];
+            pu.life -= dt;
+            if (pu.life <= 0) {
+              this.powerups3D.splice(i, 1);
+              continue;
+            }
+            const dx = p.pos.x - pu.pos.x;
+            const dy = p.pos.y - pu.pos.y;
+            const dz = p.pos.z - pu.pos.z;
+            const dist = Math.hypot(dx, dy, dz) || 1;
+            if (dist < 460) {
+              const pull = 520 * dt;
+              pu.pos.x += (dx / dist) * pull;
+              pu.pos.y += (dy / dist) * pull;
+              pu.pos.z += (dz / dist) * pull;
+            }
+            if (dist < 165) {
+              if (pu.kind === 'overcharge') {
+                this.overchargeTimer = 8.0;
+                this.showToast('⚡ OVERCHARGE (8s): Rapid-Fire +35% Turret Damage!');
+              } else if (pu.kind === 'shield') {
+                p.shield = Math.min(p.maxShield, p.shield + Math.round(p.maxShield * 0.35));
+                p.hull = Math.min(p.maxHull, p.hull + Math.round(p.maxHull * 0.15));
+                this.showToast('🛡️ SHIELD CELL: +35% Shield & +15% Hull Restored!');
+              } else if (pu.kind === 'missile') {
+                this.lastMissileTime = 0;
+                this.showToast('🚀 MISSILE RELOAD: Homing Missile READY!');
+              } else if (pu.kind === 'warpslow') {
+                this.warpSlowTimer = 5.0;
+                this.showToast('⏱️ WARP SLOW (5s): Hostiles slowed to 48%!');
+              }
+              this.playCombatSfx('crit');
+              this.spawn3DExplosion(pu.pos, pu.color, 14);
+              this.powerups3D.splice(i, 1);
+            }
           }
         }
 
@@ -5305,7 +5783,9 @@
         const sys = this.activeSystem;
         if (!p || !sys) return;
 
-        document.getElementById('hud3d-system-name').innerText = `System #${sys.id} • ${sys.name} (Lvl ${sys.level})`;
+        const themeTag = this.sectorTheme ? ` • ${this.sectorTheme.label}` : '';
+        const rarityTag = (this.rarityBonus && this.rarityBonus.pct > 0) ? ` • ✨ ${this.rarityBonus.label} +${this.rarityBonus.pct}%` : '';
+        document.getElementById('hud3d-system-name').innerText = `System #${sys.id} • ${sys.name} (Lvl ${sys.level})${themeTag}${rarityTag}`;
         document.getElementById('hud3d-wave').innerText =
           this.combatWave === 3 ? 'Wave 3 / 3 • 👑 COMMAND BOSS' : `Wave ${this.combatWave} / 3 • Fighter Squadron`;
         const remHostiles = this.enemies3D.length + (this.waveSpawnQueue ? this.waveSpawnQueue.length : 0);
@@ -5393,12 +5873,21 @@
         const cy = h / 2 + shakeY;
         const fov = (this.player3D && this.player3D.evadeTimer > 0) ? 515 : 560; // Dynamic FOV stretch during Barrel Roll!
 
-        // Deep Space Backdrop
-        ctx.fillStyle = '#02050d';
+        // Sector-Themed Deep Space Backdrop
+        const th = this.sectorTheme || { bgTop: '#02050d', bgBot: '#02050d', nebulaColor: 'rgba(0,240,255,0.06)', dustColor: 'rgba(0, 240, 255, 0.45)' };
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+        bgGrad.addColorStop(0, th.bgTop);
+        bgGrad.addColorStop(1, th.bgBot);
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, w, h);
+        const nebGrad = ctx.createRadialGradient(w * 0.65, h * 0.3, 20, w * 0.65, h * 0.3, Math.max(w, h) * 0.65);
+        nebGrad.addColorStop(0, th.nebulaColor);
+        nebGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = nebGrad;
         ctx.fillRect(0, 0, w, h);
 
         // 1. Render 3D Space Dust Streaks (gives true 6-DOF speed & turning sensation)
-        ctx.strokeStyle = 'rgba(0, 240, 255, 0.45)';
+        ctx.strokeStyle = th.dustColor;
         ctx.lineWidth = 1.3;
         for (const d of this.spaceDust3D) {
           const loc = this.worldToShipLocal(d);
@@ -5479,6 +5968,111 @@
           }
         }
 
+        // 2c. Render Destructible Sector Asteroids
+        if (this.asteroids3D && this.asteroids3D.length > 0) {
+          for (const ast of this.asteroids3D) {
+            const loc = this.worldToShipLocal(ast.pos);
+            if (loc.z > 30 && loc.z < 3000) {
+              const sc = fov / loc.z;
+              const sx = cx + loc.x * sc;
+              const sy = cy - loc.y * sc;
+              const rr = Math.max(4, ast.radius * sc);
+              if (sx > -80 && sx < w + 80 && sy > -80 && sy < h + 80) {
+                ctx.save();
+                ctx.translate(sx, sy);
+                ctx.rotate(ast.rot);
+                ctx.fillStyle = ast.crystal ? 'rgba(14, 116, 144, 0.72)' : '#334155';
+                ctx.strokeStyle = ast.crystal ? '#38bdf8' : '#64748b';
+                ctx.lineWidth = Math.max(1.2, 2.2 * sc);
+                ctx.beginPath();
+                for (let k = 0; k < 7; k++) {
+                  const a = (Math.PI * 2 * k) / 7;
+                  const jr = rr * (k % 2 === 0 ? 1.0 : 0.76);
+                  if (k === 0) ctx.moveTo(Math.cos(a) * jr, Math.sin(a) * jr);
+                  else ctx.lineTo(Math.cos(a) * jr, Math.sin(a) * jr);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+              }
+            }
+          }
+        }
+
+        // 2d. Render 3D Power-Up Orbs (Overcharge / Shield / Missile / Warp Slow)
+        if (this.powerups3D && this.powerups3D.length > 0) {
+          const pulse = 0.5 + 0.5 * Math.sin(performance.now() / 160);
+          for (const pu of this.powerups3D) {
+            const loc = this.worldToShipLocal(pu.pos);
+            if (loc.z > 25 && loc.z < 2800) {
+              const sc = fov / loc.z;
+              const sx = cx + loc.x * sc;
+              const sy = cy - loc.y * sc;
+              const rr = Math.max(10, 34 * sc);
+              ctx.save();
+              ctx.translate(sx, sy);
+              ctx.strokeStyle = pu.color;
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.arc(0, 0, rr * (1.1 + pulse * 0.25), 0, Math.PI * 2);
+              ctx.stroke();
+              ctx.fillStyle = 'rgba(4, 10, 24, 0.82)';
+              ctx.beginPath();
+              ctx.arc(0, 0, rr, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.font = `${Math.max(11, Math.round(rr * 1.15))}px sans-serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(pu.icon, 0, 1);
+              ctx.fillStyle = pu.color;
+              ctx.font = 'bold 9px monospace';
+              ctx.fillText(pu.label, 0, rr + 11);
+              ctx.restore();
+            }
+          }
+        }
+
+        // 2e. Render Incoming Enemy Homing Missiles (Red Lock-On Threat!)
+        if (this.enemyMissiles3D && this.enemyMissiles3D.length > 0) {
+          for (const em of this.enemyMissiles3D) {
+            if (em.trail.length > 1) {
+              ctx.beginPath();
+              let started = false;
+              for (const tp of em.trail) {
+                const tLoc = this.worldToShipLocal(tp);
+                if (tLoc.z > 15) {
+                  const sc = fov / tLoc.z;
+                  const tx = cx + tLoc.x * sc;
+                  const ty = cy - tLoc.y * sc;
+                  if (!started) { ctx.moveTo(tx, ty); started = true; }
+                  else ctx.lineTo(tx, ty);
+                }
+              }
+              if (started) {
+                ctx.strokeStyle = 'rgba(255, 0, 85, 0.85)';
+                ctx.lineWidth = 3.2;
+                ctx.stroke();
+              }
+            }
+            const mLoc = this.worldToShipLocal(em.pos);
+            if (mLoc.z > 15) {
+              const sc = fov / mLoc.z;
+              const mx = cx + mLoc.x * sc;
+              const my = cy - mLoc.y * sc;
+              const mr = Math.max(5, 22 * sc);
+              const mg = ctx.createRadialGradient(mx, my, 1, mx, my, mr * 2.4);
+              mg.addColorStop(0, '#ffffff');
+              mg.addColorStop(0.35, '#ff0055');
+              mg.addColorStop(1, 'rgba(255, 0, 85, 0)');
+              ctx.fillStyle = mg;
+              ctx.beginPath();
+              ctx.arc(mx, my, mr * 2.4, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        }
+
         // 3. Sort & Render 3D Enemy Starfighters + Off-Screen Directional Arrows
         const nowMs = performance.now();
         const lockTarget = this.getMissileLockTarget();
@@ -5503,6 +6097,34 @@
             if (sx > -90 && sx < w + 90 && sy > -90 && sy < h + 90) {
               // True 3D Projected Faceted Polyhedron Enemy Starship (oriented along its real 3D velocity!)
               this.renderEnemyMesh3D(ctx, e, (pt) => this.worldToShipLocal(pt), fov, cx, cy, nowMs);
+
+              // Shielded Cruiser / Boss Energy Shield Bubble
+              if (e.enemyShield > 0 && e.maxEnemyShield > 0) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.14)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(sx, sy, projRadius * 1.25, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+              }
+
+              // Sniper Frigate Red Lock-On Telegraph Beam
+              if (e.archetype === 'sniper' && (e.sniperCharge || 0) > 0.15) {
+                const chargePct = Math.min(1, e.sniperCharge / 1.35);
+                ctx.save();
+                ctx.strokeStyle = `rgba(255, 45, 120, ${0.25 + chargePct * 0.7})`;
+                ctx.lineWidth = 1 + chargePct * 2.5;
+                ctx.setLineDash([8, 6]);
+                ctx.beginPath();
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(cx, cy + 40);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.restore();
+              }
 
               ctx.save();
               ctx.translate(sx, sy);
@@ -5615,6 +6237,43 @@
 
         // 5. Render Player 3D Starfighter in Foreground (Positioned cleanly above the 3D Mini-Radar)
         this.renderPlayer3DShip(cx, Math.max(cy + 40, h - 208));
+
+        // 5b. Active Power-Up Vignette & Incoming Enemy Missile Lock Alert
+        if ((this.warpSlowTimer || 0) > 0) {
+          ctx.save();
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.42)';
+          ctx.lineWidth = 14;
+          ctx.strokeRect(0, 0, w, h);
+          ctx.restore();
+        }
+        if ((this.overchargeTimer || 0) > 0 || (this.warpSlowTimer || 0) > 0) {
+          const pills = [];
+          if (this.overchargeTimer > 0) pills.push(`⚡ OVERCHARGE ${this.overchargeTimer.toFixed(1)}s`);
+          if (this.warpSlowTimer > 0) pills.push(`⏱️ WARP SLOW ${this.warpSlowTimer.toFixed(1)}s`);
+          ctx.save();
+          ctx.font = '900 12px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillStyle = 'rgba(4, 10, 24, 0.78)';
+          ctx.fillRect(cx - 140, 62, 280, 22);
+          ctx.fillStyle = '#ffd700';
+          ctx.fillText(pills.join('  •  '), cx, 77);
+          ctx.restore();
+        }
+        if (this.enemyMissiles3D && this.enemyMissiles3D.length > 0) {
+          const blink = Math.floor(nowMs / 160) % 2 === 0;
+          ctx.save();
+          ctx.fillStyle = blink ? 'rgba(255, 0, 85, 0.88)' : 'rgba(136, 19, 55, 0.85)';
+          ctx.strokeStyle = '#ffd700';
+          ctx.lineWidth = 2;
+          const bw = Math.min(390, w - 24);
+          ctx.fillRect(cx - bw / 2, 92, bw, 28);
+          ctx.strokeRect(cx - bw / 2, 92, bw, 28);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '900 12px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(`🚨 MISSILE LOCK (${this.enemyMissiles3D.length}) — ROLL [SHIFT / 🌀] TO EVADE!`, cx, 110);
+          ctx.restore();
+        }
 
         // 6. Render Center Aiming Crosshair, Hitmarker Flash & Mouse Vector Guide
         ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
