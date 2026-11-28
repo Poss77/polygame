@@ -637,9 +637,9 @@
         if (!log || !Array.isArray(log.rounds)) return;
         const { pid } = this._getSupabaseAndPlayerId();
         const iAmP1 = String(log.p1Id || '').toLowerCase() === pid;
-        const myMaxHp = iAmP1 ? log.p1MaxHp : log.p2MaxHp;
-        const rivalMaxHp = iAmP1 ? log.p2MaxHp : log.p1MaxHp;
-        const rivalName = iAmP1 ? log.p2Name : log.p1Name;
+        const myMaxHp = Math.max(1, Number((iAmP1 ? log.p1MaxHp : log.p2MaxHp) || 1000));
+        const rivalMaxHp = Math.max(1, Number((iAmP1 ? log.p2MaxHp : log.p1MaxHp) || 1000));
+        const rivalName = (iAmP1 ? log.p2Name : log.p1Name) || 'RIVAL';
 
         let curP1 = myMaxHp;
         let curP2 = rivalMaxHp;
@@ -673,8 +673,9 @@
         document.getElementById('duel-log-box').innerHTML = `⚡ Server-verified 5s battle (Pot: ${Number(log.wager || 0) * 2} PGT • 5% fee: ${Number(log.fee || 0)} PGT)...`;
         document.getElementById('tactical-duel-modal').style.display = 'flex';
 
+        const estRivalLvl = Math.max(1, Math.round((rivalMaxHp - 200) / 40));
         this.duelSim = {
-          rival: { name: rivalName || 'RIVAL' },
+          rival: { name: rivalName || 'RIVAL', color: '#ff2d78', shield: estRivalLvl, turret: estRivalLvl },
           rounds, myMaxHp, rivalMaxHp,
           wager: Number(log.wager || 0),
           fee: Number(log.fee || 0),
@@ -2857,8 +2858,9 @@
           ctx.restore();
         };
 
+        const rivalColor = (sim.rival && sim.rival.color) || '#ff2d78';
         drawShieldArc(p1x, p1y, true, rd.p1Def, '#00f0ff', rd.p2BlockedByP1);
-        drawShieldArc(p2x, p2y, false, rd.p2Def, sim.rival.color, rd.p1BlockedByP2);
+        drawShieldArc(p2x, p2y, false, rd.p2Def, rivalColor, rd.p1BlockedByP2);
 
         // Draw Both Starships
         const drawDuelShip = (x, y, facingRight, primaryColor) => {
@@ -2901,7 +2903,7 @@
         };
 
         drawDuelShip(p1x, p1y, true, '#00f0ff');
-        drawDuelShip(p2x, p2y, false, sim.rival.color);
+        drawDuelShip(p2x, p2y, false, rivalColor);
 
         // Animated Curved Attack Volleys (rProg 0.12 -> 0.58)
         const drawVolley = (sx, sy, tx, ty, atkDir, color, blocked) => {
@@ -2956,13 +2958,15 @@
         };
 
         drawVolley(p1x + 30, p1y, p2x - 24, p2y, rd.p1Atk, '#00f0ff', rd.p1BlockedByP2);
-        drawVolley(p2x - 30, p2y, p1x + 24, p1y, rd.p2Atk, sim.rival.color, rd.p2BlockedByP1);
+        drawVolley(p2x - 30, p2y, p1x + 24, p1y, rd.p2Atk, rivalColor, rd.p2BlockedByP1);
 
         // Final Victory / Defeat Banner Overlay
         if (elapsed >= totalDur) {
           if (!sim.finished && sim.winner === 'p1') {
             this.duelWins += 1;
-            const duelXp = Math.round(25 * ((sim.rival.shield + sim.rival.turret) / 2));
+            const rSh = Number((sim.rival && sim.rival.shield) || 10);
+            const rTu = Number((sim.rival && sim.rival.turret) || 10);
+            const duelXp = Math.round(25 * ((rSh + rTu) / 2));
             this.awardCombatXp(duelXp, false);
           }
           sim.finished = true;
@@ -2971,7 +2975,7 @@
           ctx.fillStyle = sim.winner === 'p1' ? '#00ff88' : (sim.winner === 'p2' ? '#ff4d79' : '#ffd700');
           ctx.font = 'bold 20px sans-serif';
           ctx.textAlign = 'center';
-          const potWin = Math.round(sim.wager * 1.9);
+          const potWin = sim.payout ? Number(sim.payout) : Math.round(sim.wager * 1.9);
           const msg = sim.winner === 'p1'
             ? `🏆 VICTORY! ${sim.wager > 0 ? `+${potWin} PGT Won (5% Burned)` : 'Honor Earned!'}`
             : (sim.winner === 'p2' ? `💀 DEFEAT! ${sim.rival.name} outmaneuvered your fleet` : '🤝 TACTICAL DRAW! Stakes Refunded');
