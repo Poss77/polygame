@@ -142,7 +142,7 @@ class PolySpaceEngine {
         const clickX = e.clientX - rect.left;
         const clickY = e.clientY - rect.top;
         const mode = this._canvasMode || 'radar';
-        const isRadarOnly = mode === 'radar';
+        const isRadarOnly = mode === 'radar' || mode === 'galaxy';
         const isHangarOnly = mode === 'hangar';
         const divX = (rect.width || this.width) * 0.43;
         const mapMinX = isRadarOnly ? 0 : divX;
