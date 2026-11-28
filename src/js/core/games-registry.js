@@ -382,9 +382,17 @@ export function initArcadeLeaderboardCards() {
     ` : '';
 
     colEl.innerHTML = `
-      <h3 class="card-title" style="margin-bottom: 1rem; color: ${game.lbCardColor};" data-i18n="lb.title.${game.key}">${game.lbCardTitle}</h3>
-      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;" data-i18n="lb.subtitle.${game.key}">${game.lbSubtitle}</p>
-      <div style="font-size: 0.85rem; color: ${game.lbPoolColor}; font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between;">
+      <h3 class="card-title" style="margin-bottom: 0.75rem; color: ${game.lbCardColor};" data-i18n="lb.title.${game.key}">${game.lbCardTitle}</h3>
+      <div class="lb-mode-toggle" id="lb-mode-toggle-${game.key}" style="display: flex; gap: 0.4rem; margin-bottom: 0.85rem; padding: 3px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px;">
+        <button type="button" class="lb-mode-btn active" data-lb-mode="highscore" onclick="window.switchGameLeaderboardMode && window.switchGameLeaderboardMode('${game.key}', 'highscore')" style="flex: 1; padding: 0.42rem 0.55rem; font-size: 0.78rem; font-weight: 800; border-radius: 6px; border: 1px solid rgba(0, 240, 255, 0.45); background: rgba(0, 240, 255, 0.16); color: #00f0ff; cursor: pointer; transition: all 0.15s ease;">
+          🏆 Best Run
+        </button>
+        <button type="button" class="lb-mode-btn" data-lb-mode="weekly_total" onclick="window.switchGameLeaderboardMode && window.switchGameLeaderboardMode('${game.key}', 'weekly_total')" style="flex: 1; padding: 0.42rem 0.55rem; font-size: 0.78rem; font-weight: 700; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--text-muted); cursor: pointer; transition: all 0.15s ease;">
+          🔥 Weekly Total
+        </button>
+      </div>
+      <p id="lb-subtitle-${game.key}" style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;" data-i18n="lb.subtitle.${game.key}">${game.lbSubtitle}</p>
+      <div style="font-size: 0.85rem; color: ${game.lbPoolColor}; font-weight: 700; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem;">
         <span id="${game.poolElId}">Weekly Pool: ${game.defaultPool.toLocaleString()} PGT</span>
         <span class="leaderboard-reset-timer">Resets: --d --h --m</span>
       </div>

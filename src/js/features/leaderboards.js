@@ -281,16 +281,16 @@ const GAME_LEADERBOARDS_CONFIG = {
 };
 
 const gameLeaderboardsState = {
-  astrododge: { data: [], page: 1, pool: 50000 },
-  invaders: { data: [], page: 1, pool: 50000 },
-  drift: { data: [], page: 1, pool: 50000 },
-  stacker: { data: [], page: 1, pool: 50000 },
-  skeet: { data: [], page: 1, pool: 25000 },
-  defense: { data: [], page: 1, pool: 25000 },
-  runner: { data: [], page: 1, pool: 50000 },
-  q2048: { data: [], page: 1, pool: 50000 },
-  tetris: { data: [], page: 1, pool: 50000 },
-  bubble: { data: [], page: 1, pool: 50000 }
+  astrododge: { data: [], page: 1, pool: 50000, mode: 'highscore', weeklyTotalData: [], weeklyTotalPage: 1, userWeeklyTotal: null },
+  invaders: { data: [], page: 1, pool: 50000, mode: 'highscore', weeklyTotalData: [], weeklyTotalPage: 1, userWeeklyTotal: null },
+  drift: { data: [], page: 1, pool: 50000, mode: 'highscore', weeklyTotalData: [], weeklyTotalPage: 1, userWeeklyTotal: null },
+  stacker: { data: [], page: 1, pool: 50000, mode: 'highscore', weeklyTotalData: [], weeklyTotalPage: 1, userWeeklyTotal: null },
+  skeet: { data: [], page: 1, pool: 25000, mode: 'highscore', weeklyTotalData: [], weeklyTotalPage: 1, userWeeklyTotal: null },
+  defense: { data: [], page: 1, pool: 25000, mode: 'highscore', weeklyTotalData: [], weeklyTotalPage: 1, userWeeklyTotal: null },
+  runner: { data: [], page: 1, pool: 50000, mode: 'highscore', weeklyTotalData: [], weeklyTotalPage: 1, userWeeklyTotal: null },
+  q2048: { data: [], page: 1, pool: 50000, mode: 'highscore', weeklyTotalData: [], weeklyTotalPage: 1, userWeeklyTotal: null },
+  tetris: { data: [], page: 1, pool: 50000, mode: 'highscore', weeklyTotalData: [], weeklyTotalPage: 1, userWeeklyTotal: null },
+  bubble: { data: [], page: 1, pool: 50000, mode: 'highscore', weeklyTotalData: [], weeklyTotalPage: 1, userWeeklyTotal: null }
 };
 window.gameLeaderboardsState = gameLeaderboardsState;
 
@@ -301,11 +301,88 @@ const leaderboardDataCache = {};
 export function invalidateGameLeaderboardCache(gameKey = null) {
   if (gameKey) {
     delete leaderboardDataCache[gameKey];
+    delete leaderboardDataCache[`${gameKey}:highscore`];
+    delete leaderboardDataCache[`${gameKey}:weekly_total`];
   } else {
     Object.keys(leaderboardDataCache).forEach(k => delete leaderboardDataCache[k]);
   }
 }
 window.invalidateGameLeaderboardCache = invalidateGameLeaderboardCache;
+
+function updateLeaderboardModeHeader(gameKey, mode, pool) {
+  const reg = ARCADE_GAMES_REGISTRY[gameKey];
+  const conf = GAME_LEADERBOARDS_CONFIG[gameKey];
+  if (!conf) return;
+
+  const toggleWrap = document.getElementById(`lb-mode-toggle-${gameKey}`);
+  if (toggleWrap) {
+    const hsBtn = toggleWrap.querySelector('[data-lb-mode="highscore"]');
+    const wtBtn = toggleWrap.querySelector('[data-lb-mode="weekly_total"]');
+    if (hsBtn && wtBtn) {
+      if (mode === 'weekly_total') {
+        hsBtn.classList.remove('active');
+        hsBtn.style.border = '1px solid transparent';
+        hsBtn.style.background = 'transparent';
+        hsBtn.style.color = 'var(--text-muted)';
+        hsBtn.style.fontWeight = '700';
+
+        wtBtn.classList.add('active');
+        wtBtn.style.border = '1px solid rgba(255, 165, 0, 0.55)';
+        wtBtn.style.background = 'rgba(255, 165, 0, 0.16)';
+        wtBtn.style.color = '#ffb347';
+        wtBtn.style.fontWeight = '800';
+      } else {
+        wtBtn.classList.remove('active');
+        wtBtn.style.border = '1px solid transparent';
+        wtBtn.style.background = 'transparent';
+        wtBtn.style.color = 'var(--text-muted)';
+        wtBtn.style.fontWeight = '700';
+
+        hsBtn.classList.add('active');
+        hsBtn.style.border = '1px solid rgba(0, 240, 255, 0.45)';
+        hsBtn.style.background = 'rgba(0, 240, 255, 0.16)';
+        hsBtn.style.color = '#00f0ff';
+        hsBtn.style.fontWeight = '800';
+      }
+    }
+  }
+
+  const subtitleEl = document.getElementById(`lb-subtitle-${gameKey}`);
+  if (subtitleEl) {
+    if (mode === 'weekly_total') {
+      subtitleEl.textContent = 'Total points earned across all runs this week! Just for fun — resets every Sunday.';
+    } else if (reg && reg.lbSubtitle) {
+      subtitleEl.textContent = reg.lbSubtitle;
+    }
+  }
+
+  const poolEl = document.getElementById(conf.poolElId) || (conf.fallbackPoolElId ? document.getElementById(conf.fallbackPoolElId) : null);
+  if (poolEl) {
+    if (mode === 'weekly_total') {
+      poolEl.textContent = '🎮 For Fun · Weekly Total Grind';
+    } else {
+      poolEl.innerText = pool > 0 ? `Weekly Pool: ${pool.toLocaleString()} PGT` : 'Weekly Pool: 0 PGT (Paused)';
+    }
+  }
+}
+
+export function switchGameLeaderboardMode(gameKey, mode = 'highscore') {
+  if (!GAME_LEADERBOARDS_CONFIG[gameKey]) return;
+  const normalizedMode = mode === 'weekly_total' ? 'weekly_total' : 'highscore';
+  if (!gameLeaderboardsState[gameKey]) {
+    gameLeaderboardsState[gameKey] = {
+      data: [], page: 1, pool: GAME_LEADERBOARDS_CONFIG[gameKey].defaultPool,
+      mode: normalizedMode, weeklyTotalData: [], weeklyTotalPage: 1, userWeeklyTotal: null
+    };
+  } else {
+    gameLeaderboardsState[gameKey].mode = normalizedMode;
+  }
+  try {
+    if (sfx && typeof sfx.click === 'function') sfx.click();
+  } catch (e) {}
+  return fetchAndLoadGameLeaderboard(gameKey, false, normalizedMode);
+}
+window.switchGameLeaderboardMode = switchGameLeaderboardMode;
 
 export function renderGameLeaderboard(gameKey) {
   const conf = GAME_LEADERBOARDS_CONFIG[gameKey];
@@ -314,13 +391,19 @@ export function renderGameLeaderboard(gameKey) {
   const scoreboard = document.getElementById(conf.containerId) || (conf.fallbackContainerId ? document.getElementById(conf.fallbackContainerId) : null);
   if (!scoreboard) return;
 
-  const state = gameLeaderboardsState[gameKey] || { data: [], page: 1, pool: conf.defaultPool };
-  const data = state.data || [];
+  const state = gameLeaderboardsState[gameKey] || { data: [], page: 1, pool: conf.defaultPool, mode: 'highscore', weeklyTotalData: [], weeklyTotalPage: 1, userWeeklyTotal: null };
+  const mode = state.mode === 'weekly_total' ? 'weekly_total' : 'highscore';
+  const isWeeklyTotal = mode === 'weekly_total';
+  const data = isWeeklyTotal ? (state.weeklyTotalData || []) : (state.data || []);
   const pool = (state.pool !== undefined && state.pool !== null) ? Number(state.pool) : conf.defaultPool;
   const totalRows = data.length;
 
+  updateLeaderboardModeHeader(gameKey, mode, pool);
+
   if (totalRows === 0) {
-    scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No tournament scores recorded yet for this week.<br><span style="font-size:0.8rem; color:var(--color-primary);">Play now to claim #1 on the leaderboard!</span></div>';
+    scoreboard.innerHTML = isWeeklyTotal
+      ? '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No weekly points accumulated yet.<br><span style="font-size:0.8rem; color:#ffb347;">Play runs to start climbing the Weekly Total board!</span></div>'
+      : '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">No tournament scores recorded yet for this week.<br><span style="font-size:0.8rem; color:var(--color-primary);">Play now to claim #1 on the leaderboard!</span></div>';
 
     if (appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected()) {
       const userDisplayName = (appState.state && appState.state.username) || '';
@@ -347,7 +430,7 @@ export function renderGameLeaderboard(gameKey) {
           </div>
           <div class="leaderboard-stats">
             <div class="leaderboard-score" style="color:var(--text-muted);">0 <span class="score-unit">pts</span></div>
-            <div class="leaderboard-prize" style="color:var(--text-dim);">0 PGT</div>
+            <div class="leaderboard-prize" style="color:var(--text-dim);">${isWeeklyTotal ? '0 runs' : '0 PGT'}</div>
           </div>
         </div>
       `;
@@ -357,8 +440,13 @@ export function renderGameLeaderboard(gameKey) {
   }
 
   const totalPages = Math.max(1, Math.ceil(totalRows / GAME_LB_PAGE_SIZE));
-  const currentPage = Math.min(Math.max(1, state.page || 1), totalPages);
-  state.page = currentPage;
+  const rawPage = isWeeklyTotal ? (state.weeklyTotalPage || 1) : (state.page || 1);
+  const currentPage = Math.min(Math.max(1, rawPage), totalPages);
+  if (isWeeklyTotal) {
+    state.weeklyTotalPage = currentPage;
+  } else {
+    state.page = currentPage;
+  }
 
   const startIndex = (currentPage - 1) * GAME_LB_PAGE_SIZE;
   const endIndex = Math.min(startIndex + GAME_LB_PAGE_SIZE, totalRows);
@@ -374,14 +462,23 @@ export function renderGameLeaderboard(gameKey) {
     const podiumRowClass = rank === 1 ? 'podium-row-1' : rank === 2 ? 'podium-row-2' : rank === 3 ? 'podium-row-3' : '';
     item.className = `leaderboard-row ${isUser ? 'user-row' : ''} ${podiumRowClass}`.trim();
 
-    const prizeAmt = getWeeklyPrizeForRank(rank, pool);
-    const lbMult = getRowLeaderboardMultiplier(row, isUser);
-    const multStr = lbMult % 1 === 0 ? lbMult.toFixed(0) : lbMult.toFixed(2).replace(/0$/, '');
-    const multBadge = `<span class="leaderboard-mult-badge" style="font-size:0.72rem; font-weight:800; margin-left:3px; color:${lbMult > 1.0 ? '#ffd700' : 'var(--text-dim)'};" title="Leaderboard Multiplier: ${multStr}x (Final Prize: ${(prizeAmt * lbMult).toLocaleString()} PGT)">(${multStr}x)</span>`;
-    const prize = (pool <= 0) 
-      ? '<span style="color:var(--text-dim); opacity:0.6;">0 PGT</span>' 
-      : (prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT ${multBadge}` : '0 PGT');
-    const scoreVal = row[conf.scoreField] || 0;
+    let scoreVal = 0;
+    let subStatHtml = '';
+    if (isWeeklyTotal) {
+      scoreVal = Number(row.total_points || 0);
+      const runs = Number(row.sessions_count || 0);
+      subStatHtml = `<span style="color:#ffb347; font-size:0.76rem; font-weight:700;">🔥 ${runs.toLocaleString()} ${runs === 1 ? 'run' : 'runs'}</span>`;
+    } else {
+      const prizeAmt = getWeeklyPrizeForRank(rank, pool);
+      const lbMult = getRowLeaderboardMultiplier(row, isUser);
+      const multStr = lbMult % 1 === 0 ? lbMult.toFixed(0) : lbMult.toFixed(2).replace(/0$/, '');
+      const multBadge = `<span class="leaderboard-mult-badge" style="font-size:0.72rem; font-weight:800; margin-left:3px; color:${lbMult > 1.0 ? '#ffd700' : 'var(--text-dim)'};" title="Leaderboard Multiplier: ${multStr}x (Final Prize: ${(prizeAmt * lbMult).toLocaleString()} PGT)">(${multStr}x)</span>`;
+      subStatHtml = (pool <= 0) 
+        ? '<span style="color:var(--text-dim); opacity:0.6;">0 PGT</span>' 
+        : (prizeAmt > 0 ? `${prizeAmt.toLocaleString()} PGT ${multBadge}` : '0 PGT');
+      scoreVal = Number(row[conf.scoreField] || 0);
+    }
+
     const rankContent = rank === 1 ? '🥇 1' : rank === 2 ? '🥈 2' : rank === 3 ? '🥉 3' : `${rank}`;
     const rankClass = `leaderboard-rank rank-${rank} ${rank <= 3 ? `podium-rank podium-rank-${rank}` : ''}`;
 
@@ -401,7 +498,7 @@ export function renderGameLeaderboard(gameKey) {
       </div>
       <div class="leaderboard-stats">
         <div class="leaderboard-score">${scoreVal.toLocaleString()} <span class="score-unit">pts</span></div>
-        <div class="leaderboard-prize">${prize}</div>
+        <div class="leaderboard-prize">${subStatHtml}</div>
       </div>
     `;
     scoreboard.appendChild(item);
@@ -420,14 +517,22 @@ export function renderGameLeaderboard(gameKey) {
       // User found in leaderboard dataset (e.g. rank 14 while viewing page 1)
       const userRank = userIdx + 1;
       const userRowData = data[userIdx];
-      const userPrizeAmt = getWeeklyPrizeForRank(userRank, pool);
-      const userLbMult = getRowLeaderboardMultiplier(userRowData, true);
-      const userMultStr = userLbMult % 1 === 0 ? userLbMult.toFixed(0) : userLbMult.toFixed(2).replace(/0$/, '');
-      const userMultBadge = `<span class="leaderboard-mult-badge" style="font-size:0.72rem; font-weight:800; margin-left:3px; color:${userLbMult > 1.0 ? '#ffd700' : 'var(--text-dim)'};" title="Leaderboard Multiplier: ${userMultStr}x (Final Prize: ${(userPrizeAmt * userLbMult).toLocaleString()} PGT)">(${userMultStr}x)</span>`;
-      const userPrize = (pool <= 0) 
-        ? '<span style="color:var(--text-dim); opacity:0.6;">0 PGT</span>' 
-        : (userPrizeAmt > 0 ? `${userPrizeAmt.toLocaleString()} PGT ${userMultBadge}` : '0 PGT');
-      const userScoreVal = userRowData[conf.scoreField] || 0;
+      let userScoreVal = 0;
+      let userSubStatHtml = '';
+      if (isWeeklyTotal) {
+        userScoreVal = Number(userRowData.total_points || 0);
+        const userRuns = Number(userRowData.sessions_count || 0);
+        userSubStatHtml = `<span style="color:#ffb347; font-size:0.76rem; font-weight:700;">🔥 ${userRuns.toLocaleString()} ${userRuns === 1 ? 'run' : 'runs'}</span>`;
+      } else {
+        const userPrizeAmt = getWeeklyPrizeForRank(userRank, pool);
+        const userLbMult = getRowLeaderboardMultiplier(userRowData, true);
+        const userMultStr = userLbMult % 1 === 0 ? userLbMult.toFixed(0) : userLbMult.toFixed(2).replace(/0$/, '');
+        const userMultBadge = `<span class="leaderboard-mult-badge" style="font-size:0.72rem; font-weight:800; margin-left:3px; color:${userLbMult > 1.0 ? '#ffd700' : 'var(--text-dim)'};" title="Leaderboard Multiplier: ${userMultStr}x (Final Prize: ${(userPrizeAmt * userLbMult).toLocaleString()} PGT)">(${userMultStr}x)</span>`;
+        userSubStatHtml = (pool <= 0) 
+          ? '<span style="color:var(--text-dim); opacity:0.6;">0 PGT</span>' 
+          : (userPrizeAmt > 0 ? `${userPrizeAmt.toLocaleString()} PGT ${userMultBadge}` : '0 PGT');
+        userScoreVal = Number(userRowData[conf.scoreField] || 0);
+      }
 
       const userStarship = getLeaderboardStarshipBadge(userRowData, true);
       const userStarshipLine = userStarship 
@@ -447,20 +552,33 @@ export function renderGameLeaderboard(gameKey) {
           </div>
           <div class="leaderboard-stats">
             <div class="leaderboard-score">${userScoreVal.toLocaleString()} <span class="score-unit">pts</span></div>
-            <div class="leaderboard-prize">${userPrize}</div>
+            <div class="leaderboard-prize">${userSubStatHtml}</div>
           </div>
         </div>
       `;
     } else if (appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected()) {
       // User connected but not in top 100 rows in database
-      const userLocalScore = (appState.state && appState.state[conf.stateScoreKey]) ? parseInt(appState.state[conf.stateScoreKey], 10) : 0;
       const userDisplayName = (appState.state && appState.state.username) || '';
       const userPlayerId = (appState.state && appState.state.playerId) || '';
       const userLinked = (appState.state && appState.state.linkedWalletAddress) || '';
       const mockRow = { username: userDisplayName, player_id: userPlayerId, linked_wallet_address: userLinked };
-      const userLocalLbMult = getRowLeaderboardMultiplier(mockRow, true);
-      const userLocalMultStr = userLocalLbMult % 1 === 0 ? userLocalLbMult.toFixed(0) : userLocalLbMult.toFixed(2).replace(/0$/, '');
-      const userLocalMultBadge = `<span class="leaderboard-mult-badge" style="font-size:0.72rem; font-weight:800; margin-left:3px; color:${userLocalLbMult > 1.0 ? '#ffd700' : 'var(--text-dim)'};" title="Leaderboard Multiplier: ${userLocalMultStr}x">(${userLocalMultStr}x)</span>`;
+
+      let userLocalScore = 0;
+      let userSubStatHtml = '';
+      if (isWeeklyTotal) {
+        const uwt = state.userWeeklyTotal;
+        userLocalScore = uwt ? Number(uwt.total_points || 0) : 0;
+        const userRuns = uwt ? Number(uwt.sessions_count || 0) : 0;
+        userSubStatHtml = userLocalScore > 0
+          ? `<span style="color:#ffb347; font-size:0.76rem; font-weight:700;">🔥 ${userRuns.toLocaleString()} ${userRuns === 1 ? 'run' : 'runs'}</span>`
+          : '<span style="color:var(--text-dim);">0 runs</span>';
+      } else {
+        userLocalScore = (appState.state && appState.state[conf.stateScoreKey]) ? parseInt(appState.state[conf.stateScoreKey], 10) : 0;
+        const userLocalLbMult = getRowLeaderboardMultiplier(mockRow, true);
+        const userLocalMultStr = userLocalLbMult % 1 === 0 ? userLocalLbMult.toFixed(0) : userLocalLbMult.toFixed(2).replace(/0$/, '');
+        const userLocalMultBadge = `<span class="leaderboard-mult-badge" style="font-size:0.72rem; font-weight:800; margin-left:3px; color:${userLocalLbMult > 1.0 ? '#ffd700' : 'var(--text-dim)'};" title="Leaderboard Multiplier: ${userLocalMultStr}x">(${userLocalMultStr}x)</span>`;
+        userSubStatHtml = `0 PGT ${userLocalMultBadge}`;
+      }
 
       const mockStarship = getLeaderboardStarshipBadge(mockRow, true);
       const mockStarshipLine = mockStarship 
@@ -480,7 +598,7 @@ export function renderGameLeaderboard(gameKey) {
           </div>
           <div class="leaderboard-stats">
             <div class="leaderboard-score" style="${userLocalScore === 0 ? 'color:var(--text-muted);' : ''}">${userLocalScore.toLocaleString()} <span class="score-unit">pts</span></div>
-            <div class="leaderboard-prize" style="${userLocalScore === 0 ? 'color:var(--text-dim);' : ''}">0 PGT ${userLocalMultBadge}</div>
+            <div class="leaderboard-prize" style="${userLocalScore === 0 ? 'color:var(--text-dim);' : ''}">${userSubStatHtml}</div>
           </div>
         </div>
       `;
@@ -507,7 +625,11 @@ window.renderGameLeaderboard = renderGameLeaderboard;
 
 export function changeGameLeaderboardPage(gameKey, newPage) {
   if (gameLeaderboardsState[gameKey]) {
-    gameLeaderboardsState[gameKey].page = newPage;
+    if (gameLeaderboardsState[gameKey].mode === 'weekly_total') {
+      gameLeaderboardsState[gameKey].weeklyTotalPage = newPage;
+    } else {
+      gameLeaderboardsState[gameKey].page = newPage;
+    }
     renderGameLeaderboard(gameKey);
     try {
       if (sfx && typeof sfx.click === 'function') sfx.click();
@@ -516,37 +638,102 @@ export function changeGameLeaderboardPage(gameKey, newPage) {
 }
 window.changeGameLeaderboardPage = changeGameLeaderboardPage;
 
-async function fetchAndLoadGameLeaderboard(gameKey, forceRefresh = false) {
+async function fetchAndLoadGameLeaderboard(gameKey, forceRefresh = false, modeOverride = null) {
   const conf = GAME_LEADERBOARDS_CONFIG[gameKey];
   if (!conf) return;
 
   const scoreboard = document.getElementById(conf.containerId) || (conf.fallbackContainerId ? document.getElementById(conf.fallbackContainerId) : null);
   if (!scoreboard) return;
 
+  const prevState = gameLeaderboardsState[gameKey] || {
+    data: [], page: 1, pool: conf.defaultPool, mode: 'highscore',
+    weeklyTotalData: [], weeklyTotalPage: 1, userWeeklyTotal: null
+  };
+  const mode = (modeOverride === 'weekly_total' || modeOverride === 'highscore')
+    ? modeOverride
+    : (prevState.mode === 'weekly_total' ? 'weekly_total' : 'highscore');
+  prevState.mode = mode;
+  gameLeaderboardsState[gameKey] = prevState;
+
   const settings = (window.appState && window.appState.state && window.appState.state.gamePayoutSettings) || {};
   const gameConf = settings[conf.settingKey] || (conf.settingKey === 'stacker' ? settings.catcher : {}) || {};
   const pool = (gameConf.weekly_pool_pgt !== undefined && gameConf.weekly_pool_pgt !== null) ? Number(gameConf.weekly_pool_pgt) : conf.defaultPool;
-  
-  const poolEl = document.getElementById(conf.poolElId) || (conf.fallbackPoolElId ? document.getElementById(conf.fallbackPoolElId) : null);
-  if (poolEl) {
-    poolEl.innerText = pool > 0 ? `Weekly Pool: ${pool.toLocaleString()} PGT` : 'Weekly Pool: 0 PGT (Paused)';
-  }
+  prevState.pool = pool;
+
+  updateLeaderboardModeHeader(gameKey, mode, pool);
 
   // 90-second in-memory client cache check to eliminate duplicate Supabase reads on tab switching
+  const cacheKey = `${gameKey}:${mode}`;
   const now = Date.now();
-  const cached = leaderboardDataCache[gameKey];
+  const cached = leaderboardDataCache[cacheKey];
   if (!forceRefresh && cached && (now - cached.timestamp < LEADERBOARD_CACHE_TTL_MS)) {
-    gameLeaderboardsState[gameKey] = {
-      data: cached.data || [],
-      page: gameLeaderboardsState[gameKey]?.page || 1,
-      pool
-    };
+    if (mode === 'weekly_total') {
+      prevState.weeklyTotalData = cached.data || [];
+      prevState.userWeeklyTotal = cached.userWeeklyTotal || null;
+    } else {
+      prevState.data = cached.data || [];
+    }
     renderGameLeaderboard(gameKey);
     return;
   }
 
   if (!supabase) {
     scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--text-dim);">Database not connected.</div>';
+    return;
+  }
+
+  const isTestMode = (gameConf.test_mode !== undefined) ? Boolean(gameConf.test_mode) : (gameKey === 'defense');
+
+  if (mode === 'weekly_total') {
+    try {
+      const { data, error } = await supabase.rpc('get_arcade_weekly_points_leaderboard', {
+        p_game_key: gameKey,
+        p_limit: 100
+      });
+
+      if (error) {
+        if (error.code === 'PGRST202' || (error.message && error.message.includes('get_arcade_weekly_points_leaderboard'))) {
+          prevState.weeklyTotalData = [];
+          prevState.userWeeklyTotal = null;
+          leaderboardDataCache[cacheKey] = { data: [], userWeeklyTotal: null, timestamp: now };
+          renderGameLeaderboard(gameKey);
+          return;
+        }
+        throw error;
+      }
+
+      const cleanData = (data || []).filter(u => !u.is_banned && !(isTestMode && u.is_simulated));
+
+      // If current connected user is not in Top 100, fetch their single weekly total row for the pinned standing
+      let userWeeklyTotal = null;
+      const inTop100 = cleanData.some(r => checkIsUserRow(r));
+      if (!inTop100 && appState && typeof appState.isPlayerConnected === 'function' && appState.isPlayerConnected()) {
+        const myPlayerId = appState.state && appState.state.playerId;
+        if (myPlayerId) {
+          try {
+            const { data: myRow } = await supabase
+              .from('arcade_weekly_points')
+              .select('total_points, sessions_count')
+              .eq('player_id', myPlayerId)
+              .eq('game_key', gameKey)
+              .maybeSingle();
+            if (myRow) userWeeklyTotal = myRow;
+          } catch (e) {}
+        }
+      }
+
+      leaderboardDataCache[cacheKey] = {
+        data: cleanData,
+        userWeeklyTotal,
+        timestamp: Date.now()
+      };
+      prevState.weeklyTotalData = cleanData;
+      prevState.userWeeklyTotal = userWeeklyTotal;
+      renderGameLeaderboard(gameKey);
+    } catch (err) {
+      console.error(`Failed to load ${gameKey} weekly total leaderboard:`, err);
+      scoreboard.innerHTML = '<div style="text-align:center; padding:1.5rem; color:var(--color-danger);">Error loading Weekly Total leaderboard.</div>';
+    }
     return;
   }
 
@@ -572,8 +759,9 @@ async function fetchAndLoadGameLeaderboard(gameKey, forceRefresh = false) {
 
     if (error) {
       if (error.code === 'PGRST204' || (error.message && error.message.includes(conf.scoreField))) {
-        gameLeaderboardsState[gameKey] = { data: [], page: 1, pool };
-        leaderboardDataCache[gameKey] = { data: [], timestamp: now };
+        prevState.data = [];
+        prevState.page = 1;
+        leaderboardDataCache[cacheKey] = { data: [], timestamp: now };
         renderGameLeaderboard(gameKey);
         return;
       }
@@ -581,20 +769,15 @@ async function fetchAndLoadGameLeaderboard(gameKey, forceRefresh = false) {
     }
 
     // Filter out banned accounts and exclude simulated players from private test_mode games
-    const isTestMode = (gameConf.test_mode !== undefined) ? Boolean(gameConf.test_mode) : (gameKey === 'defense');
     const cleanData = (data || []).filter(u => !u.is_banned && !(isTestMode && u.is_simulated));
 
     // Cache the clean dataset in memory with fresh timestamp
-    leaderboardDataCache[gameKey] = {
+    leaderboardDataCache[cacheKey] = {
       data: cleanData,
       timestamp: Date.now()
     };
 
-    gameLeaderboardsState[gameKey] = {
-      data: cleanData,
-      page: gameLeaderboardsState[gameKey]?.page || 1,
-      pool
-    };
+    prevState.data = cleanData;
     renderGameLeaderboard(gameKey);
   } catch (err) {
     console.error(`Failed to load ${gameKey} leaderboard:`, err);
