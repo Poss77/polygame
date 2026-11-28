@@ -2757,20 +2757,27 @@
         listEl.innerHTML = list.map((tb) => {
           const safeId = this._escapeHtml(tb.id);
           const safeSeller = this._escapeHtml(tb.seller || 'Pilot');
+          const burnedOffer = Math.max(1, Math.ceil(tb.offerAmt * 0.05));
+          const netReceive = Math.max(1, tb.offerAmt - burnedOffer);
           const btnHtml = tb.isMine
             ? `<button class="btn" style="padding:5px 10px; font-size:0.72rem; border-color:#ff0055; color:#ff94b4; background:rgba(255,0,85,0.18);" onclick="window.PolySpaceGalaxy.instance.acceptOrCancelMoonTrade('${safeId}')">❌ CANCEL</button>`
             : `<button class="btn" style="padding:5px 11px; font-size:0.72rem; border-color:#00ff88; color:#000; background:linear-gradient(135deg,#00ff88,#059669); font-weight:900;" onclick="window.PolySpaceGalaxy.instance.acceptOrCancelMoonTrade('${safeId}')">✅ ACCEPT</button>`;
+          const swapHtml = tb.isMine
+            ? `<div style="display:flex; flex-direction:column; gap:2px; font-size:0.76rem; font-weight:800;">
+                <div><span style="color:#94a3b8; font-size:0.68rem;">🔒 ESCROWED:</span> <span style="color:#00f0ff;">${Number(tb.offerAmt).toLocaleString()} ${this._escapeHtml(tb.offerAsset)}</span></div>
+                <div><span style="color:#94a3b8; font-size:0.68rem;">🎯 ASKING:</span> <span style="color:#fde047;">${Number(tb.wantAmt).toLocaleString()} ${this._escapeHtml(tb.wantAsset)}</span></div>
+              </div>`
+            : `<div style="display:flex; flex-direction:column; gap:2px; font-size:0.76rem; font-weight:800;">
+                <div><span style="color:#00ff88; font-size:0.68rem;">📥 YOU RECEIVE:</span> <span style="color:#00ff88;">+${netReceive.toLocaleString()} ${this._escapeHtml(tb.offerAsset)}</span> <span style="color:#64748b; font-size:0.66rem; font-weight:600;">(after 5% burn)</span></div>
+                <div><span style="color:#ffd700; font-size:0.68rem;">📤 YOU PAY:</span> <span style="color:#ffd700;">-${Number(tb.wantAmt).toLocaleString()} ${this._escapeHtml(tb.wantAsset)}</span></div>
+              </div>`;
           return `
             <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; background:rgba(15,23,42,0.78); border:1px solid ${tb.isMine ? 'rgba(0,240,255,0.38)' : 'rgba(0,255,136,0.3)'}; border-radius:9px; padding:9px 11px; flex-wrap:wrap;">
               <div style="min-width:0; flex:1;">
-                <div style="font-size:0.7rem; color:${tb.isMine ? '#38bdf8' : '#94a3b8'}; margin-bottom:2px;">
+                <div style="font-size:0.7rem; color:${tb.isMine ? '#38bdf8' : '#94a3b8'}; margin-bottom:4px;">
                   🛸 <strong style="color:#fff;">${safeSeller}</strong>${tb.isMine ? ' <span style="color:#38bdf8;">(You)</span>' : ''} • <span style="font-family:monospace;">(${tb.x}, ${tb.y})</span>
                 </div>
-                <div style="font-size:0.78rem; font-weight:800;">
-                  <span style="color:#00f0ff;">${Number(tb.offerAmt).toLocaleString()} ${this._escapeHtml(tb.offerAsset)}</span>
-                  <span style="color:#64748b; margin:0 5px;">⇄</span>
-                  <span style="color:#00ff88;">${Number(tb.wantAmt).toLocaleString()} ${this._escapeHtml(tb.wantAsset)}</span>
-                </div>
+                ${swapHtml}
               </div>
               <div style="flex-shrink:0;">${btnHtml}</div>
             </div>
