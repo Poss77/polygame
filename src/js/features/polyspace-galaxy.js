@@ -3873,26 +3873,32 @@
             ctx.rotate(pl.angle);
             ctx.scale(pScale, pScale);
 
-            // Mini Starfighter Silhouette
-            ctx.fillStyle = '#0f172a';
-            ctx.strokeStyle = pl.color;
-            ctx.lineWidth = 1.6;
-            ctx.beginPath();
-            ctx.moveTo(13, 0);
-            ctx.lineTo(-4, -10);
-            ctx.lineTo(-9, -7);
-            ctx.lineTo(-6, 0);
-            ctx.lineTo(-9, 7);
-            ctx.lineTo(-4, 10);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
+            // Render other pilot's real on-chain NFT Starship if available, else Cyber Starfighter silhouette
+            const plMoving = Math.hypot((pl.targetX ?? pl.x) - pl.x, (pl.targetY ?? pl.y) - pl.y) > 4;
+            if (!pl.isBot && pl.dna && window.PolyHangar && typeof window.PolyHangar.renderProceduralShip === 'function') {
+              window.PolyHangar.renderProceduralShip(ctx, 0, 0, pl.dna, 0.30, 0, Date.now() / 300, plMoving);
+            } else {
+              // Mini Starfighter Silhouette
+              ctx.fillStyle = '#0f172a';
+              ctx.strokeStyle = pl.color;
+              ctx.lineWidth = 1.6;
+              ctx.beginPath();
+              ctx.moveTo(13, 0);
+              ctx.lineTo(-4, -10);
+              ctx.lineTo(-9, -7);
+              ctx.lineTo(-6, 0);
+              ctx.lineTo(-9, 7);
+              ctx.lineTo(-4, 10);
+              ctx.closePath();
+              ctx.fill();
+              ctx.stroke();
 
-            // Cockpit core
-            ctx.fillStyle = pl.color;
-            ctx.beginPath();
-            ctx.arc(2, 0, 2.2, 0, Math.PI * 2);
-            ctx.fill();
+              // Cockpit core
+              ctx.fillStyle = pl.color;
+              ctx.beginPath();
+              ctx.arc(2, 0, 2.2, 0, Math.PI * 2);
+              ctx.fill();
+            }
             ctx.restore();
 
             // Pilot Name Tag
@@ -3900,7 +3906,7 @@
               ctx.fillStyle = pl.color;
               ctx.font = `bold ${Math.max(9, Math.round(10 / Math.sqrt(this.camZoom)))}px sans-serif`;
               ctx.textAlign = 'center';
-              ctx.fillText(`🛸 ${pl.name}`, pl.x, pl.y - 14 * pScale);
+              ctx.fillText(`🛸 ${pl.name}`, pl.x, pl.y - (pl.dna ? 22 : 14) * pScale);
             }
           }
         }
@@ -3954,11 +3960,7 @@
           ? window.polySpace.getEquippedStarshipMultiplier() : null;
         if (_psShip && _psShip.ship && _psShip.ship.dna && window.PolyHangar && typeof window.PolyHangar.renderProceduralShip === 'function') {
           window.PolyHangar.renderProceduralShip(ctx, 0, 0, _psShip.ship.dna, 0.34, 0, Date.now() / 300, s.targetX !== null || Boolean(s._isManualThrust));
-          ctx.restore();
-          ctx.restore();
-          return;
-        }
-
+        } else {
         const tPulse = 0.5 + 0.5 * Math.sin(Date.now() / 220);
         const isCruising = s.targetX !== null || Boolean(s._isManualThrust);
 
@@ -4095,6 +4097,7 @@
         ctx.beginPath();
         ctx.arc(-8.5, 16.8, 1.8, 0, Math.PI * 2);
         ctx.fill();
+        }
 
         ctx.restore();
 
@@ -7491,7 +7494,7 @@
       // Quantum Leviathan World Boss at (3000, 3000) + Live Strike VFX
       inst.drawWorldBoss2D(ctx, zoom);
 
-      // Other Live Pilots
+      // Other Live Pilots (renders their real on-chain NFT Starship if equipped!)
       if (inst.otherPilots) {
         const pScale = Math.max(0.75, 1.0 / Math.sqrt(zoom));
         for (const pl of inst.otherPilots) {
@@ -7499,20 +7502,25 @@
           ctx.translate(pl.x, pl.y);
           ctx.rotate(pl.angle);
           ctx.scale(pScale, pScale);
-          ctx.fillStyle = '#0f172a';
-          ctx.strokeStyle = pl.color;
-          ctx.lineWidth = 1.6;
-          ctx.beginPath();
-          ctx.moveTo(13, 0); ctx.lineTo(-4, -10); ctx.lineTo(-9, -7); ctx.lineTo(-6, 0); ctx.lineTo(-9, 7); ctx.lineTo(-4, 10);
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
+          const plMoving = Math.hypot((pl.targetX ?? pl.x) - pl.x, (pl.targetY ?? pl.y) - pl.y) > 4;
+          if (!pl.isBot && pl.dna && window.PolyHangar && typeof window.PolyHangar.renderProceduralShip === 'function') {
+            window.PolyHangar.renderProceduralShip(ctx, 0, 0, pl.dna, 0.30, 0, Date.now() / 300, plMoving);
+          } else {
+            ctx.fillStyle = '#0f172a';
+            ctx.strokeStyle = pl.color;
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            ctx.moveTo(13, 0); ctx.lineTo(-4, -10); ctx.lineTo(-9, -7); ctx.lineTo(-6, 0); ctx.lineTo(-9, 7); ctx.lineTo(-4, 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+          }
           ctx.restore();
           if (zoom > 0.22) {
             ctx.fillStyle = pl.color;
             ctx.font = `bold ${Math.max(9, Math.round(10 / Math.sqrt(zoom)))}px sans-serif`;
             ctx.textAlign = 'center';
-            ctx.fillText(`🛸 ${pl.name}`, pl.x, pl.y - 14 * pScale);
+            ctx.fillText(`🛸 ${pl.name}`, pl.x, pl.y - (pl.dna ? 22 : 14) * pScale);
           }
         }
       }
