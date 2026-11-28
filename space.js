@@ -226,10 +226,27 @@ class PolySpaceEngine {
         } else {
           this.canvas.style.cursor = 'default';
         }
+
+        if (mode === 'galaxy' && window.PolySpaceGalaxy && typeof window.PolySpaceGalaxy.handleWorldHover === 'function') {
+          const zoom = this._mapZoom || 1.0;
+          const panX = this._mapPanX || 0;
+          const panY = this._mapPanY || 0;
+          const mapCenterX = (rect.width || this.width) * 0.5;
+          const mapCenterY = (rect.height || this.height) * 0.5;
+          const baseX = this._lastRadarBaseX != null ? this._lastRadarBaseX : mapCenterX;
+          const baseY = this._lastRadarBaseY != null ? this._lastRadarBaseY : mapCenterY;
+          const canvasX = (mx - (mapCenterX + panX)) / zoom + mapCenterX;
+          const canvasY = (my - (mapCenterY + panY)) / zoom + mapCenterY;
+          const isOverBoss = window.PolySpaceGalaxy.handleWorldHover(canvasX - baseX, canvasY - baseY, zoom, e.clientX, e.clientY);
+          if (isOverBoss) this.canvas.style.cursor = 'pointer';
+        }
       });
 
       this.canvas.addEventListener('mouseleave', () => {
         this.canvas.style.cursor = 'default';
+        if (window.PolySpaceGalaxy && typeof window.PolySpaceGalaxy.hideBossHover === 'function') {
+          window.PolySpaceGalaxy.hideBossHover();
+        }
       });
 
       // Tactical Map Zoom & Pan Canvas Interaction Listeners
