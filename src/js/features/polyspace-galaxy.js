@@ -581,15 +581,25 @@
         const remSec = Math.max(0, Math.ceil((new Date(inc.expires_at).getTime() - Date.now()) / 1000));
         if (remSec <= 0) {
           el.style.display = 'none';
+          el.dataset.duelId = '';
           return;
         }
-        const safeName = this._escapeHtml(inc.challenger_name);
         el.style.display = 'flex';
-        el.innerHTML = `
-          <span>⚔️ <strong style="color:#ff4d79;">${safeName}</strong> challenges you (${Number(inc.wager_pgt || 0)} PGT • 5% fee)</span>
-          <button style="background:linear-gradient(135deg,#00ff88,#059669); color:#000; border:none; border-radius:6px; padding:4px 10px; font-weight:900; cursor:pointer;" onclick="window.PolySpaceGalaxy.instance.openAcceptIncomingDuel()">✅ Accept (${remSec}s)</button>
-          <button style="background:rgba(255,0,85,0.25); color:#ff94b4; border:1px solid #ff0055; border-radius:6px; padding:4px 8px; font-weight:800; cursor:pointer;" onclick="window.PolySpaceGalaxy.instance.declineIncomingDuel()">✕</button>
-        `;
+        if (el.dataset.duelId !== String(inc.id)) {
+          el.dataset.duelId = String(inc.id);
+          el.onmousedown = (e) => e.stopPropagation();
+          const safeName = this._escapeHtml(inc.challenger_name);
+          el.innerHTML = `
+            <span>⚔️ <strong style="color:#ff4d79;">${safeName}</strong> challenges you (${Number(inc.wager_pgt || 0)} PGT • 5% fee)</span>
+            <button type="button" style="background:linear-gradient(135deg,#00ff88,#059669); color:#000; border:none; border-radius:6px; padding:4px 10px; font-weight:900; cursor:pointer;" onclick="event.stopPropagation(); window.PolySpaceGalaxy.instance.openAcceptIncomingDuel()">✅ Accept (<span id="psg-duel-rem-sec">${remSec}</span>s)</button>
+            <button type="button" style="background:rgba(255,0,85,0.25); color:#ff94b4; border:1px solid #ff0055; border-radius:6px; padding:4px 8px; font-weight:800; cursor:pointer;" onclick="event.stopPropagation(); window.PolySpaceGalaxy.instance.declineIncomingDuel()">✕</button>
+          `;
+        } else {
+          const secEl = document.getElementById('psg-duel-rem-sec');
+          if (secEl && secEl.textContent !== String(remSec)) {
+            secEl.textContent = String(remSec);
+          }
+        }
       }
 
       openAcceptIncomingDuel() {
