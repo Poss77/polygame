@@ -2244,7 +2244,7 @@
 
       updateGalaxy2D(dt) {
         const s = this.ship2D;
-        const maxSpeed = 240 + this.warpLevel * 12; // Warp level scales 2D galaxy cruise speed
+        const maxSpeed = 360 + this.warpLevel * 18; // Warp level scales 2D galaxy cruise speed (+50% boost)
         const B = this.galaxyBound;
 
         // Desktop Arrow-Key Manual Flight
@@ -2288,7 +2288,7 @@
             while (diff < -Math.PI) diff += Math.PI * 2;
             s.angle += diff * Math.min(1, dt * 10);
 
-            const speed = Math.min(maxSpeed, dist * 3.2 + 60);
+            const speed = Math.min(maxSpeed, dist * 4.5 + 90);
             s.vx = Math.cos(s.angle) * speed;
             s.vy = Math.sin(s.angle) * speed;
             const nextPos = this.clampGalaxyPos(s.x + s.vx * dt, s.y + s.vy * dt, s.x, s.y);
