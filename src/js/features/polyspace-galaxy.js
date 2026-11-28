@@ -1287,7 +1287,7 @@
         } else if (heat === 'warm') {
           badge.style.display = 'inline-flex';
           badge.style.color = '#f59e0b';
-          badge.innerText = `📡 WARM ${progress}`;
+          badge.innerText = `WARM ${progress}`;
         } else {
           badge.style.display = 'inline-flex';
           badge.style.color = '#67e8f9';
