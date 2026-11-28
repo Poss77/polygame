@@ -955,8 +955,8 @@
           username: String(payload.username || 'Pilot').slice(0, 24),
           rarity: String(payload.rarity || 'Pilot'),
           text: String(payload.text).slice(0, 140),
-          x: Number.isFinite(Number(payload.x)) ? Math.round(Number(payload.x)) : null,
-          y: Number.isFinite(Number(payload.y)) ? Math.round(Number(payload.y)) : null,
+          x: (payload.x !== null && payload.x !== undefined && Number.isFinite(Number(payload.x))) ? Math.round(Number(payload.x)) : null,
+          y: (payload.y !== null && payload.y !== undefined && Number.isFinite(Number(payload.y))) ? Math.round(Number(payload.y)) : null,
           ts: payload.ts || Date.now()
         });
         if (this.galaxyChatMessages.length > 40) {
