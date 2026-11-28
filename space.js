@@ -4334,6 +4334,9 @@ class PolySpaceEngine {
       const lockLabel = isSlain ? '🔓 <span style="color:#00ff66; font-size:0.7rem;">100% UNLOCKED</span>' : `🔒 <span style="color:#ffb703; font-size:0.7rem;">MIN ${minPgt.toFixed(2)} PGT (25%)</span>`;
       playerShare.innerHTML = `${estPgt.toFixed(2)} PGT (${Number(data.estimated_share_pct || 0).toFixed(1)}%) ${lockLabel}`;
     }
+    if (window.PolySpaceGalaxy && window.PolySpaceGalaxy.instance && typeof window.PolySpaceGalaxy.instance.syncWorldBossState === 'function') {
+      window.PolySpaceGalaxy.instance.syncWorldBossState(data);
+    }
   }
 
   async loadWorldBossLeaderboard() {

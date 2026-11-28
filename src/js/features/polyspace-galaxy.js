@@ -21,8 +21,8 @@
     return BETA_PLAYER_IDS.has(pid) || BETA_USERNAMES.has(uname) || BETA_WALLETS.has(lwal);
   };
 
-  const PSG_CSS = "\n    :root {\n      --bg-dark: #030712;\n      --bg-panel: rgba(8, 15, 32, 0.88);\n      --cyan: #00f0ff;\n      --pink: #ff0055;\n      --purple: #a855f7;\n      --gold: #ffd700;\n      --green: #00ff88;\n      --text: #f8fafc;\n      --muted: #94a3b8;\n    }\n    \n    \n\n    /* Top Control Bar (Sandbox Upgrade Sliders & Mode Switcher) */\n    \n    .brand {\n      display: flex;\n      align-items: center;\n      gap: 10px;\n    }\n    .brand-badge {\n      background: rgba(0, 240, 255, 0.15);\n      border: 1px solid var(--cyan);\n      color: var(--cyan);\n      font-weight: 900;\n      font-size: 0.72rem;\n      padding: 3px 8px;\n      border-radius: 6px;\n      letter-spacing: 0.8px;\n    }\n    .brand-title {\n      font-size: 1rem;\n      font-weight: 900;\n      color: #fff;\n      letter-spacing: 0.5px;\n    }\n\n    /* Sandbox Sliders */\n    .sandbox-controls {\n      display: flex;\n      align-items: center;\n      gap: 14px;\n      background: rgba(0, 0, 0, 0.45);\n      padding: 6px 14px;\n      border-radius: 10px;\n      border: 1px solid rgba(255, 255, 255, 0.1);\n    }\n    .slider-group {\n      display: flex;\n      align-items: center;\n      gap: 6px;\n      font-size: 0.76rem;\n    }\n    .slider-group label {\n      font-weight: 800;\n      white-space: nowrap;\n    }\n    .slider-group input[type=\"range\"] {\n      width: 78px;\n      accent-color: var(--cyan);\n      cursor: pointer;\n    }\n    .lvl-pill {\n      font-family: monospace;\n      font-weight: 900;\n      padding: 2px 6px;\n      border-radius: 4px;\n      background: rgba(255, 255, 255, 0.08);\n      min-width: 44px;\n      text-align: center;\n    }\n\n    .mode-buttons {\n      display: flex;\n      align-items: center;\n      gap: 8px;\n    }\n    #psg-root .btn {\n      background: rgba(0, 240, 255, 0.15);\n      border: 1px solid var(--cyan);\n      color: #fff;\n      font-weight: 800;\n      font-size: 0.78rem;\n      padding: 7px 14px;\n      border-radius: 8px;\n      cursor: pointer;\n      transition: all 0.18s ease;\n      display: inline-flex;\n      align-items: center;\n      gap: 6px;\n    }\n    #psg-root .btn:hover {\n      background: rgba(0, 240, 255, 0.3);\n      box-shadow: 0 0 12px rgba(0, 240, 255, 0.45);\n      transform: translateY(-1px);\n    }\n    .btn.active {\n      background: linear-gradient(135deg, #00f0ff, #0284c7);\n      color: #000;\n      box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);\n    }\n    #psg-root .btn-danger {\n      background: rgba(255, 0, 85, 0.2);\n      border-color: var(--pink);\n      color: #ff94b4;\n    }\n    #psg-root .btn-danger:hover {\n      background: rgba(255, 0, 85, 0.4);\n      box-shadow: 0 0 12px rgba(255, 0, 85, 0.5);\n    }\n    #psg-root .btn-gold {\n      background: linear-gradient(135deg, #ffd700, #f59e0b);\n      border-color: #ffd700;\n      color: #000;\n    }\n\n    /* Main Viewport */\n    #psg-viewport {\n      position: relative;\n      flex: 1;\n      width: 100%;\n      height: 100%;\n      overflow: hidden;\n      background: #02040a;\n    }\n    #psg-viewport canvas {\n      display: block;\n      width: 100%;\n      height: 100%;\n      touch-action: none;\n      -webkit-user-select: none;\n      -webkit-touch-callout: none;\n    }\n\n    /* 2D Galaxy Radar Overlays */\n    #hud-2d {\n      position: absolute;\n      inset: 0;\n      pointer-events: none;\n    }\n    #psg-root .hud-panel {\n      pointer-events: auto;\n      background: var(--bg-panel);\n      border: 1px solid rgba(0, 240, 255, 0.35);\n      border-radius: 10px;\n      padding: 12px 14px;\n      backdrop-filter: blur(8px);\n      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65);\n    }\n    #nav-telemetry-card {\n      position: absolute;\n      top: 14px;\n      left: 14px;\n      width: 310px;\n    }\n    #system-briefing-card {\n      position: absolute;\n      bottom: 18px;\n      left: 50%;\n      transform: translateX(-50%);\n      min-width: 440px;\n      max-width: 92vw;\n      display: none;\n      border-color: var(--gold);\n      box-shadow: 0 0 25px rgba(255, 215, 0, 0.25);\n    }\n    #galaxy-Quick-Jump {\n      position: absolute;\n      top: 14px;\n      right: 14px;\n      width: 265px;\n    }\n\n    /* 3D Combat Overlays */\n    #hud-3d {\n      position: absolute;\n      inset: 0;\n      pointer-events: none;\n      display: none;\n    }\n    #combat-top-hud {\n      position: absolute;\n      top: 14px;\n      left: 50%;\n      transform: translateX(-50%);\n      display: flex;\n      align-items: center;\n      gap: 18px;\n      background: rgba(4, 10, 24, 0.85);\n      border: 1px solid rgba(0, 240, 255, 0.4);\n      border-radius: 12px;\n      padding: 8px 20px;\n      pointer-events: auto;\n    }\n    #combat-left-hud {\n      position: absolute;\n      bottom: 18px;\n      left: 18px;\n      width: 260px;\n      pointer-events: auto;\n    }\n    #combat-right-hud {\n      position: absolute;\n      bottom: 18px;\n      right: 18px;\n      width: 260px;\n      pointer-events: auto;\n    }\n    #psg-root .bar-wrap {\n      width: 100%;\n      height: 11px;\n      background: rgba(0, 0, 0, 0.65);\n      border-radius: 6px;\n      overflow: hidden;\n      border: 1px solid rgba(255, 255, 255, 0.15);\n      margin-top: 4px;\n      margin-bottom: 10px;\n    }\n    #psg-root .bar-fill {\n      height: 100%;\n      transition: width 0.12s linear;\n    }\n\n    /* Toast Banner */\n    #psg-toast-banner {\n      position: fixed;\n      top: 76px;\n      left: 50%;\n      transform: translateX(-50%);\n      background: rgba(6, 18, 38, 0.95);\n      border: 1px solid var(--cyan);\n      color: #fff;\n      font-weight: 800;\n      font-size: 0.86rem;\n      padding: 10px 20px;\n      border-radius: 8px;\n      z-index: 100;\n      box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);\n      display: none;\n      pointer-events: none;\n    }\n\n    /* End of Mission Modal */\n    #mission-modal {\n      position: absolute;\n      inset: 0;\n      background: rgba(2, 6, 18, 0.84);\n      backdrop-filter: blur(6px);\n      display: none;\n      align-items: center;\n      justify-content: center;\n      z-index: 60;\n      pointer-events: auto;\n    }\n    #psg-root .modal-box {\n      background: linear-gradient(145deg, #091326, #040814);\n      border: 2px solid var(--cyan);\n      border-radius: 14px;\n      padding: 24px 30px;\n      max-width: 460px;\n      width: 90%;\n      text-align: center;\n      box-shadow: 0 0 40px rgba(0, 240, 255, 0.3);\n    }\n\n    /* Pilot Hail Card (2D Map) */\n    #pilot-hail-card {\n      position: absolute;\n      bottom: 16px;\n      left: 50%;\n      transform: translateX(-50%);\n      min-width: 440px;\n      max-width: 600px;\n      display: none;\n      border-color: var(--purple);\n      box-shadow: 0 0 28px rgba(168, 85, 247, 0.35);\n      pointer-events: auto;\n      z-index: 35;\n    }\n\n    /* Tactical Duel & Space Trade Modals */\n    #psg-root .overlay-modal {\n      position: absolute;\n      inset: 0;\n      background: rgba(2, 6, 18, 0.86);\n      backdrop-filter: blur(6px);\n      display: none;\n      align-items: center;\n      justify-content: center;\n      z-index: 70;\n      pointer-events: auto;\n    }\n    #psg-root .duel-box {\n      background: linear-gradient(145deg, #091326, #040814);\n      border: 2px solid var(--pink);\n      border-radius: 14px;\n      padding: 20px 24px;\n      width: 94%;\n      max-width: 620px;\n      box-shadow: 0 0 42px rgba(255, 0, 85, 0.28);\n    }\n    #psg-root .trade-box {\n      background: linear-gradient(145deg, #091326, #040814);\n      border: 2px solid var(--green);\n      border-radius: 14px;\n      padding: 20px 24px;\n      width: 94%;\n      max-width: 540px;\n      box-shadow: 0 0 42px rgba(0, 255, 136, 0.25);\n    }\n    #psg-root .vec-group {\n      display: flex;\n      gap: 5px;\n    }\n    #psg-root .vec-btn {\n      background: rgba(15, 23, 42, 0.9);\n      border: 1px solid rgba(148, 163, 184, 0.35);\n      color: var(--muted);\n      font-size: 0.72rem;\n      font-weight: 800;\n      padding: 5px 9px;\n      border-radius: 6px;\n      cursor: pointer;\n      transition: all 0.12s;\n    }\n    #psg-root .vec-btn.atk-active {\n      background: rgba(255, 0, 85, 0.28);\n      border-color: var(--pink);\n      color: #fff;\n      box-shadow: 0 0 10px rgba(255, 0, 85, 0.45);\n    }\n    #psg-root .vec-btn.def-active {\n      background: rgba(0, 240, 255, 0.25);\n      border-color: var(--cyan);\n      color: #fff;\n      box-shadow: 0 0 10px rgba(0, 240, 255, 0.45);\n    }\n    #duel-#psg-viewport canvas {\n      width: 100%;\n      height: 250px;\n      border-radius: 10px;\n      border: 1px solid rgba(0, 240, 255, 0.35);\n      background: #02050d;\n      display: block;\n    }\n\n    /* Mobile Touch Controls & Responsive HUD */\n    #mobile-3d-controls {\n      display: none;\n      position: absolute;\n      bottom: 16px;\n      right: 14px;\n      gap: 10px;\n      align-items: flex-end;\n      pointer-events: auto;\n      z-index: 30;\n    }\n    .touch-action-btn {\n      width: 68px;\n      height: 68px;\n      border-radius: 50%;\n      border: 2px solid var(--cyan);\n      background: rgba(6, 18, 38, 0.84);\n      color: #fff;\n      font-weight: 900;\n      font-size: 0.72rem;\n      display: flex;\n      flex-direction: column;\n      align-items: center;\n      justify-content: center;\n      gap: 2px;\n      box-shadow: 0 0 18px rgba(0, 240, 255, 0.35);\n      touch-action: none;\n      -webkit-tap-highlight-color: transparent;\n      user-select: none;\n    }\n    .touch-action-btn:active, .touch-action-btn.pressed {\n      transform: scale(0.92);\n      background: rgba(0, 240, 255, 0.35);\n    }\n    .touch-action-btn.fire-btn {\n      width: 78px;\n      height: 78px;\n      border-color: var(--pink);\n      box-shadow: 0 0 20px rgba(255, 0, 85, 0.45);\n    }\n    .touch-action-btn.fire-btn:active, .touch-action-btn.fire-btn.pressed {\n      background: rgba(255, 0, 85, 0.4);\n    }\n    .touch-action-btn.missile-btn {\n      border-color: var(--gold);\n      box-shadow: 0 0 18px rgba(255, 215, 0, 0.38);\n    }\n    .touch-autofire-pill {\n      padding: 5px 10px;\n      border-radius: 999px;\n      border: 1px solid var(--green);\n      background: rgba(0, 255, 136, 0.2);\n      color: #a7f3d0;\n      font-size: 0.68rem;\n      font-weight: 900;\n      touch-action: none;\n    }\n    .touch-autofire-pill.off {\n      border-color: rgba(148, 163, 184, 0.4);\n      background: rgba(15, 23, 42, 0.8);\n      color: var(--muted);\n    }\n    #mobile-zoom-btns {\n      display: none;\n      position: absolute;\n      bottom: 16px;\n      right: 12px;\n      flex-direction: column;\n      gap: 6px;\n      pointer-events: auto;\n      z-index: 25;\n    }\n    #mobile-trade-btn {\n      display: flex;\n      position: absolute;\n      top: 12px;\n      right: 14px;\n      pointer-events: auto;\n      z-index: 25;\n    }\n\n    @media (max-width: 900px), (pointer: coarse) {\n      \n      .brand-title { display: none; }\n      .sandbox-controls {\n        width: 100%;\n        justify-content: space-between;\n        gap: 6px;\n        overflow-x: auto;\n        padding-bottom: 2px;\n      }\n      .slider-group { font-size: 0.68rem; gap: 4px; }\n      .slider-group input[type=\"range\"] { width: 54px; }\n      #psg-viewport { width: 100%; height: 100%; flex: 1; }\n      #nav-telemetry-card {\n        top: 6px;\n        left: 6px;\n        width: auto;\n        padding: 4px 7px;\n        font-size: 0.7rem;\n      }\n      .nav-help-text { display: none !important; }\n      #galaxy-Quick-Jump { display: none !important; }\n      #mobile-trade-btn { display: flex; top: 6px; right: 6px; gap: 4px; }\n      #system-briefing-card, #pilot-hail-card {\n        min-width: 0;\n        width: calc(100% - 12px);\n        max-width: calc(100% - 12px);\n        bottom: 8px;\n        padding: 6px 8px;\n        z-index: 40;\n      }\n      #mobile-zoom-btns { display: flex; bottom: 60px; right: 10px; }\n      #combat-top-hud {\n        top: 6px;\n        width: calc(100% - 16px);\n        padding: 6px 10px;\n        gap: 8px;\n        justify-content: space-between;\n        flex-wrap: nowrap;\n        overflow-x: auto;\n      }\n      #combat-top-hud > div { white-space: nowrap; }\n      #combat-left-hud {\n        bottom: auto;\n        top: 64px;\n        left: 8px;\n        width: 170px;\n        padding: 7px 9px;\n      }\n      #combat-left-hud #psg-root .bar-wrap { height: 8px; margin-bottom: 6px; }\n      #combat-right-hud { display: none; }\n      #mobile-3d-controls { display: flex; }\n      #psg-root .duel-box, #psg-root .trade-box, #psg-root .modal-box {\n        max-height: 92vh;\n        overflow-y: auto;\n        padding: 14px 14px;\n      }\n      #duel-#psg-viewport canvas { height: 195px; }\n    }\n  \n#psg-root { display: flex; flex-direction: column; position: relative; width: 100%; height: 100%; font-family: inherit; color: #f8fafc; overflow: hidden; }\n#psg-root.psg-fullscreen { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; height: 100dvh !important; z-index: 100000010 !important; background: #02040a !important; border-radius: 0 !important; }\n#psg-root.psg-fullscreen #system-briefing-card,\n#psg-root.psg-fullscreen #pilot-hail-card { bottom: max(14px, calc(env(safe-area-inset-bottom, 0px) + 12px)) !important; }\n#psg-root:not(.psg-fullscreen) #nav-telemetry-card { top: 6px; left: 6px; width: auto; padding: 4px 7px; }\n#psg-root:not(.psg-fullscreen) #nav-telemetry-card input { width: 48px !important; }\n#psg-root:not(.psg-fullscreen) #mobile-trade-btn { top: 6px; right: 6px; }\n#psg-root:not(.psg-fullscreen) #mobile-zoom-btns { display: none !important; }\n#psg-root:not(.psg-fullscreen) #system-briefing-card,\n#psg-root:not(.psg-fullscreen) #pilot-hail-card { min-width: 0; width: calc(100% - 12px); bottom: 8px; padding: 6px 8px; z-index: 40; }\n#psg-toast-banner { position: absolute !important; top: 10px !important; left: 50% !important; transform: translateX(-50%) !important; }\n\n/* Teleported Full-Viewport Modals (Rank, Trade, Tactical Duel) */\n#rank-modal, #trade-modal, #tactical-duel-modal {\n  display: none;\n  position: fixed !important;\n  inset: 0 !important;\n  width: 100vw !important;\n  height: 100vh !important;\n  height: 100dvh !important;\n  background: rgba(2, 6, 18, 0.86) !important;\n  backdrop-filter: blur(6px);\n  z-index: 100000020 !important;\n  align-items: center;\n  justify-content: center;\n  color: #f8fafc;\n}\n#rank-modal .trade-box, #trade-modal .trade-box {\n  background: linear-gradient(145deg, #091326, #040814);\n  border: 2px solid #00ff88;\n  border-radius: 14px;\n  padding: 20px 24px;\n  width: 94%;\n  max-width: 560px;\n  max-height: 90vh;\n  overflow-y: auto;\n  box-shadow: 0 0 42px rgba(0, 255, 136, 0.25);\n}\n#rank-modal .trade-box { border-color: #ffd700; box-shadow: 0 0 42px rgba(255, 215, 0, 0.28); }\n#tactical-duel-modal .duel-box {\n  background: linear-gradient(145deg, #091326, #040814);\n  border: 2px solid #ff0055;\n  border-radius: 14px;\n  padding: 20px 24px;\n  width: 94%;\n  max-width: 620px;\n  max-height: 90vh;\n  overflow-y: auto;\n  box-shadow: 0 0 42px rgba(255, 0, 85, 0.28);\n}\n#rank-modal .btn, #trade-modal .btn, #tactical-duel-modal .btn {\n  background: rgba(0, 240, 255, 0.12);\n  border: 1px solid #00f0ff;\n  color: #fff;\n  font-weight: 800;\n  font-size: 0.78rem;\n  padding: 6px 12px;\n  border-radius: 7px;\n  cursor: pointer;\n  display: inline-flex;\n  align-items: center;\n  gap: 5px;\n}\n#rank-modal .btn.active, #trade-modal .btn.active, #tactical-duel-modal .btn.active {\n  background: #00f0ff;\n  color: #000;\n}\n#tactical-duel-modal .btn-danger { background: linear-gradient(135deg, #ff0055, #be123c); border-color: #ff0055; }\n#tactical-duel-modal .btn-gold { background: linear-gradient(135deg, #ffd700, #f59e0b); border-color: #ffd700; color: #000; }\n#tactical-duel-modal .vec-btn {\n  background: rgba(15, 23, 42, 0.9);\n  border: 1px solid rgba(148, 163, 184, 0.35);\n  color: #94a3b8;\n  font-size: 0.72rem;\n  font-weight: 800;\n  padding: 5px 9px;\n  border-radius: 6px;\n  cursor: pointer;\n}\n#tactical-duel-modal .vec-btn.atk-active { background: rgba(255, 0, 85, 0.28); border-color: #ff0055; color: #fff; }\n#tactical-duel-modal .vec-btn.def-active { background: rgba(0, 240, 255, 0.25); border-color: #00f0ff; color: #fff; }\n#tactical-duel-modal .bar-wrap { width: 100%; height: 10px; background: rgba(0,0,0,0.65); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15); margin-top: 4px; }\n#tactical-duel-modal .bar-fill { height: 100%; transition: width 0.12s linear; }\n#psg-chat-panel { position: absolute; top: 48px; right: 12px; width: 245px; height: 255px; padding: 0 !important; display: flex; flex-direction: column; z-index: 28; pointer-events: auto; background: rgba(5, 12, 28, 0.78) !important; border: 1px solid rgba(0, 240, 255, 0.35) !important; border-radius: 8px !important; overflow: hidden; }\n#psg-root:not(.psg-fullscreen) #psg-chat-panel { top: 38px; right: 6px; width: 215px; height: 210px; }\n#psg-chat-panel.collapsed { height: auto !important; width: auto !important; min-width: 140px; }\n#psg-chat-panel.collapsed #psg-chat-messages, #psg-chat-panel.collapsed #psg-chat-input-row { display: none !important; }\n#psg-chat-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 5px 8px; background: rgba(0, 240, 255, 0.08); border-bottom: 1px solid rgba(0, 240, 255, 0.22); cursor: pointer; user-select: none; flex-shrink: 0; }\n#psg-chat-messages { flex: 1; overflow-y: auto; padding: 6px 7px; display: flex; flex-direction: column; gap: 4px; font-size: 0.7rem; line-height: 1.32; color: #e2e8f0; scrollbar-width: thin; }\n#psg-chat-input-row { display: flex; align-items: center; gap: 4px; padding: 5px 6px; border-top: 1px solid rgba(255, 255, 255, 0.1); background: rgba(2, 6, 18, 0.75); flex-shrink: 0; }\n#psg-chat-input { flex: 1; min-width: 0; background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(0, 240, 255, 0.3); color: #fff; border-radius: 5px; padding: 4px 6px; font-size: 0.7rem; outline: none; }\n#psg-chat-input:focus { border-color: #00f0ff; }\n.psg-chat-msg { word-break: break-word; }\n.psg-chat-coord { display: inline-block; margin-left: 4px; padding: 0 4px; border-radius: 4px; background: rgba(0, 240, 255, 0.16); border: 1px solid rgba(0, 240, 255, 0.45); color: #67e8f9; font-family: monospace; font-size: 0.64rem; cursor: pointer; }\n.psg-chat-coord:hover { background: rgba(0, 240, 255, 0.35); color: #fff; }\n@media (max-width: 760px) {\n  #psg-root #nav-telemetry-card,\n  #psg-root:not(.psg-fullscreen) #nav-telemetry-card { top: 6px; left: 6px; right: 6px; width: auto; max-width: calc(100% - 12px); padding: 4px 6px; }\n  #psg-root.psg-fullscreen #nav-telemetry-card { top: calc(env(safe-area-inset-top, 0px) + 6px); left: 6px; right: 6px; width: auto; max-width: calc(100% - 12px); padding: 4px 6px; }\n  #psg-root #nav-telemetry-card > div { gap: 4px !important; justify-content: space-between; overflow-x: auto; scrollbar-width: none; }\n  #psg-root #nav-telemetry-card > div::-webkit-scrollbar { display: none; }\n  #psg-root #coord-readout, #psg-root #galaxy-pgt-readout { font-size: 0.65rem !important; }\n  #psg-root #nav-telemetry-card .btn { padding: 2px 5px !important; font-size: 0.64rem !important; }\n  #psg-root #mobile-trade-btn,\n  #psg-root:not(.psg-fullscreen) #mobile-trade-btn { top: 40px; right: 6px; gap: 4px !important; }\n  #psg-root.psg-fullscreen #mobile-trade-btn { top: calc(env(safe-area-inset-top, 0px) + 40px); right: 6px; gap: 4px !important; }\n  #psg-root #mobile-trade-btn .btn { padding: 3px 7px !important; font-size: 0.68rem !important; }\n  #psg-root #psg-chat-panel,\n  #psg-root:not(.psg-fullscreen) #psg-chat-panel { top: 72px; right: 6px; width: min(220px, calc(100% - 12px)); height: 185px; }\n  #psg-root.psg-fullscreen #psg-chat-panel { top: calc(env(safe-area-inset-top, 0px) + 72px); right: 6px; width: min(230px, calc(100% - 12px)); height: 210px; }\n  #psg-root #psg-toast-banner { top: 108px !important; max-width: calc(100% - 16px); }\n}\n";
-  const PSG_HTML = "<div id=\"psg-toast-banner\"></div>\n<div id=\"psg-viewport\">\n    <canvas id=\"demo-canvas\"></canvas>\n\n    <!-- ==================== 2D MILKY WAY OVERLAY HUD ==================== -->\n    <div id=\"hud-2d\">\n      <!-- Top-Left: Ultra-Compact Coordinate Pill -->\n      <div class=\"hud-panel\" id=\"nav-telemetry-card\" style=\"padding:4px 7px; width:auto;\">\n        <div style=\"display:flex; align-items:center; gap:6px;\">\n          <span style=\"font-family:monospace; font-size:0.72rem; color:#00ff88; font-weight:800; white-space:nowrap;\" id=\"coord-readout\">X: +0 | Y: +0</span>\n          <span style=\"width:1px; height:12px; background:rgba(255,255,255,0.18); flex-shrink:0;\"></span>\n          <span style=\"font-family:monospace; font-size:0.72rem; color:#ffd700; font-weight:900; white-space:nowrap; transition:all 0.25s ease;\" id=\"galaxy-pgt-readout\" title=\"Live On-Site PGT Balance\">\ud83e\ude99 0 PGT</span>\n          <span style=\"width:1px; height:12px; background:rgba(255,255,255,0.18); flex-shrink:0;\"></span>\n          <button class=\"btn\" id=\"btn-gift-scan\" style=\"padding:2px 6px; font-size:0.68rem; border-color:rgba(255,215,0,0.55); color:#fde047;\" onclick=\"window.PolySpaceGalaxy.instance.scanForGalacticGifts(true)\" title=\"Deep-Space Cache Scanner (auto-scans as you fly, or click to ping):&#10;❄️ COLD: >2,900u away&#10;📡 WARM: within 2,900u&#10;🔥 HOT: within 1,150u&#10;🎁 LOCKED: within 260u (reveals on map!)&#10;Fly within 320u &amp; click the 🎁 to claim 50–150 PGT!\">\ud83d\udce1 <span id=\"gift-scan-badge\">\u2744\ufe0f 0/10</span></button>\n          <button class=\"btn\" style=\"padding:2px 5px; font-size:0.68rem;\" onclick=\"window.PolySpaceGalaxy.instance.centerOnShip()\" title=\"Center on Ship\">\ud83c\udfaf</button>\n          <button class=\"btn\" style=\"padding:2px 5px; font-size:0.68rem;\" onclick=\"window.PolySpaceGalaxy.instance.shareLocation()\" title=\"Share Coordinates\">\ud83d\udce4</button>\n        </div>\n      </div>\n\n      <!-- Bottom-Center: Compact 1-Row Pilot Hail Bar -->\n      <div class=\"hud-panel\" id=\"pilot-hail-card\" style=\"padding:5px 10px; min-width:0; width:auto; max-width:calc(100% - 12px); z-index:40;\">\n        <div style=\"display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:nowrap;\">\n          <div style=\"display:flex; align-items:center; gap:5px; white-space:nowrap; overflow:hidden; min-width:0; flex:1;\">\n            <span id=\"hail-pilot-name\" style=\"font-size:0.78rem; font-weight:900; color:#e9d5ff; overflow:hidden; text-overflow:ellipsis;\">\ud83d\udef8 PILOT</span>\n            <span id=\"hail-pilot-rarity\" style=\"font-size:0.64rem; font-weight:800; padding:1px 5px; border-radius:4px; border:1px solid var(--purple); color:#e9d5ff; flex-shrink:0;\">EPIC</span>\n            <span id=\"hail-pilot-stats\" style=\"font-size:0.68rem; color:#94a3b8; flex-shrink:0;\">\ud83d\udee1\ufe0f18 \u2604\ufe0f20</span>\n          </div>\n          <div style=\"display:flex; gap:5px; align-items:center; flex-shrink:0;\">\n            <button class=\"btn btn-danger\" style=\"padding:4px 9px; font-size:0.72rem;\" onclick=\"window.PolySpaceGalaxy.instance.openTacticalDuel()\">\u2694\ufe0f DUEL</button>\n            <button class=\"btn\" style=\"padding:3px 7px; font-size:0.7rem;\" onclick=\"document.getElementById('pilot-hail-card').style.display='none'\">\u2715</button>\n          </div>\n        </div>\n      </div>\n\n      <!-- Bottom-Center: Compact 1-Row Solar System Launch Bar -->\n      <div class=\"hud-panel\" id=\"system-briefing-card\" style=\"padding:5px 10px; min-width:0; width:auto; max-width:calc(100% - 12px); z-index:40;\">\n        <div style=\"display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:nowrap;\">\n          <div style=\"display:flex; align-items:center; gap:5px; white-space:nowrap; overflow:hidden; min-width:0; flex:1;\">\n            <span id=\"brief-sys-title\" style=\"font-size:0.78rem; font-weight:900; color:var(--gold); overflow:hidden; text-overflow:ellipsis;\">\u2600\ufe0f #1 Alpha Centauri</span>\n            <span id=\"brief-sys-lvl\" style=\"font-size:0.64rem; font-weight:800; padding:1px 5px; border-radius:4px; border:1px solid var(--gold); color:var(--gold); flex-shrink:0;\">Lvl 1</span>\n            <span id=\"brief-sys-desc\" style=\"font-size:0.7rem; color:#00ff88; font-weight:800; flex-shrink:0;\">+17 PGT</span>\n          </div>\n          <div style=\"display:flex; gap:5px; align-items:center; flex-shrink:0;\">\n            <button class=\"btn btn-gold\" id=\"btn-engage-system\" style=\"padding:4px 9px; font-size:0.72rem;\" onclick=\"window.PolySpaceGalaxy.instance.launch3DMission(window.PolySpaceGalaxy.instance.selectedSystemId)\">\u2694\ufe0f LAUNCH</button>\n            <button class=\"btn\" style=\"padding:3px 7px; font-size:0.7rem;\" onclick=\"document.getElementById('system-briefing-card').style.display='none'\">\u2715</button>\n          </div>\n        </div>\n      </div>\n\n      <!-- Top-Right Compact Buttons: Rank + Trade + Fullscreen Expand -->\n      <div id=\"mobile-trade-btn\" style=\"gap:5px;\">\n        <button class=\"btn\" style=\"border-color:var(--gold); color:#fde047; padding:4px 8px; font-size:0.7rem;\" onclick=\"window.PolySpaceGalaxy.instance.openRankLeaderboard()\">\ud83c\udfc6 Rank</button>\n        <button class=\"btn\" style=\"border-color:var(--green); color:#a7f3d0; padding:4px 8px; font-size:0.7rem;\" onclick=\"window.PolySpaceGalaxy.instance.openPostTradeBeacon()\">\ud83e\udd1d Trade</button>\n        <button id=\"psg-btn-fullscreen\" class=\"btn\" style=\"border-color:#00f0ff; color:#00f0ff; padding:4px 8px; font-size:0.7rem;\" onclick=\"window.PolySpaceGalaxy.instance.toggleFullscreen()\">\u26f6 Expand</button>\n      </div>\n\n      <!-- Right-Side Live Galaxy Comms Chat Panel -->\n      <div id=\"psg-chat-panel\" class=\"hud-panel\" onmousedown=\"event.stopPropagation()\" onwheel=\"event.stopPropagation()\" ontouchstart=\"event.stopPropagation()\">\n        <div id=\"psg-chat-header\" onclick=\"window.PolySpaceGalaxy.instance.toggleGalaxyChat()\">\n          <span style=\"display:flex; align-items:center; gap:5px; font-weight:900; font-size:0.68rem; color:#00f0ff; letter-spacing:0.4px;\">\n            \ud83d\udcac COMMS\n            <span id=\"psg-chat-online\" style=\"font-size:0.6rem; color:#00ff88; background:rgba(0,255,136,0.12); border:1px solid rgba(0,255,136,0.35); border-radius:99px; padding:0 5px;\">1</span>\n            <span id=\"psg-chat-unread\" style=\"display:none; font-size:0.6rem; color:#000; background:#fbbf24; border-radius:99px; padding:0 5px; font-weight:900;\">0</span>\n          </span>\n          <button type=\"button\" id=\"psg-chat-toggle-btn\" style=\"background:none; border:none; color:#94a3b8; font-size:0.8rem; cursor:pointer; padding:0 2px; line-height:1;\" title=\"Minimize / Expand Chat\">\u2212</button>\n        </div>\n        <div id=\"psg-chat-messages\"></div>\n        <div id=\"psg-chat-input-row\">\n          <button type=\"button\" onclick=\"window.PolySpaceGalaxy.instance.sendGalaxyChat(true)\" style=\"background:rgba(0,240,255,0.12); border:1px solid rgba(0,240,255,0.35); color:#67e8f9; border-radius:5px; padding:3px 5px; font-size:0.68rem; cursor:pointer; flex-shrink:0;\" title=\"Share your current (X, Y) coordinates in chat\">\ud83d\udccd</button>\n          <input id=\"psg-chat-input\" type=\"text\" maxlength=\"140\" placeholder=\"Message galaxy...\" autocomplete=\"off\" onkeydown=\"if(event.key==='Enter'){event.preventDefault();window.PolySpaceGalaxy.instance.sendGalaxyChat(false);}\" />\n          <button type=\"button\" onclick=\"window.PolySpaceGalaxy.instance.sendGalaxyChat(false)\" style=\"background:rgba(0,240,255,0.22); border:1px solid #00f0ff; color:#fff; border-radius:5px; padding:3px 7px; font-size:0.7rem; font-weight:800; cursor:pointer; flex-shrink:0;\">\u27a4</button>\n        </div>\n      </div>\n    </div>\n\n    <!-- ==================== 3D DOGFIGHT COCKPIT HUD ==================== -->\n    <div id=\"hud-3d\">\n      <!-- Top Combat Banner -->\n      <div id=\"combat-top-hud\">\n        <div>\n          <div style=\"font-size:0.68rem; color:var(--muted); text-transform:uppercase; font-weight:800;\">ACTIVE SOLAR SYSTEM</div>\n          <div id=\"hud3d-system-name\" style=\"font-size:0.95rem; font-weight:900; color:var(--cyan);\">System #15 \u2022 Vega Prime (Lvl 15)</div>\n        </div>\n        <div style=\"height:28px; width:1px; background:rgba(255,255,255,0.15);\"></div>\n        <div>\n          <div style=\"font-size:0.68rem; color:var(--muted); text-transform:uppercase; font-weight:800;\">PHASE / WAVE</div>\n          <div id=\"hud3d-wave\" style=\"font-size:0.95rem; font-weight:900; color:var(--gold);\">Wave 1 / 3 \u2022 Scout Squadron</div>\n        </div>\n        <div style=\"height:28px; width:1px; background:rgba(255,255,255,0.15);\"></div>\n        <div>\n          <div style=\"font-size:0.68rem; color:var(--muted); text-transform:uppercase; font-weight:800;\">HOSTILES REMAINING</div>\n          <div id=\"hud3d-enemies\" style=\"font-size:0.95rem; font-weight:900; color:#ff4d79;\">5 Ships</div>\n        </div>\n        <div style=\"height:28px; width:1px; background:rgba(255,255,255,0.15);\"></div>\n        <div>\n          <div style=\"font-size:0.68rem; color:var(--muted); text-transform:uppercase; font-weight:800;\">MISSION TIME</div>\n          <div id=\"hud3d-timer\" style=\"font-family:monospace; font-size:1rem; font-weight:900; color:#fff;\">00:00</div>\n        </div>\n        <button class=\"btn btn-danger\" style=\"padding:5px 10px; font-size:0.72rem;\" onclick=\"window.PolySpaceGalaxy.instance.switchMode('galaxy')\">\u2b05\ufe0f Abort to Galaxy</button>\n      </div>\n\n      <!-- Bottom-Left: Shield & Hull Integrity -->\n      <div class=\"hud-panel\" id=\"combat-left-hud\">\n        <div style=\"font-size:0.76rem; font-weight:900; color:var(--cyan); margin-bottom:4px; display:flex; justify-content:space-between;\">\n          <span>\ud83d\udee1\ufe0f QUANTUM SHIELD</span>\n          <span id=\"hud3d-shield-txt\" style=\"font-family:monospace;\">1,500 / 1,500</span>\n        </div>\n        <div class=\"bar-wrap\">\n          <div class=\"bar-fill\" id=\"hud3d-shield-bar\" style=\"width:100%; background:linear-gradient(90deg, #0284c7, #00f0ff); box-shadow:0 0 10px #00f0ff;\"></div>\n        </div>\n\n        <div style=\"font-size:0.76rem; font-weight:900; color:var(--green); margin-bottom:4px; display:flex; justify-content:space-between;\">\n          <span>\ud83d\udd29 HULL ARMOR</span>\n          <span id=\"hud3d-hull-txt\" style=\"font-family:monospace;\">1,000 / 1,000</span>\n        </div>\n        <div class=\"bar-wrap\" style=\"margin-bottom:4px;\">\n          <div class=\"bar-fill\" id=\"hud3d-hull-bar\" style=\"width:100%; background:linear-gradient(90deg, #059669, #00ff88);\"></div>\n        </div>\n        <div style=\"font-size:0.68rem; color:var(--muted);\">\n          \ud83d\udca1 Shields auto-regenerate when you evade enemy fire for 2.5s.\n        </div>\n      </div>\n\n      <!-- Bottom-Right: Weapons, Homing Missile & Controls Guide -->\n      <div class=\"hud-panel\" id=\"combat-right-hud\">\n        <div style=\"font-size:0.76rem; font-weight:900; color:#ff4d79; margin-bottom:5px; display:flex; justify-content:space-between;\">\n          <span id=\"hud3d-weapon-name\">\u2604\ufe0f TWIN PLASMA TURRETS</span>\n          <span id=\"hud3d-dps-txt\" style=\"font-family:monospace;\">165 DMG</span>\n        </div>\n        <div style=\"font-size:0.73rem; font-weight:900; color:var(--gold); margin-bottom:3px; display:flex; justify-content:space-between; align-items:center;\">\n          <span>\ud83d\ude80 AUTO-LOCK MISSILE [SPACE]</span>\n          <span id=\"hud3d-missile-txt\" style=\"font-family:monospace; color:var(--green);\">READY</span>\n        </div>\n        <div class=\"bar-wrap\" style=\"margin-bottom:6px;\">\n          <div class=\"bar-fill\" id=\"hud3d-missile-bar\" style=\"width:100%; background:linear-gradient(90deg, #f59e0b, #00ff88);\"></div>\n        </div>\n        <div style=\"display:flex; justify-content:space-between; align-items:center; gap:8px;\">\n          <div style=\"font-size:0.67rem; color:var(--muted); line-height:1.35;\">\n            \u2022 <strong>Steer:</strong> Mouse or <strong>WASD / Arrows</strong> (Auto-Fire ON)<br/>\n            \u2022 <strong>Missile:</strong> <strong>Space</strong> / <strong>E</strong> &bull; <strong>Roll:</strong> <strong>Shift</strong> / <strong>Q</strong>\n          </div>\n          <div style=\"display:flex; flex-direction:column; gap:4px; align-items:flex-end;\">\n            <button class=\"btn btn-gold\" id=\"btn-fire-missile\" style=\"padding:4px 9px; font-size:0.68rem; white-space:nowrap;\" onclick=\"window.PolySpaceGalaxy.instance.fireHomingMissile()\">\ud83d\ude80 MISSILE</button>\n            <button class=\"btn\" id=\"btn-barrel-roll\" style=\"padding:4px 9px; font-size:0.68rem; white-space:nowrap; border-color:#00f0ff; color:#00f0ff;\" onclick=\"window.PolySpaceGalaxy.instance.triggerBarrelRoll()\">\ud83c\udf00 ROLL</button>\n          </div>\n        </div>\n      </div>\n\n      <!-- Mobile Touch 3D Combat Controls (Missile + Barrel Roll Evade) -->\n      <div id=\"mobile-3d-controls\" style=\"gap:10px;\">\n        <button id=\"btn-mobile-roll\" class=\"touch-action-btn\" style=\"border-color:#00f0ff; background:rgba(0,240,255,0.16);\" onclick=\"window.PolySpaceGalaxy.instance.triggerBarrelRoll()\">\n          <span style=\"font-size:1.25rem;\">\ud83c\udf00</span>\n          <span id=\"mobile-roll-lbl\" style=\"font-size:0.62rem; color:#00f0ff;\">ROLL</span>\n        </button>\n        <button id=\"btn-mobile-missile\" class=\"touch-action-btn missile-btn\" onclick=\"window.PolySpaceGalaxy.instance.fireHomingMissile()\">\n          <span style=\"font-size:1.3rem;\">\ud83d\ude80</span>\n          <span id=\"mobile-missile-lbl\" style=\"font-size:0.64rem; color:#00ff88;\">READY</span>\n        </button>\n      </div>\n    </div>\n\n    <!-- Mission Victory / Defeat Modal -->\n    <div id=\"mission-modal\">\n      <div class=\"modal-box\">\n        <div id=\"modal-icon\" style=\"font-size:2.8rem; margin-bottom:6px;\">\ud83c\udfc6</div>\n        <h2 id=\"modal-title\" style=\"color:var(--green); font-size:1.45rem; font-weight:900; margin-bottom:8px;\">SOLAR SYSTEM CLEARED!</h2>\n        <p id=\"modal-desc\" style=\"color:var(--muted); font-size:0.88rem; margin-bottom:16px; line-height:1.45;\"></p>\n        <div id=\"modal-loot\" style=\"background:rgba(0,240,255,0.08); border:1px solid rgba(0,240,255,0.3); border-radius:8px; padding:12px; margin-bottom:18px; font-weight:800; color:var(--gold); font-size:0.95rem;\"></div>\n        <div style=\"display:flex; gap:10px; justify-content:center;\">\n          <button class=\"btn\" onclick=\"window.PolySpaceGalaxy.instance.closeModalAndReturn()\">\ud83d\uddfa\ufe0f Return to Milky Way</button>\n          <button class=\"btn btn-gold\" onclick=\"window.PolySpaceGalaxy.instance.retry3DMission()\">\ud83d\udd04 Replay 3D Battle</button>\n        </div>\n      </div>\n    </div>\n\n    <!-- Tactical 3-Round Pre-Decided PvP Ship Duel Modal -->\n    <div class=\"overlay-modal\" id=\"tactical-duel-modal\">\n      <div class=\"duel-box\">\n        <div style=\"display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;\">\n          <div>\n            <div style=\"font-size:0.68rem; color:#ff4d79; font-weight:900; letter-spacing:0.8px;\">ASYNC SHIP-TO-SHIP TACTICAL DUEL</div>\n            <h3 id=\"duel-title\" style=\"font-size:1.1rem; font-weight:900; color:#fff;\">\u2694\ufe0f YOU vs. RIVAL PILOT</h3>\n          </div>\n          <button class=\"btn\" style=\"padding:4px 10px; font-size:0.75rem;\" onclick=\"window.PolySpaceGalaxy.instance.closeTacticalDuel()\">\u2715 Close</button>\n        </div>\n\n        <!-- Phase 1: Pre-Decide 3 Attack + 3 Defense Vectors -->\n        <div id=\"duel-setup-phase\">\n          <div style=\"font-size:0.76rem; color:var(--muted); margin-bottom:12px; line-height:1.4;\">\n            Pre-program your <strong>3 Attack Vectors</strong> and <strong>3 Shield Vectors</strong>. Matching the enemy's attack direction blocks <strong>70%</strong> of incoming damage!\n          </div>\n\n          <div id=\"duel-rounds-selector\" style=\"display:flex; flex-direction:column; gap:8px; margin-bottom:14px;\">\n            <!-- Populated dynamically by renderDuelSelector() -->\n          </div>\n\n          <div style=\"display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; border-top:1px solid rgba(255,255,255,0.1); padding-top:12px;\">\n            <div style=\"display:flex; align-items:center; gap:6px; font-size:0.76rem;\">\n              <span style=\"color:var(--gold); font-weight:800;\">Stake:</span>\n              <select id=\"duel-wager\" style=\"background:rgba(15,23,42,0.95); color:#fff; border:1px solid var(--gold); border-radius:6px; padding:4px 8px; font-weight:700;\">\n                <option value=\"0\">Friendly (0 PGT)</option>\n                <option value=\"25\" selected>25 PGT Pot</option>\n                <option value=\"50\">50 PGT Pot</option>\n                <option value=\"100\">100 PGT Pot</option>\n              </select>\n            </div>\n            <div style=\"display:flex; gap:8px;\">\n              <button class=\"btn\" style=\"font-size:0.75rem;\" onclick=\"window.PolySpaceGalaxy.instance.randomizeDuelMoves()\">\ud83c\udfb2 Randomize</button>\n              <button class=\"btn btn-danger\" style=\"padding:8px 16px; font-size:0.84rem;\" onclick=\"window.PolySpaceGalaxy.instance.startTacticalDuelPlayback()\">\ud83d\udd25 LOCK & WATCH 5s BATTLE</button>\n            </div>\n          </div>\n        </div>\n\n        <!-- Phase 2: 5-Second Animated Battle Playback -->\n        <div id=\"duel-playback-phase\" style=\"display:none;\">\n          <div style=\"display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:center; margin-bottom:8px;\">\n            <div>\n              <div style=\"font-size:0.72rem; font-weight:900; color:var(--cyan); display:flex; justify-content:space-between;\">\n                <span>YOUR FLAGSHIP</span>\n                <span id=\"duel-p1-hp-txt\">1000</span>\n              </div>\n              <div class=\"bar-wrap\" style=\"margin-bottom:0;\">\n                <div class=\"bar-fill\" id=\"duel-p1-hp-bar\" style=\"width:100%; background:linear-gradient(90deg, #0284c7, #00f0ff);\"></div>\n              </div>\n            </div>\n            <div id=\"duel-round-badge\" style=\"font-size:0.74rem; font-weight:900; color:var(--gold); padding:3px 9px; border-radius:6px; background:rgba(255,215,0,0.14); border:1px solid var(--gold);\">ROUND 1 / 3</div>\n            <div>\n              <div style=\"font-size:0.72rem; font-weight:900; color:#ff4d79; display:flex; justify-content:space-between;\">\n                <span id=\"duel-p2-name\">RIVAL</span>\n                <span id=\"duel-p2-hp-txt\">1000</span>\n              </div>\n              <div class=\"bar-wrap\" style=\"margin-bottom:0;\">\n                <div class=\"bar-fill\" id=\"duel-p2-hp-bar\" style=\"width:100%; background:linear-gradient(90deg, #be123c, #ff0055);\"></div>\n              </div>\n            </div>\n          </div>\n\n          <canvas id=\"duel-canvas\" width=\"570\" height=\"250\"></canvas>\n\n          <div id=\"duel-log-box\" style=\"margin-top:10px; font-size:0.74rem; color:#e2e8f0; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 10px; min-height:54px; line-height:1.45;\"></div>\n\n          <div id=\"duel-result-actions\" style=\"display:none; justify-content:center; gap:10px; margin-top:12px;\">\n            <button class=\"btn btn-gold\" onclick=\"window.PolySpaceGalaxy.instance.openTacticalDuel()\">\ud83d\udd04 Rematch (New Tactics)</button>\n            <button class=\"btn\" onclick=\"window.PolySpaceGalaxy.instance.closeTacticalDuel()\">\ud83d\uddfa\ufe0f Return to Galaxy</button>\n          </div>\n        </div>\n      </div>\n    </div>\n\n    <!-- Space Trade Beacon Modal (Post Open Offer OR 1-Click Accept Map Beacon) -->\n    <div class=\"overlay-modal\" id=\"trade-modal\">\n      <div class=\"trade-box\">\n        <div style=\"display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;\">\n          <div>\n            <div id=\"trade-subtitle\" style=\"font-size:0.68rem; color:var(--green); font-weight:900; letter-spacing:0.8px;\">OPEN MAP TRADE BEACON</div>\n            <h3 id=\"trade-title\" style=\"font-size:1.08rem; font-weight:900; color:#fff;\">\ud83e\udd1d POST TRADE BEACON</h3>\n          </div>\n          <button class=\"btn\" style=\"padding:4px 10px; font-size:0.75rem;\" onclick=\"document.getElementById('trade-modal').style.display='none'\">\u2715 Close</button>\n        </div>\n\n        <!-- Mode A: Post a New Trade Beacon at Your Current (X,Y) -->\n        <div id=\"trade-post-view\">\n          <div style=\"font-size:0.75rem; color:var(--muted); margin-bottom:10px;\">\n            Leave a fixed-price <strong>\ud83e\udd1d Trade Beacon</strong> on the galaxy map at your current location. Any pilot can accept it with 1 click!\n          </div>\n          <div style=\"display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;\">\n            <div style=\"background:rgba(0,240,255,0.06); border:1px solid rgba(0,240,255,0.28); border-radius:10px; padding:10px;\">\n              <div style=\"font-size:0.72rem; font-weight:900; color:var(--cyan); margin-bottom:6px;\">\ud83d\udce4 YOU OFFER (ESCROWED)</div>\n              <select id=\"beacon-offer-asset\" style=\"width:100%; background:#060c1a; border:1px solid rgba(0,240,255,0.4); color:#fff; border-radius:6px; padding:5px 6px; margin-bottom:6px; font-size:0.76rem;\">\n                <option value=\"\ud83d\udc8e Quantum Crystals\">\ud83d\udc8e Quantum Crystals</option>\n                <option value=\"\u2699\ufe0f Titanium Alloy\">\u2699\ufe0f Titanium Alloy</option>\n                <option value=\"\ud83e\udea8 Iron Ore\">\ud83e\udea8 Iron Ore</option>\n                <option value=\"\u2604\ufe0f Rare PGT Ore\">\u2604\ufe0f Rare PGT Ore</option>\n              </select>\n              <input type=\"number\" id=\"beacon-offer-amt\" value=\"500\" min=\"1\" style=\"width:100%; background:#060c1a; border:1px solid rgba(0,240,255,0.4); color:#fff; border-radius:6px; padding:5px 8px; font-family:monospace;\" />\n            </div>\n            <div style=\"background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.28); border-radius:10px; padding:10px;\">\n              <div style=\"font-size:0.72rem; font-weight:900; color:var(--green); margin-bottom:6px;\">\ud83d\udce5 YOU REQUEST</div>\n              <select id=\"beacon-want-asset\" style=\"width:100%; background:#060c1a; border:1px solid rgba(0,255,136,0.4); color:#fff; border-radius:6px; padding:5px 6px; margin-bottom:6px; font-size:0.76rem;\">\n                <option value=\"\u2699\ufe0f Titanium Alloy\" selected>\u2699\ufe0f Titanium Alloy</option>\n                <option value=\"\ud83d\udc8e Quantum Crystals\">\ud83d\udc8e Quantum Crystals</option>\n                <option value=\"\ud83e\udea8 Iron Ore\">\ud83e\udea8 Iron Ore</option>\n                <option value=\"\u2604\ufe0f Rare PGT Ore\">\u2604\ufe0f Rare PGT Ore</option>\n              </select>\n              <input type=\"number\" id=\"beacon-want-amt\" value=\"1200\" min=\"1\" style=\"width:100%; background:#060c1a; border:1px solid rgba(0,255,136,0.4); color:#fff; border-radius:6px; padding:5px 8px; font-family:monospace;\" />\n            </div>\n          </div>\n          <div style=\"display:flex; justify-content:space-between; align-items:center; gap:10px;\">\n            <span style=\"font-size:0.7rem; color:var(--muted);\">\ud83d\udd25 5% resource burn fee \u2022 Auto-refunds if cancelled or expired (24h).</span>\n            <button class=\"btn\" style=\"border-color:var(--green); background:rgba(0,255,136,0.18); color:#fff; padding:8px 16px;\" onclick=\"window.PolySpaceGalaxy.instance.deployTradeBeacon()\">\n              \ud83d\udce1 DROP BEACON ON MAP\n            </button>\n          </div>\n        </div>\n\n        <!-- Mode B: Inspect & 1-Click Accept (or Cancel) an Existing Map Trade Beacon -->\n        <div id=\"trade-accept-view\" style=\"display:none;\">\n          <div id=\"beacon-detail-box\" style=\"background:rgba(0,255,136,0.07); border:1px solid rgba(0,255,136,0.3); border-radius:10px; padding:14px; margin-bottom:14px; font-size:0.84rem; line-height:1.6;\"></div>\n          <div style=\"display:flex; justify-content:space-between; align-items:center; gap:10px;\">\n            <span style=\"font-size:0.7rem; color:var(--muted);\">\ud83d\udd25 Atomic 1-click resource swap (5% burn fee).</span>\n            <button id=\"btn-accept-beacon\" class=\"btn\" style=\"border-color:var(--green); background:rgba(0,255,136,0.2); color:#fff; padding:8px 18px;\" onclick=\"window.PolySpaceGalaxy.instance.acceptSelectedBeacon()\">\n              \u2705 ACCEPT TRADE\n            </button>\n          </div>\n        </div>\n      </div>\n    </div>\n\n    <!-- Ace Pilot Combat Ranking Leaderboard Modal (Weekly & All-Time) -->\n    <div class=\"overlay-modal\" id=\"rank-modal\">\n      <div class=\"trade-box\" style=\"border-color:var(--gold); max-width:580px;\">\n        <div style=\"display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;\">\n          <div>\n            <div style=\"font-size:0.68rem; color:var(--gold); font-weight:900; letter-spacing:0.8px;\">COMBAT XP \u2022 KILLS & TACTICAL DUELS</div>\n            <h3 style=\"font-size:1.08rem; font-weight:900; color:#fff;\">\ud83c\udfc6 ACE PILOT COMBAT RANKING</h3>\n          </div>\n          <button class=\"btn\" style=\"padding:4px 10px; font-size:0.75rem;\" onclick=\"document.getElementById('rank-modal').style.display='none'\">\u2715 Close</button>\n        </div>\n\n        <div id=\"rank-my-summary\" style=\"background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.3); border-radius:8px; padding:8px 12px; margin-bottom:10px; font-size:0.78rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;\"></div>\n\n        <div style=\"display:flex; gap:8px; margin-bottom:10px;\">\n          <button id=\"tab-rank-weekly\" class=\"btn active\" style=\"flex:1; justify-content:center; font-size:0.76rem;\" onclick=\"window.PolySpaceGalaxy.instance.switchRankTab('weekly')\">\ud83d\udcc5 Weekly Sprint</button>\n          <button id=\"tab-rank-alltime\" class=\"btn\" style=\"flex:1; justify-content:center; font-size:0.76rem;\" onclick=\"window.PolySpaceGalaxy.instance.switchRankTab('alltime')\">\ud83c\udf0c All-Time Legends</button>\n        </div>\n\n        <div id=\"rank-table-wrap\" style=\"max-height:260px; overflow-y:auto; font-size:0.76rem;\"></div>\n      </div>\n    </div>\n  </div>";
+  const PSG_CSS = "\n    :root {\n      --bg-dark: #030712;\n      --bg-panel: rgba(8, 15, 32, 0.88);\n      --cyan: #00f0ff;\n      --pink: #ff0055;\n      --purple: #a855f7;\n      --gold: #ffd700;\n      --green: #00ff88;\n      --text: #f8fafc;\n      --muted: #94a3b8;\n    }\n    \n    \n\n    /* Top Control Bar (Sandbox Upgrade Sliders & Mode Switcher) */\n    \n    .brand {\n      display: flex;\n      align-items: center;\n      gap: 10px;\n    }\n    .brand-badge {\n      background: rgba(0, 240, 255, 0.15);\n      border: 1px solid var(--cyan);\n      color: var(--cyan);\n      font-weight: 900;\n      font-size: 0.72rem;\n      padding: 3px 8px;\n      border-radius: 6px;\n      letter-spacing: 0.8px;\n    }\n    .brand-title {\n      font-size: 1rem;\n      font-weight: 900;\n      color: #fff;\n      letter-spacing: 0.5px;\n    }\n\n    /* Sandbox Sliders */\n    .sandbox-controls {\n      display: flex;\n      align-items: center;\n      gap: 14px;\n      background: rgba(0, 0, 0, 0.45);\n      padding: 6px 14px;\n      border-radius: 10px;\n      border: 1px solid rgba(255, 255, 255, 0.1);\n    }\n    .slider-group {\n      display: flex;\n      align-items: center;\n      gap: 6px;\n      font-size: 0.76rem;\n    }\n    .slider-group label {\n      font-weight: 800;\n      white-space: nowrap;\n    }\n    .slider-group input[type=\"range\"] {\n      width: 78px;\n      accent-color: var(--cyan);\n      cursor: pointer;\n    }\n    .lvl-pill {\n      font-family: monospace;\n      font-weight: 900;\n      padding: 2px 6px;\n      border-radius: 4px;\n      background: rgba(255, 255, 255, 0.08);\n      min-width: 44px;\n      text-align: center;\n    }\n\n    .mode-buttons {\n      display: flex;\n      align-items: center;\n      gap: 8px;\n    }\n    #psg-root .btn {\n      background: rgba(0, 240, 255, 0.15);\n      border: 1px solid var(--cyan);\n      color: #fff;\n      font-weight: 800;\n      font-size: 0.78rem;\n      padding: 7px 14px;\n      border-radius: 8px;\n      cursor: pointer;\n      transition: all 0.18s ease;\n      display: inline-flex;\n      align-items: center;\n      gap: 6px;\n    }\n    #psg-root .btn:hover {\n      background: rgba(0, 240, 255, 0.3);\n      box-shadow: 0 0 12px rgba(0, 240, 255, 0.45);\n      transform: translateY(-1px);\n    }\n    .btn.active {\n      background: linear-gradient(135deg, #00f0ff, #0284c7);\n      color: #000;\n      box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);\n    }\n    #psg-root .btn-danger {\n      background: rgba(255, 0, 85, 0.2);\n      border-color: var(--pink);\n      color: #ff94b4;\n    }\n    #psg-root .btn-danger:hover {\n      background: rgba(255, 0, 85, 0.4);\n      box-shadow: 0 0 12px rgba(255, 0, 85, 0.5);\n    }\n    #psg-root .btn-gold {\n      background: linear-gradient(135deg, #ffd700, #f59e0b);\n      border-color: #ffd700;\n      color: #000;\n    }\n\n    /* Main Viewport */\n    #psg-viewport {\n      position: relative;\n      flex: 1;\n      width: 100%;\n      height: 100%;\n      overflow: hidden;\n      background: #02040a;\n    }\n    #psg-viewport canvas {\n      display: block;\n      width: 100%;\n      height: 100%;\n      touch-action: none;\n      -webkit-user-select: none;\n      -webkit-touch-callout: none;\n    }\n\n    /* 2D Galaxy Radar Overlays */\n    #hud-2d {\n      position: absolute;\n      inset: 0;\n      pointer-events: none;\n    }\n    #psg-root .hud-panel {\n      pointer-events: auto;\n      background: var(--bg-panel);\n      border: 1px solid rgba(0, 240, 255, 0.35);\n      border-radius: 10px;\n      padding: 12px 14px;\n      backdrop-filter: blur(8px);\n      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65);\n    }\n    #nav-telemetry-card {\n      position: absolute;\n      top: 14px;\n      left: 14px;\n      width: 310px;\n    }\n    #system-briefing-card, #boss-raid-card {\n      position: absolute;\n      bottom: 18px;\n      left: 50%;\n      transform: translateX(-50%);\n      min-width: 440px;\n      max-width: 92vw;\n      display: none;\n      border-color: var(--gold);\n      box-shadow: 0 0 25px rgba(255, 215, 0, 0.25);\n    }\n    #boss-raid-card {\n      border-color: #ff0077;\n      box-shadow: 0 0 28px rgba(255, 0, 119, 0.35);\n    }\n    #galaxy-Quick-Jump {\n      position: absolute;\n      top: 14px;\n      right: 14px;\n      width: 265px;\n    }\n\n    /* 3D Combat Overlays */\n    #hud-3d {\n      position: absolute;\n      inset: 0;\n      pointer-events: none;\n      display: none;\n    }\n    #combat-top-hud {\n      position: absolute;\n      top: 14px;\n      left: 50%;\n      transform: translateX(-50%);\n      display: flex;\n      align-items: center;\n      gap: 18px;\n      background: rgba(4, 10, 24, 0.85);\n      border: 1px solid rgba(0, 240, 255, 0.4);\n      border-radius: 12px;\n      padding: 8px 20px;\n      pointer-events: auto;\n    }\n    #combat-left-hud {\n      position: absolute;\n      bottom: 18px;\n      left: 18px;\n      width: 260px;\n      pointer-events: auto;\n    }\n    #combat-right-hud {\n      position: absolute;\n      bottom: 18px;\n      right: 18px;\n      width: 260px;\n      pointer-events: auto;\n    }\n    #psg-root .bar-wrap {\n      width: 100%;\n      height: 11px;\n      background: rgba(0, 0, 0, 0.65);\n      border-radius: 6px;\n      overflow: hidden;\n      border: 1px solid rgba(255, 255, 255, 0.15);\n      margin-top: 4px;\n      margin-bottom: 10px;\n    }\n    #psg-root .bar-fill {\n      height: 100%;\n      transition: width 0.12s linear;\n    }\n\n    /* Toast Banner */\n    #psg-toast-banner {\n      position: fixed;\n      top: 76px;\n      left: 50%;\n      transform: translateX(-50%);\n      background: rgba(6, 18, 38, 0.95);\n      border: 1px solid var(--cyan);\n      color: #fff;\n      font-weight: 800;\n      font-size: 0.86rem;\n      padding: 10px 20px;\n      border-radius: 8px;\n      z-index: 100;\n      box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);\n      display: none;\n      pointer-events: none;\n    }\n\n    /* End of Mission Modal */\n    #mission-modal {\n      position: absolute;\n      inset: 0;\n      background: rgba(2, 6, 18, 0.84);\n      backdrop-filter: blur(6px);\n      display: none;\n      align-items: center;\n      justify-content: center;\n      z-index: 60;\n      pointer-events: auto;\n    }\n    #psg-root .modal-box {\n      background: linear-gradient(145deg, #091326, #040814);\n      border: 2px solid var(--cyan);\n      border-radius: 14px;\n      padding: 24px 30px;\n      max-width: 460px;\n      width: 90%;\n      text-align: center;\n      box-shadow: 0 0 40px rgba(0, 240, 255, 0.3);\n    }\n\n    /* Pilot Hail Card (2D Map) */\n    #pilot-hail-card {\n      position: absolute;\n      bottom: 16px;\n      left: 50%;\n      transform: translateX(-50%);\n      min-width: 440px;\n      max-width: 600px;\n      display: none;\n      border-color: var(--purple);\n      box-shadow: 0 0 28px rgba(168, 85, 247, 0.35);\n      pointer-events: auto;\n      z-index: 35;\n    }\n\n    /* Tactical Duel & Space Trade Modals */\n    #psg-root .overlay-modal {\n      position: absolute;\n      inset: 0;\n      background: rgba(2, 6, 18, 0.86);\n      backdrop-filter: blur(6px);\n      display: none;\n      align-items: center;\n      justify-content: center;\n      z-index: 70;\n      pointer-events: auto;\n    }\n    #psg-root .duel-box {\n      background: linear-gradient(145deg, #091326, #040814);\n      border: 2px solid var(--pink);\n      border-radius: 14px;\n      padding: 20px 24px;\n      width: 94%;\n      max-width: 620px;\n      box-shadow: 0 0 42px rgba(255, 0, 85, 0.28);\n    }\n    #psg-root .trade-box {\n      background: linear-gradient(145deg, #091326, #040814);\n      border: 2px solid var(--green);\n      border-radius: 14px;\n      padding: 20px 24px;\n      width: 94%;\n      max-width: 540px;\n      box-shadow: 0 0 42px rgba(0, 255, 136, 0.25);\n    }\n    #psg-root .vec-group {\n      display: flex;\n      gap: 5px;\n    }\n    #psg-root .vec-btn {\n      background: rgba(15, 23, 42, 0.9);\n      border: 1px solid rgba(148, 163, 184, 0.35);\n      color: var(--muted);\n      font-size: 0.72rem;\n      font-weight: 800;\n      padding: 5px 9px;\n      border-radius: 6px;\n      cursor: pointer;\n      transition: all 0.12s;\n    }\n    #psg-root .vec-btn.atk-active {\n      background: rgba(255, 0, 85, 0.28);\n      border-color: var(--pink);\n      color: #fff;\n      box-shadow: 0 0 10px rgba(255, 0, 85, 0.45);\n    }\n    #psg-root .vec-btn.def-active {\n      background: rgba(0, 240, 255, 0.25);\n      border-color: var(--cyan);\n      color: #fff;\n      box-shadow: 0 0 10px rgba(0, 240, 255, 0.45);\n    }\n    #duel-#psg-viewport canvas {\n      width: 100%;\n      height: 250px;\n      border-radius: 10px;\n      border: 1px solid rgba(0, 240, 255, 0.35);\n      background: #02050d;\n      display: block;\n    }\n\n    /* Mobile Touch Controls & Responsive HUD */\n    #mobile-3d-controls {\n      display: none;\n      position: absolute;\n      bottom: 16px;\n      right: 14px;\n      gap: 10px;\n      align-items: flex-end;\n      pointer-events: auto;\n      z-index: 30;\n    }\n    .touch-action-btn {\n      width: 68px;\n      height: 68px;\n      border-radius: 50%;\n      border: 2px solid var(--cyan);\n      background: rgba(6, 18, 38, 0.84);\n      color: #fff;\n      font-weight: 900;\n      font-size: 0.72rem;\n      display: flex;\n      flex-direction: column;\n      align-items: center;\n      justify-content: center;\n      gap: 2px;\n      box-shadow: 0 0 18px rgba(0, 240, 255, 0.35);\n      touch-action: none;\n      -webkit-tap-highlight-color: transparent;\n      user-select: none;\n    }\n    .touch-action-btn:active, .touch-action-btn.pressed {\n      transform: scale(0.92);\n      background: rgba(0, 240, 255, 0.35);\n    }\n    .touch-action-btn.fire-btn {\n      width: 78px;\n      height: 78px;\n      border-color: var(--pink);\n      box-shadow: 0 0 20px rgba(255, 0, 85, 0.45);\n    }\n    .touch-action-btn.fire-btn:active, .touch-action-btn.fire-btn.pressed {\n      background: rgba(255, 0, 85, 0.4);\n    }\n    .touch-action-btn.missile-btn {\n      border-color: var(--gold);\n      box-shadow: 0 0 18px rgba(255, 215, 0, 0.38);\n    }\n    .touch-autofire-pill {\n      padding: 5px 10px;\n      border-radius: 999px;\n      border: 1px solid var(--green);\n      background: rgba(0, 255, 136, 0.2);\n      color: #a7f3d0;\n      font-size: 0.68rem;\n      font-weight: 900;\n      touch-action: none;\n    }\n    .touch-autofire-pill.off {\n      border-color: rgba(148, 163, 184, 0.4);\n      background: rgba(15, 23, 42, 0.8);\n      color: var(--muted);\n    }\n    #mobile-zoom-btns {\n      display: none;\n      position: absolute;\n      bottom: 16px;\n      right: 12px;\n      flex-direction: column;\n      gap: 6px;\n      pointer-events: auto;\n      z-index: 25;\n    }\n    #mobile-trade-btn {\n      display: flex;\n      position: absolute;\n      top: 12px;\n      right: 14px;\n      pointer-events: auto;\n      z-index: 25;\n    }\n\n    @media (max-width: 900px), (pointer: coarse) {\n      \n      .brand-title { display: none; }\n      .sandbox-controls {\n        width: 100%;\n        justify-content: space-between;\n        gap: 6px;\n        overflow-x: auto;\n        padding-bottom: 2px;\n      }\n      .slider-group { font-size: 0.68rem; gap: 4px; }\n      .slider-group input[type=\"range\"] { width: 54px; }\n      #psg-viewport { width: 100%; height: 100%; flex: 1; }\n      #nav-telemetry-card {\n        top: 6px;\n        left: 6px;\n        width: auto;\n        padding: 4px 7px;\n        font-size: 0.7rem;\n      }\n      .nav-help-text { display: none !important; }\n      #galaxy-Quick-Jump { display: none !important; }\n      #mobile-trade-btn { display: flex; top: 6px; right: 6px; gap: 4px; }\n      #system-briefing-card, #pilot-hail-card {\n        min-width: 0;\n        width: calc(100% - 12px);\n        max-width: calc(100% - 12px);\n        bottom: 8px;\n        padding: 6px 8px;\n        z-index: 40;\n      }\n      #mobile-zoom-btns { display: flex; bottom: 60px; right: 10px; }\n      #combat-top-hud {\n        top: 6px;\n        width: calc(100% - 16px);\n        padding: 6px 10px;\n        gap: 8px;\n        justify-content: space-between;\n        flex-wrap: nowrap;\n        overflow-x: auto;\n      }\n      #combat-top-hud > div { white-space: nowrap; }\n      #combat-left-hud {\n        bottom: auto;\n        top: 64px;\n        left: 8px;\n        width: 170px;\n        padding: 7px 9px;\n      }\n      #combat-left-hud #psg-root .bar-wrap { height: 8px; margin-bottom: 6px; }\n      #combat-right-hud { display: none; }\n      #mobile-3d-controls { display: flex; }\n      #psg-root .duel-box, #psg-root .trade-box, #psg-root .modal-box {\n        max-height: 92vh;\n        overflow-y: auto;\n        padding: 14px 14px;\n      }\n      #duel-#psg-viewport canvas { height: 195px; }\n    }\n  \n#psg-root { display: flex; flex-direction: column; position: relative; width: 100%; height: 100%; font-family: inherit; color: #f8fafc; overflow: hidden; }\n#psg-root.psg-fullscreen { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; height: 100dvh !important; z-index: 100000010 !important; background: #02040a !important; border-radius: 0 !important; }\n#psg-root.psg-fullscreen #system-briefing-card,\n#psg-root.psg-fullscreen #pilot-hail-card,\n#psg-root.psg-fullscreen #boss-raid-card { bottom: max(14px, calc(env(safe-area-inset-bottom, 0px) + 12px)) !important; }\n#psg-root:not(.psg-fullscreen) #nav-telemetry-card { top: 6px; left: 6px; width: auto; padding: 4px 7px; }\n#psg-root:not(.psg-fullscreen) #nav-telemetry-card input { width: 48px !important; }\n#psg-root:not(.psg-fullscreen) #mobile-trade-btn { top: 6px; right: 6px; }\n#psg-root:not(.psg-fullscreen) #mobile-zoom-btns { display: none !important; }\n#psg-root:not(.psg-fullscreen) #system-briefing-card,\n#psg-root:not(.psg-fullscreen) #pilot-hail-card,\n#psg-root:not(.psg-fullscreen) #boss-raid-card { min-width: 0; width: calc(100% - 12px); bottom: 8px; padding: 6px 8px; z-index: 40; }\n#psg-toast-banner { position: absolute !important; top: 10px !important; left: 50% !important; transform: translateX(-50%) !important; }\n\n/* Teleported Full-Viewport Modals (Rank, Trade, Tactical Duel) */\n#rank-modal, #trade-modal, #tactical-duel-modal {\n  display: none;\n  position: fixed !important;\n  inset: 0 !important;\n  width: 100vw !important;\n  height: 100vh !important;\n  height: 100dvh !important;\n  background: rgba(2, 6, 18, 0.86) !important;\n  backdrop-filter: blur(6px);\n  z-index: 100000020 !important;\n  align-items: center;\n  justify-content: center;\n  color: #f8fafc;\n}\n#rank-modal .trade-box, #trade-modal .trade-box {\n  background: linear-gradient(145deg, #091326, #040814);\n  border: 2px solid #00ff88;\n  border-radius: 14px;\n  padding: 20px 24px;\n  width: 94%;\n  max-width: 560px;\n  max-height: 90vh;\n  overflow-y: auto;\n  box-shadow: 0 0 42px rgba(0, 255, 136, 0.25);\n}\n#rank-modal .trade-box { border-color: #ffd700; box-shadow: 0 0 42px rgba(255, 215, 0, 0.28); }\n#tactical-duel-modal .duel-box {\n  background: linear-gradient(145deg, #091326, #040814);\n  border: 2px solid #ff0055;\n  border-radius: 14px;\n  padding: 20px 24px;\n  width: 94%;\n  max-width: 620px;\n  max-height: 90vh;\n  overflow-y: auto;\n  box-shadow: 0 0 42px rgba(255, 0, 85, 0.28);\n}\n#rank-modal .btn, #trade-modal .btn, #tactical-duel-modal .btn {\n  background: rgba(0, 240, 255, 0.12);\n  border: 1px solid #00f0ff;\n  color: #fff;\n  font-weight: 800;\n  font-size: 0.78rem;\n  padding: 6px 12px;\n  border-radius: 7px;\n  cursor: pointer;\n  display: inline-flex;\n  align-items: center;\n  gap: 5px;\n}\n#rank-modal .btn.active, #trade-modal .btn.active, #tactical-duel-modal .btn.active {\n  background: #00f0ff;\n  color: #000;\n}\n#tactical-duel-modal .btn-danger { background: linear-gradient(135deg, #ff0055, #be123c); border-color: #ff0055; }\n#tactical-duel-modal .btn-gold { background: linear-gradient(135deg, #ffd700, #f59e0b); border-color: #ffd700; color: #000; }\n#tactical-duel-modal .vec-btn {\n  background: rgba(15, 23, 42, 0.9);\n  border: 1px solid rgba(148, 163, 184, 0.35);\n  color: #94a3b8;\n  font-size: 0.72rem;\n  font-weight: 800;\n  padding: 5px 9px;\n  border-radius: 6px;\n  cursor: pointer;\n}\n#tactical-duel-modal .vec-btn.atk-active { background: rgba(255, 0, 85, 0.28); border-color: #ff0055; color: #fff; }\n#tactical-duel-modal .vec-btn.def-active { background: rgba(0, 240, 255, 0.25); border-color: #00f0ff; color: #fff; }\n#tactical-duel-modal .bar-wrap { width: 100%; height: 10px; background: rgba(0,0,0,0.65); border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.15); margin-top: 4px; }\n#tactical-duel-modal .bar-fill { height: 100%; transition: width 0.12s linear; }\n#psg-chat-panel { position: absolute; top: 48px; right: 12px; width: 245px; height: 255px; padding: 0 !important; display: flex; flex-direction: column; z-index: 28; pointer-events: auto; background: rgba(5, 12, 28, 0.78) !important; border: 1px solid rgba(0, 240, 255, 0.35) !important; border-radius: 8px !important; overflow: hidden; }\n#psg-root:not(.psg-fullscreen) #psg-chat-panel { top: 38px; right: 6px; width: 215px; height: 210px; }\n#psg-chat-panel.collapsed { height: auto !important; width: auto !important; min-width: 140px; }\n#psg-chat-panel.collapsed #psg-chat-messages, #psg-chat-panel.collapsed #psg-chat-input-row { display: none !important; }\n#psg-chat-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 5px 8px; background: rgba(0, 240, 255, 0.08); border-bottom: 1px solid rgba(0, 240, 255, 0.22); cursor: pointer; user-select: none; flex-shrink: 0; }\n#psg-chat-messages { flex: 1; overflow-y: auto; padding: 6px 7px; display: flex; flex-direction: column; gap: 4px; font-size: 0.7rem; line-height: 1.32; color: #e2e8f0; scrollbar-width: thin; }\n#psg-chat-input-row { display: flex; align-items: center; gap: 4px; padding: 5px 6px; border-top: 1px solid rgba(255, 255, 255, 0.1); background: rgba(2, 6, 18, 0.75); flex-shrink: 0; }\n#psg-chat-input { flex: 1; min-width: 0; background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(0, 240, 255, 0.3); color: #fff; border-radius: 5px; padding: 4px 6px; font-size: 0.7rem; outline: none; }\n#psg-chat-input:focus { border-color: #00f0ff; }\n.psg-chat-msg { word-break: break-word; }\n.psg-chat-coord { display: inline-block; margin-left: 4px; padding: 0 4px; border-radius: 4px; background: rgba(0, 240, 255, 0.16); border: 1px solid rgba(0, 240, 255, 0.45); color: #67e8f9; font-family: monospace; font-size: 0.64rem; cursor: pointer; }\n.psg-chat-coord:hover { background: rgba(0, 240, 255, 0.35); color: #fff; }\n@media (max-width: 760px) {\n  #psg-root #nav-telemetry-card,\n  #psg-root:not(.psg-fullscreen) #nav-telemetry-card { top: 6px; left: 6px; right: 6px; width: auto; max-width: calc(100% - 12px); padding: 4px 6px; }\n  #psg-root.psg-fullscreen #nav-telemetry-card { top: calc(env(safe-area-inset-top, 0px) + 6px); left: 6px; right: 6px; width: auto; max-width: calc(100% - 12px); padding: 4px 6px; }\n  #psg-root #nav-telemetry-card > div { gap: 4px !important; justify-content: space-between; overflow-x: auto; scrollbar-width: none; }\n  #psg-root #nav-telemetry-card > div::-webkit-scrollbar { display: none; }\n  #psg-root #coord-readout, #psg-root #galaxy-pgt-readout { font-size: 0.65rem !important; }\n  #psg-root #nav-telemetry-card .btn { padding: 2px 5px !important; font-size: 0.64rem !important; }\n  #psg-root #mobile-trade-btn,\n  #psg-root:not(.psg-fullscreen) #mobile-trade-btn { top: 40px; right: 6px; gap: 4px !important; }\n  #psg-root.psg-fullscreen #mobile-trade-btn { top: calc(env(safe-area-inset-top, 0px) + 40px); right: 6px; gap: 4px !important; }\n  #psg-root #mobile-trade-btn .btn { padding: 3px 7px !important; font-size: 0.68rem !important; }\n  #psg-root #psg-chat-panel,\n  #psg-root:not(.psg-fullscreen) #psg-chat-panel { top: 72px; right: 6px; width: min(220px, calc(100% - 12px)); height: 185px; }\n  #psg-root.psg-fullscreen #psg-chat-panel { top: calc(env(safe-area-inset-top, 0px) + 72px); right: 6px; width: min(230px, calc(100% - 12px)); height: 210px; }\n  #psg-root #psg-toast-banner { top: 108px !important; max-width: calc(100% - 16px); }\n}\n";
+  const PSG_HTML = "<div id=\"psg-toast-banner\"></div>\n<div id=\"psg-viewport\">\n    <canvas id=\"demo-canvas\"></canvas>\n\n    <!-- ==================== 2D MILKY WAY OVERLAY HUD ==================== -->\n    <div id=\"hud-2d\">\n      <!-- Top-Left: Ultra-Compact Coordinate Pill -->\n      <div class=\"hud-panel\" id=\"nav-telemetry-card\" style=\"padding:4px 7px; width:auto;\">\n        <div style=\"display:flex; align-items:center; gap:6px;\">\n          <span style=\"font-family:monospace; font-size:0.72rem; color:#00ff88; font-weight:800; white-space:nowrap;\" id=\"coord-readout\">X: +0 | Y: +0</span>\n          <span style=\"width:1px; height:12px; background:rgba(255,255,255,0.18); flex-shrink:0;\"></span>\n          <span style=\"font-family:monospace; font-size:0.72rem; color:#ffd700; font-weight:900; white-space:nowrap; transition:all 0.25s ease;\" id=\"galaxy-pgt-readout\" title=\"Live On-Site PGT Balance\">\ud83e\ude99 0 PGT</span>\n          <span style=\"width:1px; height:12px; background:rgba(255,255,255,0.18); flex-shrink:0;\"></span>\n          <button class=\"btn\" id=\"btn-gift-scan\" style=\"padding:2px 6px; font-size:0.68rem; border-color:rgba(255,215,0,0.55); color:#fde047;\" onclick=\"window.PolySpaceGalaxy.instance.scanForGalacticGifts(true)\" title=\"Deep-Space Cache Scanner (auto-scans as you fly, or click to ping):&#10;❄️ COLD: >2,900u away&#10;📡 WARM: within 2,900u&#10;🔥 HOT: within 1,150u&#10;🎁 LOCKED: within 260u (reveals on map!)&#10;Fly within 320u &amp; click the 🎁 to claim 50–150 PGT!\">\ud83d\udce1 <span id=\"gift-scan-badge\">\u2744\ufe0f 0/10</span></button>\n          <button class=\"btn\" style=\"padding:2px 5px; font-size:0.68rem; border-color:rgba(255,0,119,0.65); color:#ff7597;\" onclick=\"window.PolySpaceGalaxy.instance.flyToWorldBoss()\" title=\"Fly to Quantum Leviathan World Boss (3000, 3000)\">\ud83d\udc7e</button>\n          <button class=\"btn\" style=\"padding:2px 5px; font-size:0.68rem;\" onclick=\"window.PolySpaceGalaxy.instance.centerOnShip()\" title=\"Center on Ship\">\ud83c\udfaf</button>\n          <button class=\"btn\" style=\"padding:2px 5px; font-size:0.68rem;\" onclick=\"window.PolySpaceGalaxy.instance.shareLocation()\" title=\"Share Coordinates\">\ud83d\udce4</button>\n        </div>\n      </div>\n\n      <!-- Bottom-Center: Compact 1-Row Pilot Hail Bar -->\n      <div class=\"hud-panel\" id=\"pilot-hail-card\" style=\"padding:5px 10px; min-width:0; width:auto; max-width:calc(100% - 12px); z-index:40;\">\n        <div style=\"display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:nowrap;\">\n          <div style=\"display:flex; align-items:center; gap:5px; white-space:nowrap; overflow:hidden; min-width:0; flex:1;\">\n            <span id=\"hail-pilot-name\" style=\"font-size:0.78rem; font-weight:900; color:#e9d5ff; overflow:hidden; text-overflow:ellipsis;\">\ud83d\udef8 PILOT</span>\n            <span id=\"hail-pilot-rarity\" style=\"font-size:0.64rem; font-weight:800; padding:1px 5px; border-radius:4px; border:1px solid var(--purple); color:#e9d5ff; flex-shrink:0;\">EPIC</span>\n            <span id=\"hail-pilot-stats\" style=\"font-size:0.68rem; color:#94a3b8; flex-shrink:0;\">\ud83d\udee1\ufe0f18 \u2604\ufe0f20</span>\n          </div>\n          <div style=\"display:flex; gap:5px; align-items:center; flex-shrink:0;\">\n            <button class=\"btn btn-danger\" style=\"padding:4px 9px; font-size:0.72rem;\" onclick=\"window.PolySpaceGalaxy.instance.openTacticalDuel()\">\u2694\ufe0f DUEL</button>\n            <button class=\"btn\" style=\"padding:3px 7px; font-size:0.7rem;\" onclick=\"document.getElementById('pilot-hail-card').style.display='none'\">\u2715</button>\n          </div>\n        </div>\n      </div>\n\n      <!-- Bottom-Center: Compact 1-Row Solar System Launch Bar -->\n      <div class=\"hud-panel\" id=\"system-briefing-card\" style=\"padding:5px 10px; min-width:0; width:auto; max-width:calc(100% - 12px); z-index:40;\">\n        <div style=\"display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:nowrap;\">\n          <div style=\"display:flex; align-items:center; gap:5px; white-space:nowrap; overflow:hidden; min-width:0; flex:1;\">\n            <span id=\"brief-sys-title\" style=\"font-size:0.78rem; font-weight:900; color:var(--gold); overflow:hidden; text-overflow:ellipsis;\">\u2600\ufe0f #1 Alpha Centauri</span>\n            <span id=\"brief-sys-lvl\" style=\"font-size:0.64rem; font-weight:800; padding:1px 5px; border-radius:4px; border:1px solid var(--gold); color:var(--gold); flex-shrink:0;\">Lvl 1</span>\n            <span id=\"brief-sys-desc\" style=\"font-size:0.7rem; color:#00ff88; font-weight:800; flex-shrink:0;\">+17 PGT</span>\n          </div>\n          <div style=\"display:flex; gap:5px; align-items:center; flex-shrink:0;\">\n            <button class=\"btn btn-gold\" id=\"btn-engage-system\" style=\"padding:4px 9px; font-size:0.72rem;\" onclick=\"window.PolySpaceGalaxy.instance.launch3DMission(window.PolySpaceGalaxy.instance.selectedSystemId)\">\u2694\ufe0f LAUNCH</button>\n            <button class=\"btn\" style=\"padding:3px 7px; font-size:0.7rem;\" onclick=\"document.getElementById('system-briefing-card').style.display='none'\">\u2715</button>\n          </div>\n        </div>\n      </div>\n\n      <!-- Bottom-Center: Quantum Leviathan World Boss Raid Bar -->\n      <div class=\"hud-panel\" id=\"boss-raid-card\" style=\"padding:5px 10px; min-width:0; width:auto; max-width:calc(100% - 12px); z-index:40;\">\n        <div style=\"display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap;\">\n          <div style=\"display:flex; align-items:center; gap:5px; white-space:nowrap; overflow:hidden; min-width:0; flex:1;\">\n            <span id=\"boss-2d-title\" style=\"font-size:0.78rem; font-weight:900; color:#ff2d78;\">\ud83d\udc7e Quantum Leviathan</span>\n            <span id=\"boss-2d-lvl\" style=\"font-size:0.64rem; font-weight:800; padding:1px 5px; border-radius:4px; border:1px solid #ff0077; color:#ff7597; background:rgba(255,0,119,0.2); flex-shrink:0;\">LVL 1</span>\n            <span id=\"boss-2d-hp\" style=\"font-size:0.68rem; color:#fde047; font-weight:800; font-family:monospace; flex-shrink:0;\">100%</span>\n            <span id=\"boss-2d-crystals\" style=\"font-size:0.66rem; color:#38bdf8; font-weight:700; flex-shrink:0;\">\ud83d\udc8e 0</span>\n          </div>\n          <div style=\"display:flex; gap:4px; align-items:center; flex-shrink:0;\">\n            <button class=\"btn\" id=\"btn-boss-2d-1x\" style=\"padding:4px 8px; font-size:0.7rem; background:linear-gradient(135deg,#ff0055,#bd00ff); border-color:#ff0077; color:#fff;\" onclick=\"window.PolySpaceGalaxy.instance.strikeWorldBoss2D(1)\">\ud83d\udca5 1x (1k\ud83d\udc8e)</button>\n            <button class=\"btn\" id=\"btn-boss-2d-10x\" style=\"padding:4px 8px; font-size:0.7rem; border-color:#ff0077; color:#ff94b4; background:rgba(255,0,119,0.22);\" onclick=\"window.PolySpaceGalaxy.instance.strikeWorldBoss2D(10)\">\ud83d\ude80 10x (10k\ud83d\udc8e)</button>\n            <button class=\"btn\" style=\"padding:3px 7px; font-size:0.7rem;\" onclick=\"document.getElementById('boss-raid-card').style.display='none'\">\u2715</button>\n          </div>\n        </div>\n      </div>\n\n      <!-- Top-Right Compact Buttons: Rank + Trade + Fullscreen Expand -->\n      <div id=\"mobile-trade-btn\" style=\"gap:5px;\">\n        <button class=\"btn\" style=\"border-color:var(--gold); color:#fde047; padding:4px 8px; font-size:0.7rem;\" onclick=\"window.PolySpaceGalaxy.instance.openRankLeaderboard()\">\ud83c\udfc6 Rank</button>\n        <button class=\"btn\" style=\"border-color:var(--green); color:#a7f3d0; padding:4px 8px; font-size:0.7rem;\" onclick=\"window.PolySpaceGalaxy.instance.openPostTradeBeacon()\">\ud83e\udd1d Trade</button>\n        <button id=\"psg-btn-fullscreen\" class=\"btn\" style=\"border-color:#00f0ff; color:#00f0ff; padding:4px 8px; font-size:0.7rem;\" onclick=\"window.PolySpaceGalaxy.instance.toggleFullscreen()\">\u26f6 Expand</button>\n      </div>\n\n      <!-- Right-Side Live Galaxy Comms Chat Panel -->\n      <div id=\"psg-chat-panel\" class=\"hud-panel\" onmousedown=\"event.stopPropagation()\" onwheel=\"event.stopPropagation()\" ontouchstart=\"event.stopPropagation()\">\n        <div id=\"psg-chat-header\" onclick=\"window.PolySpaceGalaxy.instance.toggleGalaxyChat()\">\n          <span style=\"display:flex; align-items:center; gap:5px; font-weight:900; font-size:0.68rem; color:#00f0ff; letter-spacing:0.4px;\">\n            \ud83d\udcac COMMS\n            <span id=\"psg-chat-online\" style=\"font-size:0.6rem; color:#00ff88; background:rgba(0,255,136,0.12); border:1px solid rgba(0,255,136,0.35); border-radius:99px; padding:0 5px;\">1</span>\n            <span id=\"psg-chat-unread\" style=\"display:none; font-size:0.6rem; color:#000; background:#fbbf24; border-radius:99px; padding:0 5px; font-weight:900;\">0</span>\n          </span>\n          <button type=\"button\" id=\"psg-chat-toggle-btn\" style=\"background:none; border:none; color:#94a3b8; font-size:0.8rem; cursor:pointer; padding:0 2px; line-height:1;\" title=\"Minimize / Expand Chat\">\u2212</button>\n        </div>\n        <div id=\"psg-chat-messages\"></div>\n        <div id=\"psg-chat-input-row\">\n          <button type=\"button\" onclick=\"window.PolySpaceGalaxy.instance.sendGalaxyChat(true)\" style=\"background:rgba(0,240,255,0.12); border:1px solid rgba(0,240,255,0.35); color:#67e8f9; border-radius:5px; padding:3px 5px; font-size:0.68rem; cursor:pointer; flex-shrink:0;\" title=\"Share your current (X, Y) coordinates in chat\">\ud83d\udccd</button>\n          <input id=\"psg-chat-input\" type=\"text\" maxlength=\"140\" placeholder=\"Message galaxy...\" autocomplete=\"off\" onkeydown=\"if(event.key==='Enter'){event.preventDefault();window.PolySpaceGalaxy.instance.sendGalaxyChat(false);}\" />\n          <button type=\"button\" onclick=\"window.PolySpaceGalaxy.instance.sendGalaxyChat(false)\" style=\"background:rgba(0,240,255,0.22); border:1px solid #00f0ff; color:#fff; border-radius:5px; padding:3px 7px; font-size:0.7rem; font-weight:800; cursor:pointer; flex-shrink:0;\">\u27a4</button>\n        </div>\n      </div>\n    </div>\n\n    <!-- ==================== 3D DOGFIGHT COCKPIT HUD ==================== -->\n    <div id=\"hud-3d\">\n      <!-- Top Combat Banner -->\n      <div id=\"combat-top-hud\">\n        <div>\n          <div style=\"font-size:0.68rem; color:var(--muted); text-transform:uppercase; font-weight:800;\">ACTIVE SOLAR SYSTEM</div>\n          <div id=\"hud3d-system-name\" style=\"font-size:0.95rem; font-weight:900; color:var(--cyan);\">System #15 \u2022 Vega Prime (Lvl 15)</div>\n        </div>\n        <div style=\"height:28px; width:1px; background:rgba(255,255,255,0.15);\"></div>\n        <div>\n          <div style=\"font-size:0.68rem; color:var(--muted); text-transform:uppercase; font-weight:800;\">PHASE / WAVE</div>\n          <div id=\"hud3d-wave\" style=\"font-size:0.95rem; font-weight:900; color:var(--gold);\">Wave 1 / 3 \u2022 Scout Squadron</div>\n        </div>\n        <div style=\"height:28px; width:1px; background:rgba(255,255,255,0.15);\"></div>\n        <div>\n          <div style=\"font-size:0.68rem; color:var(--muted); text-transform:uppercase; font-weight:800;\">HOSTILES REMAINING</div>\n          <div id=\"hud3d-enemies\" style=\"font-size:0.95rem; font-weight:900; color:#ff4d79;\">5 Ships</div>\n        </div>\n        <div style=\"height:28px; width:1px; background:rgba(255,255,255,0.15);\"></div>\n        <div>\n          <div style=\"font-size:0.68rem; color:var(--muted); text-transform:uppercase; font-weight:800;\">MISSION TIME</div>\n          <div id=\"hud3d-timer\" style=\"font-family:monospace; font-size:1rem; font-weight:900; color:#fff;\">00:00</div>\n        </div>\n        <button class=\"btn btn-danger\" style=\"padding:5px 10px; font-size:0.72rem;\" onclick=\"window.PolySpaceGalaxy.instance.switchMode('galaxy')\">\u2b05\ufe0f Abort to Galaxy</button>\n      </div>\n\n      <!-- Bottom-Left: Shield & Hull Integrity -->\n      <div class=\"hud-panel\" id=\"combat-left-hud\">\n        <div style=\"font-size:0.76rem; font-weight:900; color:var(--cyan); margin-bottom:4px; display:flex; justify-content:space-between;\">\n          <span>\ud83d\udee1\ufe0f QUANTUM SHIELD</span>\n          <span id=\"hud3d-shield-txt\" style=\"font-family:monospace;\">1,500 / 1,500</span>\n        </div>\n        <div class=\"bar-wrap\">\n          <div class=\"bar-fill\" id=\"hud3d-shield-bar\" style=\"width:100%; background:linear-gradient(90deg, #0284c7, #00f0ff); box-shadow:0 0 10px #00f0ff;\"></div>\n        </div>\n\n        <div style=\"font-size:0.76rem; font-weight:900; color:var(--green); margin-bottom:4px; display:flex; justify-content:space-between;\">\n          <span>\ud83d\udd29 HULL ARMOR</span>\n          <span id=\"hud3d-hull-txt\" style=\"font-family:monospace;\">1,000 / 1,000</span>\n        </div>\n        <div class=\"bar-wrap\" style=\"margin-bottom:4px;\">\n          <div class=\"bar-fill\" id=\"hud3d-hull-bar\" style=\"width:100%; background:linear-gradient(90deg, #059669, #00ff88);\"></div>\n        </div>\n        <div style=\"font-size:0.68rem; color:var(--muted);\">\n          \ud83d\udca1 Shields auto-regenerate when you evade enemy fire for 2.5s.\n        </div>\n      </div>\n\n      <!-- Bottom-Right: Weapons, Homing Missile & Controls Guide -->\n      <div class=\"hud-panel\" id=\"combat-right-hud\">\n        <div style=\"font-size:0.76rem; font-weight:900; color:#ff4d79; margin-bottom:5px; display:flex; justify-content:space-between;\">\n          <span id=\"hud3d-weapon-name\">\u2604\ufe0f TWIN PLASMA TURRETS</span>\n          <span id=\"hud3d-dps-txt\" style=\"font-family:monospace;\">165 DMG</span>\n        </div>\n        <div style=\"font-size:0.73rem; font-weight:900; color:var(--gold); margin-bottom:3px; display:flex; justify-content:space-between; align-items:center;\">\n          <span>\ud83d\ude80 AUTO-LOCK MISSILE [SPACE]</span>\n          <span id=\"hud3d-missile-txt\" style=\"font-family:monospace; color:var(--green);\">READY</span>\n        </div>\n        <div class=\"bar-wrap\" style=\"margin-bottom:6px;\">\n          <div class=\"bar-fill\" id=\"hud3d-missile-bar\" style=\"width:100%; background:linear-gradient(90deg, #f59e0b, #00ff88);\"></div>\n        </div>\n        <div style=\"display:flex; justify-content:space-between; align-items:center; gap:8px;\">\n          <div style=\"font-size:0.67rem; color:var(--muted); line-height:1.35;\">\n            \u2022 <strong>Steer:</strong> Mouse or <strong>WASD / Arrows</strong> (Auto-Fire ON)<br/>\n            \u2022 <strong>Missile:</strong> <strong>Space</strong> / <strong>E</strong> &bull; <strong>Roll:</strong> <strong>Shift</strong> / <strong>Q</strong>\n          </div>\n          <div style=\"display:flex; flex-direction:column; gap:4px; align-items:flex-end;\">\n            <button class=\"btn btn-gold\" id=\"btn-fire-missile\" style=\"padding:4px 9px; font-size:0.68rem; white-space:nowrap;\" onclick=\"window.PolySpaceGalaxy.instance.fireHomingMissile()\">\ud83d\ude80 MISSILE</button>\n            <button class=\"btn\" id=\"btn-barrel-roll\" style=\"padding:4px 9px; font-size:0.68rem; white-space:nowrap; border-color:#00f0ff; color:#00f0ff;\" onclick=\"window.PolySpaceGalaxy.instance.triggerBarrelRoll()\">\ud83c\udf00 ROLL</button>\n          </div>\n        </div>\n      </div>\n\n      <!-- Mobile Touch 3D Combat Controls (Missile + Barrel Roll Evade) -->\n      <div id=\"mobile-3d-controls\" style=\"gap:10px;\">\n        <button id=\"btn-mobile-roll\" class=\"touch-action-btn\" style=\"border-color:#00f0ff; background:rgba(0,240,255,0.16);\" onclick=\"window.PolySpaceGalaxy.instance.triggerBarrelRoll()\">\n          <span style=\"font-size:1.25rem;\">\ud83c\udf00</span>\n          <span id=\"mobile-roll-lbl\" style=\"font-size:0.62rem; color:#00f0ff;\">ROLL</span>\n        </button>\n        <button id=\"btn-mobile-missile\" class=\"touch-action-btn missile-btn\" onclick=\"window.PolySpaceGalaxy.instance.fireHomingMissile()\">\n          <span style=\"font-size:1.3rem;\">\ud83d\ude80</span>\n          <span id=\"mobile-missile-lbl\" style=\"font-size:0.64rem; color:#00ff88;\">READY</span>\n        </button>\n      </div>\n    </div>\n\n    <!-- Mission Victory / Defeat Modal -->\n    <div id=\"mission-modal\">\n      <div class=\"modal-box\">\n        <div id=\"modal-icon\" style=\"font-size:2.8rem; margin-bottom:6px;\">\ud83c\udfc6</div>\n        <h2 id=\"modal-title\" style=\"color:var(--green); font-size:1.45rem; font-weight:900; margin-bottom:8px;\">SOLAR SYSTEM CLEARED!</h2>\n        <p id=\"modal-desc\" style=\"color:var(--muted); font-size:0.88rem; margin-bottom:16px; line-height:1.45;\"></p>\n        <div id=\"modal-loot\" style=\"background:rgba(0,240,255,0.08); border:1px solid rgba(0,240,255,0.3); border-radius:8px; padding:12px; margin-bottom:18px; font-weight:800; color:var(--gold); font-size:0.95rem;\"></div>\n        <div style=\"display:flex; gap:10px; justify-content:center;\">\n          <button class=\"btn\" onclick=\"window.PolySpaceGalaxy.instance.closeModalAndReturn()\">\ud83d\uddfa\ufe0f Return to Milky Way</button>\n          <button class=\"btn btn-gold\" onclick=\"window.PolySpaceGalaxy.instance.retry3DMission()\">\ud83d\udd04 Replay 3D Battle</button>\n        </div>\n      </div>\n    </div>\n\n    <!-- Tactical 3-Round Pre-Decided PvP Ship Duel Modal -->\n    <div class=\"overlay-modal\" id=\"tactical-duel-modal\">\n      <div class=\"duel-box\">\n        <div style=\"display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;\">\n          <div>\n            <div style=\"font-size:0.68rem; color:#ff4d79; font-weight:900; letter-spacing:0.8px;\">ASYNC SHIP-TO-SHIP TACTICAL DUEL</div>\n            <h3 id=\"duel-title\" style=\"font-size:1.1rem; font-weight:900; color:#fff;\">\u2694\ufe0f YOU vs. RIVAL PILOT</h3>\n          </div>\n          <button class=\"btn\" style=\"padding:4px 10px; font-size:0.75rem;\" onclick=\"window.PolySpaceGalaxy.instance.closeTacticalDuel()\">\u2715 Close</button>\n        </div>\n\n        <!-- Phase 1: Pre-Decide 3 Attack + 3 Defense Vectors -->\n        <div id=\"duel-setup-phase\">\n          <div style=\"font-size:0.76rem; color:var(--muted); margin-bottom:12px; line-height:1.4;\">\n            Pre-program your <strong>3 Attack Vectors</strong> and <strong>3 Shield Vectors</strong>. Matching the enemy's attack direction blocks <strong>70%</strong> of incoming damage!\n          </div>\n\n          <div id=\"duel-rounds-selector\" style=\"display:flex; flex-direction:column; gap:8px; margin-bottom:14px;\">\n            <!-- Populated dynamically by renderDuelSelector() -->\n          </div>\n\n          <div style=\"display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; border-top:1px solid rgba(255,255,255,0.1); padding-top:12px;\">\n            <div style=\"display:flex; align-items:center; gap:6px; font-size:0.76rem;\">\n              <span style=\"color:var(--gold); font-weight:800;\">Stake:</span>\n              <select id=\"duel-wager\" style=\"background:rgba(15,23,42,0.95); color:#fff; border:1px solid var(--gold); border-radius:6px; padding:4px 8px; font-weight:700;\">\n                <option value=\"0\">Friendly (0 PGT)</option>\n                <option value=\"25\" selected>25 PGT Pot</option>\n                <option value=\"50\">50 PGT Pot</option>\n                <option value=\"100\">100 PGT Pot</option>\n              </select>\n            </div>\n            <div style=\"display:flex; gap:8px;\">\n              <button class=\"btn\" style=\"font-size:0.75rem;\" onclick=\"window.PolySpaceGalaxy.instance.randomizeDuelMoves()\">\ud83c\udfb2 Randomize</button>\n              <button class=\"btn btn-danger\" style=\"padding:8px 16px; font-size:0.84rem;\" onclick=\"window.PolySpaceGalaxy.instance.startTacticalDuelPlayback()\">\ud83d\udd25 LOCK & WATCH 5s BATTLE</button>\n            </div>\n          </div>\n        </div>\n\n        <!-- Phase 2: 5-Second Animated Battle Playback -->\n        <div id=\"duel-playback-phase\" style=\"display:none;\">\n          <div style=\"display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:center; margin-bottom:8px;\">\n            <div>\n              <div style=\"font-size:0.72rem; font-weight:900; color:var(--cyan); display:flex; justify-content:space-between;\">\n                <span>YOUR FLAGSHIP</span>\n                <span id=\"duel-p1-hp-txt\">1000</span>\n              </div>\n              <div class=\"bar-wrap\" style=\"margin-bottom:0;\">\n                <div class=\"bar-fill\" id=\"duel-p1-hp-bar\" style=\"width:100%; background:linear-gradient(90deg, #0284c7, #00f0ff);\"></div>\n              </div>\n            </div>\n            <div id=\"duel-round-badge\" style=\"font-size:0.74rem; font-weight:900; color:var(--gold); padding:3px 9px; border-radius:6px; background:rgba(255,215,0,0.14); border:1px solid var(--gold);\">ROUND 1 / 3</div>\n            <div>\n              <div style=\"font-size:0.72rem; font-weight:900; color:#ff4d79; display:flex; justify-content:space-between;\">\n                <span id=\"duel-p2-name\">RIVAL</span>\n                <span id=\"duel-p2-hp-txt\">1000</span>\n              </div>\n              <div class=\"bar-wrap\" style=\"margin-bottom:0;\">\n                <div class=\"bar-fill\" id=\"duel-p2-hp-bar\" style=\"width:100%; background:linear-gradient(90deg, #be123c, #ff0055);\"></div>\n              </div>\n            </div>\n          </div>\n\n          <canvas id=\"duel-canvas\" width=\"570\" height=\"250\"></canvas>\n\n          <div id=\"duel-log-box\" style=\"margin-top:10px; font-size:0.74rem; color:#e2e8f0; background:rgba(0,0,0,0.45); border:1px solid rgba(255,255,255,0.1); border-radius:8px; padding:8px 10px; min-height:54px; line-height:1.45;\"></div>\n\n          <div id=\"duel-result-actions\" style=\"display:none; justify-content:center; gap:10px; margin-top:12px;\">\n            <button class=\"btn btn-gold\" onclick=\"window.PolySpaceGalaxy.instance.openTacticalDuel()\">\ud83d\udd04 Rematch (New Tactics)</button>\n            <button class=\"btn\" onclick=\"window.PolySpaceGalaxy.instance.closeTacticalDuel()\">\ud83d\uddfa\ufe0f Return to Galaxy</button>\n          </div>\n        </div>\n      </div>\n    </div>\n\n    <!-- Space Trade Beacon Modal (Post Open Offer OR 1-Click Accept Map Beacon) -->\n    <div class=\"overlay-modal\" id=\"trade-modal\">\n      <div class=\"trade-box\">\n        <div style=\"display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;\">\n          <div>\n            <div id=\"trade-subtitle\" style=\"font-size:0.68rem; color:var(--green); font-weight:900; letter-spacing:0.8px;\">OPEN MAP TRADE BEACON</div>\n            <h3 id=\"trade-title\" style=\"font-size:1.08rem; font-weight:900; color:#fff;\">\ud83e\udd1d POST TRADE BEACON</h3>\n          </div>\n          <button class=\"btn\" style=\"padding:4px 10px; font-size:0.75rem;\" onclick=\"document.getElementById('trade-modal').style.display='none'\">\u2715 Close</button>\n        </div>\n\n        <!-- Mode A: Post a New Trade Beacon at Your Current (X,Y) -->\n        <div id=\"trade-post-view\">\n          <div style=\"font-size:0.75rem; color:var(--muted); margin-bottom:10px;\">\n            Leave a fixed-price <strong>\ud83e\udd1d Trade Beacon</strong> on the galaxy map at your current location. Any pilot can accept it with 1 click!\n          </div>\n          <div style=\"display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;\">\n            <div style=\"background:rgba(0,240,255,0.06); border:1px solid rgba(0,240,255,0.28); border-radius:10px; padding:10px;\">\n              <div style=\"font-size:0.72rem; font-weight:900; color:var(--cyan); margin-bottom:6px;\">\ud83d\udce4 YOU OFFER (ESCROWED)</div>\n              <select id=\"beacon-offer-asset\" style=\"width:100%; background:#060c1a; border:1px solid rgba(0,240,255,0.4); color:#fff; border-radius:6px; padding:5px 6px; margin-bottom:6px; font-size:0.76rem;\">\n                <option value=\"\ud83d\udc8e Quantum Crystals\">\ud83d\udc8e Quantum Crystals</option>\n                <option value=\"\u2699\ufe0f Titanium Alloy\">\u2699\ufe0f Titanium Alloy</option>\n                <option value=\"\ud83e\udea8 Iron Ore\">\ud83e\udea8 Iron Ore</option>\n                <option value=\"\u2604\ufe0f Rare PGT Ore\">\u2604\ufe0f Rare PGT Ore</option>\n              </select>\n              <input type=\"number\" id=\"beacon-offer-amt\" value=\"500\" min=\"1\" style=\"width:100%; background:#060c1a; border:1px solid rgba(0,240,255,0.4); color:#fff; border-radius:6px; padding:5px 8px; font-family:monospace;\" />\n            </div>\n            <div style=\"background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.28); border-radius:10px; padding:10px;\">\n              <div style=\"font-size:0.72rem; font-weight:900; color:var(--green); margin-bottom:6px;\">\ud83d\udce5 YOU REQUEST</div>\n              <select id=\"beacon-want-asset\" style=\"width:100%; background:#060c1a; border:1px solid rgba(0,255,136,0.4); color:#fff; border-radius:6px; padding:5px 6px; margin-bottom:6px; font-size:0.76rem;\">\n                <option value=\"\u2699\ufe0f Titanium Alloy\" selected>\u2699\ufe0f Titanium Alloy</option>\n                <option value=\"\ud83d\udc8e Quantum Crystals\">\ud83d\udc8e Quantum Crystals</option>\n                <option value=\"\ud83e\udea8 Iron Ore\">\ud83e\udea8 Iron Ore</option>\n                <option value=\"\u2604\ufe0f Rare PGT Ore\">\u2604\ufe0f Rare PGT Ore</option>\n              </select>\n              <input type=\"number\" id=\"beacon-want-amt\" value=\"1200\" min=\"1\" style=\"width:100%; background:#060c1a; border:1px solid rgba(0,255,136,0.4); color:#fff; border-radius:6px; padding:5px 8px; font-family:monospace;\" />\n            </div>\n          </div>\n          <div style=\"display:flex; justify-content:space-between; align-items:center; gap:10px;\">\n            <span style=\"font-size:0.7rem; color:var(--muted);\">\ud83d\udd25 5% resource burn fee \u2022 Auto-refunds if cancelled or expired (24h).</span>\n            <button class=\"btn\" style=\"border-color:var(--green); background:rgba(0,255,136,0.18); color:#fff; padding:8px 16px;\" onclick=\"window.PolySpaceGalaxy.instance.deployTradeBeacon()\">\n              \ud83d\udce1 DROP BEACON ON MAP\n            </button>\n          </div>\n        </div>\n\n        <!-- Mode B: Inspect & 1-Click Accept (or Cancel) an Existing Map Trade Beacon -->\n        <div id=\"trade-accept-view\" style=\"display:none;\">\n          <div id=\"beacon-detail-box\" style=\"background:rgba(0,255,136,0.07); border:1px solid rgba(0,255,136,0.3); border-radius:10px; padding:14px; margin-bottom:14px; font-size:0.84rem; line-height:1.6;\"></div>\n          <div style=\"display:flex; justify-content:space-between; align-items:center; gap:10px;\">\n            <span style=\"font-size:0.7rem; color:var(--muted);\">\ud83d\udd25 Atomic 1-click resource swap (5% burn fee).</span>\n            <button id=\"btn-accept-beacon\" class=\"btn\" style=\"border-color:var(--green); background:rgba(0,255,136,0.2); color:#fff; padding:8px 18px;\" onclick=\"window.PolySpaceGalaxy.instance.acceptSelectedBeacon()\">\n              \u2705 ACCEPT TRADE\n            </button>\n          </div>\n        </div>\n      </div>\n    </div>\n\n    <!-- Ace Pilot Combat Ranking Leaderboard Modal (Weekly & All-Time) -->\n    <div class=\"overlay-modal\" id=\"rank-modal\">\n      <div class=\"trade-box\" style=\"border-color:var(--gold); max-width:580px;\">\n        <div style=\"display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;\">\n          <div>\n            <div style=\"font-size:0.68rem; color:var(--gold); font-weight:900; letter-spacing:0.8px;\">COMBAT XP \u2022 KILLS & TACTICAL DUELS</div>\n            <h3 style=\"font-size:1.08rem; font-weight:900; color:#fff;\">\ud83c\udfc6 ACE PILOT COMBAT RANKING</h3>\n          </div>\n          <button class=\"btn\" style=\"padding:4px 10px; font-size:0.75rem;\" onclick=\"document.getElementById('rank-modal').style.display='none'\">\u2715 Close</button>\n        </div>\n\n        <div id=\"rank-my-summary\" style=\"background:rgba(255,215,0,0.08); border:1px solid rgba(255,215,0,0.3); border-radius:8px; padding:8px 12px; margin-bottom:10px; font-size:0.78rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;\"></div>\n\n        <div style=\"display:flex; gap:8px; margin-bottom:10px;\">\n          <button id=\"tab-rank-weekly\" class=\"btn active\" style=\"flex:1; justify-content:center; font-size:0.76rem;\" onclick=\"window.PolySpaceGalaxy.instance.switchRankTab('weekly')\">\ud83d\udcc5 Weekly Sprint</button>\n          <button id=\"tab-rank-alltime\" class=\"btn\" style=\"flex:1; justify-content:center; font-size:0.76rem;\" onclick=\"window.PolySpaceGalaxy.instance.switchRankTab('alltime')\">\ud83c\udf0c All-Time Legends</button>\n        </div>\n\n        <div id=\"rank-table-wrap\" style=\"max-height:260px; overflow-y:auto; font-size:0.76rem;\"></div>\n      </div>\n    </div>\n  </div>";
 
 // ============================================================================
     // PLAN-023 STANDALONE PROTOTYPE ENGINE
@@ -212,6 +212,29 @@
 
         // Live Open Map Trade Beacons (loaded from Supabase)
         this.tradeBeacons = [];
+
+        // Weekly Cosmic World Boss: Quantum Leviathan on the 2D Galaxy Map at (3000, 3000)
+        this.worldBoss = {
+          x: 3000,
+          y: 3000,
+          radius: 96,
+          level: 1,
+          hp: 5000000,
+          maxHp: 5000000,
+          poolPgt: 10000,
+          loaded: false
+        };
+        this.bossVfx = {
+          beams: [],
+          shockwaves: [],
+          sparks: [],
+          popups: [],
+          pendingSalvos: [],
+          hitFlash: 0,
+          recoilX: 0,
+          recoilY: 0
+        };
+        this._isStrikingWorldBoss2D = false;
       }
 
       initOtherPilots() {
@@ -339,6 +362,22 @@
           if (msg && msg.payload) {
             this._onIncomingGalaxyChat(msg.payload);
           }
+        });
+
+        ch.on('broadcast', { event: 'boss_strike' }, (msg) => {
+          const p = msg && msg.payload;
+          if (!p || String(p.playerId || '').toLowerCase() === pid) return;
+          if (typeof p.boss_current_hp === 'number') {
+            this.syncWorldBossState(p);
+          }
+          this.spawnBossStrikeVfx(
+            Number(p.fromX ?? 2750),
+            Number(p.fromY ?? 2750),
+            Math.max(1, Math.min(10, Number(p.strikes || 1))),
+            Number(p.damage || 0),
+            Number(p.crits || 0),
+            p.username || 'Pilot'
+          );
         });
 
         ch.on('broadcast', { event: 'beacon_updated' }, () => {
@@ -1162,6 +1201,23 @@
           return;
         }
 
+        // Check if clicked on the Quantum Leviathan World Boss at (3000, 3000)
+        if (this.worldBoss) {
+          const wb = this.worldBoss;
+          const dBoss = Math.hypot(world.x - wb.x, world.y - wb.y);
+          if (dBoss <= Math.max(wb.radius + 26, 56 / this.camZoom)) {
+            const dShip = Math.hypot(this.ship2D.x - wb.x, this.ship2D.y - wb.y);
+            if (dShip > 280) {
+              const ang = Math.atan2(this.ship2D.y - wb.y, this.ship2D.x - wb.x);
+              this.ship2D.targetX = Math.round(wb.x + Math.cos(ang) * 240);
+              this.ship2D.targetY = Math.round(wb.y + Math.sin(ang) * 240);
+              this.followShip2D = true;
+            }
+            this.showWorldBossCard();
+            return;
+          }
+        }
+
         // Check if clicked near one of the 50 Solar Systems
         let clickedSys = null;
         for (const sys of this.solarSystems) {
@@ -1189,6 +1245,8 @@
       showSystemBriefing(sys) {
         const hail = document.getElementById('pilot-hail-card');
         if (hail) hail.style.display = 'none';
+        const bossCard = document.getElementById('boss-raid-card');
+        if (bossCard) bossCard.style.display = 'none';
         const card = document.getElementById('system-briefing-card');
         if (!card) return;
         card.style.display = 'block';
@@ -1511,6 +1569,8 @@
         this.selectedPilot = pilot;
         const sysCard = document.getElementById('system-briefing-card');
         if (sysCard) sysCard.style.display = 'none';
+        const bossCard = document.getElementById('boss-raid-card');
+        if (bossCard) bossCard.style.display = 'none';
         const card = document.getElementById('pilot-hail-card');
         if (!card) return;
         card.style.display = 'block';
@@ -1520,6 +1580,552 @@
         rar.style.color = pilot.color;
         rar.style.borderColor = pilot.color;
         document.getElementById('hail-pilot-stats').innerText = `🛡️${pilot.shield} ☄️${pilot.turret}`;
+      }
+
+      // --------------------------------------------------------------------------
+      // 3C. QUANTUM LEVIATHAN WORLD BOSS ON THE 2D GALAXY MAP (3000, 3000)
+      // --------------------------------------------------------------------------
+      async loadWorldBossFromDB() {
+        const { sb } = this._getSupabaseAndPlayerId();
+        if (!sb) return;
+        try {
+          const { data: gs } = await sb
+            .from('global_settings')
+            .select('boss_level, boss_current_hp, boss_max_hp, game_payout_settings')
+            .eq('id', 1)
+            .single();
+          if (!gs) return;
+          const bossLvl = Math.max(1, parseInt(gs.boss_level || 1, 10));
+          const curHp = gs.boss_current_hp !== undefined && gs.boss_current_hp !== null ? Number(gs.boss_current_hp) : 5000000;
+          const maxHp = Math.max(1, Number(gs.boss_max_hp || 5000000));
+          const dynamicScaledPool = Math.round(10000 * Math.pow(1.20, bossLvl - 1));
+          const configuredPool = (gs.game_payout_settings && gs.game_payout_settings.boss && gs.game_payout_settings.boss.weekly_pool_pgt !== undefined)
+            ? Number(gs.game_payout_settings.boss.weekly_pool_pgt)
+            : null;
+          let bossPool = dynamicScaledPool;
+          if (configuredPool === 0) bossPool = 0;
+          else if (configuredPool !== null && configuredPool > dynamicScaledPool) bossPool = configuredPool;
+          this.syncWorldBossState({
+            boss_level: bossLvl,
+            boss_current_hp: curHp,
+            boss_max_hp: maxHp,
+            weekly_pool_pgt: bossPool
+          });
+        } catch (err) {
+          console.warn('[PolySpaceGalaxy] loadWorldBossFromDB warning:', err);
+        }
+      }
+
+      syncWorldBossState(data) {
+        if (!data || !this.worldBoss) return;
+        if (data.boss_level !== undefined && data.boss_level !== null) {
+          this.worldBoss.level = Math.max(1, parseInt(data.boss_level, 10) || 1);
+        }
+        if (data.boss_current_hp !== undefined && data.boss_current_hp !== null) {
+          this.worldBoss.hp = Math.max(0, Number(data.boss_current_hp) || 0);
+        }
+        if (data.boss_max_hp !== undefined && data.boss_max_hp !== null) {
+          this.worldBoss.maxHp = Math.max(1, Number(data.boss_max_hp) || 5000000);
+        }
+        if (data.weekly_pool_pgt !== undefined && data.weekly_pool_pgt !== null) {
+          this.worldBoss.poolPgt = Math.max(0, Number(data.weekly_pool_pgt) || 0);
+        }
+        this.worldBoss.loaded = true;
+        this._refreshWorldBossCardUI();
+      }
+
+      _getAvailableQuantumCrystals() {
+        if (window.polySpace && window.polySpace.state && window.polySpace.state.quantum !== undefined) {
+          return Math.floor(Number(window.polySpace.state.quantum) || 0);
+        }
+        const st = (window.appState && window.appState.state && window.appState.state.spaceState) || {};
+        return Math.floor(Number(st.quantum) || 0);
+      }
+
+      _refreshWorldBossCardUI() {
+        const wb = this.worldBoss;
+        if (!wb) return;
+        const lvlEl = document.getElementById('boss-2d-lvl');
+        const hpEl = document.getElementById('boss-2d-hp');
+        const crysEl = document.getElementById('boss-2d-crystals');
+        const pct = Math.min(100, Math.max(0, (wb.hp / Math.max(1, wb.maxHp)) * 100));
+        if (lvlEl) lvlEl.innerText = `LVL ${wb.level}`;
+        if (hpEl) {
+          hpEl.innerText = wb.hp <= 0 ? '💀 SLAIN' : `${pct.toFixed(1)}% HP`;
+          hpEl.style.color = wb.hp <= 0 ? '#00ff88' : '#fde047';
+        }
+        if (crysEl) {
+          crysEl.innerText = `💎 ${this._getAvailableQuantumCrystals().toLocaleString()}`;
+        }
+      }
+
+      showWorldBossCard() {
+        const hail = document.getElementById('pilot-hail-card');
+        if (hail) hail.style.display = 'none';
+        const sysCard = document.getElementById('system-briefing-card');
+        if (sysCard) sysCard.style.display = 'none';
+        const card = document.getElementById('boss-raid-card');
+        if (!card) return;
+        card.style.display = 'block';
+        this._refreshWorldBossCardUI();
+        if (!this.worldBoss.loaded) this.loadWorldBossFromDB();
+      }
+
+      flyToWorldBoss() {
+        if (this.mode !== 'galaxy') this.switchMode('galaxy');
+        const wb = this.worldBoss;
+        const ang = Math.atan2(this.ship2D.y - wb.y, this.ship2D.x - wb.x);
+        this.ship2D.targetX = Math.round(wb.x + Math.cos(ang) * 240);
+        this.ship2D.targetY = Math.round(wb.y + Math.sin(ang) * 240);
+        this.followShip2D = true;
+        this.showWorldBossCard();
+        this.showToast(`👾 Autopilot locked onto Quantum Leviathan (${wb.x}, ${wb.y})!`);
+      }
+
+      spawnBossStrikeVfx(fromX, fromY, strikes = 1, damage = 0, crits = 0, attackerName = '') {
+        const wb = this.worldBoss;
+        const vfx = this.bossVfx;
+        if (!wb || !vfx) return;
+        const shotCount = Math.max(1, Math.min(10, strikes));
+        const isCrit = crits > 0;
+        const fireOneBeam = (idx) => {
+          const jitterX = (Math.random() - 0.5) * 46;
+          const jitterY = (Math.random() - 0.5) * 46;
+          const tx = wb.x + jitterX;
+          const ty = wb.y + jitterY;
+          vfx.beams.push({
+            x1: fromX,
+            y1: fromY,
+            x2: tx,
+            y2: ty,
+            life: 0.42,
+            maxLife: 0.42,
+            color: isCrit ? '#ffd700' : (shotCount > 1 ? '#c084fc' : '#00f0ff'),
+            width: isCrit ? 6 : 4
+          });
+          vfx.shockwaves.push({
+            x: tx,
+            y: ty,
+            r: 14,
+            maxR: isCrit ? 155 : 105,
+            life: 0.55,
+            maxLife: 0.55,
+            color: isCrit ? '#ffd700' : '#ff0077'
+          });
+          const sparkCount = shotCount > 1 ? 10 : 26;
+          for (let i = 0; i < sparkCount; i++) {
+            const a = Math.random() * Math.PI * 2;
+            const spd = 90 + Math.random() * 240;
+            vfx.sparks.push({
+              x: tx,
+              y: ty,
+              vx: Math.cos(a) * spd,
+              vy: Math.sin(a) * spd,
+              life: 0.45 + Math.random() * 0.35,
+              maxLife: 0.8,
+              size: 2 + Math.random() * 3,
+              color: i % 3 === 0 ? '#ffd700' : (i % 2 === 0 ? '#ff2d78' : '#00f0ff')
+            });
+          }
+          const pushAng = Math.atan2(wb.y - fromY, wb.x - fromX);
+          vfx.recoilX = Math.cos(pushAng) * (isCrit ? 16 : 9);
+          vfx.recoilY = Math.sin(pushAng) * (isCrit ? 16 : 9);
+          vfx.hitFlash = 1.0;
+          if (idx === 0 && damage > 0) {
+            const label = isCrit
+              ? `🔥 CRIT -${Math.round(damage).toLocaleString()} DMG!`
+              : `-${Math.round(damage).toLocaleString()} DMG`;
+            vfx.popups.push({
+              x: wb.x + (Math.random() - 0.5) * 40,
+              y: wb.y - wb.radius - 18,
+              text: attackerName ? `${attackerName}: ${label}` : label,
+              color: isCrit ? '#ffd700' : '#ff7597',
+              life: 1.8,
+              maxLife: 1.8,
+              big: isCrit || shotCount > 1
+            });
+          }
+        };
+
+        fireOneBeam(0);
+        for (let s = 1; s < shotCount; s++) {
+          vfx.pendingSalvos.push({
+            delay: s * 0.055,
+            fn: () => fireOneBeam(s)
+          });
+        }
+      }
+
+      async strikeWorldBoss2D(strikeCount = 1) {
+        if (this._isStrikingWorldBoss2D) return;
+        const strikes = Math.max(1, parseInt(strikeCount, 10) || 1);
+        const totalCost = strikes * 1000;
+        const wb = this.worldBoss;
+
+        // Fly into firing range if too far from Quantum Leviathan
+        const dist = Math.hypot(this.ship2D.x - wb.x, this.ship2D.y - wb.y);
+        if (dist > 680) {
+          this.flyToWorldBoss();
+          this.showToast(`🚀 Flying into firing range of Quantum Leviathan (${Math.round(dist)}u away)...`);
+          return;
+        }
+
+        const { sb, pid } = this._getSupabaseAndPlayerId();
+        if (!sb || !pid) {
+          this.showToast('⚠️ Sign in to strike the Quantum Leviathan!');
+          return;
+        }
+
+        if (window.polySpace && typeof window.polySpace.syncCloudSpaceState === 'function') {
+          await window.polySpace.syncCloudSpaceState(true);
+          if (typeof window.polySpace.loadSpaceState === 'function') window.polySpace.loadSpaceState();
+        }
+        const avail = this._getAvailableQuantumCrystals();
+        this._refreshWorldBossCardUI();
+        if (avail < totalCost) {
+          this.showToast(`⚠️ Need ${totalCost.toLocaleString()} 💎 Quantum Crystals (yours: ${avail.toLocaleString()})`);
+          if (window.sfx && window.sfx.playError) window.sfx.playError();
+          return;
+        }
+
+        this._isStrikingWorldBoss2D = true;
+        const b1 = document.getElementById('btn-boss-2d-1x');
+        const b10 = document.getElementById('btn-boss-2d-10x');
+        if (b1) { b1.disabled = true; b1.style.opacity = '0.55'; }
+        if (b10) { b10.disabled = true; b10.style.opacity = '0.55'; }
+        const unlock = () => {
+          this._isStrikingWorldBoss2D = false;
+          if (b1) { b1.disabled = false; b1.style.opacity = '1'; }
+          if (b10) { b10.disabled = false; b10.style.opacity = '1'; }
+        };
+
+        if (window.sfx && window.sfx.playLaser) window.sfx.playLaser();
+
+        try {
+          const { data: res, error } = await sb.rpc('strike_world_boss', {
+            p_player_id: pid,
+            p_crystals_cost: totalCost
+          });
+          if (error || !res || !res.success) {
+            const errMsg = (res && res.message) || (error && error.message) || 'Strike rejected.';
+            this.showToast(`⚠️ ${errMsg}`);
+            if (window.sfx && window.sfx.playError) window.sfx.playError();
+            unlock();
+            return;
+          }
+
+          const sDmg = Number(res.strike_damage || 0);
+          const sCrits = Number(res.critical_hits || 0);
+          this.syncWorldBossState(res);
+          this.spawnBossStrikeVfx(this.ship2D.x, this.ship2D.y, strikes, sDmg, sCrits, '');
+
+          if (window.sfx) {
+            if (sCrits > 0 && window.sfx.playPowerUp) window.sfx.playPowerUp();
+            else if (window.sfx.playSuccess) window.sfx.playSuccess();
+          }
+
+          const critText = sCrits > 0 ? ` (🔥 ${sCrits} CRIT!)` : '';
+          this.showToast(`💥 ${strikes > 1 ? `BARRAGE (${strikes}x)` : 'STRIKE'}! Dealt ${sDmg.toLocaleString()} DMG to Quantum Leviathan${critText}`);
+
+          // Sync Space tile state & UI
+          if (window.polySpace && window.polySpace.state) {
+            if (res.remaining_quantum !== undefined) window.polySpace.state.quantum = Number(res.remaining_quantum);
+            if (res.player_weekly_damage !== undefined) window.polySpace.state.bossDamageWeekly = Number(res.player_weekly_damage);
+            if (res.player_attacks_count !== undefined) window.polySpace.state.bossAttacksCount = Number(res.player_attacks_count);
+            if (window.appState && window.appState.state && window.appState.state.spaceState) {
+              window.appState.state.spaceState.quantum = window.polySpace.state.quantum;
+              if (typeof window.appState.save === 'function') window.appState.save();
+            }
+            try { localStorage.setItem('polyspace_state', JSON.stringify(window.polySpace.state)); } catch (_) {}
+            if (typeof window.polySpace.updateUI === 'function') window.polySpace.updateUI();
+            if (typeof window.polySpace.renderWorldBossStats === 'function') window.polySpace.renderWorldBossStats(res);
+            if (typeof window.polySpace.loadWorldBossLeaderboard === 'function') window.polySpace.loadWorldBossLeaderboard();
+          }
+          this._refreshWorldBossCardUI();
+
+          // Broadcast live strike VFX to other online pilots on the 2D map
+          if (this.livePresenceChannel && typeof this.livePresenceChannel.send === 'function') {
+            const st = (window.appState && window.appState.state) || {};
+            this.livePresenceChannel.send({
+              type: 'broadcast',
+              event: 'boss_strike',
+              payload: {
+                playerId: pid,
+                username: st.username || pid.slice(0, 8),
+                fromX: Math.round(this.ship2D.x),
+                fromY: Math.round(this.ship2D.y),
+                strikes,
+                damage: sDmg,
+                crits: sCrits,
+                boss_level: res.boss_level,
+                boss_current_hp: res.boss_current_hp,
+                boss_max_hp: res.boss_max_hp,
+                weekly_pool_pgt: res.weekly_pool_pgt
+              }
+            }).catch(() => {});
+          }
+        } catch (err) {
+          console.warn('[PolySpaceGalaxy] strikeWorldBoss2D error:', err);
+          this.showToast('⚠️ Network error striking Quantum Leviathan.');
+        } finally {
+          unlock();
+        }
+      }
+
+      updateBossVfx(dt) {
+        const vfx = this.bossVfx;
+        if (!vfx) return;
+        if (vfx.hitFlash > 0) vfx.hitFlash = Math.max(0, vfx.hitFlash - dt * 3.4);
+        vfx.recoilX *= Math.max(0, 1 - dt * 8);
+        vfx.recoilY *= Math.max(0, 1 - dt * 8);
+        for (let i = vfx.pendingSalvos.length - 1; i >= 0; i--) {
+          vfx.pendingSalvos[i].delay -= dt;
+          if (vfx.pendingSalvos[i].delay <= 0) {
+            const fn = vfx.pendingSalvos[i].fn;
+            vfx.pendingSalvos.splice(i, 1);
+            fn();
+          }
+        }
+        for (let i = vfx.beams.length - 1; i >= 0; i--) {
+          vfx.beams[i].life -= dt;
+          if (vfx.beams[i].life <= 0) vfx.beams.splice(i, 1);
+        }
+        for (let i = vfx.shockwaves.length - 1; i >= 0; i--) {
+          const sw = vfx.shockwaves[i];
+          sw.life -= dt;
+          sw.r = sw.maxR * (1 - sw.life / sw.maxLife);
+          if (sw.life <= 0) vfx.shockwaves.splice(i, 1);
+        }
+        for (let i = vfx.sparks.length - 1; i >= 0; i--) {
+          const sp = vfx.sparks[i];
+          sp.x += sp.vx * dt;
+          sp.y += sp.vy * dt;
+          sp.vx *= 0.94;
+          sp.vy *= 0.94;
+          sp.life -= dt;
+          if (sp.life <= 0) vfx.sparks.splice(i, 1);
+        }
+        for (let i = vfx.popups.length - 1; i >= 0; i--) {
+          const pp = vfx.popups[i];
+          pp.y -= 38 * dt;
+          pp.life -= dt;
+          if (pp.life <= 0) vfx.popups.splice(i, 1);
+        }
+      }
+
+      drawWorldBoss2D(ctx, zoom = 1) {
+        const wb = this.worldBoss;
+        const vfx = this.bossVfx;
+        if (!wb) return;
+        const t = performance.now() / 1000;
+        const bx = wb.x + (vfx ? vfx.recoilX : 0);
+        const by = wb.y + (vfx ? vfx.recoilY : 0);
+        const isSlain = wb.hp <= 0;
+        const breath = 1 + Math.sin(t * 2.3) * 0.035;
+        const flash = vfx ? vfx.hitFlash : 0;
+
+        ctx.save();
+
+        // 1. Void Singularity Aura
+        const auraR = wb.radius * 2.15;
+        const aura = ctx.createRadialGradient(bx, by, wb.radius * 0.2, bx, by, auraR);
+        aura.addColorStop(0, isSlain ? 'rgba(0, 255, 136, 0.25)' : (flash > 0.1 ? `rgba(255, 255, 255, ${0.35 * flash})` : 'rgba(255, 0, 119, 0.34)'));
+        aura.addColorStop(0.55, isSlain ? 'rgba(0, 200, 255, 0.10)' : 'rgba(189, 0, 255, 0.16)');
+        aura.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = aura;
+        ctx.beginPath();
+        ctx.arc(bx, by, auraR, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Counter-Rotating Cosmic Containment Rings
+        ctx.save();
+        ctx.translate(bx, by);
+        ctx.rotate(t * 0.45);
+        ctx.strokeStyle = isSlain ? 'rgba(0, 255, 136, 0.45)' : 'rgba(255, 0, 119, 0.55)';
+        ctx.lineWidth = 2.2 / Math.sqrt(Math.max(0.2, zoom));
+        ctx.setLineDash([16, 12]);
+        ctx.beginPath();
+        ctx.arc(0, 0, wb.radius * 1.38, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.rotate(-t * 1.05);
+        ctx.strokeStyle = 'rgba(189, 0, 255, 0.45)';
+        ctx.setLineDash([8, 14]);
+        ctx.beginPath();
+        ctx.arc(0, 0, wb.radius * 1.18, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+
+        // 3. 8 Undulating Plasma Tentacles
+        ctx.save();
+        ctx.translate(bx, by);
+        ctx.scale(breath, breath);
+        for (let i = 0; i < 8; i++) {
+          const baseAng = (Math.PI * 2 * i) / 8 + Math.sin(t * 0.6 + i) * 0.08;
+          const wave1 = Math.sin(t * 3.1 + i * 1.3) * 18;
+          const wave2 = Math.cos(t * 2.6 + i * 1.7) * 24;
+          const r1 = wb.radius * 0.58;
+          const r2 = wb.radius * 1.02;
+          const r3 = wb.radius * 1.38;
+          const x1 = Math.cos(baseAng) * r1;
+          const y1 = Math.sin(baseAng) * r1;
+          const cx1 = Math.cos(baseAng) * r2 - Math.sin(baseAng) * wave1;
+          const cy1 = Math.sin(baseAng) * r2 + Math.cos(baseAng) * wave1;
+          const x2 = Math.cos(baseAng) * r3 - Math.sin(baseAng) * wave2;
+          const y2 = Math.sin(baseAng) * r3 + Math.cos(baseAng) * wave2;
+
+          ctx.strokeStyle = flash > 0.25 ? '#ffffff' : (isSlain ? '#00ff88' : (i % 2 === 0 ? '#ff0077' : '#a855f7'));
+          ctx.lineWidth = 6.5;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.quadraticCurveTo(cx1, cy1, x2, y2);
+          ctx.stroke();
+
+          // Glowing plasma node at tentacle tip
+          ctx.fillStyle = i % 2 === 0 ? '#ffd700' : '#00f0ff';
+          ctx.beginPath();
+          ctx.arc(x2, y2, 4.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // 4. Armored Bio-Mechanical Leviathan Carapace (Hexagonal Dreadnought Core)
+        const hullGrad = ctx.createRadialGradient(-16, -18, 8, 0, 0, wb.radius * 0.85);
+        hullGrad.addColorStop(0, flash > 0.2 ? '#ffffff' : '#3b0764');
+        hullGrad.addColorStop(0.55, flash > 0.2 ? '#ff7597' : '#1e062c');
+        hullGrad.addColorStop(1, '#090312');
+        ctx.fillStyle = hullGrad;
+        ctx.strokeStyle = flash > 0.2 ? '#ffffff' : (isSlain ? '#00ff88' : '#ff2d78');
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const a = (Math.PI * 2 * i) / 6 - Math.PI / 2;
+          const rr = wb.radius * (i % 2 === 0 ? 0.78 : 0.66);
+          const vx = Math.cos(a) * rr;
+          const vy = Math.sin(a) * rr;
+          if (i === 0) ctx.moveTo(vx, vy);
+          else ctx.lineTo(vx, vy);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Twin Crimson Mandible Blades
+        ctx.fillStyle = '#ff0055';
+        ctx.beginPath();
+        ctx.moveTo(-26, 46); ctx.lineTo(-42, 74); ctx.lineTo(-14, 62); ctx.closePath();
+        ctx.moveTo(26, 46);  ctx.lineTo(42, 74);  ctx.lineTo(14, 62);  ctx.closePath();
+        ctx.fill();
+
+        // 5. Singularity Core Eye (Tracks Player Ship!)
+        const eyeAng = Math.atan2(this.ship2D.y - by, this.ship2D.x - bx);
+        const pupilX = Math.cos(eyeAng) * 8;
+        const pupilY = Math.sin(eyeAng) * 8;
+        const eyeGrad = ctx.createRadialGradient(0, 0, 4, 0, 0, 30);
+        eyeGrad.addColorStop(0, '#fff7ed');
+        eyeGrad.addColorStop(0.35, isSlain ? '#00ff88' : '#ffd700');
+        eyeGrad.addColorStop(0.75, isSlain ? '#0284c7' : '#ff0055');
+        eyeGrad.addColorStop(1, 'rgba(189, 0, 255, 0)');
+        ctx.fillStyle = eyeGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 30 + Math.sin(t * 5) * 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Dark Singularity Slit Pupil
+        ctx.fillStyle = '#05020a';
+        ctx.beginPath();
+        ctx.ellipse(pupilX, pupilY, 5.5, 13, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // 6. Overhead Nameplate & Live HP Bar
+        const uiScale = Math.max(0.85, 1.0 / Math.sqrt(Math.max(0.18, zoom)));
+        const barW = 156 * uiScale;
+        const barH = 9 * uiScale;
+        const barX = bx - barW / 2;
+        const barY = by - wb.radius * 1.48 - 16 * uiScale;
+        const hpPct = Math.min(1, Math.max(0, wb.hp / Math.max(1, wb.maxHp)));
+
+        ctx.fillStyle = '#ff2d78';
+        ctx.font = `900 ${Math.round(12.5 * uiScale)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(`👾 QUANTUM LEVIATHAN • LVL ${wb.level}`, bx, barY - 6 * uiScale);
+
+        ctx.fillStyle = 'rgba(5, 8, 22, 0.88)';
+        ctx.strokeStyle = isSlain ? '#00ff88' : '#ff0077';
+        ctx.lineWidth = 1.5 * uiScale;
+        ctx.fillRect(barX, barY, barW, barH);
+        const fillGrad = ctx.createLinearGradient(barX, 0, barX + barW, 0);
+        fillGrad.addColorStop(0, isSlain ? '#00ff88' : '#ff0055');
+        fillGrad.addColorStop(1, isSlain ? '#00f0ff' : '#bd00ff');
+        ctx.fillStyle = fillGrad;
+        ctx.fillRect(barX, barY, barW * (isSlain ? 1 : hpPct), barH);
+        ctx.strokeRect(barX, barY, barW, barH);
+
+        ctx.fillStyle = isSlain ? '#00ff88' : '#fde047';
+        ctx.font = `bold ${Math.round(10 * uiScale)}px monospace`;
+        const hpLine = isSlain
+          ? `💀 SLAIN • 🏆 ${wb.poolPgt.toLocaleString()} PGT Pool`
+          : `${Math.round(wb.hp).toLocaleString()} / ${Math.round(wb.maxHp).toLocaleString()} HP (${(hpPct * 100).toFixed(1)}%)`;
+        ctx.fillText(hpLine, bx, barY + barH + 13 * uiScale);
+
+        // 7. Live Strike VFX (Plasma Beams, Shockwaves, Sparks, Floating Damage Numbers)
+        if (vfx) {
+          for (const bm of vfx.beams) {
+            const a = Math.max(0, bm.life / bm.maxLife);
+            ctx.save();
+            ctx.globalAlpha = a;
+            ctx.strokeStyle = bm.color;
+            ctx.lineWidth = (bm.width + 4) * uiScale;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(bm.x1, bm.y1);
+            ctx.lineTo(bm.x2, bm.y2);
+            ctx.stroke();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = bm.width * 0.55 * uiScale;
+            ctx.beginPath();
+            ctx.moveTo(bm.x1, bm.y1);
+            ctx.lineTo(bm.x2, bm.y2);
+            ctx.stroke();
+            ctx.restore();
+          }
+          for (const sw of vfx.shockwaves) {
+            const a = Math.max(0, sw.life / sw.maxLife);
+            ctx.save();
+            ctx.globalAlpha = a;
+            ctx.strokeStyle = sw.color;
+            ctx.lineWidth = 3.5 * uiScale;
+            ctx.beginPath();
+            ctx.arc(sw.x, sw.y, sw.r, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+          for (const sp of vfx.sparks) {
+            const a = Math.max(0, sp.life / sp.maxLife);
+            ctx.save();
+            ctx.globalAlpha = a;
+            ctx.fillStyle = sp.color;
+            ctx.beginPath();
+            ctx.arc(sp.x, sp.y, sp.size * uiScale, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+          }
+          for (const pp of vfx.popups) {
+            const a = Math.max(0, Math.min(1, pp.life / (pp.maxLife * 0.45)));
+            ctx.save();
+            ctx.globalAlpha = a;
+            ctx.font = `900 ${Math.round((pp.big ? 16 : 13) * uiScale)}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#020617';
+            ctx.fillText(pp.text, pp.x + 1.5, pp.y + 1.5);
+            ctx.fillStyle = pp.color;
+            ctx.fillText(pp.text, pp.x, pp.y);
+            ctx.restore();
+          }
+        }
+
+        ctx.restore();
       }
 
       getPilotRank(xp) {
@@ -2390,6 +2996,7 @@
         if (this.pendingIncomingDuel) {
           this.renderIncomingDuelBanner();
         }
+        this.updateBossVfx(dt);
 
         // Update Calm Sparring Bot (idles, hops every 25-40s) & Smoothly Interpolate Real Online Pilots
         if (this.otherPilots) {
@@ -3017,7 +3624,10 @@
           }
         }
 
-        // 5b. Render Other Live Pilots on the 2D Milky Way (Clickable for Trade or Tactical Duel!)
+        // 5b. Render Quantum Leviathan World Boss (3000, 3000) + Strike VFX
+        this.drawWorldBoss2D(ctx, this.camZoom);
+
+        // 5c. Render Other Live Pilots on the 2D Milky Way (Clickable for Trade or Tactical Duel!)
         if (this.otherPilots) {
           const pScale = Math.max(0.75, 1.0 / Math.sqrt(this.camZoom));
           for (const pl of this.otherPilots) {
@@ -5792,6 +6402,7 @@
         this.instance.setFullscreen(false);
         this.instance.loadGalaxyProfileFromDB();
         this.instance.loadTradeBeaconsFromDB();
+        this.instance.loadWorldBossFromDB();
         this.instance.connectRealtimeGalaxy();
         this.instance.pollMyDuels();
         setTimeout(() => { if (this.instance && !this.instance.paused) this.instance.scanForGalacticGifts(false); }, 900);
@@ -5800,6 +6411,7 @@
         this.instance.updateUpgrades();
         this.instance.loadGalaxyProfileFromDB();
         this.instance.loadTradeBeaconsFromDB();
+        this.instance.loadWorldBossFromDB();
         this.instance.connectRealtimeGalaxy();
         this.instance.pollMyDuels();
         setTimeout(() => { if (this.instance && !this.instance.paused) this.instance.scanForGalacticGifts(false); }, 900);
@@ -5939,6 +6551,9 @@
         }
       }
 
+      // Quantum Leviathan World Boss at (3000, 3000) + Live Strike VFX
+      inst.drawWorldBoss2D(ctx, zoom);
+
       // Other Live Pilots
       if (inst.otherPilots) {
         const pScale = Math.max(0.75, 1.0 / Math.sqrt(zoom));
@@ -6044,6 +6659,20 @@
             inst.showPilotHailCard(pl);
             return;
           }
+        }
+      }
+      if (inst.worldBoss) {
+        const wb = inst.worldBoss;
+        if (Math.hypot(wx - wb.x, wy - wb.y) <= Math.max(wb.radius + 26, 56 / inst.camZoom)) {
+          const dShip = Math.hypot(inst.ship2D.x - wb.x, inst.ship2D.y - wb.y);
+          if (dShip > 280) {
+            const ang = Math.atan2(inst.ship2D.y - wb.y, inst.ship2D.x - wb.x);
+            inst.ship2D.targetX = Math.round(wb.x + Math.cos(ang) * 240);
+            inst.ship2D.targetY = Math.round(wb.y + Math.sin(ang) * 240);
+            inst.followShip2D = true;
+          }
+          inst.showWorldBossCard();
+          return;
         }
       }
       for (const sys of inst.solarSystems) {
