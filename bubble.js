@@ -850,7 +850,9 @@ class BubbleTroubleGame {
     }
 
     // 4. Balls Physics, Platform Bounces & Player Collision
-    const timeScale = this.freezeTimer > 0 ? 0.35 : 1.0;
+    // Start 30% slower on Wave 1 (0.70x pace) and ramp smoothly to full 1.0x pace by Wave 5
+    const wavePace = Math.min(1.0, 0.70 + Math.max(0, this.wave - 1) * 0.075);
+    const timeScale = this.freezeTimer > 0 ? 0.35 : wavePace;
     for (let i = 0; i < this.balls.length; i++) {
       const ball = this.balls[i];
       const spec = this.ballSpecs[ball.size];
@@ -906,17 +908,18 @@ class BubbleTroubleGame {
         }
       }
 
-      // Player collision (circle vs torso hitbox)
+      // Player collision (forgiving core torso hitbox so visual grazes don't count as hits)
       if (this.invincibleTimer <= 0) {
-        const px1 = this.player.x - 10;
-        const px2 = this.player.x + 10;
-        const py1 = this.player.y - 34;
-        const py2 = this.player.y - 2;
+        const px1 = this.player.x - 6;
+        const px2 = this.player.x + 6;
+        const py1 = this.player.y - 29;
+        const py2 = this.player.y - 5;
         const cx = Math.max(px1, Math.min(px2, ball.x));
         const cy = Math.max(py1, Math.min(py2, ball.y));
         const dx = ball.x - cx;
         const dy = ball.y - cy;
-        if (dx * dx + dy * dy <= (ball.r - 2) * (ball.r - 2)) {
+        const hitR = Math.max(4, ball.r * 0.84 - 2);
+        if (dx * dx + dy * dy <= hitR * hitR) {
           this.handlePlayerHit();
           break;
         }
