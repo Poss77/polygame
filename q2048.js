@@ -586,9 +586,9 @@ class Cyber2048Game {
         }
       }
 
-      // Cascade Combos: >= 2 merges in a single move trigger multiplier bonus & badges
+      // Cascade Combos: >= 2 merges in a single move trigger proportional +25% merge bonus (rewards big merges, prevents 2+2 spam inflation)
       if (totalMerges >= 2) {
-        const comboBonus = (totalMerges - 1) * 150;
+        const comboBonus = Math.max(4, Math.round(turnPoints * 0.25 * (totalMerges - 1)));
         this.score += (turnPoints + comboBonus);
         this.playSfx('combo', totalMerges);
         this.triggerComboBadge(totalMerges, comboBonus);
@@ -601,10 +601,12 @@ class Cyber2048Game {
         }
       }
 
-      // Season 2 Quantum Relic Drop Check (1 per session, >= 64 tile merge)
-      if ((this.sessionRelicsDroppedCount || 0) < 1 && maxMergedVal >= 64) {
+      // Season 2 Quantum Relic Drop Check (1 per session, skill-gated to >= 512 tile merge)
+      // 512 tile: 4% | 1024 tile: 15% | 2048+ tile: 35% (scaled by Relic Seeker multiplier)
+      if ((this.sessionRelicsDroppedCount || 0) < 1 && maxMergedVal >= 512) {
         const relicMult = (typeof window.getRelicSpawnMultiplier === 'function') ? window.getRelicSpawnMultiplier() : 1.0;
-        if (Math.random() < 0.015 * relicMult) {
+        const baseChance = maxMergedVal >= 2048 ? 0.35 : (maxMergedVal >= 1024 ? 0.15 : 0.04);
+        if (Math.random() < Math.min(0.95, baseChance * relicMult)) {
           this.sessionRelicsDroppedCount = 1;
           if (typeof window.triggerRelicCelebration === 'function') {
             window.triggerRelicCelebration({
@@ -622,8 +624,8 @@ class Cyber2048Game {
 
       const newCoord = this.addRandomTile();
 
-      // Rare 5 PGT Bonus Coin Spawn Mechanic: every 85-110 moves (3x less frequent)
-      if (!this.coinCell) {
+      // Rare 5 PGT Bonus Coin Spawn Mechanic: requires maxTile >= 256 & 85+ moves
+      if (!this.coinCell && this.maxTile >= 256) {
         this.movesSinceCoin = (this.movesSinceCoin || 0) + 1;
         if (this.movesSinceCoin >= 85 && Math.random() < 0.4) {
           const emptyCells = [];
@@ -886,8 +888,13 @@ class Cyber2048Game {
       ? Number(window.appState.state.globalEarnMultiplier !== undefined ? window.appState.state.globalEarnMultiplier : window.appState.state.globalArcadeEarnMultiplier)
       : 1.0;
 
-    // Strict 75.00 PGT Base Cap (2.5x Earn - 2x reduction from 5x)
-    const rawBase = Math.min(75.0, (((cleanScore / 2500.0) + (finalTokens * 0.5)) * 2.5) * globalEarnMult);
+    // Progressive skill-weighted score curve (matches end_arcade_session):
+    // 0-3,000 pts (<=256 spam zone): 0.25x | 3,000-10,000 pts (512 zone): 1.0x | 10,000+ pts (1024/2048): 1.5x
+    const effectiveQ2048Score =
+      (Math.min(cleanScore, 3000) * 0.25) +
+      (Math.max(0, Math.min(cleanScore, 10000) - 3000) * 1.0) +
+      (Math.max(0, cleanScore - 10000) * 1.5);
+    const rawBase = Math.min(75.0, (((effectiveQ2048Score / 2500.0) + (finalTokens * 0.5)) * 2.5) * globalEarnMult);
     const tokenPgt = finalTokens * 5.0;
     const calculatedPgt = parseFloat((rawBase * playerMult).toFixed(2));
     const finalPgt = cleanScore > 0 ? Math.min(1500.0, Math.max(0.01, parseFloat((calculatedPgt + tokenPgt).toFixed(2)))) : 0;
