@@ -307,56 +307,108 @@
         }
       }
 
+      _upsertRemotePilot(p) {
+        if (!p || !p.player_id) return;
+        const { pid } = this._getSupabaseAndPlayerId();
+        const key = String(p.player_id).trim().toLowerCase();
+        if (!key || key === pid) return;
+        this._remotePilotMap = this._remotePilotMap || new Map();
+        const prev = this._remotePilotMap.get(key);
+        const tx = Number(p.x || 0);
+        const ty = Number(p.y || 0);
+        const entry = {
+          id: key,
+          playerId: key,
+          isBot: false,
+          name: p.username || (prev && prev.name) || 'Pilot',
+          rarity: p.rarity || (prev && prev.rarity) || 'Pilot',
+          color: p.rarity === 'Mythic' ? '#ffd700' : (p.rarity === 'Legendary' ? '#c084fc' : '#00ff88'),
+          shield: Number(p.shield || (prev && prev.shield) || 1),
+          turret: Number(p.turret || (prev && prev.turret) || 1),
+          dna: p.dna || (prev && prev.dna) || null,
+          x: prev ? prev.x : tx,
+          y: prev ? prev.y : ty,
+          targetX: tx,
+          targetY: ty,
+          angle: Number(p.angle ?? (prev ? prev.angle : 0)),
+          speed: 360,
+          trail: prev ? prev.trail : [],
+          lastSeenAt: Date.now()
+        };
+        this._remotePilotMap.set(key, entry);
+        this._rebuildOtherPilotsList();
+      }
+
+      _rebuildOtherPilotsList() {
+        const now = Date.now();
+        this._remotePilotMap = this._remotePilotMap || new Map();
+        const liveList = [this.sparringBot];
+        const onlineNames = [];
+        for (const [k, pl] of this._remotePilotMap.entries()) {
+          if (now - (pl.lastSeenAt || 0) > 18000) {
+            this._remotePilotMap.delete(k);
+            continue;
+          }
+          liveList.push(pl);
+          onlineNames.push(pl.name);
+        }
+        this.otherPilots = liveList;
+        const onlineEl = document.getElementById('psg-chat-online');
+        if (onlineEl) {
+          const count = 1 + onlineNames.length;
+          onlineEl.innerText = `${count}`;
+          onlineEl.title = onlineNames.length > 0
+            ? `${count} pilots online: You, ${onlineNames.join(', ')}`
+            : '1 pilot online in Galaxy';
+        }
+      }
+
+      _buildMyPilotPayload() {
+        const { pid } = this._getSupabaseAndPlayerId();
+        const st = (window.appState && window.appState.state) || {};
+        const myName = st.username || (pid.length > 10 ? `${pid.slice(0, 6)}…${pid.slice(-4)}` : pid);
+        const _psShip = (window.polySpace && typeof window.polySpace.getEquippedStarshipMultiplier === 'function')
+          ? window.polySpace.getEquippedStarshipMultiplier() : null;
+        return {
+          player_id: pid,
+          username: myName,
+          x: Math.round(this.ship2D.x),
+          y: Math.round(this.ship2D.y),
+          angle: Number(this.ship2D.angle.toFixed(2)),
+          shield: this.shieldLevel,
+          turret: this.turretLevel,
+          dna: (_psShip && _psShip.ship && _psShip.ship.dna) || null,
+          rarity: (_psShip && _psShip.ship && _psShip.ship.rarity) || 'Pilot'
+        };
+      }
+
       connectRealtimeGalaxy() {
         const { sb, pid } = this._getSupabaseAndPlayerId();
         if (!sb || !pid || typeof sb.channel !== 'function') return;
         if (this.livePresenceChannel) return;
 
-        const st = (window.appState && window.appState.state) || {};
-        const myName = st.username || (pid.length > 10 ? `${pid.slice(0, 6)}…${pid.slice(-4)}` : pid);
-        const _psShip = (window.polySpace && typeof window.polySpace.getEquippedStarshipMultiplier === 'function')
-          ? window.polySpace.getEquippedStarshipMultiplier() : null;
-        const myDna = (_psShip && _psShip.ship && _psShip.ship.dna) || null;
-        const myRarity = (_psShip && _psShip.ship && _psShip.ship.rarity) || 'Pilot';
+        this._remotePilotMap = this._remotePilotMap || new Map();
+        this._realtimeSubscribed = false;
 
-        const ch = sb.channel('polyspace-galaxy-live', { config: { presence: { key: pid } } });
+        const ch = sb.channel('polyspace-galaxy-live', {
+          config: { broadcast: { self: false }, presence: { key: pid } }
+        });
+
         ch.on('presence', { event: 'sync' }, () => {
-          const state = ch.presenceState();
-          const prevById = new Map((this.otherPilots || []).map(p => [p.id, p]));
-          const liveList = [this.sparringBot];
+          const state = ch.presenceState() || {};
           Object.keys(state).forEach((key) => {
             if (key.toLowerCase() === pid) return;
             const entries = state[key];
             if (!entries || !entries.length) return;
             const p = entries[entries.length - 1];
-            const prev = prevById.get(key);
-            const tx = Number(p.x || 0);
-            const ty = Number(p.y || 0);
-            liveList.push({
-              id: key,
-              playerId: key,
-              isBot: false,
-              name: p.username || 'Pilot',
-              rarity: p.rarity || 'Pilot',
-              color: p.rarity === 'Mythic' ? '#ffd700' : (p.rarity === 'Legendary' ? '#c084fc' : '#00ff88'),
-              shield: Number(p.shield || 1),
-              turret: Number(p.turret || 1),
-              dna: p.dna || null,
-              x: prev ? prev.x : tx,
-              y: prev ? prev.y : ty,
-              targetX: tx,
-              targetY: ty,
-              angle: Number(p.angle || 0),
-              speed: 260,
-              trail: prev ? prev.trail : []
-            });
+            this._upsertRemotePilot({ ...p, player_id: p.player_id || key });
           });
-          this.otherPilots = liveList;
-          const onlineEl = document.getElementById('psg-chat-online');
-          if (onlineEl) {
-            const count = Math.max(1, Object.keys(state || {}).length);
-            onlineEl.innerText = `${count}`;
-            onlineEl.title = `${count} pilot${count === 1 ? '' : 's'} online in Galaxy`;
+          this._rebuildOtherPilotsList();
+        });
+
+        ch.on('broadcast', { event: 'pilot_pos' }, (msg) => {
+          if (msg && msg.payload) {
+            this._upsertRemotePilot(msg.payload);
           }
         });
 
@@ -398,23 +450,37 @@
 
         ch.subscribe(async (status) => {
           if (status === 'SUBSCRIBED') {
+            this._realtimeSubscribed = true;
             this._lastPresencePushAt = performance.now();
+            this._lastBroadcastPosAt = performance.now();
             this._lastPresenceX = Math.round(this.ship2D.x);
             this._lastPresenceY = Math.round(this.ship2D.y);
-            await ch.track({
-              player_id: pid,
-              username: myName,
-              x: this._lastPresenceX,
-              y: this._lastPresenceY,
-              angle: Number(this.ship2D.angle.toFixed(2)),
-              shield: this.shieldLevel,
-              turret: this.turretLevel,
-              dna: myDna,
-              rarity: myRarity
-            });
+            const payload = this._buildMyPilotPayload();
+            try { await ch.track(payload); } catch (_) {}
+            try { await ch.send({ type: 'broadcast', event: 'pilot_pos', payload }); } catch (_) {}
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            this._realtimeSubscribed = false;
+            if (this.livePresenceChannel === ch) {
+              try { sb.removeChannel(ch); } catch (_) {}
+              this.livePresenceChannel = null;
+              clearTimeout(this._rtReconnectTimer);
+              this._rtReconnectTimer = setTimeout(() => {
+                if (!this.paused) this.connectRealtimeGalaxy();
+              }, 4000);
+            }
           }
         });
         this.livePresenceChannel = ch;
+
+        if (!this._presenceHeartbeatTimer) {
+          this._presenceHeartbeatTimer = setInterval(() => {
+            if (!this.paused && this._realtimeSubscribed && this.livePresenceChannel) {
+              const payload = this._buildMyPilotPayload();
+              this.livePresenceChannel.send({ type: 'broadcast', event: 'pilot_pos', payload }).catch(() => {});
+              this._rebuildOtherPilotsList();
+            }
+          }, 4000);
+        }
 
         if (!this._socialPollTimer) {
           this._socialPollTimer = setInterval(() => {
@@ -433,32 +499,26 @@
       }
 
       pushPresenceIfMoved(force = false) {
-        if (!this.livePresenceChannel) return;
+        if (!this.livePresenceChannel || !this._realtimeSubscribed) return;
         const now = performance.now();
         const sx = Math.round(this.ship2D.x);
         const sy = Math.round(this.ship2D.y);
         const moved = Math.hypot(sx - this._lastPresenceX, sy - this._lastPresenceY);
-        if (!force && (moved < 8 || now - this._lastPresencePushAt < 1500)) return;
-        this._lastPresencePushAt = now;
-        this._lastPresenceX = sx;
-        this._lastPresenceY = sy;
+        if (!force && moved < 6) return;
 
-        const { pid } = this._getSupabaseAndPlayerId();
-        const st = (window.appState && window.appState.state) || {};
-        const myName = st.username || (pid.length > 10 ? `${pid.slice(0, 6)}…${pid.slice(-4)}` : pid);
-        const _psShip = (window.polySpace && typeof window.polySpace.getEquippedStarshipMultiplier === 'function')
-          ? window.polySpace.getEquippedStarshipMultiplier() : null;
-        this.livePresenceChannel.track({
-          player_id: pid,
-          username: myName,
-          x: sx,
-          y: sy,
-          angle: Number(this.ship2D.angle.toFixed(2)),
-          shield: this.shieldLevel,
-          turret: this.turretLevel,
-          dna: (_psShip && _psShip.ship && _psShip.ship.dna) || null,
-          rarity: (_psShip && _psShip.ship && _psShip.ship.rarity) || 'Pilot'
-        });
+        // Fast broadcast every 450ms for smooth real-time movement
+        if (force || now - (this._lastBroadcastPosAt || 0) >= 450) {
+          this._lastBroadcastPosAt = now;
+          this._lastPresenceX = sx;
+          this._lastPresenceY = sy;
+          const payload = this._buildMyPilotPayload();
+          this.livePresenceChannel.send({ type: 'broadcast', event: 'pilot_pos', payload }).catch(() => {});
+          // Also refresh Presence track every 3.5s
+          if (force || now - (this._lastPresencePushAt || 0) >= 3500) {
+            this._lastPresencePushAt = now;
+            this.livePresenceChannel.track(payload).catch(() => {});
+          }
+        }
       }
 
       async pollMyDuels() {
@@ -470,6 +530,13 @@
 
           // 1. Incoming 60s challenge banner
           const inc = Array.isArray(data.incoming) && data.incoming.length > 0 ? data.incoming[0] : null;
+          if (inc && inc.id !== this._lastIncomingDuelId) {
+            this._lastIncomingDuelId = inc.id;
+            if (window.sfx && window.sfx.playPowerUp) window.sfx.playPowerUp();
+            this.showToast(`⚔️ DUEL CHALLENGE from ${inc.challenger_name} (${Number(inc.wager_pgt || 0)} PGT)!`);
+          } else if (!inc) {
+            this._lastIncomingDuelId = null;
+          }
           this.pendingIncomingDuel = inc;
           this.renderIncomingDuelBanner();
 
@@ -508,7 +575,7 @@
         if (!el) {
           el = document.createElement('div');
           el.id = 'psg-incoming-duel-banner';
-          el.style.cssText = 'position:fixed; top:14px; left:50%; transform:translateX(-50%); z-index:100001; background:rgba(12,18,38,0.96); border:2px solid #ff0055; border-radius:10px; padding:8px 14px; display:flex; align-items:center; gap:10px; color:#fff; font-size:0.8rem; font-weight:800; box-shadow:0 0 28px rgba(255,0,85,0.45); max-width:94vw;';
+          el.style.cssText = 'position:fixed; top:56px; left:50%; transform:translateX(-50%); z-index:100000025; background:rgba(12,18,38,0.97); border:2px solid #ff0055; border-radius:10px; padding:8px 14px; display:flex; align-items:center; gap:10px; color:#fff; font-size:0.8rem; font-weight:800; box-shadow:0 0 28px rgba(255,0,85,0.55); max-width:94vw; flex-wrap:wrap; justify-content:center;';
           document.body.appendChild(el);
         }
         const remSec = Math.max(0, Math.ceil((new Date(inc.expires_at).getTime() - Date.now()) / 1000));
@@ -4032,6 +4099,41 @@
         ctx.restore();
 
         ctx.restore();
+
+        // 7. Edge-of-Screen Pointers for Real Online Pilots outside current viewport
+        if (this.otherPilots && this.otherPilots.length > 1) {
+          const pad = 42;
+          for (const pl of this.otherPilots) {
+            if (pl.isBot) continue;
+            const scr = this.worldToScreen(pl.x, pl.y);
+            if (scr.x >= 18 && scr.x <= this.width - 18 && scr.y >= 18 && scr.y <= this.height - 18) continue;
+            const ang = Math.atan2(scr.y - this.height / 2, scr.x - this.width / 2);
+            const ex = Math.max(pad, Math.min(this.width - pad, this.width / 2 + Math.cos(ang) * (this.width / 2 - pad)));
+            const ey = Math.max(pad + 34, Math.min(this.height - pad, this.height / 2 + Math.sin(ang) * (this.height / 2 - pad)));
+            const distU = Math.round(Math.hypot(pl.x - this.ship2D.x, pl.y - this.ship2D.y));
+            const distLabel = distU >= 1000 ? `${(distU / 1000).toFixed(1)}k` : `${distU}u`;
+            ctx.save();
+            ctx.translate(ex, ey);
+            ctx.rotate(ang);
+            ctx.fillStyle = pl.color || '#00ff88';
+            ctx.beginPath();
+            ctx.moveTo(10, 0);
+            ctx.lineTo(-7, -6);
+            ctx.lineTo(-4, 0);
+            ctx.lineTo(-7, 6);
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+            ctx.save();
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#020617';
+            ctx.fillText(`🛸 ${pl.name} (${distLabel})`, ex + 1, ey - 11);
+            ctx.fillStyle = pl.color || '#00ff88';
+            ctx.fillText(`🛸 ${pl.name} (${distLabel})`, ex, ey - 12);
+            ctx.restore();
+          }
+        }
       }
 
       // --------------------------------------------------------------------------
@@ -4884,27 +4986,43 @@
         const baseShotDmg = Math.round((18 + Math.pow(this.turretLevel, 1.55) * 1.45) * rMult);
         const missileDmg = Math.round(baseShotDmg * 5.0);
 
-        this.missiles3D.push({
-          pos: {
-            x: p.pos.x + p.forward.x * 45 - p.up.x * 16,
-            y: p.pos.y + p.forward.y * 45 - p.up.y * 16,
-            z: p.pos.z + p.forward.z * 45 - p.up.z * 16
-          },
-          vel: {
-            x: p.forward.x * 680,
-            y: p.forward.y * 680,
-            z: p.forward.z * 680
-          },
-          speed: 1080,
-          targetId: target.id,
-          dmg: missileDmg,
-          life: 8.0,
-          trail: []
-        });
+        const isMythic = !!(this.rarityBonus && this.rarityBonus.label === 'Mythic');
+        const salvoTargets = [target];
+        if (isMythic) {
+          const secondTarget = (this.enemies3D || []).find(e => e.id !== target.id) || target;
+          salvoTargets.push(secondTarget);
+        }
+
+        const wingOffsets = salvoTargets.length > 1 ? [-28, 28] : [0];
+        const splayDirs = salvoTargets.length > 1 ? [-0.18, 0.18] : [0];
+        for (let k = 0; k < salvoTargets.length; k++) {
+          const tgt = salvoTargets[k];
+          const off = wingOffsets[k];
+          const sp = splayDirs[k];
+          this.missiles3D.push({
+            pos: {
+              x: p.pos.x + p.forward.x * 45 + p.right.x * off - p.up.x * 16,
+              y: p.pos.y + p.forward.y * 45 + p.right.y * off - p.up.y * 16,
+              z: p.pos.z + p.forward.z * 45 + p.right.z * off - p.up.z * 16
+            },
+            vel: {
+              x: (p.forward.x + p.right.x * sp) * 680,
+              y: (p.forward.y + p.right.y * sp) * 680,
+              z: (p.forward.z + p.right.z * sp) * 680
+            },
+            speed: 1080,
+            targetId: tgt.id,
+            dmg: missileDmg,
+            life: 8.0,
+            trail: []
+          });
+        }
         this.missileCamImpact = null;
-        this.screenShake = Math.max(this.screenShake || 0, 3.5);
+        this.screenShake = Math.max(this.screenShake || 0, isMythic ? 5.0 : 3.5);
         this.playCombatSfx('missile');
-        this.showToast(`🚀 HOMING MISSILE LOCKED ON ${target.name.toUpperCase()}!`);
+        this.showToast(isMythic
+          ? `🚀🚀 MYTHIC TWIN SALVO LOCKED ON ${target.name.toUpperCase()}!`
+          : `🚀 HOMING MISSILE LOCKED ON ${target.name.toUpperCase()}!`);
       }
 
       applyDamageToEnemy3D(e, rawDmg, isMissile = false) {
