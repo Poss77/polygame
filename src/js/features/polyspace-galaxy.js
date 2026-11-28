@@ -2633,18 +2633,26 @@
       }
 
       async smeltFromRefineryModal(recipe) {
-        if (typeof window.smeltSpaceOre === 'function') {
-          await window.smeltSpaceOre(recipe);
-        } else if (window.polySpace && typeof window.polySpace.smeltOre === 'function') {
-          await window.polySpace.smeltOre(recipe);
-        } else {
-          this.showToast('⚠️ Ore Refinery unavailable right now.');
-          return;
+        if (this._isSmeltingInModal) return;
+        this._isSmeltingInModal = true;
+        try {
+          if (window.polySpace && typeof window.polySpace.smeltOre === 'function') {
+            await window.polySpace.smeltOre(recipe);
+          } else if (typeof window.smeltSpaceOre === 'function') {
+            await window.smeltSpaceOre(recipe);
+          } else {
+            this.showToast('⚠️ Ore Refinery unavailable right now.');
+            return;
+          }
+          // Force live refresh of modal ore bar + fullscreen ore pill
+          this._lastDisplayedOres = null;
+          const bar = document.getElementById('refinery-ore-bar');
+          if (bar) bar.innerHTML = this._renderHubOreBarHtml();
+          const mBar = document.getElementById('moon-market-ore-bar');
+          if (mBar) mBar.innerHTML = this._renderHubOreBarHtml();
+        } finally {
+          this._isSmeltingInModal = false;
         }
-        const bar = document.getElementById('refinery-ore-bar');
-        if (bar) bar.innerHTML = this._renderHubOreBarHtml();
-        const mBar = document.getElementById('moon-market-ore-bar');
-        if (mBar) mBar.innerHTML = this._renderHubOreBarHtml();
       }
 
       async openMoonMarketModal() {

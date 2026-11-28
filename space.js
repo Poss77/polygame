@@ -6811,7 +6811,7 @@ window.launchSpaceRaid = function() {
 };
 window.smeltSpaceOre = function(recipe) {
   if (window.polySpace && typeof window.polySpace.smeltOre === 'function') {
-    window.polySpace.smeltOre(recipe);
+    return window.polySpace.smeltOre(recipe);
   }
 };
 window.scanSpaceAnomaly = function() {
